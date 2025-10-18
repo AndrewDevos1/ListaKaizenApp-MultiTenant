@@ -1,5 +1,4 @@
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
-import api from '../services/api';
 import { jwtDecode } from 'jwt-decode'; // precisaremos instalar jwt-decode
 
 interface AuthContextType {

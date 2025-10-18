@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
+import { Table, Button, Form, Spinner, Alert, Card, Col, Row } from 'react-bootstrap';
 import api from '../../services/api';
+import Layout from '../../components/Layout';
 
 interface CotacaoItem {
     id: number;
@@ -25,21 +27,27 @@ const CotacaoDetail: React.FC = () => {
     const { cotacaoId } = useParams<{ cotacaoId: string }>();
     const [cotacao, setCotacao] = useState<Cotacao | null>(null);
     const [error, setError] = useState('');
+    const [success, setSuccess] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
 
-    const fetchCotacao = async () => {
+    const fetchCotacao = useCallback(async () => {
         if (cotacaoId) {
+            setIsLoading(true);
+            setError('');
             try {
                 const response = await api.get(`/v1/cotacoes/${cotacaoId}`);
                 setCotacao(response.data);
             } catch (err) {
                 setError('Não foi possível carregar a cotação.');
+            } finally {
+                setIsLoading(false);
             }
         }
-    };
+    }, [cotacaoId]);
 
     useEffect(() => {
         fetchCotacao();
-    }, [cotacaoId]);
+    }, [fetchCotacao]);
 
     const handlePriceChange = (itemId: number, price: string) => {
         if (!cotacao) return;
@@ -51,65 +59,93 @@ const CotacaoDetail: React.FC = () => {
 
     const handleSavePrices = async () => {
         if (!cotacao) return;
-        for (const item of cotacao.itens) {
-            try {
+        setIsLoading(true);
+        setError('');
+        setSuccess('');
+        try {
+            // Esta lógica pode precisar de um endpoint de lote no backend para eficiência
+            for (const item of cotacao.itens) {
                 await api.put(`/v1/cotacao-items/${item.id}`, { preco_unitario: item.preco_unitario });
-            } catch (err) {
-                alert(`Erro ao salvar preço para o item ${item.item.nome}`);
-                return;
             }
+            setSuccess('Preços salvos com sucesso!');
+        } catch (err) {
+            setError('Erro ao salvar os preços.');
+        } finally {
+            setIsLoading(false);
         }
-        alert('Preços salvos com sucesso!');
     };
 
     const calculateTotal = () => {
         return cotacao?.itens.reduce((acc, item) => acc + (item.quantidade * item.preco_unitario), 0).toFixed(2);
     };
 
-    if (error) return <p style={{ color: 'red' }}>{error}</p>;
-    if (!cotacao) return <p>Carregando cotação...</p>;
+    if (isLoading && !cotacao) {
+        return <Layout title="Carregando..."><div className="text-center"><Spinner animation="border" /></div></Layout>;
+    }
+
+    if (error) {
+        return <Layout title="Erro"><Alert variant="danger">{error}</Alert></Layout>;
+    }
+
+    if (!cotacao) {
+        return <Layout title="Cotação não encontrada"><Alert variant="warning">Cotação não encontrada.</Alert></Layout>;
+    }
 
     return (
-        <div>
-            <h2>Detalhes da Cotação #{cotacao.id}</h2>
-            <p><strong>Fornecedor:</strong> {cotacao.fornecedor.nome}</p>
-            <p><strong>Data:</strong> {new Date(cotacao.data_cotacao).toLocaleDateString()}</p>
+        <Layout title={`Detalhes da Cotação #${cotacao.id}`}>
+            {success && <Alert variant="success" onClose={() => setSuccess('')} dismissible>{success}</Alert>}
+            <Card className="mb-4">
+                <Card.Header as="h4">Informações da Cotação</Card.Header>
+                <Card.Body>
+                    <Row>
+                        <Col md={6}><strong>Fornecedor:</strong> {cotacao.fornecedor.nome}</Col>
+                        <Col md={6}><strong>Data:</strong> {new Date(cotacao.data_cotacao).toLocaleDateString()}</Col>
+                    </Row>
+                </Card.Body>
+            </Card>
 
-            <table>
-                <thead>
-                    <tr>
-                        <th>Item</th>
-                        <th>Quantidade</th>
-                        <th>Preço Unitário</th>
-                        <th>Subtotal</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {cotacao.itens.map(item => (
-                        <tr key={item.id}>
-                            <td>{item.item.nome}</td>
-                            <td>{item.quantidade}</td>
-                            <td>
-                                <input 
-                                    type="number"
-                                    value={item.preco_unitario}
-                                    onChange={e => handlePriceChange(item.id, e.target.value)}
-                                    step="0.01"
-                                />
-                            </td>
-                            <td>{(item.quantidade * item.preco_unitario).toFixed(2)}</td>
+            <Form onSubmit={(e) => { e.preventDefault(); handleSavePrices(); }}>
+                <Table striped bordered hover responsive>
+                    <thead className="table-dark">
+                        <tr>
+                            <th>Item</th>
+                            <th className="text-center">Quantidade</th>
+                            <th style={{ width: '200px' }} className="text-center">Preço Unitário (R$)</th>
+                            <th className="text-end">Subtotal (R$)</th>
                         </tr>
-                    ))}
-                </tbody>
-                <tfoot>
-                    <tr>
-                        <td colSpan={3} style={{ textAlign: 'right' }}><strong>Total:</strong></td>
-                        <td><strong>R$ {calculateTotal()}</strong></td>
-                    </tr>
-                </tfoot>
-            </table>
-            <button onClick={handleSavePrices}>Salvar Preços</button>
-        </div>
+                    </thead>
+                    <tbody>
+                        {cotacao.itens.map(item => (
+                            <tr key={item.id}>
+                                <td>{item.item.nome}</td>
+                                <td className="text-center">{`${item.quantidade} ${item.item.unidade_medida}`}</td>
+                                <td>
+                                    <Form.Control 
+                                        type="number"
+                                        value={item.preco_unitario}
+                                        onChange={e => handlePriceChange(item.id, e.target.value)}
+                                        step="0.01"
+                                        className="text-center"
+                                    />
+                                </td>
+                                <td className="text-end">{(item.quantidade * item.preco_unitario).toFixed(2)}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                    <tfoot>
+                        <tr className="table-light">
+                            <td colSpan={3} className="text-end"><strong>Total:</strong></td>
+                            <td className="text-end"><strong>R$ {calculateTotal()}</strong></td>
+                        </tr>
+                    </tfoot>
+                </Table>
+                <div className="d-flex justify-content-end">
+                    <Button type="submit" variant="primary" disabled={isLoading}>
+                        {isLoading ? <Spinner as="span" animation="border" size="sm" /> : 'Salvar Preços'}
+                    </Button>
+                </div>
+            </Form>
+        </Layout>
     );
 };
 

@@ -1,13 +1,7 @@
-import React, { ReactNode } from 'react';
-import { Link } from 'react-router-dom';
+import React from 'react';
+import { Link, Outlet } from 'react-router-dom';
 
-interface LayoutProps {
-  children: ReactNode;
-  title: string;
-}
-
-const Layout: React.FC<LayoutProps> = ({ children, title }) => {
-  // Simple toggle state for the sidebar
+const Layout: React.FC = () => {
   const [isToggled, setIsToggled] = React.useState(false);
 
   const handleToggle = () => {
@@ -49,7 +43,7 @@ const Layout: React.FC<LayoutProps> = ({ children, title }) => {
         <nav className="navbar navbar-expand-lg navbar-light bg-transparent py-4 px-4">
           <div className="d-flex align-items-center">
             <i className="fas fa-align-left text-muted fs-4 me-3" id="menu-toggle" onClick={handleToggle}></i>
-            <h2 className="fs-2 m-0">{title}</h2>
+            <h2 className="fs-2 m-0">Kaizen Lists</h2>
           </div>
 
           <button className="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
@@ -59,13 +53,13 @@ const Layout: React.FC<LayoutProps> = ({ children, title }) => {
           <div className="collapse navbar-collapse" id="navbarSupportedContent">
             <ul className="navbar-nav ms-auto mb-2 mb-lg-0">
               <li className="nav-item dropdown">
-                <a className="nav-link dropdown-toggle second-text fw-bold" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <a className="nav-link dropdown-toggle second-text fw-bold" href="#!" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                   <i className="fas fa-user me-2"></i>Administrador
                 </a>
                 <ul className="dropdown-menu" aria-labelledby="navbarDropdown">
-                  <li><a className="dropdown-item" href="#">Perfil</a></li>
-                  <li><a className="dropdown-item" href="#">Configurações</a></li>
-                  <li><a className="dropdown-item" href="/login">Logout</a></li>
+                  <li><a className="dropdown-item" href="#!">Perfil</a></li>
+                  <li><a className="dropdown-item" href="#!">Configurações</a></li>
+                  <li><Link className="dropdown-item" to="/login">Logout</Link></li>
                 </ul>
               </li>
             </ul>
@@ -73,7 +67,7 @@ const Layout: React.FC<LayoutProps> = ({ children, title }) => {
         </nav>
 
         <div className="container-fluid px-4">
-          {children}
+          <Outlet />
         </div>
       </div>
     </div>
