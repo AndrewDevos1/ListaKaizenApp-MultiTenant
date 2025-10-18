@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { Table, Button, Modal, Form, Spinner, Alert } from 'react-bootstrap';
 import api from '../../services/api';
+import Layout from '../../components/Layout';
 
 interface Fornecedor {
     id: number;
@@ -11,71 +13,95 @@ interface Fornecedor {
 const FornecedorManagement: React.FC = () => {
     const [fornecedores, setFornecedores] = useState<Fornecedor[]>([]);
     const [currentFornecedor, setCurrentFornecedor] = useState<Partial<Fornecedor> | null>(null);
+    const [showModal, setShowModal] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState('');
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [fornecedorToDelete, setFornecedorToDelete] = useState<Fornecedor | null>(null);
 
     const fetchFornecedores = async () => {
-        const response = await api.get('/v1/fornecedores');
-        setFornecedores(response.data);
+        setIsLoading(true);
+        setError('');
+        try {
+            const response = await api.get('/v1/fornecedores');
+            setFornecedores(response.data);
+        } catch (err) {
+            setError('Falha ao carregar os fornecedores.');
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     useEffect(() => {
         fetchFornecedores();
     }, []);
 
-    const handleEdit = (fornecedor: Fornecedor) => {
-        setCurrentFornecedor(fornecedor);
-        setIsEditing(true);
+    const handleShowModal = (fornecedor?: Fornecedor) => {
+        if (fornecedor) {
+            setCurrentFornecedor(fornecedor);
+            setIsEditing(true);
+        } else {
+            setCurrentFornecedor({ nome: '', contato: '', meio_envio: '' });
+            setIsEditing(false);
+        }
+        setShowModal(true);
     };
 
-    const handleDelete = async (id: number) => {
-        await api.delete(`/v1/fornecedores/${id}`);
-        fetchFornecedores();
+    const handleCloseModal = () => {
+        setShowModal(false);
+        setCurrentFornecedor(null);
+    };
+
+    const handleShowDeleteModal = (fornecedor: Fornecedor) => {
+        setFornecedorToDelete(fornecedor);
+        setShowDeleteModal(true);
+    };
+
+    const handleCloseDeleteModal = () => {
+        setFornecedorToDelete(null);
+        setShowDeleteModal(false);
+    };
+
+    const handleDelete = async () => {
+        if (!fornecedorToDelete) return;
+        try {
+            await api.delete(`/v1/fornecedores/${fornecedorToDelete.id}`);
+            fetchFornecedores();
+            handleCloseDeleteModal();
+        } catch (err) {
+            setError('Falha ao deletar o fornecedor.');
+        }
     };
 
     const handleFormSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!currentFornecedor?.nome) return;
 
-        if (isEditing) {
-            await api.put(`/v1/fornecedores/${currentFornecedor.id}`, currentFornecedor);
-        } else {
-            await api.post('/v1/fornecedores', currentFornecedor);
+        const apiCall = isEditing
+            ? api.put(`/v1/fornecedores/${currentFornecedor.id}`, currentFornecedor)
+            : api.post('/v1/fornecedores', currentFornecedor);
+
+        try {
+            await apiCall;
+            fetchFornecedores();
+            handleCloseModal();
+        } catch (err) {
+            setError('Falha ao salvar o fornecedor.');
         }
-        fetchFornecedores();
-        setCurrentFornecedor(null);
-        setIsEditing(false);
     };
 
     return (
-        <div>
-            <h3>Gerenciar Fornecedores</h3>
-            
-            <form onSubmit={handleFormSubmit}>
-                <input 
-                    type="text" 
-                    placeholder="Nome do fornecedor" 
-                    value={currentFornecedor?.nome || ''} 
-                    onChange={e => setCurrentFornecedor({...currentFornecedor, nome: e.target.value})} 
-                />
-                <input 
-                    type="text" 
-                    placeholder="Contato" 
-                    value={currentFornecedor?.contato || ''} 
-                    onChange={e => setCurrentFornecedor({...currentFornecedor, contato: e.target.value})} 
-                />
-                <input 
-                    type="text" 
-                    placeholder="Meio de Envio" 
-                    value={currentFornecedor?.meio_envio || ''} 
-                    onChange={e => setCurrentFornecedor({...currentFornecedor, meio_envio: e.target.value})} 
-                />
-                <button type="submit">{isEditing ? 'Atualizar' : 'Adicionar'}</button>
-                {isEditing && <button onClick={() => { setIsEditing(false); setCurrentFornecedor(null); }}>Cancelar</button>}
-            </form>
+        <Layout title="Gestão de Fornecedores">
+            {error && <Alert variant="danger" onClose={() => setError('')} dismissible>{error}</Alert>}
+            <Button variant="primary" onClick={() => handleShowModal()} className="mb-3">
+                <i className="fas fa-plus me-2"></i>Adicionar Fornecedor
+            </Button>
 
-            <table>
-                <thead>
+            <Table striped bordered hover responsive>
+                <thead className="table-dark">
                     <tr>
+                        <th>#</th>
                         <th>Nome</th>
                         <th>Contato</th>
                         <th>Meio de Envio</th>
@@ -83,20 +109,70 @@ const FornecedorManagement: React.FC = () => {
                     </tr>
                 </thead>
                 <tbody>
-                    {fornecedores.map(f => (
+                    {isLoading ? (
+                        <tr>
+                            <td colSpan={5} className="text-center"><Spinner animation="border" /></td>
+                        </tr>
+                    ) : fornecedores.map(f => (
                         <tr key={f.id}>
+                            <td>{f.id}</td>
                             <td>{f.nome}</td>
                             <td>{f.contato}</td>
                             <td>{f.meio_envio}</td>
                             <td>
-                                <button onClick={() => handleEdit(f)}>Editar</button>
-                                <button onClick={() => handleDelete(f.id)}>Deletar</button>
+                                <Button variant="warning" size="sm" onClick={() => handleShowModal(f)}>
+                                    <i className="fas fa-edit"></i>
+                                </Button>
+                                <Button variant="danger" size="sm" onClick={() => handleShowDeleteModal(f)} className="ms-2">
+                                    <i className="fas fa-trash"></i>
+                                </Button>
                             </td>
                         </tr>
                     ))}
                 </tbody>
-            </table>
-        </div>
+            </Table>
+
+            {/* Modal de Adicionar/Editar */}
+            <Modal show={showModal} onHide={handleCloseModal}>
+                <Modal.Header closeButton>
+                    <Modal.Title>{isEditing ? 'Editar Fornecedor' : 'Adicionar Novo Fornecedor'}</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <Form onSubmit={handleFormSubmit}>
+                        <Form.Group className="mb-3">
+                            <Form.Label>Nome do Fornecedor</Form.Label>
+                            <Form.Control type="text" placeholder="Ex: Fornecedor ABC" value={currentFornecedor?.nome || ''} onChange={e => setCurrentFornecedor({...currentFornecedor, nome: e.target.value})} required />
+                        </Form.Group>
+                        <Form.Group className="mb-3">
+                            <Form.Label>Contato</Form.Label>
+                            <Form.Control type="text" placeholder="Ex: email@exemplo.com ou (99) 99999-9999" value={currentFornecedor?.contato || ''} onChange={e => setCurrentFornecedor({...currentFornecedor, contato: e.target.value})} required />
+                        </Form.Group>
+                        <Form.Group className="mb-3">
+                            <Form.Label>Meio de Envio</Form.Label>
+                            <Form.Control type="text" placeholder="Ex: Email, WhatsApp" value={currentFornecedor?.meio_envio || ''} onChange={e => setCurrentFornecedor({...currentFornecedor, meio_envio: e.target.value})} required />
+                        </Form.Group>
+                        <div className="d-grid gap-2">
+                            <Button variant="primary" type="submit">{isEditing ? 'Salvar Alterações' : 'Adicionar Fornecedor'}</Button>
+                            <Button variant="secondary" onClick={handleCloseModal}>Cancelar</Button>
+                        </div>
+                    </Form>
+                </Modal.Body>
+            </Modal>
+
+            {/* Modal de Confirmação de Exclusão */}
+            <Modal show={showDeleteModal} onHide={handleCloseDeleteModal}>
+                <Modal.Header closeButton>
+                    <Modal.Title>Confirmar Exclusão</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    Tem certeza que deseja excluir o fornecedor <strong>{fornecedorToDelete?.nome}</strong>?
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="secondary" onClick={handleCloseDeleteModal}>Cancelar</Button>
+                    <Button variant="danger" onClick={handleDelete}>Excluir</Button>
+                </Modal.Footer>
+            </Modal>
+        </Layout>
     );
 };
 

@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { Table, Alert, Spinner } from 'react-bootstrap';
 import api from '../../services/api';
+import Layout from '../../components/Layout';
 
 interface Pedido {
     id: number;
@@ -7,6 +9,7 @@ interface Pedido {
     quantidade_solicitada: number;
     item: {
         nome: string;
+        unidade_medida: string;
     };
     fornecedor: {
         nome: string;
@@ -16,48 +19,58 @@ interface Pedido {
 const MinhasSubmissoes: React.FC = () => {
     const [pedidos, setPedidos] = useState<Pedido[]>([]);
     const [error, setError] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
 
     useEffect(() => {
         const fetchPedidos = async () => {
+            setIsLoading(true);
             try {
                 const response = await api.get('/v1/pedidos/me');
                 setPedidos(response.data);
             } catch (err) {
                 setError('Não foi possível carregar o histórico de pedidos.');
+            } finally {
+                setIsLoading(false);
             }
         };
         fetchPedidos();
     }, []);
 
     return (
-        <div>
-            <h3>Minhas Submissões (Pedidos Gerados)</h3>
-            {error && <p style={{ color: 'red' }}>{error}</p>}
-            {pedidos.length > 0 ? (
-                <table>
-                    <thead>
+        <Layout title="Minhas Submissões (Pedidos Gerados)">
+            {error && <Alert variant="danger">{error}</Alert>}
+
+            <Table striped bordered hover responsive>
+                <thead className="table-dark">
+                    <tr>
+                        <th>Data</th>
+                        <th>Item</th>
+                        <th className="text-center">Quantidade</th>
+                        <th>Fornecedor</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {isLoading ? (
                         <tr>
-                            <th>Data</th>
-                            <th>Item</th>
-                            <th>Quantidade</th>
-                            <th>Fornecedor</th>
+                            <td colSpan={4} className="text-center"><Spinner animation="border" /></td>
                         </tr>
-                    </thead>
-                    <tbody>
-                        {pedidos.map(p => (
+                    ) : pedidos.length > 0 ? (
+                        pedidos.map(p => (
                             <tr key={p.id}>
                                 <td>{new Date(p.data_pedido).toLocaleDateString()}</td>
                                 <td>{p.item.nome}</td>
-                                <td>{p.quantidade_solicitada}</td>
+                                <td className="text-center">{`${p.quantidade_solicitada} ${p.item.unidade_medida}`}</td>
                                 <td>{p.fornecedor.nome}</td>
                             </tr>
-                        ))}
-                    </tbody>
-                </table>
-            ) : (
-                <p>Você ainda não gerou nenhum pedido.</p>
-            )}
-        </div>
+                        ))
+                    ) : (
+                        <tr>
+                            <td colSpan={4} className="text-center">Você ainda não gerou nenhum pedido.</td>
+                        </tr>
+                    )}
+                </tbody>
+            </Table>
+        </Layout>
     );
 };
 

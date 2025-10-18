@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
+import { Table, Button, Form, Spinner, Alert } from 'react-bootstrap';
 import api from '../../services/api';
+import Layout from '../../components/Layout';
 
 interface EstoqueItem {
     id: number;
@@ -8,7 +10,7 @@ interface EstoqueItem {
     area_id: number;
     quantidade_atual: number;
     quantidade_minima: number;
-    item: { // Supondo que a API retorne o item aninhado
+    item: {
         id: number;
         nome: string;
         unidade_medida: string;
@@ -19,17 +21,25 @@ const EstoqueLista: React.FC = () => {
     const { areaId } = useParams<{ areaId: string }>();
     const [estoque, setEstoque] = useState<EstoqueItem[]>([]);
     const [error, setError] = useState('');
+    const [success, setSuccess] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+    const [areaName, setAreaName] = useState('');
 
     useEffect(() => {
         if (areaId) {
             const fetchEstoque = async () => {
+                setIsLoading(true);
                 try {
-                    const response = await api.get(`/v1/areas/${areaId}/estoque`);
-                    // A API precisa retornar os itens relacionados
-                    // Vamos assumir que o backend faz isso
-                    setEstoque(response.data);
+                    const [estoqueRes, areaRes] = await Promise.all([
+                        api.get(`/v1/areas/${areaId}/estoque`),
+                        api.get(`/v1/areas/${areaId}`)
+                    ]);
+                    setEstoque(estoqueRes.data);
+                    setAreaName(areaRes.data.nome);
                 } catch (err) {
                     setError('Não foi possível carregar os itens de estoque.');
+                } finally {
+                    setIsLoading(false);
                 }
             };
             fetchEstoque();
@@ -44,65 +54,84 @@ const EstoqueLista: React.FC = () => {
     };
 
     const handleSaveDraft = async () => {
-        // Salva as quantidades atuais como rascunho
-        for (const item of estoque) {
-            try {
-                await api.put(`/v1/estoque/${item.id}`, { quantidade_atual: item.quantidade_atual });
-            } catch (err) {
-                console.error(`Erro ao atualizar item ${item.id}`, err);
-                alert(`Falha ao salvar o rascunho para o item: ${item.item.nome}`);
-                return;
-            }
+        setIsLoading(true);
+        setError('');
+        setSuccess('');
+        try {
+            await api.post(`/v1/estoque/draft`, { area_id: areaId, items: estoque });
+            setSuccess('Rascunho salvo com sucesso!');
+        } catch (err) {
+            setError('Falha ao salvar o rascunho.');
+        } finally {
+            setIsLoading(false);
         }
-        alert('Rascunho salvo com sucesso!');
     };
 
     const handleSubmit = async () => {
-        // Primeiro, salva as alterações mais recentes
-        await handleSaveDraft();
-        // Em seguida, aciona a criação dos pedidos no backend
+        setIsLoading(true);
+        setError('');
+        setSuccess('');
         try {
-            const response = await api.post('/v1/pedidos/submit');
-            alert(response.data.message);
+            await handleSaveDraft(); // Save latest changes first
+            const response = await api.post('/v1/pedidos/submit', { area_id: areaId });
+            setSuccess(response.data.message);
         } catch (err) {
-            alert('Erro ao submeter a lista.');
+            setError('Erro ao submeter a lista.');
+        } finally {
+            setIsLoading(false);
         }
     };
 
     return (
-        <div>
-            <h2>Preenchimento de Estoque (Área: {areaId})</h2>
-            {error && <p style={{ color: 'red' }}>{error}</p>}
-            <form onSubmit={(e) => { e.preventDefault(); }}>
-                <table>
-                    <thead>
+        <Layout title={`Preenchimento de Estoque: ${areaName}`}>
+            {error && <Alert variant="danger">{error}</Alert>}
+            {success && <Alert variant="success">{success}</Alert>}
+
+            <Form onSubmit={(e) => { e.preventDefault(); }}>
+                <Table striped bordered hover responsive>
+                    <thead className="table-dark">
                         <tr>
                             <th>Item</th>
-                            <th>Qtd. Mínima</th>
-                            <th>Qtd. Atual</th>
+                            <th className="text-center">Qtd. Mínima</th>
+                            <th style={{ width: '150px' }} className="text-center">Qtd. Atual</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {estoque.length > 0 ? estoque.map(item => (
+                        {isLoading && !estoque.length ? (
+                            <tr>
+                                <td colSpan={3} className="text-center"><Spinner animation="border" /></td>
+                            </tr>
+                        ) : estoque.length > 0 ? estoque.map(item => (
                             <tr key={item.id}>
                                 <td>{item.item?.nome || 'Nome não encontrado'} ({item.item?.unidade_medida})</td>
-                                <td>{item.quantidade_minima}</td>
+                                <td className="text-center">{item.quantidade_minima}</td>
                                 <td>
-                                    <input 
+                                    <Form.Control 
                                         type="number" 
                                         value={item.quantidade_atual}
                                         onChange={(e) => handleQuantityChange(item.id, e.target.value)}
                                         step="0.01"
+                                        className="text-center"
                                     />
                                 </td>
                             </tr>
-                        )) : <tr><td colSpan={3}>Nenhum item de estoque para esta área.</td></tr>}
+                        )) : (
+                            <tr>
+                                <td colSpan={3} className="text-center">Nenhum item de estoque para esta área.</td>
+                            </tr>
+                        )}
                     </tbody>
-                </table>
-                <button type="button" onClick={handleSaveDraft}>Salvar Rascunho</button>
-                <button type="button" onClick={handleSubmit}>Submeter Lista</button>
-            </form>
-        </div>
+                </Table>
+                <div className="d-flex justify-content-end gap-2 mt-3">
+                    <Button variant="outline-secondary" onClick={handleSaveDraft} disabled={isLoading}>
+                        {isLoading ? <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true"/> : 'Salvar Rascunho'}
+                    </Button>
+                    <Button variant="primary" onClick={handleSubmit} disabled={isLoading}>
+                        {isLoading ? <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true"/> : 'Submeter Lista'}
+                    </Button>
+                </div>
+            </Form>
+        </Layout>
     );
 };
 
