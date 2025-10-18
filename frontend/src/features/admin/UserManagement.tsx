@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Button, Alert, Badge, Spinner } from 'react-bootstrap';
-import api from '../../services/api';
+import { Table, Button, Alert, Badge, Spinner, Modal, Form } from 'react-bootstrap';
+import { api } from '../../services/api';
 import Layout from '../../components/Layout';
 
 interface User {
@@ -16,6 +16,10 @@ const UserManagement: React.FC = () => {
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+
+    // State for the create user modal
+    const [showCreateModal, setShowCreateModal] = useState(false);
+    const [newUser, setNewUser] = useState({ nome: '', email: '', senha: '', role: 'COLLABORATOR' });
 
     const fetchUsers = async () => {
         setIsLoading(true);
@@ -35,7 +39,6 @@ const UserManagement: React.FC = () => {
     }, []);
 
     const handleApprove = async (userId: number) => {
-        // Adicionando feedback de carregamento para a ação individual
         const originalUsers = [...users];
         setUsers(users.map(u => u.id === userId ? { ...u, approving: true } : u));
 
@@ -47,12 +50,35 @@ const UserManagement: React.FC = () => {
         } catch (err) {
             setError('Erro ao aprovar usuário.');
             setSuccess('');
-            setUsers(originalUsers); // Reverte em caso de erro
+            setUsers(originalUsers);
+        }
+    };
+
+    const handleCreateUser = async () => {
+        if (!newUser.nome || !newUser.email || !newUser.senha) {
+            setError('Por favor, preencha todos os campos.');
+            return;
+        }
+        try {
+            await api.post('/admin/create_user', newUser);
+            setSuccess('Usuário criado com sucesso!');
+            setShowCreateModal(false);
+            setNewUser({ nome: '', email: '', senha: '', role: 'COLLABORATOR' });
+            fetchUsers();
+        } catch (err: any) {
+            setError(err.response?.data?.error || 'Erro ao criar usuário.');
         }
     };
 
     return (
-        <Layout title="Gerenciamento de Usuários">
+        <Layout>
+            <div className="d-flex justify-content-between align-items-center mb-3">
+                <h2>Gerenciamento de Usuários</h2>
+                <Button variant="primary" onClick={() => setShowCreateModal(true)}>
+                    <i className="fas fa-plus me-2"></i>Criar Novo Usuário
+                </Button>
+            </div>
+
             {error && <Alert variant="danger" onClose={() => setError('')} dismissible>{error}</Alert>}
             {success && <Alert variant="success" onClose={() => setSuccess('')} dismissible>{success}</Alert>}
             
@@ -72,7 +98,7 @@ const UserManagement: React.FC = () => {
                         <tr>
                             <td colSpan={6} className="text-center"><Spinner animation="border" /></td>
                         </tr>
-                    ) : users.map((user: any) => ( // Usando any para a propriedade temporária 'approving'
+                    ) : users.map((user: any) => (
                         <tr key={user.id}>
                             <td>{user.id}</td>
                             <td>{user.nome}</td>
@@ -94,6 +120,40 @@ const UserManagement: React.FC = () => {
                     ))}
                 </tbody>
             </Table>
+
+            {/* Create User Modal */}
+            <Modal show={showCreateModal} onHide={() => setShowCreateModal(false)}>
+                <Modal.Header closeButton>
+                    <Modal.Title>Criar Novo Usuário</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <Form>
+                        <Form.Group className="mb-3">
+                            <Form.Label>Nome</Form.Label>
+                            <Form.Control type="text" value={newUser.nome} onChange={(e) => setNewUser({...newUser, nome: e.target.value})} />
+                        </Form.Group>
+                        <Form.Group className="mb-3">
+                            <Form.Label>Email</Form.Label>
+                            <Form.Control type="email" value={newUser.email} onChange={(e) => setNewUser({...newUser, email: e.target.value})} />
+                        </Form.Group>
+                        <Form.Group className="mb-3">
+                            <Form.Label>Senha</Form.Label>
+                            <Form.Control type="password" value={newUser.senha} onChange={(e) => setNewUser({...newUser, senha: e.target.value})} />
+                        </Form.Group>
+                        <Form.Group className="mb-3">
+                            <Form.Label>Perfil</Form.Label>
+                            <Form.Select value={newUser.role} onChange={(e) => setNewUser({...newUser, role: e.target.value})}>
+                                <option value="COLLABORATOR">Colaborador</option>
+                                <option value="ADMIN">Administrador</option>
+                            </Form.Select>
+                        </Form.Group>
+                    </Form>
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="secondary" onClick={() => setShowCreateModal(false)}>Cancelar</Button>
+                    <Button variant="primary" onClick={handleCreateUser}>Salvar Usuário</Button>
+                </Modal.Footer>
+            </Modal>
         </Layout>
     );
 };

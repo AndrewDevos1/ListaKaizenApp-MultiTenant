@@ -22,6 +22,9 @@ const Layout: React.FC = () => {
           <Link to="/admin/users" className="list-group-item list-group-item-action bg-dark text-light">
             <i className="fas fa-users-cog me-2"></i>Gestão de Usuários
           </Link>
+          <Link to="/admin/listas" className="list-group-item list-group-item-action bg-dark text-light">
+            <i className="fas fa-list-alt me-2"></i>Gestão de Listas
+          </Link>
           <Link to="/admin/items" className="list-group-item list-group-item-action bg-dark text-light">
             <i className="fas fa-boxes me-2"></i>Itens
           </Link>

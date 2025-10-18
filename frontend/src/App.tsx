@@ -13,6 +13,7 @@ import AreaManagement from './features/admin/AreaManagement';
 import ItemManagement from './features/admin/ItemManagement';
 import AdminDashboard from './features/admin/AdminDashboard';
 import UserManagement from './features/admin/UserManagement';
+import ListManagement from './features/admin/ListManagement';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
 import Layout from './components/Layout';
@@ -36,6 +37,7 @@ function App() {
             <Route path="/admin" element={<AdminRoute />}>
               <Route index element={<AdminDashboard />} />
               <Route path="users" element={<UserManagement />} />
+              <Route path="listas" element={<ListManagement />} />
               <Route path="items" element={<ItemManagement />} />
               <Route path="areas" element={<AreaManagement />} />
               <Route path="fornecedores" element={<FornecedorManagement />} />

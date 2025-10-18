@@ -1,4 +1,4 @@
-from .models import Usuario, UserRoles, Item, Area, Fornecedor, Estoque, Cotacao, CotacaoItem, Pedido
+from .models import Usuario, UserRoles, Item, Area, Fornecedor, Estoque, Cotacao, CotacaoItem, Pedido, Lista
 from .extensions import db
 from . import repositories
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -241,7 +241,7 @@ def submit_pedidos(user_id):
     itens_a_pedir = db.session.query(Estoque, Item).join(Item).filter(Estoque.quantidade_atual < Estoque.quantidade_minima).all()
     
     if not itens_a_pedir:
-        return {"message": "Nenhum item precisa de reposição."}, 200
+        return {"message": "Nenhum item precisa de reposição." }, 200
 
     novos_pedidos = []
     for estoque, item in itens_a_pedir:
@@ -257,3 +257,62 @@ def submit_pedidos(user_id):
     
     db.session.commit()
     return {"message": f"{len(novos_pedidos)} pedidos foram gerados com sucesso." }, 201
+
+# --- Serviços de Lista ---
+
+def create_lista(data):
+    """Cria uma nova lista de compras."""
+    if not data or not data.get('nome'):
+        return {"error": "O nome da lista é obrigatório."}, 400
+    
+    nova_lista = Lista(nome=data['nome'])
+    repositories.add_instance(nova_lista)
+    
+    return nova_lista.to_dict(), 201
+
+def get_all_listas():
+    """Retorna todas as listas de compras."""
+    return repositories.get_all(Lista), 200
+
+def get_lista_by_id(lista_id):
+    """Retorna uma lista específica."""
+    return repositories.get_by_id(Lista, lista_id), 200
+
+def assign_colaboradores_to_lista(lista_id, data):
+    """Atribui um ou mais colaboradores a uma lista."""
+    lista = repositories.get_by_id(Lista, lista_id)
+    if not lista:
+        return {"error": "Lista não encontrada."}, 404
+
+    colaborador_ids = data.get('colaborador_ids', [])
+    if not colaborador_ids:
+        return {"error": "Nenhum colaborador fornecido."}, 400
+
+    # Limpa atribuições existentes para simplicidade
+    lista.colaboradores = []
+
+    for user_id in colaborador_ids:
+        user = repositories.get_by_id(Usuario, user_id)
+        if user and user.role == UserRoles.COLLABORATOR:
+            lista.colaboradores.append(user)
+    
+    db.session.commit()
+    
+    return lista.to_dict(), 200
+
+# --- Serviços de Dashboard ---
+
+def get_dashboard_summary():
+    """Retorna dados agregados para o dashboard do admin."""
+    total_usuarios = Usuario.query.count()
+    usuarios_pendentes = Usuario.query.filter_by(aprovado=False).count()
+    total_listas = Lista.query.count()
+    # Outras métricas podem ser adicionadas aqui
+
+    summary_data = {
+        'total_usuarios': total_usuarios,
+        'usuarios_pendentes': usuarios_pendentes,
+        'total_listas': total_listas,
+    }
+    
+    return summary_data, 200

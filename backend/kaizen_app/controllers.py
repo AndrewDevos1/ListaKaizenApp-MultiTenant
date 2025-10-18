@@ -62,6 +62,12 @@ def create_user_by_admin_route():
     response, status_code = services.create_user_by_admin(data)
     return jsonify(response), status_code
 
+@admin_bp.route('/dashboard-summary', methods=['GET'])
+@admin_required()
+def dashboard_summary_route():
+    response, status = services.get_dashboard_summary()
+    return jsonify(response), status
+
 # Blueprint para a API principal
 api_bp = Blueprint('api_bp', __name__, url_prefix='/api/v1')
 
@@ -236,4 +242,25 @@ def get_estoque_by_area_route(area_id):
 def update_estoque_route(estoque_id):
     data = request.get_json()
     response, status = services.update_estoque_item(estoque_id, data)
+    return jsonify(response), status
+
+# --- Rotas de Listas ---
+@api_bp.route('/listas', methods=['POST'])
+@admin_required()
+def create_lista_route():
+    data = request.get_json()
+    response, status = services.create_lista(data)
+    return jsonify(response), status
+
+@api_bp.route('/listas', methods=['GET'])
+@admin_required()
+def get_listas_route():
+    listas, _ = services.get_all_listas()
+    return jsonify([l.to_dict() for l in listas])
+
+@api_bp.route('/listas/<int:lista_id>/assign', methods=['POST'])
+@admin_required()
+def assign_colaboradores_route(lista_id):
+    data = request.get_json()
+    response, status = services.assign_colaboradores_to_lista(lista_id, data)
     return jsonify(response), status
