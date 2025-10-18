@@ -50,7 +50,28 @@ def approve_user(user_id):
 
     user.aprovado = True
     db.session.commit()
-    return {"message": f"Usuário {user.nome} aprovado com sucesso."}, 200
+    return {"message": f"Usuário {user.nome} aprovado com sucesso."}
+
+def create_user_by_admin(data):
+    """Cria um novo usuário (admin ou colaborador) a pedido de um admin."""
+    if Usuario.query.filter_by(email=data['email']).first():
+        return {"error": "E-mail já cadastrado."}, 409
+
+    hashed_password = generate_password_hash(data['senha'])
+    role = UserRoles.ADMIN if data.get('role') == 'ADMIN' else UserRoles.COLLABORATOR
+
+    new_user = Usuario(
+        nome=data['nome'],
+        email=data['email'],
+        senha_hash=hashed_password,
+        role=role,
+        aprovado=True  # Criado por admin, já vem aprovado
+    )
+    
+    db.session.add(new_user)
+    db.session.commit()
+    
+    return {"message": f"Usuário {new_user.nome} criado com sucesso como {role.value}."}, 201, 200
 
 def get_all_users():
     """Retorna todos os usuários cadastrados."""

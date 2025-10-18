@@ -124,3 +124,19 @@ class CotacaoItem(db.Model, SerializerMixin):
         if self.item:
             d['item'] = self.item.to_dict()
         return d
+
+# Tabela de associação para o relacionamento muitos-para-muitos entre Listas e Colaboradores
+lista_colaborador = db.Table('lista_colaborador',
+    db.Column('lista_id', db.Integer, db.ForeignKey('listas.id'), primary_key=True),
+    db.Column('usuario_id', db.Integer, db.ForeignKey('usuarios.id'), primary_key=True)
+)
+
+class Lista(db.Model, SerializerMixin):
+    __tablename__ = "listas"
+    id = db.Column(db.Integer, primary_key=True)
+    nome = db.Column(db.String(100), nullable=False, unique=True)
+    data_criacao = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    # Relacionamento muitos-para-muitos com os usuários (colaboradores)
+    colaboradores = db.relationship('Usuario', secondary=lista_colaborador,
+                                    lazy='subquery', backref=db.backref('listas_atribuidas', lazy=True))
+

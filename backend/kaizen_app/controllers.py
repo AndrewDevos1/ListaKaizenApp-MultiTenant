@@ -52,6 +52,16 @@ def get_users_route():
     users, _ = services.get_all_users()
     return jsonify([user.to_dict() for user in users])
 
+@admin_bp.route('/create_user', methods=['POST'])
+@admin_required()
+def create_user_by_admin_route():
+    data = request.get_json()
+    if not data or not all(k in data for k in ('email', 'senha', 'nome', 'role')):
+        return jsonify({"error": "Dados incompletos para criação de usuário."}), 400
+    
+    response, status_code = services.create_user_by_admin(data)
+    return jsonify(response), status_code
+
 # Blueprint para a API principal
 api_bp = Blueprint('api_bp', __name__, url_prefix='/api/v1')
 
