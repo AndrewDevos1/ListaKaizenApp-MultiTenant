@@ -1,0 +1,238 @@
+from .models import Usuario, UserRoles, Item, Area, Fornecedor, Estoque, Cotacao, CotacaoItem, Pedido
+from .extensions import db
+from . import repositories
+from werkzeug.security import generate_password_hash, check_password_hash
+from flask_jwt_extended import create_access_token
+import datetime
+
+def register_user(data):
+    """Cria um novo usuário no sistema."""
+    if Usuario.query.filter_by(email=data['email']).first():
+        return {"error": "E-mail já cadastrado."}, 409
+
+    hashed_password = generate_password_hash(data['senha'])
+    
+    new_user = Usuario(
+        nome=data['nome'],
+        email=data['email'],
+        senha_hash=hashed_password,
+        role=UserRoles.COLLABORATOR, # Por padrão, novos usuários são colaboradores
+        aprovado=False # Novos usuários precisam de aprovação
+    )
+    
+    db.session.add(new_user)
+    db.session.commit()
+    
+    return {"message": "Solicitação de cadastro enviada com sucesso. Aguardando aprovação do administrador."}, 201
+
+def authenticate_user(data):
+    """Autentica um usuário e retorna um token JWT."""
+    user = Usuario.query.filter_by(email=data['email']).first()
+
+    if not user or not check_password_hash(user.senha_hash, data['senha']):
+        return {"error": "Credenciais inválidas."}, 401
+
+    if not user.aprovado:
+        return {"error": "Usuário pendente de aprovação."}, 403
+
+    # A identidade do token pode ser o ID do usuário e seu role
+    identity = {"id": user.id, "role": user.role.value}
+    expires = datetime.timedelta(days=1)
+    access_token = create_access_token(identity=identity, expires_delta=expires)
+    
+    return {"access_token": access_token}, 200
+
+def approve_user(user_id):
+    """Aprova o cadastro de um usuário."""
+    user = Usuario.query.get(user_id)
+    if not user:
+        return {"error": "Usuário não encontrado."}, 404
+
+    user.aprovado = True
+    db.session.commit()
+    return {"message": f"Usuário {user.nome} aprovado com sucesso."}, 200
+
+def get_all_users():
+    """Retorna todos os usuários cadastrados."""
+    return repositories.get_all(Usuario), 200
+
+
+# --- Serviços de Inventário ---
+
+def create_item(data):
+    new_item = Item(nome=data['nome'], unidade_medida=data['unidade_medida'], fornecedor_id=data['fornecedor_id'])
+    repositories.add_instance(new_item)
+    # Precisamos de um serializador para retornar o objeto
+    return {"id": new_item.id, "nome": new_item.nome, "unidade_medida": new_item.unidade_medida, "fornecedor_id": new_item.fornecedor_id}, 201
+
+def get_all_items():
+    return repositories.get_all(Item), 200
+
+def get_item_by_id(item_id):
+    return repositories.get_by_id(Item, item_id), 200
+
+def update_item(item_id, data):
+    updated_item = repositories.update_instance(Item, item_id, data)
+    if not updated_item:
+        return {"error": "Item não encontrado"}, 404
+    return updated_item.to_dict(), 200
+
+def delete_item(item_id):
+    if not repositories.delete_instance(Item, item_id):
+        return {"error": "Item não encontrado"}, 404
+    return {}, 204
+
+
+def create_area(data):
+    new_area = Area(nome=data['nome'])
+    repositories.add_instance(new_area)
+    return {"id": new_area.id, "nome": new_area.nome}, 201
+
+def get_all_areas():
+    return repositories.get_all(Area), 200
+
+def get_area_by_id(area_id):
+    return repositories.get_by_id(Area, area_id), 200
+
+def update_area(area_id, data):
+    updated_area = repositories.update_instance(Area, area_id, data)
+    if not updated_area:
+        return {"error": "Área não encontrada"}, 404
+    return updated_area.to_dict(), 200
+
+def delete_area(area_id):
+    if not repositories.delete_instance(Area, area_id):
+        return {"error": "Área não encontrada"}, 404
+    return {}, 204
+
+
+def create_fornecedor(data):
+    new_fornecedor = Fornecedor(nome=data['nome'], contato=data.get('contato'), meio_envio=data.get('meio_envio'))
+    repositories.add_instance(new_fornecedor)
+    return {"id": new_fornecedor.id, "nome": new_fornecedor.nome}, 201
+
+def get_all_fornecedores():
+    return repositories.get_all(Fornecedor), 200
+
+def get_fornecedor_by_id(fornecedor_id):
+    return repositories.get_by_id(Fornecedor, fornecedor_id), 200
+
+def update_fornecedor(fornecedor_id, data):
+    updated_fornecedor = repositories.update_instance(Fornecedor, fornecedor_id, data)
+    if not updated_fornecedor:
+        return {"error": "Fornecedor não encontrado"}, 404
+    return updated_fornecedor.to_dict(), 200
+
+def delete_fornecedor(fornecedor_id):
+    if not repositories.delete_instance(Fornecedor, fornecedor_id):
+        return {"error": "Fornecedor não encontrado"}, 404
+    return {}, 204
+
+
+# --- Serviços de Cotação ---
+
+def create_quotation_from_stock(fornecedor_id):
+    """Cria uma nova Cotação com base na necessidade de estoque para um fornecedor."""
+    fornecedor = repositories.get_by_id(Fornecedor, fornecedor_id)
+    if not fornecedor:
+        return {"error": "Fornecedor não encontrado"}, 404
+
+    pedidos = {}
+    for item in fornecedor.itens:
+        total_a_pedir = 0
+        estoques_do_item = Estoque.query.filter_by(item_id=item.id).all()
+        for estoque in estoques_do_item:
+            if estoque.quantidade_atual < estoque.quantidade_minima:
+                total_a_pedir += (estoque.quantidade_minima - estoque.quantidade_atual)
+        
+        if total_a_pedir > 0:
+            pedidos[item] = total_a_pedir
+
+    if not pedidos:
+        return {"message": f"Nenhum item precisa de reposição para o fornecedor {fornecedor.nome}."}, 200
+
+    # Cria a Cotação
+    nova_cotacao = Cotacao(fornecedor_id=fornecedor_id)
+    repositories.add_instance(nova_cotacao)
+
+    # Adiciona os itens na cotação
+    for item, quantidade in pedidos.items():
+        cotacao_item = CotacaoItem(
+            cotacao_id=nova_cotacao.id,
+            item_id=item.id,
+            quantidade=quantidade,
+            preco_unitario=0  # Preço a ser preenchido pelo admin
+        )
+        db.session.add(cotacao_item)
+    
+    db.session.commit()
+
+    return nova_cotacao.to_dict(), 201
+
+
+def get_all_cotacoes():
+    """Retorna todas as cotações."""
+    return repositories.get_all(Cotacao), 200
+
+def get_cotacao_by_id(cotacao_id):
+    """Retorna uma cotação específica com seus itens."""
+    cotacao = repositories.get_by_id(Cotacao, cotacao_id)
+    if not cotacao:
+        return {"error": "Cotação não encontrada"}, 404
+    # Aqui precisamos de uma serialização mais inteligente que inclua os itens
+    # Vou modificar o to_dict da Cotação no models.py depois
+    return cotacao, 200
+
+def update_cotacao_item_price(item_id, data):
+    """Atualiza o preço de um item em uma cotação."""
+    cotacao_item = repositories.get_by_id(CotacaoItem, item_id)
+    if not cotacao_item:
+        return {"error": "Item de cotação não encontrado"}, 404
+    
+    if 'preco_unitario' in data:
+        updated_item = repositories.update_instance(CotacaoItem, item_id, {'preco_unitario': data['preco_unitario']})
+        return updated_item.to_dict(), 200
+    return {"error": "Preço unitário não fornecido"}, 400
+
+
+def get_estoque_by_area(area_id):
+    estoque_list = Estoque.query.filter_by(area_id=area_id).all()
+    return estoque_list, 200
+
+def update_estoque_item(estoque_id, data):
+    estoque_item = repositories.get_by_id(Estoque, estoque_id)
+    if not estoque_item:
+        return {"error": "Item de estoque não encontrado."}, 404
+    
+    # Apenas a quantidade_atual pode ser atualizada por esta rota
+    if 'quantidade_atual' in data:
+        estoque_item.quantidade_atual = data['quantidade_atual']
+        db.session.commit()
+        return {"message": "Estoque atualizado"}, 200
+def get_pedidos_by_user(user_id):
+    """Retorna todos os pedidos feitos por um usuário."""
+    pedidos = Pedido.query.filter_by(usuario_id=user_id).order_by(Pedido.data_pedido.desc()).all()
+    return pedidos, 200
+
+
+def submit_pedidos(user_id):
+    """Cria registros de Pedido para todos os itens que estão abaixo do estoque mínimo."""
+    itens_a_pedir = db.session.query(Estoque, Item).join(Item).filter(Estoque.quantidade_atual < Estoque.quantidade_minima).all()
+    
+    if not itens_a_pedir:
+        return {"message": "Nenhum item precisa de reposição."}, 200
+
+    novos_pedidos = []
+    for estoque, item in itens_a_pedir:
+        quantidade_a_pedir = estoque.quantidade_minima - estoque.quantidade_atual
+        novo_pedido = Pedido(
+            item_id=item.id,
+            fornecedor_id=item.fornecedor_id,
+            quantidade_solicitada=quantidade_a_pedir,
+            usuario_id=user_id
+        )
+        novos_pedidos.append(novo_pedido)
+        db.session.add(novo_pedido)
+    
+    db.session.commit()
+    return {"message": f"{len(novos_pedidos)} pedidos foram gerados com sucesso." }, 201

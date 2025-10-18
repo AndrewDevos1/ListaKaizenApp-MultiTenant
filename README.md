@@ -1,46 +1,91 @@
-# Getting Started with Create React App
+# Kaizen Lists Web App
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+Este é um aplicativo web para automação do fluxo de gestão de estoque, geração de pedidos e controle de cotações, construído com Flask no backend e React no frontend.
 
-## Available Scripts
+## Estrutura do Projeto
 
-In the project directory, you can run:
+```
+kaizen-lists/
+├── backend/         # Contém a aplicação Flask (monolito modular)
+│   ├── kaizen_app/  # O código fonte da aplicação
+│   ├── migrations/  # Scripts de migração do banco de dados
+│   ├── tests/       # Testes do backend
+│   └── ...
+├── frontend/        # Contém a aplicação React
+│   ├── src/
+│   └── ...
+├── planejamento/    # Contém o plano de ação do projeto
+└── ...
+```
 
-### `npm start`
+## Configuração e Execução
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+### Backend
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+1.  **Navegue até o diretório do backend:**
+    ```sh
+    cd backend
+    ```
 
-### `npm test`
+2.  **Crie e ative um ambiente virtual:**
+    ```sh
+    python -m venv .venv
+    source .venv/bin/activate  # No Linux/macOS
+    .venv\Scripts\activate      # No Windows
+    ```
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+3.  **Instale as dependências:**
+    ```sh
+    pip install -r requirements.txt
+    ```
 
-### `npm run build`
+4.  **Configure o Banco de Dados:**
+    *   Este projeto usa SQLite por padrão para desenvolvimento.
+    *   Execute as migrações para criar o banco de dados e as tabelas:
+        ```sh
+        # Certifique-se de que a variável de ambiente FLASK_APP está configurada
+        # export FLASK_APP=run.py (Linux/macOS)
+        # set FLASK_APP=run.py (Windows)
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+        flask db upgrade
+        ```
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+5.  **Execute o servidor de desenvolvimento:**
+    ```sh
+    flask run
+    ```
+    O servidor estará rodando em `http://127.0.0.1:5000`.
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+### Frontend
 
-### `npm run eject`
+1.  **Navegue até o diretório do frontend:**
+    ```sh
+    cd frontend
+    ```
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+2.  **Instale as dependências:**
+    ```sh
+    npm install
+    ```
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+3.  **Execute o servidor de desenvolvimento:**
+    ```sh
+    npm start
+    ```
+    A aplicação estará disponível em `http://localhost:3000`.
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+## Executando os Testes
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+### Testes do Backend
 
-## Learn More
+1.  A partir do diretório raiz do projeto, execute:
+    ```sh
+    pytest backend/tests/
+    ```
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+### Testes do Frontend
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+1.  A partir do diretório `frontend`, execute:
+    ```sh
+    npm test
+    ```

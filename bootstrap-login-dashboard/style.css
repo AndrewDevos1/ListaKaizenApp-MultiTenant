@@ -1,0 +1,76 @@
+/* Estilos para a tela de Login */
+.login-body {
+    background: #f0f2f5; /* Um cinza claro e suave */
+}
+
+.card-body {
+    background-color: #ffffff;
+}
+
+/* Estilos para o Dashboard */
+:root {
+    --main-bg-color: #f0f2f5;
+    --main-text-color: #333;
+    --secondary-text-color: #555;
+    --sidebar-bg: #1e293b; /* Um azul escuro */
+    --sidebar-text: #f8fafc;
+    --sidebar-hover: #334155;
+}
+
+#wrapper {
+    overflow-x: hidden;
+    background-color: var(--main-bg-color);
+}
+
+#sidebar-wrapper {
+    min-height: 100vh;
+    margin-left: -15rem;
+    transition: margin 0.25s ease-out;
+    background-color: var(--sidebar-bg);
+}
+
+#sidebar-wrapper .sidebar-heading {
+    padding: 0.875rem 1.25rem;
+    font-size: 1.2rem;
+}
+
+#sidebar-wrapper .list-group {
+    width: 15rem;
+}
+
+#page-content-wrapper {
+    min-width: 100vw;
+}
+
+#wrapper.toggled #sidebar-wrapper {
+    margin-left: 0;
+}
+
+#menu-toggle {
+    cursor: pointer;
+}
+
+.list-group-item {
+    border: none;
+    padding: 20px 30px;
+}
+
+.list-group-item.active {
+    background-color: var(--sidebar-hover) !important;
+    border: none;
+}
+
+@media (min-width: 768px) {
+    #sidebar-wrapper {
+        margin-left: 0;
+    }
+
+    #page-content-wrapper {
+        min-width: 0;
+        width: 100%;
+    }
+
+    #wrapper.toggled #sidebar-wrapper {
+        margin-left: -15rem;
+    }
+}

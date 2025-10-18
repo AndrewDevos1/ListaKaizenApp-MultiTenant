@@ -1,0 +1,33 @@
+import os
+
+# Define o diretório base do projeto backend
+basedir = os.path.abspath(os.path.dirname(__file__))
+
+class Config:
+    """Configurações base da aplicação."""
+    SECRET_KEY = os.environ.get('SECRET_KEY') or 'uma-chave-secreta-muito-segura'
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+
+class DevelopmentConfig(Config):
+    """Configurações para o ambiente de desenvolvimento."""
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DEV_DATABASE_URL') or \
+        'sqlite:///' + os.path.join(basedir, '..', 'kaizen_dev.db')
+
+class TestingConfig(Config):
+    """Configurações para o ambiente de testes."""
+    TESTING = True
+    SQLALCHEMY_DATABASE_URI = os.environ.get('TEST_DATABASE_URL') or \
+        'sqlite:///' + os.path.join(basedir, '..', 'kaizen_test.db')
+
+class ProductionConfig(Config):
+    """Configurações para o ambiente de produção."""
+    # A URI do banco de dados de produção deve ser definida via variável de ambiente
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL')
+
+# Mapeamento de nomes para as classes de configuração
+config_by_name = {
+    'development': DevelopmentConfig,
+    'testing': TestingConfig,
+    'production': ProductionConfig,
+    'default': DevelopmentConfig
+}
