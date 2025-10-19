@@ -100,11 +100,16 @@ class Pedido(db.Model, SerializerMixin):
     fornecedor = db.relationship('Fornecedor', backref=db.backref('pedidos', lazy=True))
     usuario = db.relationship('Usuario', backref=db.backref('pedidos', lazy=True))
 
+class CotacaoStatus(enum.Enum):
+    PENDENTE = "PENDENTE"
+    CONCLUIDA = "CONCLUIDA"
+
 class Cotacao(db.Model, SerializerMixin):
     __tablename__ = "cotacoes"
     id = db.Column(db.Integer, primary_key=True)
     fornecedor_id = db.Column(db.Integer, db.ForeignKey('fornecedores.id'), nullable=False)
     data_cotacao = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    status = db.Column(db.Enum(CotacaoStatus), nullable=False, default=CotacaoStatus.PENDENTE)
     fornecedor = db.relationship('Fornecedor', backref=db.backref('cotacoes', lazy=True))
 
     def to_dict(self):

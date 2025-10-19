@@ -6,9 +6,6 @@ __pycache__/
 .venv/
 backend/.venv/
 
-# Databases
-*.db
-
 # Node
 node_modules/
 npm-debug.log
@@ -22,6 +19,3 @@ yarn-error.log
 .vscode/
 .idea/
 *.DS_Store
-
-# Manuais
-Manuais/

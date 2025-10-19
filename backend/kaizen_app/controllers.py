@@ -68,6 +68,12 @@ def dashboard_summary_route():
     response, status = services.get_dashboard_summary()
     return jsonify(response), status
 
+@admin_bp.route('/activity-summary', methods=['GET'])
+@admin_required()
+def activity_summary_route():
+    response, status = services.get_activity_summary()
+    return jsonify(response), status
+
 # Blueprint para a API principal
 api_bp = Blueprint('api_bp', __name__, url_prefix='/api/v1')
 
@@ -236,6 +242,12 @@ def update_cotacao_item_price_route(item_id):
 def get_estoque_by_area_route(area_id):
     estoque, _ = services.get_estoque_by_area(area_id)
     return jsonify([e.to_dict() for e in estoque])
+
+@api_bp.route('/areas/<int:area_id>/status', methods=['GET'])
+@jwt_required()
+def get_area_status_route(area_id):
+    response, status = services.get_area_status(area_id)
+    return jsonify(response), status
 
 @api_bp.route('/estoque/<int:estoque_id>', methods=['PUT'])
 @jwt_required() # Permitir que colaboradores atualizem o estoque

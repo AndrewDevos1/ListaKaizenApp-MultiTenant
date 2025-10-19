@@ -1,9 +1,40 @@
-import React from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Card, Col, Row } from 'react-bootstrap';
-import GlobalDashboard from '../dashboard/GlobalDashboard';
+import { faUsers, faListAlt, faExclamationTriangle, faCheckCircle } from '@fortawesome/free-solid-svg-icons';
+import Widget from '../../components/Widget';
+import ActivityChart from '../../components/ActivityChart';
+import api from '../../services/api';
 
 const AdminDashboard: React.FC = () => {
+    const [stats, setStats] = useState({
+        total_users: 0,
+        total_lists: 0,
+        pending_cotacoes: 0,
+        completed_cotacoes: 0,
+    });
+    const [activityData, setActivityData] = useState({ labels: [], data: [] });
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const [statsResponse, activityResponse] = await Promise.all([
+                    api.get('/admin/dashboard-summary'),
+                    api.get('/admin/activity-summary'),
+                ]);
+                setStats(prevStats => ({ ...prevStats, ...statsResponse.data }));
+                setActivityData(activityResponse.data);
+            } catch (error) {
+                console.error('Failed to fetch dashboard data', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchData();
+    }, []);
 
     const managementOptions = [
         {
@@ -48,7 +79,52 @@ const AdminDashboard: React.FC = () => {
         <div>
             <h2 className="fs-2 mb-4">Dashboard do Administrador</h2>
 
-            <GlobalDashboard />
+            {/* Widgets de Estatísticas */}
+            <Row className="mb-4">
+                <Col sm={6} lg={3}>
+                    <Widget 
+                        title="Total de Usuários" 
+                        value={String(stats.total_users)} 
+                        icon={faUsers} 
+                        color="primary" 
+                    />
+                </Col>
+                <Col sm={6} lg={3}>
+                    <Widget 
+                        title="Total de Listas" 
+                        value={String(stats.total_lists)} 
+                        icon={faListAlt} 
+                        color="info" 
+                    />
+                </Col>
+                <Col sm={6} lg={3}>
+                    <Widget 
+                        title="Cotações Pendentes" 
+                        value={String(stats.pending_cotacoes)} 
+                        icon={faExclamationTriangle} 
+                        color="warning" 
+                    />
+                </Col>
+                <Col sm={6} lg={3}>
+                    <Widget 
+                        title="Cotações Concluídas" 
+                        value={String(stats.completed_cotacoes)} 
+                        icon={faCheckCircle} 
+                        color="success" 
+                    />
+                </Col>
+            </Row>
+
+            {/* Gráfico de Atividade */}
+            <Row className="mb-4">
+                <Col lg={12}>
+                    <Card>
+                        <Card.Body>
+                            <ActivityChart data={activityData} />
+                        </Card.Body>
+                    </Card>
+                </Col>
+            </Row>
 
             <hr className="my-4" />
 
@@ -57,10 +133,10 @@ const AdminDashboard: React.FC = () => {
             <Row className="g-4">
                 {managementOptions.map((option, index) => (
                     <Col md={6} lg={4} key={index}>
-                        <Card as={Link} to={option.link} className="h-100 text-decoration-none text-dark shadow-sm">
-                            <Card.Body className="text-center">
+                        <Card as={Link} to={option.link} className="h-100 text-decoration-none text-dark shadow-sm card-hover">
+                            <Card.Body className="text-center p-4">
                                 <i className={`fas ${option.icon} fa-3x text-primary mb-3`}></i>
-                                <Card.Title>{option.title}</Card.Title>
+                                <Card.Title as="h5">{option.title}</Card.Title>
                                 <Card.Text className="small text-muted">{option.description}</Card.Text>
                             </Card.Body>
                         </Card>

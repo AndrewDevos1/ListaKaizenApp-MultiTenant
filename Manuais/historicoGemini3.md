@@ -1,31 +1,79 @@
-# Histórico de Interação com Gemini (Sessão 3)
+# Histórico de Conversa e Issues (Gemini 3)
 
-**Objetivo da Sessão:** Iniciar a implementação das funcionalidades avançadas do administrador, conforme o `plano_de_acao_fase3.md`.
+## Resumo das Issues e Status das Funcionalidades
+
+Análise do estado atual do backend e prontidão para integração com o frontend.
 
 ---
 
-### 1. Definição do Plano de Ação (Fase 3)
+### ✅ **Funcionalidades Prontas para Conexão**
 
-- Com base na solicitação de evoluir o dashboard do admin, foi gerado um plano de ação detalhado (`plano_de_acao_fase3.md`) contemplando as seguintes frentes:
-    - **Backend:** API para criação de usuários, implementação de "Listas de Compras" (modelo e endpoints) e um endpoint de resumo para o dashboard.
-    - **Frontend:** Melhorias no dashboard, interface para criação de usuários e interface para gerenciamento de listas e suas atribuições.
-- O plano foi salvo no diretório `planejamento`.
+#### **Administrador:**
+*   **Gerenciamento de Usuários:**
+    *   `✅ Aprovar/Reprovar Novos Usuários`
+    *   `✅ Criar Novos Usuários`
+    *   `✅ Listar e Visualizar Usuários`
+*   **Gerenciamento do Inventário e Catálogo:**
+    *   `✅ Gerenciar Itens (CRUD completo)`
+    *   `✅ Gerenciar Áreas (CRUD completo)`
+    *   `✅ Gerenciar Fornecedores (CRUD completo)`
+*   **Gerenciamento de Listas e Cotações:**
+    *   `✅ Gerenciar Listas (CRUD e associação)`
+    *   `✅ Gerar Cotações`
+    *   `✅ Acompanhar Cotações`
 
-### 2. Implementação Backend - Criação de Usuário pelo Admin
+#### **Colaborador:**
+*   **Acompanhamento:**
+    *   `✅ Minhas Submissões (Histórico de Pedidos)`
+*   **Preenchimento de Listas:**
+    *   `✅ Acessar Áreas de Trabalho`
+    *   `✅ Preencher Lista de Estoque`
+    *   `✅ Submeter Lista (Gerar Pedidos)`
 
-- Iniciamos a **Ação 1.1** do plano.
-- **Serviço:** Adicionamos a função `create_user_by_admin` em `services.py`, contendo a lógica para um admin criar outros usuários (`admin` ou `colaborador`) que já nascem com o status "aprovado".
-- **Controlador:** Adicionamos o endpoint `POST /api/admin/create_user` em `controllers.py`, protegido pela rota de administrador, para expor essa funcionalidade.
+---
 
-### 3. Implementação Backend - Modelos de Lista
+### ⚠️ **Funcionalidades com Pendências**
 
-- Dando sequência ao plano, iniciamos a **Ação 1.2**.
-- **Modelos:** Modificamos o arquivo `models.py` para incluir:
-    - O novo modelo `Lista`.
-    - A tabela de associação `lista_colaborador` para o relacionamento muitos-para-muitos entre listas e usuários.
+*   **Dashboard Global (Admin):**
+    *   `⚠️ **Não está pronto.**` O frontend (`GlobalDashboard.tsx`) está tentando acessar uma rota (`/stats/dashboard`) que não existe. A rota correta é `/api/admin/dashboard-summary`. Além disso, os dados que o backend envia (`total_usuarios`, `usuarios_pendentes`) não são os mesmos que o frontend espera (`total_users`, `pending_cotacoes`, etc.). É preciso padronizar isso.
 
-### 4. Desafio Técnico e Próximos Passos
+*   **Estatísticas Pessoais (Colaborador):**
+    *   `⚠️ **Parcialmente pronto.**` A rota `/api/v1/users/stats` existe, mas a métrica de "Listas Concluídas" está com um valor fixo (`0`). A lógica para calcular isso precisa ser implementada no backend.
 
-- **Problema:** Encontramos uma dificuldade técnica para executar os comandos de migração do banco de dados (`flask db migrate`) diretamente pelo meu ambiente.
-- **Solução Proposta:** Forneci a você os comandos exatos para serem executados manualmente no seu terminal, a fim de atualizar o banco de dados com os novos modelos.
-- **Pausa:** Encerramos a sessão neste ponto, com o próximo passo sendo a aplicação manual da migração do banco de dados.
+*   **Salvar Rascunho (Colaborador):**
+    *   `❌ **Não está implementado.**` O frontend (`EstoqueLista.tsx`) tenta fazer uma chamada para `/v1/estoque/draft`, mas essa rota não existe no backend. É preciso criá-la para que a funcionalidade de salvar rascunho funcione.
+
+---
+
+## Histórico de Interações Recentes
+
+*   **Criação do `plano_de_acao_fase6.md`:** Detalhamento do plano para a criação de um dashboard focado no usuário e melhorias de usabilidade.
+*   **Implementação da Fase 6:**
+    *   **Frontend:** Criação dos dashboards de usuário e global, refatoração de rotas, e melhorias na tela de preenchimento de estoque.
+    *   **Backend:** Adição da rota `/api/v1/users/stats` e atualização do modelo `Pedido` com o campo `status`.
+*   **Correção de Problemas com Migração:** Ajuda para executar os comandos `flask db migrate` e `flask db upgrade` corretamente, resolvendo problemas de ambiente e diretório.
+*   **Criação do `issues.md`:** Documentação das tarefas concluídas e próximos passos.
+*   **Criação da branch `feature/bootstrap-template-test`:** Nova branch para testes de templates.
+*   **Melhoria do Loading Spinner:** Substituição do texto "Loading..." por um componente de spinner animado do Bootstrap em várias telas.
+*   **Análise de Funcionalidades:** Verificação do status de implementação de cada funcionalidade do backend.
+
+## Atualizações Recentes (Após 2025-10-18)
+
+*   **Implementação do Componente `Widget.tsx`:** Criado um componente reutilizável para exibir estatísticas no estilo CoreUI.
+*   **Atualização do `AdminDashboard.tsx`:** Integrado o novo componente `Widget.tsx` para exibir as estatísticas do dashboard do administrador.
+*   **Backend - Estatísticas do Dashboard Admin:**
+    *   Adicionado o campo `status` ao modelo `Cotacao` e realizada a migração do banco de dados.
+    *   Atualizada a função `get_dashboard_summary` em `services.py` para incluir a contagem de cotações pendentes e concluídas, e padronizado os nomes das chaves para o frontend.
+*   **Frontend - Gráfico de Atividade:**
+    *   Instaladas as bibliotecas `react-chartjs-2` e `chart.js` para renderização de gráficos.
+    *   Criado o componente `ActivityChart.tsx` com dados de exemplo.
+    *   Adicionada a rota `/api/admin/activity-summary` em `controllers.py`.
+    *   Implementada a lógica da função `get_activity_summary` em `services.py` para fornecer dados reais para o gráfico de atividade do admin.
+*   **Frontend - Dashboard do Colaborador:**
+    *   Atualizado `Dashboard.tsx` (User Dashboard) para usar `Widget.tsx` para estatísticas específicas do usuário.
+    *   Removido `UserStats.tsx` (funcionalidade integrada ao `Dashboard.tsx`).
+    *   Adicionada a rota `/api/v1/areas/<int:area_id>/status` em `controllers.py`.
+    *   Implementada a lógica da função `get_area_status` em `services.py` para verificar itens pendentes em uma área.
+    *   Atualizado `WorkAreasList.tsx` para exibir um indicador de status para cada área de trabalho.
+    *   Criado o componente `RecentUserSubmissions.tsx` para exibir as submissões recentes do usuário.
+    *   Integrado `RecentUserSubmissions.tsx` no `Dashboard.tsx`.

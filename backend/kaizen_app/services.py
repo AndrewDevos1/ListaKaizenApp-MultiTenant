@@ -1,9 +1,10 @@
-from .models import Usuario, UserRoles, Item, Area, Fornecedor, Estoque, Cotacao, CotacaoItem, Pedido, Lista
+from .models import Usuario, UserRoles, Item, Area, Fornecedor, Estoque, Cotacao, CotacaoStatus, CotacaoItem, Pedido, Lista
 from .extensions import db
 from . import repositories
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_jwt_extended import create_access_token
-import datetime
+from datetime import datetime, timedelta
+from sqlalchemy import func
 
 def register_user(data):
     """Cria um novo usuário no sistema."""
@@ -122,9 +123,23 @@ def update_area(area_id, data):
     return updated_area.to_dict(), 200
 
 def delete_area(area_id):
+
     if not repositories.delete_instance(Area, area_id):
+
         return {"error": "Área não encontrada"}, 404
+
     return {}, 204
+
+
+
+def get_area_status(area_id):
+
+    """Verifica se uma área possui itens com quantidade atual abaixo da mínima."""
+
+    has_pending_items = Estoque.query.filter_by(area_id=area_id).filter(Estoque.quantidade_atual < Estoque.quantidade_minima).first() is not None
+
+    return {"has_pending_items": has_pending_items}, 200
+
 
 
 def create_fornecedor(data):
@@ -338,15 +353,32 @@ def get_user_stats(user_id):
 
 def get_dashboard_summary():
     """Retorna dados agregados para o dashboard do admin."""
-    total_usuarios = Usuario.query.count()
-    usuarios_pendentes = Usuario.query.filter_by(aprovado=False).count()
-    total_listas = Lista.query.count()
-    # Outras métricas podem ser adicionadas aqui
+    total_users = Usuario.query.count()
+    pending_users = Usuario.query.filter_by(aprovado=False).count()
+    total_lists = Lista.query.count()
+    pending_cotacoes = Cotacao.query.filter_by(status=CotacaoStatus.PENDENTE).count()
+    completed_cotacoes = Cotacao.query.filter_by(status=CotacaoStatus.CONCLUIDA).count()
 
     summary_data = {
-        'total_usuarios': total_usuarios,
-        'usuarios_pendentes': usuarios_pendentes,
-        'total_listas': total_listas,
+        'total_users': total_users,
+        'pending_users': pending_users,
+        'total_lists': total_lists,
+        'pending_cotacoes': pending_cotacoes,
+        'completed_cotacoes': completed_cotacoes,
     }
     
     return summary_data, 200
+
+def get_activity_summary():
+    """Retorna o número de pedidos por dia nos últimos 7 dias."""
+    today = datetime.utcnow().date()
+    dates = [today - timedelta(days=i) for i in range(6, -1, -1)] # Últimos 7 dias
+    
+    activity_data = []
+    for d in dates:
+        count = Pedido.query.filter(func.date(Pedido.data_pedido) == d).count()
+        activity_data.append(count)
+
+    labels = [d.strftime('%d/%m') for d in dates]
+
+    return {"labels": labels, "data": activity_data}, 200

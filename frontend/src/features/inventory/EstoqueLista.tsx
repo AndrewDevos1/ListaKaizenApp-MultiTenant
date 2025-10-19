@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { Table, Button, Form, Spinner, Alert, Row, Col, Card } from 'react-bootstrap';
+import CustomSpinner from '../../components/Spinner';
 import api from '../../services/api';
 
 interface EstoqueItem {
@@ -145,7 +146,7 @@ const EstoqueLista: React.FC = () => {
                     <tbody>
                         {isLoading && !filteredEstoque.length ? (
                             <tr>
-                                <td colSpan={3} className="text-center"><Spinner animation="border" /></td>
+                                <td colSpan={3} className="text-center"><CustomSpinner /></td>
                             </tr>
                         ) : filteredEstoque.length > 0 ? filteredEstoque.map(item => (
                             <tr key={item.id} className={item.changed ? 'table-warning' : ''}>
