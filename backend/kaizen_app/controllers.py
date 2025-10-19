@@ -244,6 +244,15 @@ def update_estoque_route(estoque_id):
     response, status = services.update_estoque_item(estoque_id, data)
     return jsonify(response), status
 
+
+@api_bp.route('/users/stats', methods=['GET'])
+@jwt_required()
+def get_user_stats_route():
+    identity = get_jwt_identity()
+    user_id = identity['id']
+    response, status = services.get_user_stats(user_id)
+    return jsonify(response), status
+
 # --- Rotas de Listas ---
 @api_bp.route('/listas', methods=['POST'])
 @admin_required()
@@ -263,4 +272,11 @@ def get_listas_route():
 def assign_colaboradores_route(lista_id):
     data = request.get_json()
     response, status = services.assign_colaboradores_to_lista(lista_id, data)
+    return jsonify(response), status
+
+@api_bp.route('/listas/<int:lista_id>/unassign', methods=['DELETE'])
+@admin_required()
+def unassign_colaborador_route(lista_id):
+    data = request.get_json()
+    response, status = services.unassign_colaborador_from_lista(lista_id, data)
     return jsonify(response), status

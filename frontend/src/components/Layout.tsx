@@ -1,40 +1,48 @@
-import React from 'react';
-import { Link, Outlet } from 'react-router-dom';
 
-const Layout: React.FC = () => {
+import React from 'react';
+import { Link, Outlet, useLocation } from 'react-router-dom';
+
+const Layout: React.FC = ({ children }) => {
   const [isToggled, setIsToggled] = React.useState(false);
+  const location = useLocation();
 
   const handleToggle = () => {
     setIsToggled(!isToggled);
   };
 
+  const getLinkClass = (path) => {
+    return location.pathname === path 
+      ? "list-group-item list-group-item-action active"
+      : "list-group-item list-group-item-action";
+  };
+
   return (
     <div className={`d-flex ${isToggled ? 'toggled' : ''}`} id="wrapper">
       {/* Sidebar */}
-      <div className="bg-dark border-right" id="sidebar-wrapper">
-        <div className="sidebar-heading text-center py-4 text-light fs-4 fw-bold text-uppercase border-bottom">
+      <div id="sidebar-wrapper">
+        <div className="sidebar-heading text-center py-4 primary-text fs-4 fw-bold text-uppercase border-bottom">
           <i className="fas fa-stream me-2"></i>Kaizen
         </div>
         <div className="list-group list-group-flush my-3">
-          <Link to="/admin" className="list-group-item list-group-item-action bg-dark text-light">
+          <Link to="/admin" className={getLinkClass("/admin")}>
             <i className="fas fa-tachometer-alt me-2"></i>Dashboard
           </Link>
-          <Link to="/admin/users" className="list-group-item list-group-item-action bg-dark text-light">
+          <Link to="/admin/users" className={getLinkClass("/admin/users")}>
             <i className="fas fa-users-cog me-2"></i>Gestão de Usuários
           </Link>
-          <Link to="/admin/listas" className="list-group-item list-group-item-action bg-dark text-light">
+          <Link to="/admin/listas" className={getLinkClass("/admin/listas")}>
             <i className="fas fa-list-alt me-2"></i>Gestão de Listas
           </Link>
-          <Link to="/admin/items" className="list-group-item list-group-item-action bg-dark text-light">
+          <Link to="/admin/items" className={getLinkClass("/admin/items")}>
             <i className="fas fa-boxes me-2"></i>Itens
           </Link>
-          <Link to="/admin/areas" className="list-group-item list-group-item-action bg-dark text-light">
+          <Link to="/admin/areas" className={getLinkClass("/admin/areas")}>
             <i className="fas fa-map-marker-alt me-2"></i>Áreas
           </Link>
-          <Link to="/admin/fornecedores" className="list-group-item list-group-item-action bg-dark text-light">
+          <Link to="/admin/fornecedores" className={getLinkClass("/admin/fornecedores")}>
             <i className="fas fa-truck me-2"></i>Fornecedores
           </Link>
-          <Link to="/admin/cotacoes" className="list-group-item list-group-item-action bg-dark text-light">
+          <Link to="/admin/cotacoes" className={getLinkClass("/admin/cotacoes")}>
             <i className="fas fa-chart-pie me-2"></i>Cotações
           </Link>
         </div>
@@ -45,7 +53,7 @@ const Layout: React.FC = () => {
       <div id="page-content-wrapper">
         <nav className="navbar navbar-expand-lg navbar-light bg-transparent py-4 px-4">
           <div className="d-flex align-items-center">
-            <i className="fas fa-align-left text-muted fs-4 me-3" id="menu-toggle" onClick={handleToggle}></i>
+            <i className="fas fa-align-left primary-text fs-4 me-3" id="menu-toggle" onClick={handleToggle}></i>
             <h2 className="fs-2 m-0">Kaizen Lists</h2>
           </div>
 
@@ -70,7 +78,7 @@ const Layout: React.FC = () => {
         </nav>
 
         <div className="container-fluid px-4">
-          <Outlet />
+          {children}
         </div>
       </div>
     </div>

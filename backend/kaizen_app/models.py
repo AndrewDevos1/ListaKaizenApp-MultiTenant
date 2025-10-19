@@ -82,6 +82,11 @@ class Estoque(db.Model, SerializerMixin):
             d['item'] = self.item.to_dict()
         return d
 
+class PedidoStatus(enum.Enum):
+    PENDENTE = "PENDENTE"
+    APROVADO = "APROVADO"
+    REJEITADO = "REJEITADO"
+
 class Pedido(db.Model, SerializerMixin):
     __tablename__ = "pedidos"
     id = db.Column(db.Integer, primary_key=True)
@@ -90,6 +95,7 @@ class Pedido(db.Model, SerializerMixin):
     quantidade_solicitada = db.Column(db.Numeric(10, 2), nullable=False)
     data_pedido = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False)
+    status = db.Column(db.Enum(PedidoStatus), nullable=False, default=PedidoStatus.PENDENTE)
     item = db.relationship('Item', backref=db.backref('pedidos', lazy=True))
     fornecedor = db.relationship('Fornecedor', backref=db.backref('pedidos', lazy=True))
     usuario = db.relationship('Usuario', backref=db.backref('pedidos', lazy=True))

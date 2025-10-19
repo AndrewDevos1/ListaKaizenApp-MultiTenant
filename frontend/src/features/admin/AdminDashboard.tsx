@@ -1,37 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
-import { Card, Col, Row, Spinner, Alert } from 'react-bootstrap';
-import Layout from '../../components/Layout';
-import { api } from '../../services/api';
-
-interface SummaryData {
-  total_usuarios: number;
-  usuarios_pendentes: number;
-  total_listas: number;
-}
+import { Card, Col, Row } from 'react-bootstrap';
+import GlobalDashboard from '../dashboard/GlobalDashboard';
 
 const AdminDashboard: React.FC = () => {
-    const [summary, setSummary] = useState<SummaryData | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-
-    useEffect(() => {
-        const fetchSummary = async () => {
-            try {
-                setIsLoading(true);
-                const response = await api.get('/admin/dashboard-summary');
-                setSummary(response.data);
-                setError(null);
-            } catch (err) {
-                setError('Falha ao carregar o resumo do dashboard.');
-                console.error(err);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        fetchSummary();
-    }, []);
 
     const managementOptions = [
         {
@@ -73,62 +45,14 @@ const AdminDashboard: React.FC = () => {
     ];
 
     return (
-        <Layout>
+        <div>
             <h2 className="fs-2 mb-4">Dashboard do Administrador</h2>
 
-            {/* Resumo do Sistema */}
-            {isLoading ? (
-                <div className="text-center">
-                    <Spinner animation="border" role="status">
-                        <span className="visually-hidden">Carregando...</span>
-                    </Spinner>
-                </div>
-            ) : error ? (
-                <Alert variant="danger">{error}</Alert>
-            ) : summary && (
-                <Row className="g-4 mb-4">
-                    <Col md={4}>
-                        <Card className="p-3">
-                            <Card.Body>
-                                <div className="d-flex justify-content-between align-items-center">
-                                    <div>
-                                        <Card.Title as="h3" className="mb-0">{summary.total_usuarios}</Card.Title>
-                                        <p className="text-muted mb-0">Total de Usuários</p>
-                                    </div>
-                                    <i className="fas fa-users fa-2x text-primary"></i>
-                                </div>
-                            </Card.Body>
-                        </Card>
-                    </Col>
-                    <Col md={4}>
-                        <Card className="p-3">
-                            <Card.Body>
-                                <div className="d-flex justify-content-between align-items-center">
-                                    <div>
-                                        <Card.Title as="h3" className="mb-0">{summary.usuarios_pendentes}</Card.Title>
-                                        <p className="text-muted mb-0">Usuários Pendentes</p>
-                                    </div>
-                                    <i className="fas fa-user-clock fa-2x text-warning"></i>
-                                </div>
-                            </Card.Body>
-                        </Card>
-                    </Col>
-                    <Col md={4}>
-                        <Card className="p-3">
-                            <Card.Body>
-                                <div className="d-flex justify-content-between align-items-center">
-                                    <div>
-                                        <Card.Title as="h3" className="mb-0">{summary.total_listas}</Card.Title>
-                                        <p className="text-muted mb-0">Listas de Compras</p>
-                                    </div>
-                                    <i className="fas fa-list-alt fa-2x text-success"></i>
-                                </div>
-                            </Card.Body>
-                        </Card>
-                    </Col>
-                </Row>
-            )}
+            <GlobalDashboard />
 
+            <hr className="my-4" />
+
+            <h3 className="fs-4 mb-3">Opções de Gerenciamento</h3>
             {/* Opções de Gerenciamento */}
             <Row className="g-4">
                 {managementOptions.map((option, index) => (
@@ -143,7 +67,7 @@ const AdminDashboard: React.FC = () => {
                     </Col>
                 ))}
             </Row>
-        </Layout>
+        </div>
     );
 };
 

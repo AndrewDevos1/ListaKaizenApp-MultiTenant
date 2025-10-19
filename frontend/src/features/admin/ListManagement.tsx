@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Button, Table, Modal, Form, Spinner, Alert } from 'react-bootstrap';
+import { Button, Table, Modal, Form, Spinner, Alert, Badge } from 'react-bootstrap';
 import Layout from '../../components/Layout';
-import { api } from '../../services/api';
+import api from '../../services/api';
 
 interface Lista {
   id: number;
@@ -91,6 +91,16 @@ const ListManagement: React.FC = () => {
     }
   };
 
+  const handleUnassign = async (listaId: number, colaboradorId: number) => {
+    try {
+        await api.delete(`/api/v1/listas/${listaId}/unassign`, { data: { colaborador_id: colaboradorId } });
+        setSuccess('Colaborador desatribuído com sucesso!');
+        fetchListas(); // Recarrega a lista
+    } catch (err: any) {
+        setError(err.response?.data?.error || 'Erro ao desatribuir colaborador.');
+    }
+  };
+
   return (
     <Layout>
       <h2>Gestão de Listas de Compras</h2>
@@ -118,7 +128,13 @@ const ListManagement: React.FC = () => {
               <tr key={lista.id}>
                 <td>{lista.id}</td>
                 <td>{lista.nome}</td>
-                <td>{lista.colaboradores.map(c => c.nome).join(', ') || 'Nenhum'}</td>
+                <td>
+                  {lista.colaboradores.length > 0 ? lista.colaboradores.map(c => (
+                    <Badge key={c.id} bg="secondary" className="me-1">
+                      {c.nome} <span onClick={() => handleUnassign(lista.id, c.id)} style={{cursor: 'pointer'}}>&times;</span>
+                    </Badge>
+                  )) : 'Nenhum'}
+                </td>
                 <td>
                   <Button 
                     variant="info"

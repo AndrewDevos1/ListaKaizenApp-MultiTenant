@@ -286,21 +286,55 @@ def assign_colaboradores_to_lista(lista_id, data):
 
     colaborador_ids = data.get('colaborador_ids', [])
     if not colaborador_ids:
-        return {"error": "Nenhum colaborador fornecido."}, 400
-
-    # Limpa atribuições existentes para simplicidade
-    lista.colaboradores = []
-
-    for user_id in colaborador_ids:
-        user = repositories.get_by_id(Usuario, user_id)
-        if user and user.role == UserRoles.COLLABORATOR:
-            lista.colaboradores.append(user)
+        # Se a lista de IDs está vazia, remove todos os colaboradores
+        lista.colaboradores = []
+    else:
+        # Limpa atribuições existentes para garantir que a lista de IDs seja a nova verdade
+        lista.colaboradores = []
+        for user_id in colaborador_ids:
+            user = repositories.get_by_id(Usuario, user_id)
+            if user and user.role == UserRoles.COLLABORATOR:
+                lista.colaboradores.append(user)
     
     db.session.commit()
     
     return lista.to_dict(), 200
 
+def unassign_colaborador_from_lista(lista_id, data):
+    """Desatribui um colaborador de uma lista."""
+    lista = repositories.get_by_id(Lista, lista_id)
+    if not lista:
+        return {"error": "Lista não encontrada."}, 404
+
+    colaborador_id = data.get('colaborador_id')
+    if not colaborador_id:
+        return {"error": "ID do colaborador não fornecido."}, 400
+
+    user = repositories.get_by_id(Usuario, colaborador_id)
+    if not user:
+        return {"error": "Usuário não encontrado."}, 404
+
+    if user in lista.colaboradores:
+        lista.colaboradores.remove(user)
+        db.session.commit()
+        return {"message": "Colaborador desatribuído com sucesso."}, 200
+    else:
+        return {"error": "Colaborador não está atribuído a esta lista."}, 400
+
+
 # --- Serviços de Dashboard ---
+
+def get_user_stats(user_id):
+    """Retorna estatísticas para o dashboard de um usuário específico."""
+    pending_submissions = Pedido.query.filter_by(usuario_id=user_id, status='PENDENTE').count()
+    completed_lists = 0 # Placeholder, a lógica de "lista completa" precisa ser definida
+
+    stats_data = {
+        'pending_submissions': pending_submissions,
+        'completed_lists': completed_lists,
+    }
+    
+    return stats_data, 200
 
 def get_dashboard_summary():
     """Retorna dados agregados para o dashboard do admin."""

@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
-import { Table, Button, Form, Spinner, Alert } from 'react-bootstrap';
+import { Table, Button, Form, Spinner, Alert, Row, Col, Card } from 'react-bootstrap';
 import api from '../../services/api';
-import Layout from '../../components/Layout';
 
 interface EstoqueItem {
     id: number;
@@ -15,15 +14,18 @@ interface EstoqueItem {
         nome: string;
         unidade_medida: string;
     };
+    changed?: boolean;
 }
 
 const EstoqueLista: React.FC = () => {
     const { areaId } = useParams<{ areaId: string }>();
     const [estoque, setEstoque] = useState<EstoqueItem[]>([]);
+    const [originalEstoque, setOriginalEstoque] = useState<EstoqueItem[]>([]);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [areaName, setAreaName] = useState('');
+    const [searchTerm, setSearchTerm] = useState('');
 
     useEffect(() => {
         if (areaId) {
@@ -34,7 +36,9 @@ const EstoqueLista: React.FC = () => {
                         api.get(`/v1/areas/${areaId}/estoque`),
                         api.get(`/v1/areas/${areaId}`)
                     ]);
-                    setEstoque(estoqueRes.data);
+                    const estoqueComStatus = estoqueRes.data.map(item => ({ ...item, changed: false }));
+                    setEstoque(estoqueComStatus);
+                    setOriginalEstoque(JSON.parse(JSON.stringify(estoqueComStatus))); // Deep copy
                     setAreaName(areaRes.data.nome);
                 } catch (err) {
                     setError('Não foi possível carregar os itens de estoque.');
@@ -47,9 +51,14 @@ const EstoqueLista: React.FC = () => {
     }, [areaId]);
 
     const handleQuantityChange = (estoqueId: number, novaQuantidade: string) => {
-        const updatedEstoque = estoque.map(item => 
-            item.id === estoqueId ? { ...item, quantidade_atual: parseFloat(novaQuantidade) || 0 } : item
-        );
+        const updatedEstoque = estoque.map(item => {
+            if (item.id === estoqueId) {
+                const originalItem = originalEstoque.find(oi => oi.id === estoqueId);
+                const isChanged = originalItem?.quantidade_atual !== parseFloat(novaQuantidade);
+                return { ...item, quantidade_atual: parseFloat(novaQuantidade) || 0, changed: isChanged };
+            }
+            return item;
+        });
         setEstoque(updatedEstoque);
     };
 
@@ -60,6 +69,9 @@ const EstoqueLista: React.FC = () => {
         try {
             await api.post(`/v1/estoque/draft`, { area_id: areaId, items: estoque });
             setSuccess('Rascunho salvo com sucesso!');
+            const estoqueComStatus = estoque.map(item => ({ ...item, changed: false }));
+            setEstoque(estoqueComStatus);
+            setOriginalEstoque(JSON.parse(JSON.stringify(estoqueComStatus)));
         } catch (err) {
             setError('Falha ao salvar o rascunho.');
         } finally {
@@ -82,10 +94,44 @@ const EstoqueLista: React.FC = () => {
         }
     };
 
+    const filteredEstoque = useMemo(() => {
+        return estoque.filter(item => 
+            item.item.nome.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+    }, [estoque, searchTerm]);
+
+    const summary = useMemo(() => {
+        const totalItems = estoque.length;
+        const itemsToRequest = estoque.filter(item => item.quantidade_atual < item.quantidade_minima).length;
+        const changedItems = estoque.filter(item => item.changed).length;
+        return { totalItems, itemsToRequest, changedItems };
+    }, [estoque]);
+
     return (
-        <Layout title={`Preenchimento de Estoque: ${areaName}`}>
+        <div>
+            <h2 className="fs-2 mb-4">Preenchimento de Estoque: {areaName}</h2>
             {error && <Alert variant="danger">{error}</Alert>}
             {success && <Alert variant="success">{success}</Alert>}
+
+            <Row className="mb-3">
+                <Col md={8}>
+                    <Form.Control 
+                        type="text" 
+                        placeholder="Buscar item..." 
+                        value={searchTerm} 
+                        onChange={e => setSearchTerm(e.target.value)} 
+                    />
+                </Col>
+                <Col md={4}>
+                    <Card>
+                        <Card.Body className="p-2 text-center">
+                            <small className="text-muted">Itens a Pedir: </small><span className="fw-bold">{summary.itemsToRequest}</span> | 
+                            <small className="text-muted"> Alterados: </small><span className="fw-bold">{summary.changedItems}</span> | 
+                            <small className="text-muted"> Total: </small><span className="fw-bold">{summary.totalItems}</span>
+                        </Card.Body>
+                    </Card>
+                </Col>
+            </Row>
 
             <Form onSubmit={(e) => { e.preventDefault(); }}>
                 <Table striped bordered hover responsive>
@@ -97,12 +143,12 @@ const EstoqueLista: React.FC = () => {
                         </tr>
                     </thead>
                     <tbody>
-                        {isLoading && !estoque.length ? (
+                        {isLoading && !filteredEstoque.length ? (
                             <tr>
                                 <td colSpan={3} className="text-center"><Spinner animation="border" /></td>
                             </tr>
-                        ) : estoque.length > 0 ? estoque.map(item => (
-                            <tr key={item.id}>
+                        ) : filteredEstoque.length > 0 ? filteredEstoque.map(item => (
+                            <tr key={item.id} className={item.changed ? 'table-warning' : ''}>
                                 <td>{item.item?.nome || 'Nome não encontrado'} ({item.item?.unidade_medida})</td>
                                 <td className="text-center">{item.quantidade_minima}</td>
                                 <td>
@@ -117,13 +163,13 @@ const EstoqueLista: React.FC = () => {
                             </tr>
                         )) : (
                             <tr>
-                                <td colSpan={3} className="text-center">Nenhum item de estoque para esta área.</td>
+                                <td colSpan={3} className="text-center">Nenhum item encontrado.</td>
                             </tr>
                         )}
                     </tbody>
                 </Table>
                 <div className="d-flex justify-content-end gap-2 mt-3">
-                    <Button variant="outline-secondary" onClick={handleSaveDraft} disabled={isLoading}>
+                    <Button variant="outline-secondary" onClick={handleSaveDraft} disabled={isLoading || summary.changedItems === 0}>
                         {isLoading ? <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true"/> : 'Salvar Rascunho'}
                     </Button>
                     <Button variant="primary" onClick={handleSubmit} disabled={isLoading}>
@@ -131,7 +177,7 @@ const EstoqueLista: React.FC = () => {
                     </Button>
                 </div>
             </Form>
-        </Layout>
+        </div>
     );
 };
 

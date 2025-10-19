@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Table, Button, Alert, Badge, Spinner, Modal, Form } from 'react-bootstrap';
-import { api } from '../../services/api';
+import api from '../../services/api';
 import Layout from '../../components/Layout';
 
 interface User {

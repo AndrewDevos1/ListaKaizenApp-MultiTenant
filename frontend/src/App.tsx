@@ -1,8 +1,10 @@
+
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import Login from './features/auth/Login';
 import Register from './features/auth/Register';
 import Dashboard from './features/dashboard/Dashboard';
+import GlobalDashboard from './features/dashboard/GlobalDashboard';
 import EstoqueLista from './features/inventory/EstoqueLista';
 import MinhasSubmissoes from './features/inventory/MinhasSubmissoes';
 import GerarCotacao from './features/admin/GerarCotacao';
@@ -44,6 +46,7 @@ function App() {
               <Route path="gerar-cotacao" element={<GerarCotacao />} />
               <Route path="cotacoes" element={<CotacaoList />} />
               <Route path="cotacoes/:cotacaoId" element={<CotacaoDetail />} />
+              <Route path="dashboard" element={<GlobalDashboard />} />
             </Route>
           </Route>
 

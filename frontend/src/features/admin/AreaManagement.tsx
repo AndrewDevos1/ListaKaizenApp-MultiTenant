@@ -17,6 +17,7 @@ const AreaManagement: React.FC = () => {
     const [error, setError] = useState('');
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [areaToDelete, setAreaToDelete] = useState<Area | null>(null);
+    const [searchTerm, setSearchTerm] = useState('');
 
     const fetchAreas = async () => {
         setIsLoading(true);
@@ -89,12 +90,25 @@ const AreaManagement: React.FC = () => {
         }
     };
 
+    const filteredAreas = areas.filter(area =>
+        area.nome.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
     return (
         <Layout title="Gestão de Áreas">
             {error && <Alert variant="danger" onClose={() => setError('')} dismissible>{error}</Alert>}
             <Button variant="primary" onClick={() => handleShowModal()} className="mb-3">
                 <i className="fas fa-plus me-2"></i>Adicionar Área
             </Button>
+
+            <Form.Group className="mb-3">
+                <Form.Control
+                    type="text"
+                    placeholder="Pesquisar por nome..."
+                    value={searchTerm}
+                    onChange={e => setSearchTerm(e.target.value)}
+                />
+            </Form.Group>
 
             <Table striped bordered hover responsive>
                 <thead className="table-dark">
@@ -109,7 +123,7 @@ const AreaManagement: React.FC = () => {
                         <tr>
                             <td colSpan={3} className="text-center"><Spinner animation="border" /></td>
                         </tr>
-                    ) : areas.map(area => (
+                    ) : filteredAreas.map(area => (
                         <tr key={area.id}>
                             <td>{area.id}</td>
                             <td>{area.nome}</td>
