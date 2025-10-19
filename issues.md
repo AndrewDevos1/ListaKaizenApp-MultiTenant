@@ -35,8 +35,26 @@
   - [x] **Fase 1: Conexão das Estatísticas do Usuário:** Atualizado `Dashboard.tsx` para remover dados mockados do estado inicial das estatísticas do colaborador.
   - [x] **Fase 2: Exibição e Filtragem de Status de Pedido:** Atualizado `MinhasSubmissoes.tsx` para exibir o status de cada pedido e adicionar um filtro por status.
   - [x] **Fase 3: Implementação de "Salvar Rascunho" (Frontend):** Implementado o endpoint `/v1/estoque/draft` no backend (`controllers.py` e `services.py`). O frontend (`EstoqueLista.tsx`) já estava configurado para chamar este endpoint e exibir feedback visual.
+  - [x] **Implementação do Layout do Dashboard Administrativo:** Adicionadas todas as seções (Ações Rápidas, Status das Listas, Atividades Recentes, Indicadores de Estoque Crítico, Cotações em Andamento, Relatórios e Exportações) ao `AdminDashboard.tsx`.
+
+- **[CONCLUÍDO] Fase 8 - Frontend do Dashboard Administrativo:**
+  - [x] **Estrutura Geral e Layout:** Ajuste do `Layout.tsx` com CSS Modules e classes de estilo para o cabeçalho e barra lateral, garantindo responsividade.
+  - [x] **Componentes de Indicadores (Cards de Visão Geral):** `Widget.tsx` modificado para aceitar `link` prop; `AdminDashboard.tsx` atualizado para exibir seis widgets com links, ícones e estado `stats` expandido.
+  - [x] **Ações Rápidas (Botões):** Seção de "Ações Rápidas" atualizada com botões, links, ícones e layout responsivo com rolagem horizontal para mobile.
+  - [x] **Seção "Status das Listas":** Implementada com tabela para desktop e acordeão para mobile, incluindo botão "Ver Consolidação" e lógica de carregamento/exibição de dados.
+  - [x] **Seção "Atividades Recentes":** Implementada com `ListGroup` e lógica de carregamento/exibição de dados.
+  - [x] **Seção "Indicadores de Estoque Crítico":** Implementada com tabela para desktop e acordeão para mobile, incluindo botão "Gerar Pedido" e lógica de carregamento/exibição de dados.
+  - [x] **Seção "Cotações em Andamento":** Implementada com cards responsivos, ícone de edição e lógica de carregamento/exibição de dados.
+  - [x] **Seção "Relatórios e Exportações":** Implementada com botões de link para as respectivas funcionalidades.
 
 ## Próximos Passos Sugeridos
+
+- **Backend - Implementação de Endpoints para o Dashboard Administrativo:**
+  - [ ] **Endpoints de Resumo:** Modificar `services.get_dashboard_summary()` para incluir a contagem de "Submissões Pendentes" e "Pedidos Gerados Hoje".
+  - [ ] **Endpoint "Status das Listas":** Criar `@admin_bp.route('/list-status', methods=['GET'])` e `services.get_list_status()`.
+  - [ ] **Endpoint "Atividades Recentes":** Criar `@admin_bp.route('/recent-activities', methods=['GET'])` e `services.get_recent_activities()`.
+  - [ ] **Endpoint "Indicadores de Estoque Crítico":** Criar `@admin_bp.route('/critical-stock', methods=['GET'])` e `services.get_critical_stock()`.
+  - [ ] **Endpoint "Cotações em Andamento":** Criar `@admin_bp.route('/in-progress-cotacoes', methods=['GET'])` e `services.get_in_progress_cotacoes()`.
 
 - **Backend - Finalizando Estatísticas do Usuário:**
   - [ ] Implementar a lógica para `completed_lists` no serviço `get_user_stats`. Isso requer definir o que significa uma "lista concluída" no contexto da aplicação.
@@ -44,9 +62,8 @@
 - **Backend - Fluxo de Status do Pedido:**
   - [ ] Criar a lógica no backend para gerenciar o `status` de um `Pedido` (como ele muda de `PENDENTE` para `APROVADO` ou `REJEITADO`). Isso provavelmente exigirá novas rotas e funcionalidades para o administrador.
 
-- **Frontend - Exibir Status do Pedido:**
-  - [ ] Atualizar o componente `MinhasSubmissoes.tsx` para exibir o status de cada pedido/submissão.
-  - [ ] Adicionar a possibilidade de filtrar os pedidos por status.
+- **Refinamento de Estilos (Frontend):**
+  - [ ] Continuar o refinamento dos estilos CSS customizados para alinhar completamente o frontend com o design do CoreUI.
 
 - **Testes e Correção de Bugs:**
   - [ ] Testar de forma completa todas as novas funcionalidades implementadas.

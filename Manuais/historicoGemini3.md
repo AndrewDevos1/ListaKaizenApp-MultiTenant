@@ -91,3 +91,6 @@ Análise do estado atual do backend e prontidão para integração com o fronten
 *   **Fase 3: Implementação de "Salvar Rascunho" (Frontend):**
     *   Implementado o endpoint `/v1/estoque/draft` no backend (`controllers.py` e `services.py`).
     *   O frontend (`EstoqueLista.tsx`) já estava configurado para chamar este endpoint e exibir feedback visual.
+*   **Implementação do Layout do Dashboard Administrativo:**
+    *   Adicionada a seção "Ações Rápidas" ao `AdminDashboard.tsx`.
+    *   Adicionadas as seções "Status das Listas", "Atividades Recentes", "Indicadores de Estoque Crítico", "Cotações em Andamento" e "Relatórios e Exportações" (como placeholders) ao `AdminDashboard.tsx`.

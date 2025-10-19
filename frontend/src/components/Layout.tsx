@@ -1,8 +1,9 @@
 
 import React from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
+import styles from './Layout.module.css'; // Import the CSS module
 
-const Layout: React.FC = ({ children }) => {
+const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isToggled, setIsToggled] = React.useState(false);
   const location = useLocation();
 
@@ -10,20 +11,20 @@ const Layout: React.FC = ({ children }) => {
     setIsToggled(!isToggled);
   };
 
-  const getLinkClass = (path) => {
+  const getLinkClass = (path: string) => { // Added type for path
     return location.pathname === path 
-      ? "list-group-item list-group-item-action active"
-      : "list-group-item list-group-item-action";
+      ? `${styles.listGroupItem} ${styles.active}` // Use CSS module classes
+      : styles.listGroupItem; // Use CSS module class
   };
 
   return (
-    <div className={`d-flex ${isToggled ? 'toggled' : ''}`} id="wrapper">
+    <div className={`d-flex ${isToggled ? styles.toggled : ''} ${styles.wrapper}`}> {/* Apply wrapper class */}
       {/* Sidebar */}
-      <div id="sidebar-wrapper">
-        <div className="sidebar-heading text-center py-4 primary-text fs-4 fw-bold text-uppercase border-bottom">
+      <div className={styles.sidebarWrapper}> {/* Apply sidebarWrapper class */}
+        <div className={`${styles.sidebarHeading} text-center py-4 primary-text fs-4 fw-bold text-uppercase border-bottom`}> {/* Apply sidebarHeading class */}
           <i className="fas fa-stream me-2"></i>Kaizen
         </div>
-        <div className="list-group list-group-flush my-3">
+        <div className={`${styles.listGroup} list-group-flush my-3`}> {/* Apply listGroup class */}
           <Link to="/admin" className={getLinkClass("/admin")}>
             <i className="fas fa-tachometer-alt me-2"></i>Dashboard
           </Link>
@@ -50,19 +51,23 @@ const Layout: React.FC = ({ children }) => {
       {/* /#sidebar-wrapper */}
 
       {/* Page Content */}
-      <div id="page-content-wrapper">
-        <nav className="navbar navbar-expand-lg navbar-light bg-transparent py-4 px-4">
+      <div className={styles.pageContentWrapper}> {/* Apply pageContentWrapper class */}
+        <nav className={`${styles.navbar} navbar navbar-expand-lg navbar-light bg-transparent py-4 px-4`}> {/* Apply navbar class */}
           <div className="d-flex align-items-center">
-            <i className="fas fa-align-left primary-text fs-4 me-3" id="menu-toggle" onClick={handleToggle}></i>
+            <i className="fas fa-bars primary-text fs-4 me-3" id="menu-toggle" onClick={handleToggle}></i>
             <h2 className="fs-2 m-0">Kaizen Lists</h2>
           </div>
 
           <button className="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
             <span className="navbar-toggler-icon"></span>
           </button>
-
           <div className="collapse navbar-collapse" id="navbarSupportedContent">
             <ul className="navbar-nav ms-auto mb-2 mb-lg-0">
+              <li className="nav-item dropdown">
+                <a className="nav-link dropdown-toggle second-text fw-bold" href="#!" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                  <i className="fas fa-bell me-2"></i> {/* Notification Icon */}
+                </a>
+              </li>
               <li className="nav-item dropdown">
                 <a className="nav-link dropdown-toggle second-text fw-bold" href="#!" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                   <i className="fas fa-user me-2"></i>Administrador
