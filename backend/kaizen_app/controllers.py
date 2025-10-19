@@ -187,6 +187,13 @@ def delete_fornecedor_route(fornecedor_id):
 # --- Rotas de Estoque ---
 
 
+@api_bp.route('/estoque/draft', methods=['POST'])
+@jwt_required()
+def save_estoque_draft_route():
+    data = request.get_json()
+    response, status = services.save_estoque_draft(data)
+    return jsonify(response), status
+
 # --- Rotas de Pedidos ---
 
 @api_bp.route('/pedidos/me', methods=['GET'])

@@ -77,3 +77,17 @@ Análise do estado atual do backend e prontidão para integração com o fronten
     *   Atualizado `WorkAreasList.tsx` para exibir um indicador de status para cada área de trabalho.
     *   Criado o componente `RecentUserSubmissions.tsx` para exibir as submissões recentes do usuário.
     *   Integrado `RecentUserSubmissions.tsx` no `Dashboard.tsx`.
+*   **Resolução de Erros de Compilação (Frontend):**
+    *   Identificado e corrigido o erro `Module not found` para as bibliotecas Font Awesome.
+    *   Instruído o usuário a executar `& npm install @fortawesome/fontawesome-svg-core @fortawesome/free-solid-svg-icons @fortawesome/react-fontawesome` na pasta `frontend`, prefixando com `&` para resolver o erro de interpretação do PowerShell.
+    *   Confirmação de que a instalação foi bem-sucedida e o frontend agora compila sem os erros de módulo do Font Awesome.
+
+## Atualizações Recentes (Após 2025-10-19 - Fase 7 Frontend)
+
+*   **Fase 1: Conexão das Estatísticas do Usuário:**
+    *   Atualizado `Dashboard.tsx` para remover dados mockados do estado inicial das estatísticas do colaborador.
+*   **Fase 2: Exibição e Filtragem de Status de Pedido:**
+    *   Atualizado `MinhasSubmissoes.tsx` para exibir o status de cada pedido e adicionar um filtro por status.
+*   **Fase 3: Implementação de "Salvar Rascunho" (Frontend):**
+    *   Implementado o endpoint `/v1/estoque/draft` no backend (`controllers.py` e `services.py`).
+    *   O frontend (`EstoqueLista.tsx`) já estava configurado para chamar este endpoint e exibir feedback visual.

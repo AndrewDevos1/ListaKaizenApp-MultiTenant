@@ -8,10 +8,7 @@ import api from '../../services/api';
 import Spinner from '../../components/Spinner';
 
 const Dashboard: React.FC = () => {
-  const [stats, setStats] = useState({
-    pending_submissions: 0,
-    completed_lists: 0,
-  });
+  const [stats, setStats] = useState<any>({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

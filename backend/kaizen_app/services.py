@@ -245,6 +245,30 @@ def update_estoque_item(estoque_id, data):
         estoque_item.quantidade_atual = data['quantidade_atual']
         db.session.commit()
         return {"message": "Estoque atualizado"}, 200
+
+def save_estoque_draft(data):
+    """Salva um rascunho do estoque de uma área."""
+    area_id = data.get('area_id')
+    items_data = data.get('items', [])
+
+    if not area_id:
+        return {"error": "ID da área não fornecido."}, 400
+
+    for item_data in items_data:
+        estoque_id = item_data.get('id')
+        quantidade_atual = item_data.get('quantidade_atual')
+
+        if estoque_id is None or quantidade_atual is None:
+            continue # Pula itens mal formatados
+
+        estoque_item = repositories.get_by_id(Estoque, estoque_id)
+        if estoque_item and estoque_item.area_id == area_id:
+            estoque_item.quantidade_atual = quantidade_atual
+            db.session.add(estoque_item)
+    
+    db.session.commit()
+    return {"message": "Rascunho do estoque salvo com sucesso!"}, 200
+
 def get_pedidos_by_user(user_id):
     """Retorna todos os pedidos feitos por um usuário."""
     pedidos = Pedido.query.filter_by(usuario_id=user_id).order_by(Pedido.data_pedido.desc()).all()

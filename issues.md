@@ -31,14 +31,15 @@
   - [x] Atualizado `WorkAreasList.tsx` para exibir um indicador de status para cada área de trabalho.
   - [x] Criado o componente `RecentUserSubmissions.tsx` para exibir as submissões recentes do usuário.
   - [x] Integrado `RecentUserSubmissions.tsx` no `Dashboard.tsx`.
+  - [x] **Resolução de Erros de Compilação (Frontend):** Instalação bem-sucedida das bibliotecas Font Awesome.
+  - [x] **Fase 1: Conexão das Estatísticas do Usuário:** Atualizado `Dashboard.tsx` para remover dados mockados do estado inicial das estatísticas do colaborador.
+  - [x] **Fase 2: Exibição e Filtragem de Status de Pedido:** Atualizado `MinhasSubmissoes.tsx` para exibir o status de cada pedido e adicionar um filtro por status.
+  - [x] **Fase 3: Implementação de "Salvar Rascunho" (Frontend):** Implementado o endpoint `/v1/estoque/draft` no backend (`controllers.py` e `services.py`). O frontend (`EstoqueLista.tsx`) já estava configurado para chamar este endpoint e exibir feedback visual.
 
 ## Próximos Passos Sugeridos
 
 - **Backend - Finalizando Estatísticas do Usuário:**
   - [ ] Implementar a lógica para `completed_lists` no serviço `get_user_stats`. Isso requer definir o que significa uma "lista concluída" no contexto da aplicação.
-
-- **Frontend - Conectando Estatísticas do Usuário:**
-  - [ ] Remover os dados de exemplo de `UserStats.tsx` e conectá-lo ao endpoint `/api/v1/users/stats`.
 
 - **Backend - Fluxo de Status do Pedido:**
   - [ ] Criar a lógica no backend para gerenciar o `status` de um `Pedido` (como ele muda de `PENDENTE` para `APROVADO` ou `REJEITADO`). Isso provavelmente exigirá novas rotas e funcionalidades para o administrador.
@@ -46,9 +47,6 @@
 - **Frontend - Exibir Status do Pedido:**
   - [ ] Atualizar o componente `MinhasSubmissoes.tsx` para exibir o status de cada pedido/submissão.
   - [ ] Adicionar a possibilidade de filtrar os pedidos por status.
-
-- **Backend - Salvar Rascunho (Colaborador):**
-  - [ ] Implementar o endpoint `/v1/estoque/draft` no backend para permitir que o colaborador salve rascunhos de suas listas.
 
 - **Testes e Correção de Bugs:**
   - [ ] Testar de forma completa todas as novas funcionalidades implementadas.
