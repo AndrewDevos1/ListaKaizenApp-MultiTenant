@@ -54,7 +54,6 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       <div className={styles.pageContentWrapper}> {/* Apply pageContentWrapper class */}
         <nav className={`${styles.navbar} navbar navbar-expand-lg navbar-light bg-transparent py-4 px-4`}> {/* Apply navbar class */}
           <div className="d-flex align-items-center">
-            <i className="fas fa-bars primary-text fs-4 me-3" id="menu-toggle" onClick={handleToggle}></i>
             <h2 className="fs-2 m-0">Kaizen Lists</h2>
           </div>
 
@@ -66,6 +65,10 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
               <li className="nav-item dropdown">
                 <a className="nav-link dropdown-toggle second-text fw-bold" href="#!" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                   <i className="fas fa-bell me-2"></i> {/* Notification Icon */}
+                  <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                    99+
+                    <span className="visually-hidden">unread messages</span>
+                  </span>
                 </a>
               </li>
               <li className="nav-item dropdown">
@@ -85,6 +88,10 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         <div className="container-fluid px-4">
           {children}
         </div>
+      </div>
+      {/* Mobile Menu Toggle (Bottom Right) */}
+      <div className={styles.mobileMenuToggle} onClick={handleToggle}>
+        <i className="fas fa-bars fs-4"></i>
       </div>
     </div>
   );
