@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(.venv/Scripts/python.exe create_user_simple.py)",
+      "Bash(rm -rf frontend/node_modules/.cache)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import HomePage from './pages/HomePage';
 import Login from './features/auth/Login';
 import Register from './features/auth/Register';
 import Dashboard from './features/dashboard/Dashboard';
@@ -25,19 +26,28 @@ function App() {
   return (
     <Router>
         <Routes>
+          {/* Rota Pública - HomePage */}
+          <Route path="/" element={<HomePage />} />
+
+          {/* Rotas de Autenticação */}
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          
-          {/* Envolve todas as rotas protegidas com o componente de Layout */}
+
+          {/* Dashboard Admin CoreUI - Rota Especial */}
           <Route element={<Layout />}>
-            <Route path="/" element={<ProtectedRoute />}>
+            <Route path="/dashboardadm" element={<AdminRoute />}>
+              <Route index element={<AdminDashboard />} />
+            </Route>
+
+            {/* Rotas protegidas de usuário colaborador */}
+            <Route path="/dashboard" element={<ProtectedRoute />}>
               <Route index element={<Dashboard />} />
-              <Route path="me/submissions" element={<MinhasSubmissoes />} />
+              <Route path="submissions" element={<MinhasSubmissoes />} />
               <Route path="area/:areaId/estoque" element={<EstoqueLista />} />
             </Route>
 
+            {/* Rotas administrativas */}
             <Route path="/admin" element={<AdminRoute />}>
-              <Route index element={<AdminDashboard />} />
               <Route path="users" element={<UserManagement />} />
               <Route path="listas" element={<ListManagement />} />
               <Route path="items" element={<ItemManagement />} />
@@ -46,7 +56,7 @@ function App() {
               <Route path="gerar-cotacao" element={<GerarCotacao />} />
               <Route path="cotacoes" element={<CotacaoList />} />
               <Route path="cotacoes/:cotacaoId" element={<CotacaoDetail />} />
-              <Route path="dashboard" element={<GlobalDashboard />} />
+              <Route path="global" element={<GlobalDashboard />} />
             </Route>
           </Route>
 

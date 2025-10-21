@@ -1,0 +1,447 @@
+/*
+ * Admin Dashboard - CoreUI Inspired Styles
+ * Design moderno com cards coloridos, gradientes e animações
+ */
+
+/* Container principal */
+.dashboardWrapper {
+  background: #f0f3f8;
+  min-height: 100vh;
+  padding: 2rem 0;
+}
+
+/* Header do dashboard */
+.dashboardHeader {
+  margin-bottom: 2rem;
+  animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dashboardTitle {
+  font-size: 2.25rem;
+  font-weight: 700;
+  color: #2c3e50;
+  margin-bottom: 0.5rem;
+}
+
+.dashboardSubtitle {
+  color: #7f8c8d;
+  font-size: 1rem;
+}
+
+/* Grid de Widgets */
+.widgetsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+/* Widget Card (Métrica) */
+.widgetCard {
+  background: white;
+  border-radius: 15px;
+  padding: 1.75rem;
+  box-shadow: 0 2px 15px rgba(0, 0, 0, 0.08);
+  border: none;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  animation: slideUp 0.5s ease-out backwards;
+}
+
+/* Delay nas animações dos cards */
+.widgetCard:nth-child(1) { animation-delay: 0.1s; }
+.widgetCard:nth-child(2) { animation-delay: 0.2s; }
+.widgetCard:nth-child(3) { animation-delay: 0.3s; }
+.widgetCard:nth-child(4) { animation-delay: 0.4s; }
+.widgetCard:nth-child(5) { animation-delay: 0.5s; }
+.widgetCard:nth-child(6) { animation-delay: 0.6s; }
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.widgetCard:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+}
+
+/* Efeito de barra lateral colorida no card */
+.widgetCard::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 5px;
+  background: var(--widget-color);
+  border-radius: 15px 0 0 15px;
+}
+
+/* Variantes de cor para widgets */
+.widgetBlue {
+  --widget-color: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.widgetGreen {
+  --widget-color: linear-gradient(135deg, #2eb85c 0%, #1e8449 100%);
+}
+
+.widgetYellow {
+  --widget-color: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
+}
+
+.widgetRed {
+  --widget-color: linear-gradient(135deg, #e55353 0%, #c0392b 100%);
+}
+
+.widgetPurple {
+  --widget-color: linear-gradient(135deg, #6f42c1 0%, #5a32a3 100%);
+}
+
+.widgetOrange {
+  --widget-color: linear-gradient(135deg, #f9b115 0%, #e67e22 100%);
+}
+
+/* Conteúdo do widget */
+.widgetHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1.5rem;
+}
+
+.widgetIcon {
+  width: 60px;
+  height: 60px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.75rem;
+  color: white;
+  background: var(--widget-color);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+}
+
+.widgetInfo {
+  flex: 1;
+  text-align: right;
+}
+
+.widgetTitle {
+  font-size: 0.9rem;
+  color: #7f8c8d;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 0.5rem;
+}
+
+.widgetValue {
+  font-size: 2.25rem;
+  font-weight: 700;
+  color: #2c3e50;
+  line-height: 1;
+}
+
+.widgetFooter {
+  padding-top: 1rem;
+  border-top: 1px solid #e9ecef;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.widgetTrend {
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.widgetTrend.positive {
+  color: #2eb85c;
+}
+
+.widgetTrend.negative {
+  color: #e55353;
+}
+
+.widgetLink {
+  color: #667eea;
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: color 0.3s;
+}
+
+.widgetLink:hover {
+  color: #764ba2;
+}
+
+/* Seção de ações rápidas */
+.quickActionsSection {
+  margin-bottom: 2rem;
+}
+
+.sectionTitle {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #2c3e50;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.sectionTitle i {
+  color: #667eea;
+}
+
+.quickActionsGrid {
+  display: flex;
+  gap: 1rem;
+  overflow-x: auto;
+  padding-bottom: 0.5rem;
+  scroll-behavior: smooth;
+}
+
+.quickActionBtn {
+  background: white;
+  border: 2px solid #e9ecef;
+  border-radius: 12px;
+  padding: 1rem 1.5rem;
+  min-width: 200px;
+  text-align: center;
+  font-weight: 600;
+  color: #2c3e50;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.quickActionBtn:hover {
+  border-color: #667eea;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.3);
+}
+
+.quickActionBtn i {
+  display: block;
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+/* Card de seção */
+.sectionCard {
+  background: white;
+  border-radius: 15px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 15px rgba(0, 0, 0, 0.08);
+  border: none;
+  margin-bottom: 2rem;
+}
+
+.sectionCardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #f0f3f8;
+}
+
+.sectionCardTitle {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #2c3e50;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sectionCardTitle i {
+  color: #667eea;
+}
+
+/* Tabela customizada */
+.customTable {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 0.5rem;
+}
+
+.customTable thead th {
+  background: #f8f9fa;
+  color: #6c757d;
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 1rem;
+  border: none;
+}
+
+.customTable tbody tr {
+  background: white;
+  transition: all 0.3s ease;
+}
+
+.customTable tbody tr:hover {
+  background: #f8f9fa;
+  transform: scale(1.01);
+}
+
+.customTable tbody td {
+  padding: 1rem;
+  border-top: 1px solid #e9ecef;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.customTable tbody td:first-child {
+  border-left: 1px solid #e9ecef;
+  border-radius: 8px 0 0 8px;
+}
+
+.customTable tbody td:last-child {
+  border-right: 1px solid #e9ecef;
+  border-radius: 0 8px 8px 0;
+}
+
+/* Badge de status */
+.badge {
+  display: inline-block;
+  padding: 0.35rem 0.75rem;
+  border-radius: 50px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.badgeSuccess {
+  background: #d4edda;
+  color: #155724;
+}
+
+.badgeWarning {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.badgeDanger {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.badgeInfo {
+  background: #d1ecf1;
+  color: #0c5460;
+}
+
+/* Loading state */
+.loadingSpinner {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 3rem;
+}
+
+.spinner {
+  width: 50px;
+  height: 50px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #667eea;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Empty state */
+.emptyState {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: #7f8c8d;
+}
+
+.emptyState i {
+  font-size: 4rem;
+  color: #bdc3c7;
+  margin-bottom: 1rem;
+}
+
+/* Gráfico de atividades */
+.chartCard {
+  height: 350px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .dashboardTitle {
+    font-size: 1.75rem;
+  }
+
+  .widgetsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .quickActionsGrid {
+    flex-direction: column;
+  }
+
+  .quickActionBtn {
+    min-width: 100%;
+  }
+
+  .widgetValue {
+    font-size: 1.75rem;
+  }
+
+  .customTable {
+    font-size: 0.9rem;
+  }
+}
+
+/* Animação de pulse para números que mudam */
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+.pulseNumber {
+  animation: pulse 0.5s ease-out;
+}

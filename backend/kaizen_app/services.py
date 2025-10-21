@@ -38,7 +38,7 @@ def authenticate_user(data):
 
     # A identidade do token pode ser o ID do usuário e seu role
     identity = {"id": user.id, "role": user.role.value}
-    expires = datetime.timedelta(days=1)
+    expires = timedelta(days=1)
     access_token = create_access_token(identity=identity, expires_delta=expires)
     
     return {"access_token": access_token}, 200

@@ -17,8 +17,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const token = localStorage.getItem('accessToken');
         if (token) {
             try {
-                const decodedUser = jwtDecode(token);
-                setUser(decodedUser);
+                const decodedUser: any = jwtDecode(token);
+                setUser(decodedUser.sub); // Extrai apenas {id, role} do campo 'sub'
             } catch (error) {
                 console.error("Token inválido", error);
                 localStorage.removeItem('accessToken');
@@ -29,8 +29,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const login = (token: string) => {
         localStorage.setItem('accessToken', token);
         try {
-            const decodedUser = jwtDecode(token);
-            setUser(decodedUser);
+            const decodedUser: any = jwtDecode(token);
+            console.log('🔑 Auth Login Called:', decodedUser);
+            console.log('👤 User extraído do sub:', decodedUser.sub);
+            setUser(decodedUser.sub); // Extrai apenas {id, role} do campo 'sub'
         } catch (error) {
             console.error("Erro ao decodificar token", error);
         }

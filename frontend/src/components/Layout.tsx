@@ -3,9 +3,12 @@ import React from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import styles from './Layout.module.css'; // Import the CSS module
 
-const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+const Layout: React.FC = () => {
   const [isToggled, setIsToggled] = React.useState(false);
   const location = useLocation();
+
+  // DIAGNÓSTICO: Verificar se Layout está renderizando
+  console.log('🏗️ Layout renderizado - location:', location.pathname);
 
   const handleToggle = () => {
     setIsToggled(!isToggled);
@@ -86,7 +89,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         </nav>
 
         <div className="container-fluid px-4">
-          {children}
+          <Outlet />
         </div>
       </div>
       {/* Mobile Menu Toggle (Bottom Right) */}

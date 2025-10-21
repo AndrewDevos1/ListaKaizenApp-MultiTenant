@@ -149,3 +149,4 @@ git push -u origin feat/admin-dashboard-login
 - Criar testes automatizados (E2E + unit).
 
 Fim do registro.
+Este é um placeholder para o histórico de mudanças.
