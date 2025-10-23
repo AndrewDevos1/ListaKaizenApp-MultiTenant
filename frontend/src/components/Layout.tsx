@@ -1,87 +1,347 @@
 
 import React from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
-import styles from './Layout.module.css'; // Import the CSS module
+import styles from './Layout.module.css';
+
+interface MenuItem {
+  path: string;
+  icon: string;
+  label: string;
+  ariaLabel: string;
+}
+
+interface MenuGroup {
+  title: string;
+  items: MenuItem[];
+}
 
 const Layout: React.FC = () => {
   const [isToggled, setIsToggled] = React.useState(false);
+  const [isCollapsed, setIsCollapsed] = React.useState(
+    localStorage.getItem('sidebarCollapsed') === 'true'
+  );
+  const [searchTerm, setSearchTerm] = React.useState('');
+  const [notificationCount] = React.useState(3);
   const location = useLocation();
+  const searchInputRef = React.useRef<HTMLInputElement>(null);
 
-  // DIAGNÓSTICO: Verificar se Layout está renderizando
-  console.log('🏗️ Layout renderizado - location:', location.pathname);
+  // Menu structure with groups
+  const menuGroups: MenuGroup[] = [
+    {
+      title: 'VISÃO GERAL',
+      items: [
+        { path: '/admin', icon: 'fa-tachometer-alt', label: 'Dashboard', ariaLabel: 'Dashboard - Painel de controle' }
+      ]
+    },
+    {
+      title: 'CONTEÚDO',
+      items: [
+        { path: '/admin/listas', icon: 'fa-list-alt', label: 'Gestão de Listas', ariaLabel: 'Gestão de Listas' },
+        { path: '/admin/items', icon: 'fa-boxes', label: 'Itens', ariaLabel: 'Itens' }
+      ]
+    },
+    {
+      title: 'GESTÃO',
+      items: [
+        { path: '/admin/users', icon: 'fa-users-cog', label: 'Gestão de Usuários', ariaLabel: 'Gestão de Usuários' },
+        { path: '/admin/areas', icon: 'fa-map-marker-alt', label: 'Áreas', ariaLabel: 'Áreas' },
+        { path: '/admin/fornecedores', icon: 'fa-truck', label: 'Fornecedores', ariaLabel: 'Fornecedores' }
+      ]
+    },
+    {
+      title: 'OPERAÇÕES',
+      items: [
+        { path: '/admin/cotacoes', icon: 'fa-chart-pie', label: 'Cotações', ariaLabel: 'Cotações' }
+      ]
+    }
+  ];
+
+  // Filter menu items based on search
+  const filteredGroups = React.useMemo(() => {
+    if (!searchTerm) return menuGroups;
+
+    return menuGroups
+      .map(group => ({
+        ...group,
+        items: group.items.filter(item =>
+          item.label.toLowerCase().includes(searchTerm.toLowerCase())
+        )
+      }))
+      .filter(group => group.items.length > 0);
+  }, [searchTerm, menuGroups]);
 
   const handleToggle = () => {
     setIsToggled(!isToggled);
   };
 
-  const getLinkClass = (path: string) => { // Added type for path
-    return location.pathname === path 
-      ? `${styles.listGroupItem} ${styles.active}` // Use CSS module classes
-      : styles.listGroupItem; // Use CSS module class
+  const handleCollapse = () => {
+    const newCollapsed = !isCollapsed;
+    setIsCollapsed(newCollapsed);
+    localStorage.setItem('sidebarCollapsed', newCollapsed.toString());
+  };
+
+  const handleOverlayClick = () => {
+    setIsToggled(false);
+  };
+
+  const handleLinkClick = () => {
+    if (window.innerWidth < 768) {
+      setIsToggled(false);
+    }
+  };
+
+  const handleSearchFocus = () => {
+    if (isCollapsed && window.innerWidth >= 768) {
+      setIsCollapsed(false);
+      localStorage.setItem('sidebarCollapsed', 'false');
+    }
+  };
+
+  // Close sidebar with Escape key
+  React.useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isToggled) {
+        setIsToggled(false);
+      }
+    };
+
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [isToggled]);
+
+  // Keyboard shortcut "/" to focus search
+  React.useEffect(() => {
+    const handleSlashKey = (e: KeyboardEvent) => {
+      if (e.key === '/' && !['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement).tagName)) {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    };
+
+    document.addEventListener('keydown', handleSlashKey);
+    return () => document.removeEventListener('keydown', handleSlashKey);
+  }, []);
+
+  // Touch gesture handlers (swipe)
+  const [touchStart, setTouchStart] = React.useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = React.useState<number | null>(null);
+
+  const minSwipeDistance = 50;
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+
+    if (isRightSwipe && touchStart < 50) {
+      // Swipe from left edge
+      setIsToggled(true);
+    } else if (isLeftSwipe && isToggled) {
+      // Swipe to close
+      setIsToggled(false);
+    }
+  };
+
+  const getLinkClass = (path: string) => {
+    return location.pathname === path
+      ? `${styles.listGroupItem} ${styles.active}`
+      : styles.listGroupItem;
   };
 
   return (
-    <div className={`d-flex ${isToggled ? styles.toggled : ''} ${styles.wrapper}`}> {/* Apply wrapper class */}
+    <div
+      className={`d-flex ${isToggled ? styles.toggled : ''} ${isCollapsed ? styles.collapsed : ''} ${styles.wrapper}`}
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onTouchEnd}
+    >
+      {/* Overlay (mobile only) */}
+      <div
+        className={styles.overlay}
+        onClick={handleOverlayClick}
+        aria-hidden="true"
+      />
+
       {/* Sidebar */}
-      <div className={styles.sidebarWrapper}> {/* Apply sidebarWrapper class */}
-        <div className={`${styles.sidebarHeading} text-center py-4 primary-text fs-4 fw-bold text-uppercase border-bottom`}> {/* Apply sidebarHeading class */}
-          <i className="fas fa-stream me-2"></i>Kaizen
+      <nav
+        className={styles.sidebarWrapper}
+        role="navigation"
+        aria-label="Menu principal"
+      >
+        {/* Header */}
+        <div className={styles.sidebarHeader}>
+          <div className={styles.sidebarHeading}>
+            <i className="fas fa-stream me-2" aria-hidden="true"></i>
+            {!isCollapsed && <span>Kaizen</span>}
+          </div>
+
+          {/* Collapse button (desktop only) */}
+          <button
+            className={styles.collapseButton}
+            onClick={handleCollapse}
+            aria-label={isCollapsed ? 'Expandir menu' : 'Recolher menu'}
+            title={isCollapsed ? 'Expandir menu' : 'Recolher menu'}
+          >
+            <i className={`fas ${isCollapsed ? 'fa-chevron-right' : 'fa-chevron-left'}`} aria-hidden="true"></i>
+          </button>
         </div>
-        <div className={`${styles.listGroup} list-group-flush my-3`}> {/* Apply listGroup class */}
-          <Link to="/admin" className={getLinkClass("/admin")}>
-            <i className="fas fa-tachometer-alt me-2"></i>Dashboard
-          </Link>
-          <Link to="/admin/users" className={getLinkClass("/admin/users")}>
-            <i className="fas fa-users-cog me-2"></i>Gestão de Usuários
-          </Link>
-          <Link to="/admin/listas" className={getLinkClass("/admin/listas")}>
-            <i className="fas fa-list-alt me-2"></i>Gestão de Listas
-          </Link>
-          <Link to="/admin/items" className={getLinkClass("/admin/items")}>
-            <i className="fas fa-boxes me-2"></i>Itens
-          </Link>
-          <Link to="/admin/areas" className={getLinkClass("/admin/areas")}>
-            <i className="fas fa-map-marker-alt me-2"></i>Áreas
-          </Link>
-          <Link to="/admin/fornecedores" className={getLinkClass("/admin/fornecedores")}>
-            <i className="fas fa-truck me-2"></i>Fornecedores
-          </Link>
-          <Link to="/admin/cotacoes" className={getLinkClass("/admin/cotacoes")}>
-            <i className="fas fa-chart-pie me-2"></i>Cotações
-          </Link>
+
+        {/* Search bar */}
+        {!isCollapsed && (
+          <div className={styles.searchContainer}>
+            <i className="fas fa-search" aria-hidden="true"></i>
+            <input
+              ref={searchInputRef}
+              type="text"
+              placeholder="Buscar página... (/)"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              onFocus={handleSearchFocus}
+              className={styles.searchInput}
+              aria-label="Buscar no menu"
+            />
+            {searchTerm && (
+              <button
+                className={styles.searchClear}
+                onClick={() => setSearchTerm('')}
+                aria-label="Limpar busca"
+              >
+                <i className="fas fa-times" aria-hidden="true"></i>
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Menu groups */}
+        <div className={styles.menuContainer}>
+          {filteredGroups.map((group, groupIndex) => (
+            <div key={groupIndex} className={styles.menuGroup}>
+              {!isCollapsed && (
+                <div className={styles.menuGroupTitle}>{group.title}</div>
+              )}
+              {isCollapsed && groupIndex > 0 && (
+                <div className={styles.menuDivider}></div>
+              )}
+              <div className={styles.menuGroupItems}>
+                {group.items.map((item, itemIndex) => (
+                  <Link
+                    key={itemIndex}
+                    to={item.path}
+                    className={getLinkClass(item.path)}
+                    onClick={handleLinkClick}
+                    aria-label={item.ariaLabel}
+                    title={isCollapsed ? item.label : undefined}
+                  >
+                    <i className={`fas ${item.icon}`} aria-hidden="true"></i>
+                    {!isCollapsed && <span className={styles.menuItemText}>{item.label}</span>}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
-      </div>
-      {/* /#sidebar-wrapper */}
+
+        {/* Footer */}
+        <div className={styles.sidebarFooter}>
+          {!isCollapsed ? (
+            <>
+              <div className={styles.footerVersion}>v1.0.0</div>
+              <a href="#!" className={styles.footerLink}>
+                <i className="fas fa-question-circle me-2" aria-hidden="true"></i>
+                Ajuda & Suporte
+              </a>
+              <a href="#!" className={styles.footerLink}>
+                <i className="fas fa-cog me-2" aria-hidden="true"></i>
+                Configurações
+              </a>
+            </>
+          ) : (
+            <>
+              <a href="#!" className={styles.footerIconLink} title="Ajuda & Suporte">
+                <i className="fas fa-question-circle" aria-hidden="true"></i>
+              </a>
+              <a href="#!" className={styles.footerIconLink} title="Configurações">
+                <i className="fas fa-cog" aria-hidden="true"></i>
+              </a>
+            </>
+          )}
+        </div>
+      </nav>
 
       {/* Page Content */}
-      <div className={styles.pageContentWrapper}> {/* Apply pageContentWrapper class */}
-        <nav className={`${styles.navbar} navbar navbar-expand-lg navbar-light bg-transparent py-4 px-4`}> {/* Apply navbar class */}
+      <div className={styles.pageContentWrapper}>
+        <nav className={`${styles.navbar} navbar navbar-expand-lg navbar-light bg-transparent py-4 px-4`} role="banner">
           <div className="d-flex align-items-center">
             <h2 className="fs-2 m-0">Kaizen Lists</h2>
           </div>
 
-          <button className="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+          <button
+            className="navbar-toggler"
+            type="button"
+            data-bs-toggle="collapse"
+            data-bs-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent"
+            aria-expanded="false"
+            aria-label="Alternar navegação"
+          >
             <span className="navbar-toggler-icon"></span>
           </button>
           <div className="collapse navbar-collapse" id="navbarSupportedContent">
             <ul className="navbar-nav ms-auto mb-2 mb-lg-0">
               <li className="nav-item dropdown">
-                <a className="nav-link dropdown-toggle second-text fw-bold" href="#!" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                  <i className="fas fa-bell me-2"></i> {/* Notification Icon */}
-                  <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                    99+
-                    <span className="visually-hidden">unread messages</span>
-                  </span>
+                <a
+                  className="nav-link second-text fw-bold position-relative"
+                  href="#!"
+                  id="notificationDropdown"
+                  role="button"
+                  data-bs-toggle="dropdown"
+                  aria-expanded="false"
+                  aria-label={`Notificações, ${notificationCount} não lidas`}
+                >
+                  <i className="fas fa-bell" aria-hidden="true"></i>
+                  {notificationCount > 0 && (
+                    <span className={styles.notificationBadge} aria-live="polite">
+                      {notificationCount > 99 ? '99+' : notificationCount}
+                    </span>
+                  )}
                 </a>
+                <ul className="dropdown-menu dropdown-menu-end" aria-labelledby="notificationDropdown">
+                  <li><h6 className="dropdown-header">Notificações</h6></li>
+                  <li><a className="dropdown-item" href="#!">Nova submissão pendente</a></li>
+                  <li><a className="dropdown-item" href="#!">Cotação aprovada</a></li>
+                  <li><a className="dropdown-item" href="#!">Usuário cadastrado</a></li>
+                  <li><hr className="dropdown-divider" /></li>
+                  <li><a className="dropdown-item text-center" href="#!">Ver todas</a></li>
+                </ul>
               </li>
               <li className="nav-item dropdown">
-                <a className="nav-link dropdown-toggle second-text fw-bold" href="#!" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                  <i className="fas fa-user me-2"></i>Administrador
+                <a
+                  className="nav-link dropdown-toggle second-text fw-bold"
+                  href="#!"
+                  id="userDropdown"
+                  role="button"
+                  data-bs-toggle="dropdown"
+                  aria-expanded="false"
+                  aria-label="Menu do usuário"
+                >
+                  <i className="fas fa-user me-2" aria-hidden="true"></i>Administrador
                 </a>
-                <ul className="dropdown-menu" aria-labelledby="navbarDropdown">
-                  <li><a className="dropdown-item" href="#!">Perfil</a></li>
-                  <li><a className="dropdown-item" href="#!">Configurações</a></li>
-                  <li><Link className="dropdown-item" to="/login">Logout</Link></li>
+                <ul className="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                  <li><a className="dropdown-item" href="#!"><i className="fas fa-user-circle me-2"></i>Perfil</a></li>
+                  <li><a className="dropdown-item" href="#!"><i className="fas fa-cog me-2"></i>Configurações</a></li>
+                  <li><hr className="dropdown-divider" /></li>
+                  <li><Link className="dropdown-item text-danger" to="/login"><i className="fas fa-sign-out-alt me-2"></i>Logout</Link></li>
                 </ul>
               </li>
             </ul>
@@ -92,10 +352,16 @@ const Layout: React.FC = () => {
           <Outlet />
         </div>
       </div>
+
       {/* Mobile Menu Toggle (Bottom Right) */}
-      <div className={styles.mobileMenuToggle} onClick={handleToggle}>
-        <i className="fas fa-bars fs-4"></i>
-      </div>
+      <button
+        className={styles.mobileMenuToggle}
+        onClick={handleToggle}
+        aria-label={isToggled ? 'Fechar menu' : 'Abrir menu'}
+        aria-expanded={isToggled}
+      >
+        <i className={`fas ${isToggled ? 'fa-times' : 'fa-bars'} fs-4`} aria-hidden="true"></i>
+      </button>
     </div>
   );
 };

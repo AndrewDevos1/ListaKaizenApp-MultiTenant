@@ -34,3 +34,29 @@ No início de cada nova sessão de chat, seu primeiro passo, após ler este docu
 ---
 
 O cumprimento rigoroso destas diretrizes é essencial para uma colaboração produtiva com este usuário.
+
+sabe se por perguntado: "onde paramos?"
+
+● Olá! Não tenho acesso ao histórico das nossas conversas anteriores, então não sei exatamente onde paramos. Cada sessão começa      
+  do zero para mim.
+
+  Mas posso ver o estado atual do seu projeto:
+
+  - Branch atual: feature/menu-redesign
+  - Últimos commits: Parece que você estava trabalhando em melhorias de UX/UI, reposicionamento do menu hamburger, e
+  implementação do Admin Dashboard (Fase 8)
+  - Arquivos não rastreados: CLAUDE.md e desktop.ini
+
+  Pelo histórico de commits, vocês estavam trabalhando no frontend, especificamente em:
+  1. Reorganização do React
+  2. Reposicionamento do menu hamburger
+  3. Melhorias de UX
+  4. Interface do Admin Dashboard
+
+  Você poderia me contar em que estava trabalhando ou o que gostaria de continuar? Posso ajudar com:
+  - Continuar alguma feature que estava desenvolvendo
+  - Revisar o código atual
+  - Implementar novas funcionalidades
+  - Resolver algum problema que encontrou
+
+  O que você precisa?

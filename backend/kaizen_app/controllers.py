@@ -215,7 +215,7 @@ def submit_pedidos_route():
 
 
 # --- Rotas de Cotações ---
-@api_bp.route('/cotacoes', methods=['POST'])
+@api_bp.route('/v1/cotacoes', methods=['POST'])
 @admin_required()
 def create_quotation_route():
     data = request.get_json()
@@ -224,13 +224,13 @@ def create_quotation_route():
     response, status = services.create_quotation_from_stock(data['fornecedor_id'])
     return jsonify(response), status
 
-@api_bp.route('/cotacoes', methods=['GET'])
+@api_bp.route('/v1/cotacoes', methods=['GET'])
 @admin_required()
 def get_cotacoes_route():
     cotacoes, _ = services.get_all_cotacoes()
     return jsonify([c.to_dict() for c in cotacoes])
 
-@api_bp.route('/cotacoes/<int:cotacao_id>', methods=['GET'])
+@api_bp.route('/v1/cotacoes/<int:cotacao_id>', methods=['GET'])
 @admin_required()
 def get_cotacao_route(cotacao_id):
     cotacao, _ = services.get_cotacao_by_id(cotacao_id)
@@ -238,7 +238,7 @@ def get_cotacao_route(cotacao_id):
         return jsonify({"error": "Cotação não encontrada"}), 404
     return jsonify(cotacao.to_dict())
 
-@api_bp.route('/cotacao-items/<int:item_id>', methods=['PUT'])
+@api_bp.route('/v1/cotacao-items/<int:item_id>', methods=['PUT'])
 @admin_required()
 def update_cotacao_item_price_route(item_id):
     data = request.get_json()
