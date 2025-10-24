@@ -17,6 +17,10 @@ import ItemManagement from './features/admin/ItemManagement';
 import AdminDashboard from './features/admin/AdminDashboard';
 import UserManagement from './features/admin/UserManagement';
 import ListManagement from './features/admin/ListManagement';
+import CriarLista from './features/admin/CriarLista';
+import ListasCompras from './features/admin/ListasCompras';
+import GerenciarUsuarios from './features/admin/GerenciarUsuarios';
+import Configuracoes from './features/admin/Configuracoes';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
 import Layout from './components/Layout';
@@ -48,8 +52,13 @@ function App() {
 
             {/* Rotas administrativas */}
             <Route path="/admin" element={<AdminRoute />}>
+              <Route index element={<AdminDashboard />} />
+              <Route path="gerenciar-usuarios" element={<GerenciarUsuarios />} />
+              <Route path="configuracoes" element={<Configuracoes />} />
               <Route path="users" element={<UserManagement />} />
               <Route path="listas" element={<ListManagement />} />
+              <Route path="lista-tarefas" element={<CriarLista />} />
+              <Route path="listas-compras" element={<ListasCompras />} />
               <Route path="items" element={<ItemManagement />} />
               <Route path="areas" element={<AreaManagement />} />
               <Route path="fornecedores" element={<FornecedorManagement />} />

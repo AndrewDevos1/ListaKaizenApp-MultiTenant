@@ -1,0 +1,292 @@
+/*
+ * Listas de Compras - Gerenciamento
+ */
+
+/* Container principal */
+.pageWrapper {
+  background: #f0f3f8;
+  min-height: 100vh;
+  padding: 2rem 0;
+}
+
+/* Header da página */
+.pageHeader {
+  margin-bottom: 2rem;
+  animation: fadeIn 0.5s ease-out;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.backButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #667eea;
+  text-decoration: none;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.backButton:hover {
+  background: rgba(102, 126, 234, 0.1);
+  color: #5568d3;
+  transform: translateX(-4px);
+}
+
+.pageTitle {
+  font-size: 2.25rem;
+  font-weight: 700;
+  color: #2c3e50;
+  margin-bottom: 0.5rem;
+}
+
+.pageSubtitle {
+  color: #7f8c8d;
+  font-size: 1rem;
+  margin-bottom: 0;
+}
+
+.addButton {
+  padding: 0.75rem 1.5rem;
+  font-weight: 600;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(46, 184, 92, 0.3);
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.addButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(46, 184, 92, 0.4);
+}
+
+/* Grid de listas */
+.listasGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 2rem;
+  margin-top: 2rem;
+}
+
+/* Card de lista */
+.listaCard {
+  background: white;
+  border-radius: 15px;
+  padding: 0;
+  border: none;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: slideUp 0.5s ease-out backwards;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.listaCard:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+}
+
+/* Card de criar nova lista */
+.cardCriar {
+  border: 3px dashed #2eb85c;
+  background: linear-gradient(135deg, #f0fff4 0%, #e6f7ed 100%);
+  cursor: pointer;
+  text-align: center;
+  padding: 2rem;
+  min-height: 320px;
+  justify-content: center;
+}
+
+.cardCriar:hover {
+  border-color: #1e7e34;
+  background: linear-gradient(135deg, #e6f7ed 0%, #d4f1dd 100%);
+}
+
+.cardIconWrapper {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+}
+
+.cardIconLarge {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #2eb85c 0%, #1e7e34 100%);
+  color: white;
+  font-size: 3rem;
+  box-shadow: 0 4px 15px rgba(46, 184, 92, 0.3);
+}
+
+/* Card de lista existente */
+.cardLista {
+  border-left: 5px solid #f9b115;
+  min-height: 280px;
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 1.5rem 1rem;
+  background: linear-gradient(135deg, #fff8e6 0%, #fff 100%);
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.cardIcon {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #f9b115 0%, #f76707 100%);
+  color: white;
+  font-size: 1.5rem;
+  box-shadow: 0 2px 8px rgba(249, 177, 21, 0.3);
+}
+
+.cardActions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.actionButton {
+  padding: 0.5rem;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  color: #667eea;
+}
+
+.actionButton:hover {
+  background: rgba(102, 126, 234, 0.1);
+  color: #5568d3;
+  transform: scale(1.1);
+}
+
+.deleteButton {
+  color: #e55353;
+}
+
+.deleteButton:hover {
+  background: rgba(229, 83, 83, 0.1);
+  color: #d32f2f;
+}
+
+/* Conteúdo do card */
+.cardContent {
+  flex: 1;
+  padding: 1.5rem;
+}
+
+.cardTitulo {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #2c3e50;
+  margin-bottom: 0.75rem;
+}
+
+.cardDescricao {
+  color: #7f8c8d;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  margin-bottom: 1rem;
+}
+
+.cardInfo {
+  display: flex;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.infoItem {
+  color: #7f8c8d;
+  font-size: 0.9rem;
+}
+
+.infoItem strong {
+  color: #2c3e50;
+  font-weight: 700;
+}
+
+/* Footer do card */
+.cardFooter {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid #f0f0f0;
+  background: #fafafa;
+}
+
+.cardButton {
+  width: 100%;
+  padding: 0.75rem;
+  font-weight: 600;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.cardButton:hover {
+  transform: translateY(-2px);
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .pageTitle {
+    font-size: 1.75rem;
+  }
+
+  .listasGrid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .pageHeader {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .addButton {
+    width: 100%;
+  }
+
+  .cardCriar {
+    min-height: 250px;
+  }
+
+  .cardIconLarge {
+    width: 80px;
+    height: 80px;
+    font-size: 2.5rem;
+  }
+}

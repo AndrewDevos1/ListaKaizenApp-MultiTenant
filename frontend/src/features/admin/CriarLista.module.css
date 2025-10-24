@@ -1,0 +1,233 @@
+/*
+ * Criar Lista - Página com 4 opções
+ */
+
+/* Container principal */
+.pageWrapper {
+  background: #f0f3f8;
+  min-height: 100vh;
+  padding: 2rem 0;
+}
+
+/* Header da página */
+.pageHeader {
+  margin-bottom: 2rem;
+  animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.backButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #667eea;
+  text-decoration: none;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.backButton:hover {
+  background: rgba(102, 126, 234, 0.1);
+  color: #5568d3;
+  transform: translateX(-4px);
+}
+
+.pageTitle {
+  font-size: 2.25rem;
+  font-weight: 700;
+  color: #2c3e50;
+  margin-bottom: 0.5rem;
+}
+
+.pageSubtitle {
+  color: #7f8c8d;
+  font-size: 1rem;
+  margin-bottom: 0;
+}
+
+/* Grid de opções */
+.opcoesGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+  margin-top: 2rem;
+}
+
+/* Card de opção */
+.cardLink {
+  text-decoration: none;
+  color: inherit;
+}
+
+.opcaoCard {
+  background: white;
+  border-radius: 15px;
+  padding: 2rem;
+  border: none;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  min-height: 250px;
+  display: flex;
+  flex-direction: column;
+  animation: slideUp 0.5s ease-out backwards;
+}
+
+/* Delay nas animações dos cards */
+.opcaoCard:nth-child(1) { animation-delay: 0.1s; }
+.opcaoCard:nth-child(2) { animation-delay: 0.2s; }
+.opcaoCard:nth-child(3) { animation-delay: 0.3s; }
+.opcaoCard:nth-child(4) { animation-delay: 0.4s; }
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.opcaoCard:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+}
+
+/* Barra lateral colorida */
+.opcaoCard::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  background: var(--card-color);
+  border-radius: 15px 0 0 15px;
+}
+
+/* Variantes de cor */
+.cardBlue {
+  --card-color: #667eea;
+}
+
+.cardBlue .cardIcon {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.cardGreen {
+  --card-color: #2eb85c;
+}
+
+.cardGreen .cardIcon {
+  background: linear-gradient(135deg, #2eb85c 0%, #1e7e34 100%);
+}
+
+.cardOrange {
+  --card-color: #f9b115;
+}
+
+.cardOrange .cardIcon {
+  background: linear-gradient(135deg, #f9b115 0%, #f76707 100%);
+}
+
+.cardPurple {
+  --card-color: #6f42c1;
+}
+
+.cardPurple .cardIcon {
+  background: linear-gradient(135deg, #6f42c1 0%, #5a32a3 100%);
+}
+
+/* Ícone do card */
+.cardIcon {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 2rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+/* Conteúdo do card */
+.cardContent {
+  flex: 1;
+}
+
+.cardTitulo {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #2c3e50;
+  margin-bottom: 0.75rem;
+}
+
+.cardDescricao {
+  color: #7f8c8d;
+  font-size: 1rem;
+  line-height: 1.6;
+  margin-bottom: 0;
+}
+
+/* Footer do card */
+.cardFooter {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e9ecef;
+}
+
+.cardAction {
+  color: var(--card-color);
+  font-weight: 600;
+  font-size: 1rem;
+  transition: all 0.2s ease;
+}
+
+.opcaoCard:hover .cardAction {
+  transform: translateX(5px);
+  display: inline-block;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .pageTitle {
+    font-size: 1.75rem;
+  }
+
+  .opcoesGrid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .opcaoCard {
+    min-height: 200px;
+  }
+
+  .cardIcon {
+    width: 60px;
+    height: 60px;
+    font-size: 1.5rem;
+  }
+
+  .cardTitulo {
+    font-size: 1.25rem;
+  }
+}

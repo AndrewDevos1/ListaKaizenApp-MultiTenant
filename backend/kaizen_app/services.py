@@ -360,6 +360,39 @@ def unassign_colaborador_from_lista(lista_id, data):
     else:
         return {"error": "Colaborador não está atribuído a esta lista."}, 400
 
+def update_lista(lista_id, data):
+    """Atualiza nome e/ou descrição de uma lista."""
+    lista = repositories.get_by_id(Lista, lista_id)
+    if not lista:
+        return {"error": "Lista não encontrada."}, 404
+
+    # Validar se nome já existe (se estiver sendo alterado)
+    if 'nome' in data and data['nome'] != lista.nome:
+        existing = Lista.query.filter_by(nome=data['nome']).first()
+        if existing:
+            return {"error": "Já existe uma lista com esse nome."}, 400
+
+    # Atualizar campos
+    if 'nome' in data:
+        lista.nome = data['nome']
+    if 'descricao' in data:
+        lista.descricao = data['descricao']
+
+    db.session.commit()
+    return lista.to_dict(), 200
+
+def delete_lista(lista_id):
+    """Deleta uma lista e suas associações com colaboradores."""
+    lista = repositories.get_by_id(Lista, lista_id)
+    if not lista:
+        return {"error": "Lista não encontrada."}, 404
+
+    # O relacionamento many-to-many será limpo automaticamente
+    db.session.delete(lista)
+    db.session.commit()
+
+    return {"message": "Lista deletada com sucesso."}, 200
+
 
 # --- Serviços de Dashboard ---
 

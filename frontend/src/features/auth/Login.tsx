@@ -18,7 +18,7 @@
  * - Hover: Elevação do card e botões
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Container, Row, Col, Card, Form, Button, Alert } from 'react-bootstrap';
 import { useAuth } from '../../context/AuthContext';
@@ -28,10 +28,20 @@ import styles from './Login.module.css';
 const Login: React.FC = () => {
     const [email, setEmail] = useState('');
     const [senha, setSenha] = useState('');
+    const [rememberMe, setRememberMe] = useState(false);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
     const { login } = useAuth();
+
+    // Carregar email salvo ao montar o componente
+    useEffect(() => {
+        const savedEmail = localStorage.getItem('rememberedEmail');
+        if (savedEmail) {
+            setEmail(savedEmail);
+            setRememberMe(true);
+        }
+    }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -41,8 +51,28 @@ const Login: React.FC = () => {
         try {
             const response = await api.post('/auth/login', { email, senha });
 
+            // Salvar/remover email do localStorage baseado em "Lembrar-me"
+            if (rememberMe) {
+                localStorage.setItem('rememberedEmail', email);
+            } else {
+                localStorage.removeItem('rememberedEmail');
+            }
+
             // Atualiza o AuthContext com o token
             login(response.data.access_token);
+
+            // Configurar timeout de sessão (verificar configuração ou usar padrão de 30 minutos)
+            const configTimeout = localStorage.getItem('configSessionTimeout');
+            const timeoutMinutes = configTimeout ? parseInt(configTimeout, 10) : 30;
+            const sessionTimeout = timeoutMinutes * 60 * 1000; // converter minutos para ms
+            const expiryTime = Date.now() + sessionTimeout;
+            localStorage.setItem('sessionExpiry', expiryTime.toString());
+
+            console.log('⏰ Timeout de sessão configurado:', {
+                minutos: timeoutMinutes,
+                milliseconds: sessionTimeout,
+                expiraEm: new Date(expiryTime).toLocaleString(),
+            });
 
             // Decode token to get user role and redirect accordingly
             const tokenPayload = JSON.parse(atob(response.data.access_token.split('.')[1]));
@@ -133,6 +163,8 @@ const Login: React.FC = () => {
                                             type="checkbox"
                                             id="rememberMe"
                                             label="Lembrar-me"
+                                            checked={rememberMe}
+                                            onChange={(e) => setRememberMe(e.target.checked)}
                                             disabled={loading}
                                         />
                                         <a href="#!" className={styles.forgotLink}>

@@ -14,6 +14,11 @@
 .dashboardHeader {
   margin-bottom: 2rem;
   animation: fadeIn 0.5s ease-out;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
 }
 
 @keyframes fadeIn {
@@ -119,6 +124,10 @@
 
 .widgetOrange {
   --widget-color: linear-gradient(135deg, #f9b115 0%, #e67e22 100%);
+}
+
+.widgetGray {
+  --widget-color: linear-gradient(135deg, #95a5a6 0%, #7f8c8d 100%);
 }
 
 /* Conteúdo do widget */
@@ -444,4 +453,80 @@
 
 .pulseNumber {
   animation: pulse 0.5s ease-out;
+}
+
+/* ================================
+   DRAG AND DROP STYLES
+   ================================ */
+
+.dragHandle {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  color: rgba(0, 0, 0, 0.3);
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  z-index: 10;
+}
+
+.dragHandle:hover {
+  color: rgba(0, 0, 0, 0.6);
+  background: rgba(0, 0, 0, 0.1);
+  transform: scale(1.1);
+}
+
+.dragHandle:active {
+  cursor: grabbing;
+}
+
+/* Indicador visual ao arrastar */
+.widgetCard:active {
+  cursor: grabbing;
+  opacity: 0.8;
+}
+
+/* Ajuste de posição do widget card para acomodar o drag handle */
+.widgetCard {
+  position: relative;
+}
+
+/* ================================
+   EDIT MODE BUTTON
+   ================================ */
+
+.editModeButton {
+  padding: 0.75rem 1.5rem;
+  font-weight: 600;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.editModeButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.editModeButton:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Responsividade do botão */
+@media (max-width: 768px) {
+  .editModeButton {
+    width: 100%;
+    justify-content: center;
+  }
 }

@@ -1,6 +1,7 @@
 
 import React from 'react';
-import { Link, Outlet, useLocation } from 'react-router-dom';
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import styles from './Layout.module.css';
 
 interface MenuItem {
@@ -21,8 +22,9 @@ const Layout: React.FC = () => {
     localStorage.getItem('sidebarCollapsed') === 'true'
   );
   const [searchTerm, setSearchTerm] = React.useState('');
-  const [notificationCount] = React.useState(3);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { logout } = useAuth();
   const searchInputRef = React.useRef<HTMLInputElement>(null);
 
   // Menu structure with groups
@@ -52,6 +54,14 @@ const Layout: React.FC = () => {
       title: 'OPERAÇÕES',
       items: [
         { path: '/admin/cotacoes', icon: 'fa-chart-pie', label: 'Cotações', ariaLabel: 'Cotações' }
+      ]
+    },
+    {
+      title: 'CONFIGURAÇÕES',
+      items: [
+        { path: '/admin/configuracoes', icon: 'fa-cog', label: 'Configurações', ariaLabel: 'Configurações do sistema' },
+        { path: '/admin/mudar-senha', icon: 'fa-key', label: 'Mudar Senha', ariaLabel: 'Mudar senha' },
+        { path: '/logout', icon: 'fa-sign-out-alt', label: 'Sair', ariaLabel: 'Sair do sistema' }
       ]
     }
   ];
@@ -144,13 +154,19 @@ const Layout: React.FC = () => {
     const isLeftSwipe = distance > minSwipeDistance;
     const isRightSwipe = distance < -minSwipeDistance;
 
-    if (isRightSwipe && touchStart < 50) {
-      // Swipe from left edge
+    if (isLeftSwipe && touchStart > window.innerWidth - 50) {
+      // Swipe from right edge (open sidebar)
       setIsToggled(true);
-    } else if (isLeftSwipe && isToggled) {
-      // Swipe to close
+    } else if (isRightSwipe && isToggled) {
+      // Swipe to the right (close sidebar)
       setIsToggled(false);
     }
+  };
+
+  // Handle logout
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
   };
 
   const getLinkClass = (path: string) => {
@@ -193,7 +209,7 @@ const Layout: React.FC = () => {
             aria-label={isCollapsed ? 'Expandir menu' : 'Recolher menu'}
             title={isCollapsed ? 'Expandir menu' : 'Recolher menu'}
           >
-            <i className={`fas ${isCollapsed ? 'fa-chevron-right' : 'fa-chevron-left'}`} aria-hidden="true"></i>
+            <i className={`fas ${isCollapsed ? 'fa-chevron-left' : 'fa-chevron-right'}`} aria-hidden="true"></i>
           </button>
         </div>
 
@@ -234,19 +250,42 @@ const Layout: React.FC = () => {
                 <div className={styles.menuDivider}></div>
               )}
               <div className={styles.menuGroupItems}>
-                {group.items.map((item, itemIndex) => (
-                  <Link
-                    key={itemIndex}
-                    to={item.path}
-                    className={getLinkClass(item.path)}
-                    onClick={handleLinkClick}
-                    aria-label={item.ariaLabel}
-                    title={isCollapsed ? item.label : undefined}
-                  >
-                    <i className={`fas ${item.icon}`} aria-hidden="true"></i>
-                    {!isCollapsed && <span className={styles.menuItemText}>{item.label}</span>}
-                  </Link>
-                ))}
+                {group.items.map((item, itemIndex) => {
+                  // Tratamento especial para o item "Sair" (logout)
+                  if (item.path === '/logout') {
+                    return (
+                      <button
+                        key={itemIndex}
+                        className={styles.listGroupItem}
+                        onClick={() => {
+                          handleLinkClick();
+                          handleLogout();
+                        }}
+                        aria-label={item.ariaLabel}
+                        title={isCollapsed ? item.label : undefined}
+                        style={{ width: '100%', textAlign: 'left', border: 'none', background: 'none' }}
+                      >
+                        <i className={`fas ${item.icon}`} aria-hidden="true"></i>
+                        {!isCollapsed && <span className={styles.menuItemText}>{item.label}</span>}
+                      </button>
+                    );
+                  }
+
+                  // Renderização normal para outros itens
+                  return (
+                    <Link
+                      key={itemIndex}
+                      to={item.path}
+                      className={getLinkClass(item.path)}
+                      onClick={handleLinkClick}
+                      aria-label={item.ariaLabel}
+                      title={isCollapsed ? item.label : undefined}
+                    >
+                      <i className={`fas ${item.icon}`} aria-hidden="true"></i>
+                      {!isCollapsed && <span className={styles.menuItemText}>{item.label}</span>}
+                    </Link>
+                  );
+                })}
               </div>
             </div>
           ))}
@@ -281,86 +320,21 @@ const Layout: React.FC = () => {
 
       {/* Page Content */}
       <div className={styles.pageContentWrapper}>
-        <nav className={`${styles.navbar} navbar navbar-expand-lg navbar-light bg-transparent py-4 px-4`} role="banner">
-          <div className="d-flex align-items-center">
-            <h2 className="fs-2 m-0">Kaizen Lists</h2>
-          </div>
-
-          <button
-            className="navbar-toggler"
-            type="button"
-            data-bs-toggle="collapse"
-            data-bs-target="#navbarSupportedContent"
-            aria-controls="navbarSupportedContent"
-            aria-expanded="false"
-            aria-label="Alternar navegação"
-          >
-            <span className="navbar-toggler-icon"></span>
-          </button>
-          <div className="collapse navbar-collapse" id="navbarSupportedContent">
-            <ul className="navbar-nav ms-auto mb-2 mb-lg-0">
-              <li className="nav-item dropdown">
-                <a
-                  className="nav-link second-text fw-bold position-relative"
-                  href="#!"
-                  id="notificationDropdown"
-                  role="button"
-                  data-bs-toggle="dropdown"
-                  aria-expanded="false"
-                  aria-label={`Notificações, ${notificationCount} não lidas`}
-                >
-                  <i className="fas fa-bell" aria-hidden="true"></i>
-                  {notificationCount > 0 && (
-                    <span className={styles.notificationBadge} aria-live="polite">
-                      {notificationCount > 99 ? '99+' : notificationCount}
-                    </span>
-                  )}
-                </a>
-                <ul className="dropdown-menu dropdown-menu-end" aria-labelledby="notificationDropdown">
-                  <li><h6 className="dropdown-header">Notificações</h6></li>
-                  <li><a className="dropdown-item" href="#!">Nova submissão pendente</a></li>
-                  <li><a className="dropdown-item" href="#!">Cotação aprovada</a></li>
-                  <li><a className="dropdown-item" href="#!">Usuário cadastrado</a></li>
-                  <li><hr className="dropdown-divider" /></li>
-                  <li><a className="dropdown-item text-center" href="#!">Ver todas</a></li>
-                </ul>
-              </li>
-              <li className="nav-item dropdown">
-                <a
-                  className="nav-link dropdown-toggle second-text fw-bold"
-                  href="#!"
-                  id="userDropdown"
-                  role="button"
-                  data-bs-toggle="dropdown"
-                  aria-expanded="false"
-                  aria-label="Menu do usuário"
-                >
-                  <i className="fas fa-user me-2" aria-hidden="true"></i>Administrador
-                </a>
-                <ul className="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
-                  <li><a className="dropdown-item" href="#!"><i className="fas fa-user-circle me-2"></i>Perfil</a></li>
-                  <li><a className="dropdown-item" href="#!"><i className="fas fa-cog me-2"></i>Configurações</a></li>
-                  <li><hr className="dropdown-divider" /></li>
-                  <li><Link className="dropdown-item text-danger" to="/login"><i className="fas fa-sign-out-alt me-2"></i>Logout</Link></li>
-                </ul>
-              </li>
-            </ul>
-          </div>
-        </nav>
-
         <div className="container-fluid px-4">
           <Outlet />
         </div>
       </div>
 
-      {/* Mobile Menu Toggle (Bottom Right) */}
+      {/* Sidebar Tab/Handle (Orelha) */}
       <button
-        className={styles.mobileMenuToggle}
+        className={styles.sidebarTab}
         onClick={handleToggle}
         aria-label={isToggled ? 'Fechar menu' : 'Abrir menu'}
         aria-expanded={isToggled}
       >
-        <i className={`fas ${isToggled ? 'fa-times' : 'fa-bars'} fs-4`} aria-hidden="true"></i>
+        <i className={`fas fa-chevron-left`} aria-hidden="true"></i>
+        <span className={styles.sidebarTabText}>Menu</span>
+        <i className={`fas fa-grip-lines-vertical`} aria-hidden="true" style={{ fontSize: '0.875rem', opacity: 0.7 }}></i>
       </button>
     </div>
   );

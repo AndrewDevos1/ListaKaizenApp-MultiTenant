@@ -1,0 +1,344 @@
+/*
+ * Configurações - Página de configurações do sistema
+ */
+
+/* Container principal */
+.pageWrapper {
+  background: #f0f3f8;
+  min-height: 100vh;
+  padding: 2rem 0;
+}
+
+/* Header da página */
+.pageHeader {
+  margin-bottom: 2rem;
+  animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.backButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #667eea;
+  text-decoration: none;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.backButton:hover {
+  background: rgba(102, 126, 234, 0.1);
+  color: #5568d3;
+  transform: translateX(-4px);
+}
+
+.pageTitle {
+  font-size: 2.25rem;
+  font-weight: 700;
+  color: #2c3e50;
+  margin-bottom: 0.5rem;
+}
+
+.pageSubtitle {
+  color: #7f8c8d;
+  font-size: 1rem;
+  margin-bottom: 0;
+}
+
+/* Card de configuração */
+.configCard {
+  background: white;
+  border-radius: 15px;
+  padding: 2rem;
+  border: none;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+  animation: slideUp 0.5s ease-out backwards;
+  margin-bottom: 1.5rem;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.configCard:hover {
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+}
+
+/* Header do card */
+.cardHeader {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #e9ecef;
+}
+
+.cardIcon {
+  width: 50px;
+  height: 50px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  color: white;
+  background: linear-gradient(135deg, #95a5a6 0%, #7f8c8d 100%);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+}
+
+.cardTitle {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #2c3e50;
+  margin: 0;
+}
+
+.cardDescription {
+  color: #7f8c8d;
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+/* Formulário */
+.formGroup {
+  margin-bottom: 1.5rem;
+}
+
+.formLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 0.75rem;
+  font-size: 1rem;
+}
+
+.formLabel svg {
+  color: #95a5a6;
+  font-size: 1rem;
+}
+
+.formControl {
+  border: 2px solid #e9ecef;
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+}
+
+.formControl:focus {
+  border-color: #95a5a6;
+  box-shadow: 0 0 0 0.2rem rgba(149, 165, 166, 0.25);
+}
+
+.helpText {
+  font-size: 0.875rem;
+  color: #7f8c8d;
+  margin-top: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.helpText svg {
+  color: #95a5a6;
+}
+
+/* Botões de ação */
+.actionButtons {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 2px solid #e9ecef;
+}
+
+.saveButton {
+  background: linear-gradient(135deg, #95a5a6 0%, #7f8c8d 100%);
+  border: none;
+  color: white;
+  font-weight: 600;
+  padding: 0.75rem 2rem;
+  border-radius: 10px;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(149, 165, 166, 0.3);
+}
+
+.saveButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(149, 165, 166, 0.4);
+}
+
+.cancelButton {
+  background: white;
+  border: 2px solid #e9ecef;
+  color: #7f8c8d;
+  font-weight: 600;
+  padding: 0.75rem 2rem;
+  border-radius: 10px;
+  transition: all 0.3s ease;
+}
+
+.cancelButton:hover {
+  background: #f8f9fa;
+  border-color: #dee2e6;
+}
+
+/* Alert de sucesso */
+.successAlert {
+  border: none;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #2eb85c 0%, #1e8449 100%);
+  color: white;
+  padding: 1rem 1.5rem;
+  margin-bottom: 1.5rem;
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.successAlert svg {
+  margin-right: 0.5rem;
+}
+
+/* Input Range (slider) */
+.rangeContainer {
+  margin-top: 1rem;
+}
+
+.rangeValue {
+  display: inline-block;
+  background: linear-gradient(135deg, #95a5a6 0%, #7f8c8d 100%);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 1.25rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 2px 10px rgba(149, 165, 166, 0.3);
+}
+
+input[type="range"] {
+  width: 100%;
+  height: 8px;
+  border-radius: 5px;
+  background: #e9ecef;
+  outline: none;
+  -webkit-appearance: none;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #95a5a6 0%, #7f8c8d 100%);
+  cursor: pointer;
+  box-shadow: 0 2px 10px rgba(149, 165, 166, 0.5);
+  transition: all 0.3s ease;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #95a5a6 0%, #7f8c8d 100%);
+  cursor: pointer;
+  box-shadow: 0 2px 10px rgba(149, 165, 166, 0.5);
+  border: none;
+  transition: all 0.3s ease;
+}
+
+input[type="range"]::-moz-range-thumb:hover {
+  transform: scale(1.2);
+}
+
+/* Ações do usuário */
+.userActions {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+}
+
+.userActionButton {
+  flex: 1;
+  min-width: 200px;
+  padding: 0.875rem 1.5rem;
+  border-radius: 10px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  border-width: 2px;
+}
+
+.userActionButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .pageTitle {
+    font-size: 1.75rem;
+  }
+
+  .configCard {
+    padding: 1.5rem;
+  }
+
+  .actionButtons {
+    flex-direction: column;
+  }
+
+  .saveButton,
+  .cancelButton {
+    width: 100%;
+  }
+
+  .userActions {
+    flex-direction: column;
+  }
+
+  .userActionButton {
+    width: 100%;
+    min-width: auto;
+  }
+}

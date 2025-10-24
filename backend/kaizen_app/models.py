@@ -146,6 +146,7 @@ class Lista(db.Model, SerializerMixin):
     __tablename__ = "listas"
     id = db.Column(db.Integer, primary_key=True)
     nome = db.Column(db.String(100), nullable=False, unique=True)
+    descricao = db.Column(db.String(255), nullable=True)
     data_criacao = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     # Relacionamento muitos-para-muitos com os usuários (colaboradores)
     colaboradores = db.relationship('Usuario', secondary=lista_colaborador,

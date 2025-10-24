@@ -299,3 +299,18 @@ def unassign_colaborador_route(lista_id):
     data = request.get_json()
     response, status = services.unassign_colaborador_from_lista(lista_id, data)
     return jsonify(response), status
+
+@api_bp.route('/listas/<int:lista_id>', methods=['PUT'])
+@admin_required()
+def update_lista_route(lista_id):
+    """Atualiza uma lista existente (nome e/ou descrição)."""
+    data = request.get_json()
+    response, status = services.update_lista(lista_id, data)
+    return jsonify(response), status
+
+@api_bp.route('/listas/<int:lista_id>', methods=['DELETE'])
+@admin_required()
+def delete_lista_route(lista_id):
+    """Deleta uma lista permanentemente."""
+    response, status = services.delete_lista(lista_id)
+    return jsonify(response), status

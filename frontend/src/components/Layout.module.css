@@ -10,12 +10,12 @@
   transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1), margin 0.35s cubic-bezier(0.4, 0, 0.2, 1);
   background: linear-gradient(180deg, #2c3e50 0%, #34495e 100%);
   color: #fff;
-  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.15);
+  box-shadow: -2px 0 8px rgba(0, 0, 0, 0.15);
   position: fixed;
   top: 0;
-  left: 0;
+  right: 0;
   z-index: 1040;
-  margin-left: -18rem;
+  margin-right: -18rem;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -192,7 +192,7 @@
   font-size: 0.95rem;
   font-weight: 500;
   transition: all 0.2s ease-in-out;
-  border-left: 3px solid transparent;
+  border-right: 3px solid transparent;
   position: relative;
   overflow: hidden;
   display: flex;
@@ -244,8 +244,8 @@
 /* Active state */
 .listGroupItem.active {
   color: #fff;
-  background: linear-gradient(90deg, rgba(13, 110, 253, 0.25) 0%, rgba(13, 110, 253, 0.05) 100%);
-  border-left-color: #0d6efd;
+  background: linear-gradient(270deg, rgba(13, 110, 253, 0.25) 0%, rgba(13, 110, 253, 0.05) 100%);
+  border-right-color: #0d6efd;
   font-weight: 600;
 }
 
@@ -253,8 +253,8 @@
 .listGroupItem:hover {
   color: #fff;
   background-color: rgba(255, 255, 255, 0.08);
-  transform: translateX(4px);
-  border-left-color: rgba(13, 110, 253, 0.5);
+  transform: translateX(-4px);
+  border-right-color: rgba(13, 110, 253, 0.5);
 }
 
 .collapsed .listGroupItem:hover {
@@ -318,12 +318,12 @@
 
 .pageContentWrapper {
   min-width: 100vw;
-  transition: margin-left 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: margin-right 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Wrapper States */
 .wrapper.toggled .sidebarWrapper {
-  margin-left: 0;
+  margin-right: 0;
 }
 
 /* ================================
@@ -389,43 +389,60 @@
 }
 
 /* ================================
-   MOBILE MENU TOGGLE
+   SIDEBAR TAB/HANDLE (Orelha)
    ================================ */
 
-.mobileMenuToggle {
+.sidebarTab {
   position: fixed;
-  bottom: 20px;
-  right: 20px;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: #fff;
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
+  width: 48px;
+  height: 120px;
+  border-radius: 8px 0 0 8px;
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
   cursor: pointer;
-  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
-  z-index: 1050;
+  box-shadow: -2px 0 12px rgba(102, 126, 234, 0.4);
+  z-index: 1030;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   border: none;
+  gap: 8px;
 }
 
-.mobileMenuToggle:hover {
-  transform: scale(1.1);
-  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+.sidebarTab:hover {
+  width: 56px;
+  box-shadow: -4px 0 20px rgba(102, 126, 234, 0.6);
 }
 
-.mobileMenuToggle:active {
-  transform: scale(0.95);
+.sidebarTab:active {
+  transform: translateY(-50%) scale(0.95);
 }
 
-.mobileMenuToggle i {
+.sidebarTab i {
+  font-size: 1.25rem;
   transition: transform 0.3s ease;
 }
 
-.wrapper.toggled .mobileMenuToggle i {
-  transform: rotate(90deg);
+.wrapper.toggled .sidebarTab {
+  right: 280px;
+}
+
+.wrapper.toggled .sidebarTab i {
+  transform: rotate(180deg);
+}
+
+.sidebarTabText {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
 }
 
 /* ================================
@@ -435,32 +452,32 @@
 /* Desktop */
 @media (min-width: 768px) {
   .sidebarWrapper {
-    margin-left: 0;
+    margin-right: 0;
   }
 
   .pageContentWrapper {
     min-width: 0;
     width: 100%;
-    margin-left: 18rem;
+    margin-right: 18rem;
   }
 
   .collapsed .pageContentWrapper {
-    margin-left: 5rem;
+    margin-right: 5rem;
   }
 
   .wrapper.toggled .sidebarWrapper {
-    margin-left: -18rem;
+    margin-right: -18rem;
   }
 
   .wrapper.toggled .pageContentWrapper {
-    margin-left: 0;
+    margin-right: 0;
   }
 
   .overlay {
     display: none;
   }
 
-  .mobileMenuToggle {
+  .sidebarTab {
     display: none;
   }
 
@@ -473,11 +490,11 @@
 @media (max-width: 992px) and (min-width: 768px) {
   .sidebarWrapper {
     width: 16rem;
-    margin-left: -16rem;
+    margin-right: -16rem;
   }
 
   .pageContentWrapper {
-    margin-left: 16rem;
+    margin-right: 16rem;
   }
 
   .collapsed .sidebarWrapper {
@@ -485,7 +502,7 @@
   }
 
   .collapsed .pageContentWrapper {
-    margin-left: 5rem;
+    margin-right: 5rem;
   }
 }
 
@@ -493,7 +510,7 @@
 @media (max-width: 767px) {
   .sidebarWrapper {
     width: 280px;
-    margin-left: -280px;
+    margin-right: -280px;
   }
 
   .collapseButton {
@@ -544,7 +561,72 @@
   }
 
   .pageContentWrapper {
-    margin-left: 0 !important;
+    margin-right: 0 !important;
     min-width: 100% !important;
+  }
+}
+
+/* ================================
+   MOBILE USER MENU
+   ================================ */
+
+.userMenuMobile {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: #fff;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  min-width: 280px;
+  max-width: 90vw;
+  z-index: 1060;
+  animation: slideDown 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  margin-top: 0.5rem;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.userMenuMobile .dropdown-header {
+  font-weight: 700;
+  font-size: 0.875rem;
+  color: #495057;
+  padding: 0.75rem 1rem;
+}
+
+.userMenuMobile .dropdown-item {
+  padding: 0.75rem 1rem;
+  color: #212529;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  transition: all 0.2s ease;
+  font-size: 0.9rem;
+}
+
+.userMenuMobile .dropdown-item:hover {
+  background-color: #f8f9fa;
+  color: #0d6efd;
+  padding-left: 1.25rem;
+}
+
+.userMenuMobile .dropdown-divider {
+  margin: 0.5rem 0;
+  border-top: 1px solid #dee2e6;
+}
+
+/* Hide user menu on desktop (≥768px) */
+@media (min-width: 768px) {
+  .userMenuMobile {
+    display: none !important;
   }
 }

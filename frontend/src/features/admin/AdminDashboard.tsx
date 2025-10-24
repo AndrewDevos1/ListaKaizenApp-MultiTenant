@@ -29,21 +29,38 @@ import { Container, Row, Col, Card, Button, Table } from 'react-bootstrap';
 import {
     faUsers,
     faListAlt,
-    faExclamationTriangle,
     faCheckCircle,
-    faUserClock,
-    faClipboardList,
     faShoppingCart,
-    faPlusSquare,
     faFileInvoiceDollar,
-    faFileExport,
     faChartLine,
     faArrowUp,
     faArrowDown,
     faArrowRight,
     faBolt,
+    faGripVertical,
+    faEdit,
+    faSave,
+    faCog,
+    faClipboardList,
 } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import {
+    DndContext,
+    closestCenter,
+    KeyboardSensor,
+    PointerSensor,
+    useSensor,
+    useSensors,
+    DragEndEvent,
+} from '@dnd-kit/core';
+import {
+    arrayMove,
+    SortableContext,
+    sortableKeyboardCoordinates,
+    rectSortingStrategy,
+    useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import api from '../../services/api';
 import styles from './AdminDashboard.module.css';
 
@@ -68,6 +85,75 @@ interface Activity {
     description: string;
 }
 
+interface Widget {
+    id: string;
+    title: string;
+    value: number;
+    icon: any;
+    color: string;
+    link: string;
+    trend: string;
+    trendType: 'positive' | 'negative';
+}
+
+// Componente SortableWidget
+interface SortableWidgetProps {
+    widget: Widget;
+    isEditMode: boolean;
+}
+
+const SortableWidget: React.FC<SortableWidgetProps> = ({ widget, isEditMode }) => {
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        transform,
+        transition,
+        isDragging,
+    } = useSortable({ id: widget.id, disabled: !isEditMode });
+
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.5 : 1,
+        cursor: isEditMode ? (isDragging ? 'grabbing' : 'grab') : 'default',
+    };
+
+    return (
+        <div ref={setNodeRef} style={style} {...attributes}>
+            <Card className={`${styles.widgetCard} ${widget.color}`}>
+                {isEditMode && (
+                    <div className={styles.dragHandle} {...listeners}>
+                        <FontAwesomeIcon icon={faGripVertical} />
+                    </div>
+                )}
+                <div className={styles.widgetHeader}>
+                    <div className={styles.widgetIcon}>
+                        <FontAwesomeIcon icon={widget.icon} />
+                    </div>
+                    <div className={styles.widgetInfo}>
+                        <div className={styles.widgetTitle}>{widget.title}</div>
+                        <div className={styles.widgetValue}>{widget.value}</div>
+                    </div>
+                </div>
+                <div className={styles.widgetFooter}>
+                    <span className={`${styles.widgetTrend} ${widget.trendType === 'positive' ? styles.positive : styles.negative}`}>
+                        <FontAwesomeIcon
+                            icon={widget.trendType === 'positive' ? faArrowUp : faArrowDown}
+                            style={{ marginRight: '0.25rem' }}
+                        />
+                        {widget.trend}
+                    </span>
+                    <Link to={widget.link} className={styles.widgetLink}>
+                        Ver detalhes
+                        <FontAwesomeIcon icon={faArrowRight} />
+                    </Link>
+                </div>
+            </Card>
+        </div>
+    );
+};
+
 const AdminDashboard: React.FC = () => {
     const [stats, setStats] = useState<DashboardStats>({
         total_users: 0,
@@ -81,6 +167,21 @@ const AdminDashboard: React.FC = () => {
     const [listStatus, setListStatus] = useState<ListStatus[]>([]);
     const [recentActivities, setRecentActivities] = useState<Activity[]>([]);
     const [loading, setLoading] = useState(true);
+    const [widgets, setWidgets] = useState<Widget[]>([]);
+    const [isEditMode, setIsEditMode] = useState(false);
+
+    // Drag and drop sensors
+    const sensors = useSensors(
+        useSensor(PointerSensor),
+        useSensor(KeyboardSensor, {
+            coordinateGetter: sortableKeyboardCoordinates,
+        })
+    );
+
+    // Toggle edit mode
+    const toggleEditMode = () => {
+        setIsEditMode(!isEditMode);
+    };
 
     // DIAGNÓSTICO: Verificar se este componente está sendo carregado
     console.log('🎨 DASHBOARD COREUI CARREGADO!', {
@@ -88,6 +189,25 @@ const AdminDashboard: React.FC = () => {
         hasWrapper: !!styles.dashboardWrapper,
         hasWidgetCard: !!styles.widgetCard
     });
+
+    // Handle drag end
+    const handleDragEnd = (event: DragEndEvent) => {
+        const { active, over } = event;
+
+        if (over && active.id !== over.id) {
+            setWidgets((items) => {
+                const oldIndex = items.findIndex((item) => item.id === active.id);
+                const newIndex = items.findIndex((item) => item.id === over.id);
+
+                const newOrder = arrayMove(items, oldIndex, newIndex);
+
+                // Save to localStorage
+                localStorage.setItem('dashboardWidgetOrder', JSON.stringify(newOrder.map(w => w.id)));
+
+                return newOrder;
+            });
+        }
+    };
 
     useEffect(() => {
         const fetchData = async () => {
@@ -121,85 +241,80 @@ const AdminDashboard: React.FC = () => {
         fetchData();
     }, []);
 
-    // Widgets configuration
-    const widgets = [
-        {
-            title: 'Usuários Cadastrados',
-            value: stats.total_users,
-            icon: faUsers,
-            color: styles.widgetBlue,
-            link: '/admin/users',
-            trend: '+12%',
-            trendType: 'positive',
-        },
-        {
-            title: 'Usuários Pendentes',
-            value: stats.pending_users,
-            icon: faUserClock,
-            color: styles.widgetYellow,
-            link: '/admin/users?status=pending',
-            trend: '+3',
-            trendType: 'positive',
-        },
-        {
-            title: 'Listas Criadas',
-            value: stats.total_lists,
-            icon: faListAlt,
-            color: styles.widgetGreen,
-            link: '/admin/listas',
-            trend: '+8%',
-            trendType: 'positive',
-        },
-        {
-            title: 'Submissões Pendentes',
-            value: stats.pending_submissions,
-            icon: faClipboardList,
-            color: styles.widgetOrange,
-            link: '/admin/submissions?status=pending',
-            trend: '-2',
-            trendType: 'negative',
-        },
-        {
-            title: 'Cotações Abertas',
-            value: stats.pending_cotacoes,
-            icon: faExclamationTriangle,
-            color: styles.widgetPurple,
-            link: '/admin/cotacoes?status=open',
-            trend: '5',
-            trendType: 'positive',
-        },
-        {
-            title: 'Pedidos Gerados Hoje',
-            value: stats.orders_today,
-            icon: faShoppingCart,
-            color: styles.widgetRed,
-            link: '/admin/orders?date=today',
-            trend: '+7',
-            trendType: 'positive',
-        },
-    ];
+    // Initialize widgets with saved order
+    useEffect(() => {
+        const defaultWidgets: Widget[] = [
+            {
+                id: 'widget-lists',
+                title: 'Lista de Tarefas',
+                value: stats.total_lists,
+                icon: faListAlt,
+                color: styles.widgetGreen,
+                link: '/admin/lista-tarefas',
+                trend: '+8%',
+                trendType: 'positive',
+            },
+            {
+                id: 'widget-submissions',
+                title: 'Listas de Compras',
+                value: stats.pending_submissions,
+                icon: faShoppingCart,
+                color: styles.widgetOrange,
+                link: '/admin/listas-compras',
+                trend: '-2',
+                trendType: 'negative',
+            },
+            {
+                id: 'widget-orders',
+                title: 'Solicitações',
+                value: stats.orders_today,
+                icon: faClipboardList,
+                color: styles.widgetRed,
+                link: '/admin/listas-compras',
+                trend: '+7',
+                trendType: 'positive',
+            },
+        ];
+
+        // Load saved order from localStorage
+        const savedOrder = localStorage.getItem('dashboardWidgetOrder');
+        if (savedOrder) {
+            try {
+                const orderIds = JSON.parse(savedOrder) as string[];
+                const orderedWidgets = orderIds
+                    .map(id => defaultWidgets.find(w => w.id === id))
+                    .filter((w): w is Widget => w !== undefined);
+
+                // Add any new widgets that aren't in the saved order
+                const newWidgets = defaultWidgets.filter(
+                    w => !orderIds.includes(w.id)
+                );
+
+                setWidgets([...orderedWidgets, ...newWidgets]);
+            } catch (e) {
+                setWidgets(defaultWidgets);
+            }
+        } else {
+            setWidgets(defaultWidgets);
+        }
+    }, [stats]);
 
     // Quick actions configuration
     const quickActions = [
         {
             title: 'Gerenciar Usuários',
             icon: faUsers,
-            link: '/admin/users',
+            link: '/admin/gerenciar-usuarios',
         },
         {
-            title: 'Criar Lista de Estoque',
-            icon: faPlusSquare,
-            link: '/admin/listas/new',
-        },
-        {
-            title: 'Iniciar Cotação',
+            title: 'Cotações',
             icon: faFileInvoiceDollar,
-            link: '/admin/cotacoes/new',
+            link: '/admin/cotacoes',
         },
         {
-            title: 'Exportar Pedidos',
-            icon: faFileExport,
-            link: '/admin/orders/export',
+            title: 'Configurações',
+            icon: faCog,
+            link: '/admin/configuracoes',
         },
     ];
 
@@ -216,44 +331,42 @@ const AdminDashboard: React.FC = () => {
             <Container fluid>
                 {/* Header */}
                 <div className={styles.dashboardHeader}>
-                    <h1 className={styles.dashboardTitle}>
-                        <FontAwesomeIcon icon={faChartLine} style={{ marginRight: '1rem', color: '#667eea' }} />
-                        Dashboard Administrativo
-                    </h1>
-                    <p className={styles.dashboardSubtitle}>
-                        Visão geral e atalhos para as principais funcionalidades do sistema
-                    </p>
+                    <div>
+                        <h1 className={styles.dashboardTitle}>
+                            <FontAwesomeIcon icon={faChartLine} style={{ marginRight: '1rem', color: '#667eea' }} />
+                            Dashboard Administrativo
+                        </h1>
+                        <p className={styles.dashboardSubtitle}>
+                            Visão geral e atalhos para as principais funcionalidades do sistema
+                        </p>
+                    </div>
+                    <Button
+                        variant={isEditMode ? 'success' : 'outline-primary'}
+                        onClick={toggleEditMode}
+                        className={styles.editModeButton}
+                    >
+                        <FontAwesomeIcon icon={isEditMode ? faSave : faEdit} style={{ marginRight: '0.5rem' }} />
+                        {isEditMode ? 'Salvar Organização' : 'Organizar Cards'}
+                    </Button>
                 </div>
 
                 {/* Widgets Grid */}
-                <div className={styles.widgetsGrid}>
-                    {widgets.map((widget, index) => (
-                        <Card key={index} className={`${styles.widgetCard} ${widget.color}`}>
-                            <div className={styles.widgetHeader}>
-                                <div className={styles.widgetIcon}>
-                                    <FontAwesomeIcon icon={widget.icon} />
-                                </div>
-                                <div className={styles.widgetInfo}>
-                                    <div className={styles.widgetTitle}>{widget.title}</div>
-                                    <div className={styles.widgetValue}>{widget.value}</div>
-                                </div>
-                            </div>
-                            <div className={styles.widgetFooter}>
-                                <span className={`${styles.widgetTrend} ${widget.trendType === 'positive' ? styles.positive : styles.negative}`}>
-                                    <FontAwesomeIcon
-                                        icon={widget.trendType === 'positive' ? faArrowUp : faArrowDown}
-                                        style={{ marginRight: '0.25rem' }}
-                                    />
-                                    {widget.trend}
-                                </span>
-                                <Link to={widget.link} className={styles.widgetLink}>
-                                    Ver detalhes
-                                    <FontAwesomeIcon icon={faArrowRight} />
-                                </Link>
-                            </div>
-                        </Card>
-                    ))}
-                </div>
+                <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={handleDragEnd}
+                >
+                    <SortableContext
+                        items={widgets.map(w => w.id)}
+                        strategy={rectSortingStrategy}
+                    >
+                        <div className={styles.widgetsGrid}>
+                            {widgets.map((widget) => (
+                                <SortableWidget key={widget.id} widget={widget} isEditMode={isEditMode} />
+                            ))}
+                        </div>
+                    </SortableContext>
+                </DndContext>
 
                 {/* Quick Actions */}
                 <div className={styles.quickActionsSection}>
