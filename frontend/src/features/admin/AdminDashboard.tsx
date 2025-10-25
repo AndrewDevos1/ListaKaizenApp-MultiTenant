@@ -42,6 +42,7 @@ import {
     faSave,
     faCog,
     faClipboardList,
+    faBox,
 } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
@@ -246,13 +247,23 @@ const AdminDashboard: React.FC = () => {
         const defaultWidgets: Widget[] = [
             {
                 id: 'widget-submissions',
-                title: 'Listas de Compras',
+                title: 'Gerenciar Listas',
                 value: stats.pending_submissions,
                 icon: faShoppingCart,
                 color: styles.widgetOrange,
                 link: '/admin/listas-compras',
                 trend: '-2',
                 trendType: 'negative',
+            },
+            {
+                id: 'widget-items',
+                title: 'Itens e Insumos',
+                value: stats.total_lists,
+                icon: faBox,
+                color: styles.widgetBlue,
+                link: '/admin/items',
+                trend: '+12',
+                trendType: 'positive',
             },
             {
                 id: 'widget-orders',
