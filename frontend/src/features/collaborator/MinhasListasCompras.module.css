@@ -1,0 +1,152 @@
+/* Minhas Listas de Compras - Estilos */
+
+.container {
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    min-height: calc(100vh - 60px);
+    padding: 2rem 1rem;
+}
+
+.header {
+    background: white;
+    border-radius: 12px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.headerContent h1 {
+    color: #2c3e50;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.headerContent p {
+    font-size: 0.95rem;
+    color: #7f8c8d;
+    margin: 0;
+}
+
+.listaCard {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+}
+
+.listaCard:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.cardBody {
+    padding: 1.5rem;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.cardHeader {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.cardIcon {
+    font-size: 1.8rem;
+    color: #3498db;
+    flex-shrink: 0;
+    margin-top: 0.25rem;
+}
+
+.cardTitle {
+    color: #2c3e50;
+    font-weight: 600;
+    margin: 0;
+    word-break: break-word;
+}
+
+.cardDescription {
+    color: #555;
+    font-size: 0.9rem;
+    margin: 0.75rem 0 0 0;
+    line-height: 1.5;
+}
+
+.cardMeta {
+    margin-top: auto;
+    padding-top: 1rem;
+    border-top: 1px solid #ecf0f1;
+}
+
+.cardMeta small {
+    display: block;
+    font-size: 0.85rem;
+}
+
+.cardFooter {
+    background-color: #f8f9fa;
+    padding: 1rem;
+    border-top: 1px solid #ecf0f1;
+}
+
+.cardFooter a {
+    text-decoration: none;
+}
+
+.cardFooter button {
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    transition: all 0.2s ease;
+}
+
+.cardFooter button:hover {
+    transform: scale(1.02);
+}
+
+/* Responsivo */
+@media (max-width: 992px) {
+    .headerContent h1 {
+        font-size: 1.5rem;
+    }
+
+    .header {
+        padding: 1.5rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .container {
+        padding: 1rem 0.5rem;
+    }
+
+    .header {
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .headerContent h1 {
+        font-size: 1.25rem;
+    }
+
+    .cardBody {
+        padding: 1rem;
+    }
+
+    .cardHeader {
+        gap: 0.75rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .cardIcon {
+        font-size: 1.5rem;
+    }
+}

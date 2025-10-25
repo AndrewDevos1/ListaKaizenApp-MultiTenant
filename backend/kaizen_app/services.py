@@ -432,6 +432,86 @@ def submit_pedidos(user_id):
     db.session.commit()
     return {"message": f"{len(novos_pedidos)} pedidos foram gerados com sucesso." }, 201
 
+def atualizar_estoque_e_calcular_pedido(estoque_id, quantidade_atual, usuario_id):
+    """
+    Atualiza a quantidade atual de um estoque e calcula o pedido automaticamente.
+    Também registra auditoria (usuário e data da submissão).
+    """
+    estoque = repositories.get_by_id(Estoque, estoque_id)
+    if not estoque:
+        return {"error": "Item de estoque não encontrado."}, 404
+
+    # Atualiza quantidade atual
+    estoque.quantidade_atual = quantidade_atual
+
+    # Calcula pedido automaticamente
+    estoque.pedido = estoque.calcular_pedido()
+
+    # Registra auditoria
+    estoque.data_ultima_submissao = datetime.utcnow()
+    estoque.usuario_ultima_submissao_id = usuario_id
+
+    db.session.commit()
+    return estoque.to_dict(), 200
+
+def submit_estoque_lista(lista_id, usuario_id, items_data):
+    """
+    Submete múltiplos itens de estoque de uma lista.
+    Calcula pedidos automaticamente e cria registros de Pedido se necessário.
+
+    items_data: [{"estoque_id": 1, "quantidade_atual": 5}, ...]
+    """
+    lista = repositories.get_by_id(Lista, lista_id)
+    if not lista:
+        return {"error": "Lista não encontrada."}, 404
+
+    # Valida se usuário está atribuído à lista
+    if usuario_id not in [u.id for u in lista.colaboradores]:
+        return {"error": "Você não tem acesso a esta lista."}, 403
+
+    pedidos_criados = []
+    estoques_atualizados = []
+
+    for item_data in items_data:
+        estoque_id = item_data.get('estoque_id')
+        quantidade_atual = item_data.get('quantidade_atual')
+
+        if not estoque_id or quantidade_atual is None:
+            continue
+
+        estoque = repositories.get_by_id(Estoque, estoque_id)
+        if not estoque or estoque.lista_id != lista_id:
+            continue
+
+        # Atualiza quantidade e calcula pedido
+        estoque.quantidade_atual = quantidade_atual
+        estoque.pedido = estoque.calcular_pedido()
+        estoque.data_ultima_submissao = datetime.utcnow()
+        estoque.usuario_ultima_submissao_id = usuario_id
+
+        db.session.add(estoque)
+        estoques_atualizados.append(estoque)
+
+        # Cria Pedido se quantidade está abaixo do mínimo
+        if float(quantidade_atual) < float(estoque.quantidade_minima):
+            quantidade_a_pedir = float(estoque.quantidade_minima) - float(quantidade_atual)
+            novo_pedido = Pedido(
+                item_id=estoque.item_id,
+                fornecedor_id=estoque.item.fornecedor_id,
+                quantidade_solicitada=quantidade_a_pedir,
+                usuario_id=usuario_id
+            )
+            db.session.add(novo_pedido)
+            pedidos_criados.append(novo_pedido)
+
+    db.session.commit()
+
+    return {
+        "message": f"Lista submetida com sucesso! {len(pedidos_criados)} pedido(s) criado(s).",
+        "estoques_atualizados": len(estoques_atualizados),
+        "pedidos_criados": len(pedidos_criados)
+    }, 201
+
 # --- Serviços de Lista ---
 
 def create_lista(data):
@@ -616,3 +696,71 @@ def get_collaborator_dashboard_summary(user_id):
     }
 
     return summary_data, 200
+
+# --- Serviços de Listas com Estoque (Nova Feature) ---
+
+def get_minhas_listas(user_id):
+    """Retorna todas as listas atribuídas a um colaborador."""
+    usuario = repositories.get_by_id(Usuario, user_id)
+    if not usuario:
+        return {"error": "Usuário não encontrado."}, 404
+
+    listas = usuario.listas_atribuidas
+    return [lista.to_dict() for lista in listas], 200
+
+def get_estoque_by_lista(lista_id):
+    """Retorna todos os estoques (itens) de uma lista específica."""
+    lista = repositories.get_by_id(Lista, lista_id)
+    if not lista:
+        return {"error": "Lista não encontrada."}, 404
+
+    estoques = Estoque.query.filter_by(lista_id=lista_id).all()
+    return [estoque.to_dict() for estoque in estoques], 200
+
+def get_lista_mae_consolidada(lista_id):
+    """
+    Retorna a Lista Mãe consolidada com última submissão de cada item.
+    Usada pelo admin para visualizar o consolidado de todas as submissões.
+    """
+    lista = repositories.get_by_id(Lista, lista_id)
+    if not lista:
+        return {"error": "Lista não encontrada."}, 404
+
+    estoques = Estoque.query.filter_by(lista_id=lista_id).all()
+
+    itens_consolidados = []
+    for estoque in estoques:
+        usuario_submissao = None
+        if estoque.usuario_ultima_submissao:
+            usuario_submissao = {
+                "id": estoque.usuario_ultima_submissao.id,
+                "nome": estoque.usuario_ultima_submissao.nome
+            }
+
+        item_consolidado = {
+            "estoque_id": estoque.id,
+            "item_id": estoque.item_id,
+            "item_nome": estoque.item.nome,
+            "item_unidade": estoque.item.unidade_medida,
+            "fornecedor_id": estoque.item.fornecedor_id,
+            "fornecedor_nome": estoque.item.fornecedor.nome if estoque.item.fornecedor else None,
+            "quantidade_minima": float(estoque.quantidade_minima),
+            "quantidade_atual": float(estoque.quantidade_atual),
+            "pedido": float(estoque.pedido) if estoque.pedido else estoque.calcular_pedido(),
+            "data_ultima_submissao": estoque.data_ultima_submissao.isoformat() if estoque.data_ultima_submissao else None,
+            "usuario_ultima_submissao": usuario_submissao
+        }
+        itens_consolidados.append(item_consolidado)
+
+    consolidado = {
+        "lista_id": lista.id,
+        "lista_nome": lista.nome,
+        "lista_descricao": lista.descricao,
+        "data_criacao": lista.data_criacao.isoformat() if lista.data_criacao else None,
+        "itens": itens_consolidados,
+        "total_itens": len(itens_consolidados),
+        "total_em_falta": sum(1 for item in itens_consolidados if item["pedido"] > 0),
+        "total_pedido": sum(item["pedido"] for item in itens_consolidados)
+    }
+
+    return consolidado, 200

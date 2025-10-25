@@ -494,3 +494,47 @@ def collaborator_dashboard_summary_route():
     user_id = get_user_id_from_jwt()
     response, status = services.get_collaborator_dashboard_summary(user_id)
     return jsonify(response), status
+
+# ============================================
+# NOVAS ROTAS - LISTAS COM ESTOQUE
+# ============================================
+
+@collaborator_bp.route('/minhas-listas', methods=['GET'])
+@jwt_required()
+def minhas_listas_route():
+    """Retorna todas as listas atribuídas ao colaborador."""
+    user_id = get_user_id_from_jwt()
+    response, status = services.get_minhas_listas(user_id)
+    return jsonify(response), status
+
+@api_bp.route('/listas/<int:lista_id>/estoque', methods=['GET'])
+@jwt_required()
+def get_lista_estoque_route(lista_id):
+    """Retorna todos os itens (estoques) de uma lista específica."""
+    user_id = get_user_id_from_jwt()
+    response, status = services.get_estoque_by_lista(lista_id)
+    return jsonify(response), status
+
+@api_bp.route('/listas/<int:lista_id>/estoque/submit', methods=['POST'])
+@jwt_required()
+def submit_lista_estoque_route(lista_id):
+    """
+    Submete múltiplos itens de estoque de uma lista.
+    Payload: {"items": [{"estoque_id": 1, "quantidade_atual": 5}, ...]}
+    """
+    user_id = get_user_id_from_jwt()
+    data = request.get_json()
+    items_data = data.get('items', [])
+
+    response, status = services.submit_estoque_lista(lista_id, user_id, items_data)
+    return jsonify(response), status
+
+@admin_bp.route('/listas/<int:lista_id>/lista-mae', methods=['GET'])
+@admin_required()
+def get_lista_mae_consolidada_route(lista_id):
+    """
+    Retorna a Lista Mãe consolidada (admin view).
+    Mostra última submissão, pedidos calculados e estatísticas.
+    """
+    response, status = services.get_lista_mae_consolidada(lista_id)
+    return jsonify(response), status

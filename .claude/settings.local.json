@@ -16,7 +16,11 @@
       "Bash(dir:*)",
       "Bash(find:*)",
       "Bash(taskkill:*)",
-      "Bash(../.venv/Scripts/python.exe -m pip show:*)"
+      "Bash(../.venv/Scripts/python.exe -m pip show:*)",
+      "Bash(.venvScriptspython.exe -m flask db current)",
+      "Bash(cd:*)",
+      "Bash(pip install:*)",
+      "Bash(npm install:*)"
     ],
     "deny": [],
     "ask": []

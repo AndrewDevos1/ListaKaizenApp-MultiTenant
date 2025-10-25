@@ -73,15 +73,30 @@ class Estoque(db.Model, SerializerMixin):
     id = db.Column(db.Integer, primary_key=True)
     item_id = db.Column(db.Integer, db.ForeignKey('itens.id'), nullable=False)
     area_id = db.Column(db.Integer, db.ForeignKey('areas.id'), nullable=False)
+    lista_id = db.Column(db.Integer, db.ForeignKey('listas.id'), nullable=True)
     quantidade_atual = db.Column(db.Numeric(10, 2), nullable=False, default=0.0)
     quantidade_minima = db.Column(db.Numeric(10, 2), nullable=False, default=0.0)
+    pedido = db.Column(db.Numeric(10, 2), nullable=True, default=0.0)
+    data_ultima_submissao = db.Column(db.DateTime, nullable=True)
+    usuario_ultima_submissao_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=True)
+
+    # Relacionamentos
     item = db.relationship('Item', backref=db.backref('estoques', lazy=True))
     area = db.relationship('Area', backref=db.backref('estoques', lazy=True))
+    lista = db.relationship('Lista', backref=db.backref('estoques', lazy=True))
+    usuario_ultima_submissao = db.relationship('Usuario', backref=db.backref('estoques_submetidos', lazy=True))
+
+    def calcular_pedido(self):
+        """Calcula o pedido baseado em qtd_minima e qtd_atual"""
+        return max(float(self.quantidade_minima) - float(self.quantidade_atual), 0)
 
     def to_dict(self):
         d = super(Estoque, self).to_dict()
         if self.item:
             d['item'] = self.item.to_dict()
+        # Garante que pedido sempre tenha um valor calculado
+        if d.get('pedido') is None:
+            d['pedido'] = self.calcular_pedido()
         return d
 
 class PedidoStatus(enum.Enum):

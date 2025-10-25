@@ -265,6 +265,15 @@ const ListasCompras: React.FC = () => {
                                     >
                                         Ver Detalhes
                                     </Button>
+                                    <Link to={`/admin/listas/${lista.id}/lista-mae`}>
+                                        <Button
+                                            variant="info"
+                                            className={styles.cardButton}
+                                        >
+                                            <FontAwesomeIcon icon={faShoppingCart} style={{marginRight: '0.5rem'}} />
+                                            Lista Mãe
+                                        </Button>
+                                    </Link>
                                 </div>
                             </Card>
                         ))}

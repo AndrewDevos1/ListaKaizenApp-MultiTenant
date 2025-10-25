@@ -18,12 +18,15 @@ import UserManagement from './features/admin/UserManagement';
 import ListManagement from './features/admin/ListManagement';
 import CriarLista from './features/admin/CriarLista';
 import ListasCompras from './features/admin/ListasCompras';
+import ListaMaeConsolidada from './features/admin/ListaMaeConsolidada';
 import GerenciarUsuarios from './features/admin/GerenciarUsuarios';
 import Configuracoes from './features/admin/Configuracoes';
 import MudarSenha from './features/admin/MudarSenha';
 import EditarPerfil from './features/admin/EditarPerfil';
 import CriarUsuario from './features/admin/CriarUsuario';
 import CollaboratorDashboard from './features/collaborator/CollaboratorDashboard';
+import MinhasListasCompras from './features/collaborator/MinhasListasCompras';
+import EstoqueListaCompras from './features/collaborator/EstoqueListaCompras';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
 import CollaboratorRoute from './components/CollaboratorRoute';
@@ -54,6 +57,7 @@ function App() {
               <Route path="listas" element={<ListManagement />} />
               <Route path="lista-tarefas" element={<CriarLista />} />
               <Route path="listas-compras" element={<ListasCompras />} />
+              <Route path="listas/:listaId/lista-mae" element={<ListaMaeConsolidada />} />
               <Route path="items" element={<ItemManagement />} />
               <Route path="areas" element={<AreaManagement />} />
               <Route path="fornecedores" element={<FornecedorManagement />} />
@@ -69,6 +73,8 @@ function App() {
               <Route path="areas" element={<MinhasSubmissoes />} />
               <Route path="submissions" element={<MinhasSubmissoes />} />
               <Route path="areas/:areaId/estoque" element={<EstoqueLista />} />
+              <Route path="listas" element={<MinhasListasCompras />} />
+              <Route path="listas/:listaId/estoque" element={<EstoqueListaCompras />} />
               <Route path="perfil" element={<EditarPerfil />} />
               <Route path="mudar-senha" element={<MudarSenha />} />
             </Route>

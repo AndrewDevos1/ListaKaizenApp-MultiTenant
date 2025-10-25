@@ -31,7 +31,8 @@
     "web-vitals": "^2.1.4"
   },
   "scripts": {
-    "start": "react-scripts start",
+    "start": "concurrently \"react-scripts start\" \"node scripts/wait-and-open.js\"",
+    "start:no-browser": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
@@ -58,5 +59,9 @@
     "moduleNameMapper": {
       "react-router-dom": "<rootDir>/node_modules/react-router-dom"
     }
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "open": "^10.2.0"
   }
 }
