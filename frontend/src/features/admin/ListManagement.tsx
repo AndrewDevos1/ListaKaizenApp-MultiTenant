@@ -34,7 +34,7 @@ const ListManagement: React.FC = () => {
   const fetchListas = async () => {
     try {
       setIsLoading(true);
-      const response = await api.get('/api/v1/listas');
+      const response = await api.get('/v1/listas');
       setListas(response.data);
       setError(null);
     } catch (err) {
@@ -46,7 +46,7 @@ const ListManagement: React.FC = () => {
 
   const fetchColaboradores = async () => {
     try {
-      const response = await api.get('/api/admin/users');
+      const response = await api.get('/admin/users');
       // Filtra para pegar apenas colaboradores
       setColaboradores(response.data.filter((user: User) => user.role === 'COLLABORATOR'));
     } catch (err) {
@@ -66,7 +66,7 @@ const ListManagement: React.FC = () => {
         return;
     }
     try {
-        await api.post('/api/v1/listas', { nome: newListName });
+        await api.post('/v1/listas', { nome: newListName });
         setSuccess('Lista criada com sucesso!');
         setShowCreateModal(false);
         setNewListName('');
@@ -80,7 +80,7 @@ const ListManagement: React.FC = () => {
     if (!selectedLista) return;
 
     try {
-        await api.post(`/api/v1/listas/${selectedLista.id}/assign`, { colaborador_ids: selectedColaboradores });
+        await api.post(`/v1/listas/${selectedLista.id}/assign`, { colaborador_ids: selectedColaboradores });
         setSuccess('Colaboradores atribuídos com sucesso!');
         setShowAssignModal(false);
         setSelectedLista(null);
@@ -93,7 +93,7 @@ const ListManagement: React.FC = () => {
 
   const handleUnassign = async (listaId: number, colaboradorId: number) => {
     try {
-        await api.delete(`/api/v1/listas/${listaId}/unassign`, { data: { colaborador_id: colaboradorId } });
+        await api.delete(`/v1/listas/${listaId}/unassign`, { data: { colaborador_id: colaboradorId } });
         setSuccess('Colaborador desatribuído com sucesso!');
         fetchListas(); // Recarrega a lista
     } catch (err: any) {

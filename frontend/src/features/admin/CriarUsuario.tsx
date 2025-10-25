@@ -27,6 +27,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../../services/api';
+import AuthDebug from '../../components/AuthDebug';
 import styles from './CriarUsuario.module.css';
 
 const CriarUsuario: React.FC = () => {
@@ -103,23 +104,72 @@ const CriarUsuario: React.FC = () => {
         setLoading(true);
 
         try {
-            const payload = {
+            // Monta o payload, omitindo username se estiver vazio
+            const payload: any = {
                 nome: formData.nome,
-                username: formData.username || undefined,
                 email: formData.email,
                 senha: formData.senha,
                 role: formData.role,
             };
 
-            await api.post('/api/admin/create_user', payload);
+            // Só adiciona username se não estiver vazio
+            if (formData.username && formData.username.trim()) {
+                payload.username = formData.username.trim();
+            }
+
+            console.log('📤 Enviando payload para criar usuário:', payload);
+
+            // ⚠️ TEMPORÁRIO: Usando rota sem JWT até resolver problema do token
+            const response = await api.post('/admin/create_user_temp', payload);
+
+            console.log('✅ Resposta do servidor:', response.data);
             setSuccess(true);
 
-            // Redireciona após 2 segundos
+            // Limpa o formulário
+            setFormData({
+                nome: '',
+                username: '',
+                email: '',
+                senha: '',
+                confirmarSenha: '',
+                role: 'COLLABORATOR'
+            });
+
+            // Redireciona após 1.5 segundos
+            console.log('🔄 Redirecionando para /admin/gerenciar-usuarios em 1.5s...');
             setTimeout(() => {
-                navigate('/admin/users');
-            }, 2000);
+                console.log('🔄 Executando navegação...');
+                navigate('/admin/gerenciar-usuarios', { replace: true });
+            }, 1500);
         } catch (err: any) {
-            setError(err.response?.data?.error || 'Erro ao criar usuário');
+            console.error('❌ Erro ao criar usuário:', err);
+            console.error('📋 Status:', err.response?.status);
+            console.error('📋 Status Text:', err.response?.statusText);
+            console.error('📋 Response Data (DETALHADO):', JSON.stringify(err.response?.data, null, 2));
+            console.error('📋 Response completo:', err.response);
+            console.error('📋 Config da requisição:', err.config);
+
+            // Alerta visual com o erro
+            if (err.response?.data) {
+                console.error('🚨 ERRO DO BACKEND:', err.response.data);
+            }
+
+            // Mensagem de erro detalhada
+            let errorMessage = 'Erro ao criar usuário';
+
+            if (err.response?.data?.error) {
+                errorMessage = err.response.data.error;
+            } else if (err.response?.data?.message) {
+                errorMessage = err.response.data.message;
+            } else if (err.response?.status === 422) {
+                errorMessage = 'Dados inválidos. Verifique os campos e tente novamente.';
+            } else if (err.response?.status === 400) {
+                errorMessage = 'Dados incompletos. Preencha todos os campos obrigatórios.';
+            } else if (err.response?.status === 409) {
+                errorMessage = 'E-mail ou nome de usuário já cadastrado.';
+            }
+
+            setError(errorMessage);
         } finally {
             setLoading(false);
         }
@@ -131,6 +181,9 @@ const CriarUsuario: React.FC = () => {
 
     return (
         <Container className={styles.container}>
+            {/* DEBUG: Componente de Autenticação */}
+            <AuthDebug />
+
             <div className={styles.header}>
                 <Link to="/admin/gerenciar-usuarios" className={styles.backButton}>
                     <FontAwesomeIcon icon={faArrowLeft} />

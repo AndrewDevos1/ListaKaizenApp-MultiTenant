@@ -47,10 +47,15 @@ def authenticate_user(data):
     if not user.aprovado:
         return {"error": "Usuário pendente de aprovação."}, 403
 
-    # A identidade do token pode ser o ID do usuário e seu role
-    identity = {"id": user.id, "role": user.role.value}
+    # O identity deve ser uma STRING (Flask-JWT-Extended espera string no campo 'sub')
+    # Dados adicionais vão em additional_claims
+    additional_claims = {"role": user.role.value}
     expires = timedelta(days=1)
-    access_token = create_access_token(identity=identity, expires_delta=expires)
+    access_token = create_access_token(
+        identity=str(user.id),  # Converte ID para string
+        additional_claims=additional_claims,  # Role e outros dados extras
+        expires_delta=expires
+    )
 
     return {"access_token": access_token}, 200
 
@@ -66,29 +71,63 @@ def approve_user(user_id):
 
 def create_user_by_admin(data):
     """Cria um novo usuário (admin ou colaborador) a pedido de um admin."""
-    if Usuario.query.filter_by(email=data['email']).first():
-        return {"error": "E-mail já cadastrado."}, 409
+    try:
+        print("🔍 [SERVICE] Iniciando criação de usuário...")
+        print(f"🔍 [SERVICE] Email: {data.get('email')}")
+        print(f"🔍 [SERVICE] Nome: {data.get('nome')}")
+        print(f"🔍 [SERVICE] Username: {data.get('username')}")
+        print(f"🔍 [SERVICE] Role: {data.get('role')}")
 
-    # Verifica se username já existe (se fornecido)
-    if data.get('username') and Usuario.query.filter_by(username=data['username']).first():
-        return {"error": "Nome de usuário já cadastrado."}, 409
+        # Validação de email duplicado
+        if Usuario.query.filter_by(email=data['email']).first():
+            print(f"❌ [SERVICE] E-mail já existe: {data['email']}")
+            return {"error": "E-mail já cadastrado."}, 409
 
-    hashed_password = generate_password_hash(data['senha'])
-    role = UserRoles.ADMIN if data.get('role') == 'ADMIN' else UserRoles.COLLABORATOR
+        # Verifica se username já existe (se fornecido)
+        if data.get('username'):
+            existing_username = Usuario.query.filter_by(username=data['username']).first()
+            if existing_username:
+                print(f"❌ [SERVICE] Username já existe: {data['username']}")
+                return {"error": "Nome de usuário já cadastrado."}, 409
 
-    new_user = Usuario(
-        nome=data['nome'],
-        username=data.get('username'),
-        email=data['email'],
-        senha_hash=hashed_password,
-        role=role,
-        aprovado=True  # Criado por admin, já vem aprovado
-    )
+        # Hash da senha
+        hashed_password = generate_password_hash(data['senha'])
+        print("✅ [SERVICE] Senha hashada com sucesso")
 
-    db.session.add(new_user)
-    db.session.commit()
+        # Define o role
+        role = UserRoles.ADMIN if data.get('role') == 'ADMIN' else UserRoles.COLLABORATOR
+        print(f"✅ [SERVICE] Role definida: {role}")
 
-    return {"message": f"Usuário {new_user.nome} criado com sucesso como {role.value}."}, 201
+        # Cria o novo usuário
+        new_user = Usuario(
+            nome=data['nome'],
+            username=data.get('username') if data.get('username') else None,
+            email=data['email'],
+            senha_hash=hashed_password,
+            role=role,
+            aprovado=True  # Criado por admin, já vem aprovado
+        )
+
+        print("✅ [SERVICE] Objeto Usuario criado")
+
+        db.session.add(new_user)
+        print("✅ [SERVICE] Usuario adicionado à sessão")
+
+        db.session.commit()
+        print(f"✅ [SERVICE] Usuario salvo no banco! ID: {new_user.id}")
+
+        return {"message": f"Usuário {new_user.nome} criado com sucesso como {role.value}."}, 201
+
+    except KeyError as e:
+        print(f"❌ [SERVICE] Campo obrigatório ausente: {e}")
+        return {"error": f"Campo obrigatório ausente: {str(e)}"}, 400
+
+    except Exception as e:
+        print(f"❌ [SERVICE] Erro inesperado: {type(e).__name__}: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        db.session.rollback()
+        return {"error": f"Erro ao criar usuário: {str(e)}"}, 500
 
 def get_all_users():
     """Retorna todos os usuários cadastrados."""
@@ -513,3 +552,45 @@ def get_activity_summary():
     labels = [d.strftime('%d/%m') for d in dates]
 
     return {"labels": labels, "data": activity_data}, 200
+
+def get_collaborator_dashboard_summary(user_id):
+    """Retorna estatísticas do dashboard para colaboradores."""
+    from .models import Usuario, Pedido, Lista
+    from .extensions import db
+
+    # Buscar o usuário
+    usuario = Usuario.query.get(user_id)
+    if not usuario:
+        return {"error": "Usuário não encontrado"}, 404
+
+    # Número de áreas atribuídas ao colaborador (via listas)
+    minhas_areas = db.session.query(Lista).filter(
+        Lista.colaboradores.any(id=user_id)
+    ).count()
+
+    # Submissões pendentes do colaborador
+    pending_submissions = Pedido.query.filter_by(
+        criado_por=user_id,
+        status='PENDENTE'
+    ).count()
+
+    # Submissões concluídas do colaborador
+    completed_submissions = Pedido.query.filter_by(
+        criado_por=user_id,
+        status='APROVADO'
+    ).count()
+
+    # Pedidos pendentes
+    pedidos_pendentes = Pedido.query.filter_by(
+        criado_por=user_id,
+        status='PENDENTE'
+    ).count()
+
+    summary_data = {
+        "minhas_areas": minhas_areas,
+        "pending_submissions": pending_submissions,
+        "completed_submissions": completed_submissions,
+        "pedidos_pendentes": pedidos_pendentes
+    }
+
+    return summary_data, 200

@@ -23,8 +23,10 @@ import Configuracoes from './features/admin/Configuracoes';
 import MudarSenha from './features/admin/MudarSenha';
 import EditarPerfil from './features/admin/EditarPerfil';
 import CriarUsuario from './features/admin/CriarUsuario';
+import CollaboratorDashboard from './features/collaborator/CollaboratorDashboard';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
+import CollaboratorRoute from './components/CollaboratorRoute';
 import Layout from './components/Layout';
 import './App.css';
 
@@ -59,6 +61,16 @@ function App() {
               <Route path="cotacoes" element={<CotacaoList />} />
               <Route path="cotacoes/:cotacaoId" element={<CotacaoDetail />} />
               <Route path="global" element={<GlobalDashboard />} />
+            </Route>
+
+            {/* Rotas de Colaborador */}
+            <Route path="/collaborator" element={<CollaboratorRoute />}>
+              <Route index element={<CollaboratorDashboard />} />
+              <Route path="areas" element={<MinhasSubmissoes />} />
+              <Route path="submissions" element={<MinhasSubmissoes />} />
+              <Route path="areas/:areaId/estoque" element={<EstoqueLista />} />
+              <Route path="perfil" element={<EditarPerfil />} />
+              <Route path="mudar-senha" element={<MudarSenha />} />
             </Route>
           </Route>
 

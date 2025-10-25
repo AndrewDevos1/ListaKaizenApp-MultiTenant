@@ -38,7 +38,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             try {
                 const decodedUser: any = jwtDecode(token);
                 console.log('✅ Sessão restaurada do localStorage');
-                setUser(decodedUser.sub); // Extrai apenas {id, role} do campo 'sub'
+                console.log('🔍 Decoded user:', decodedUser);
+                // Monta o objeto user com id e role
+                setUser({
+                    id: decodedUser.sub,      // ID do usuário
+                    role: decodedUser.role    // Role está no payload agora
+                });
             } catch (error) {
                 console.error("❌ Token inválido ao restaurar sessão", error);
                 localStorage.removeItem('accessToken');
@@ -76,8 +81,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         try {
             const decodedUser: any = jwtDecode(token);
             console.log('🔑 Auth Login Called:', decodedUser);
-            console.log('👤 User extraído do sub:', decodedUser.sub);
-            setUser(decodedUser.sub); // Extrai apenas {id, role} do campo 'sub'
+            console.log('👤 User ID (sub):', decodedUser.sub);
+            console.log('👤 User Role:', decodedUser.role);
+            // Monta o objeto user com id e role
+            setUser({
+                id: decodedUser.sub,      // ID do usuário
+                role: decodedUser.role    // Role está no payload agora
+            });
         } catch (error) {
             console.error("Erro ao decodificar token", error);
         }

@@ -98,7 +98,7 @@ const MudarSenha: React.FC = () => {
         setLoading(true);
 
         try {
-            await api.post('/api/auth/change-password', formData);
+            await api.post('/auth/change-password', formData);
             setSuccess(true);
             setFormData({
                 senha_atual: '',

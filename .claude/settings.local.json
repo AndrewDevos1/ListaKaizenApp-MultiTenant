@@ -12,7 +12,11 @@
       "Bash(flask db migrate:*)",
       "Bash(../.venv/Scripts/python.exe -m flask db migrate:*)",
       "Bash(FLASK_APP=run.py .venv/Scripts/python.exe -m flask:*)",
-      "Bash(npm start)"
+      "Bash(npm start)",
+      "Bash(dir:*)",
+      "Bash(find:*)",
+      "Bash(taskkill:*)",
+      "Bash(../.venv/Scripts/python.exe -m pip show:*)"
     ],
     "deny": [],
     "ask": []

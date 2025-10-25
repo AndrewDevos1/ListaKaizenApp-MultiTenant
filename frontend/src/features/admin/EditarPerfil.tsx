@@ -54,7 +54,7 @@ const EditarPerfil: React.FC = () => {
 
     const loadProfile = async () => {
         try {
-            const response = await api.get('/api/auth/profile');
+            const response = await api.get('/auth/profile');
             setProfile(response.data);
             setFormData({
                 nome: response.data.nome,
@@ -104,7 +104,7 @@ const EditarPerfil: React.FC = () => {
         setSaving(true);
 
         try {
-            const response = await api.put('/api/auth/profile', formData);
+            const response = await api.put('/auth/profile', formData);
             setProfile(response.data.user);
             setSuccess(true);
 

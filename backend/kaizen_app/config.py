@@ -6,6 +6,16 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 class Config:
     """Configurações base da aplicação."""
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'uma-chave-secreta-muito-segura'
+
+    # Configurações do Flask-JWT-Extended
+    JWT_SECRET_KEY = SECRET_KEY
+    JWT_TOKEN_LOCATION = ['headers']
+    JWT_HEADER_NAME = 'Authorization'
+    JWT_HEADER_TYPE = 'Bearer'
+    # Permite que o subject (sub) seja qualquer tipo (string, int, dict, etc)
+    JWT_IDENTITY_CLAIM = 'sub'
+    JWT_ERROR_MESSAGE_KEY = 'msg'
+
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
 class DevelopmentConfig(Config):

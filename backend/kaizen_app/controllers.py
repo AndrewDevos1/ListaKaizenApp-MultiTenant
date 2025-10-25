@@ -1,12 +1,33 @@
 from flask import Blueprint, request, jsonify
 from . import services
 from .models import Item, Area, Fornecedor, Estoque
-from flask_jwt_extended import jwt_required, get_jwt_identity
+from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 from functools import wraps
 
 # Cria um Blueprint para as rotas de autenticação
 auth_bp = Blueprint('auth_bp', __name__, url_prefix='/api/auth')
 admin_bp = Blueprint('admin_bp', __name__, url_prefix='/api/admin')
+collaborator_bp = Blueprint('collaborator_bp', __name__, url_prefix='/api/collaborator')
+
+# Helper function para obter user_id de forma compatível com tokens antigos e novos
+def get_user_id_from_jwt():
+    """
+    Obtém o user_id do JWT de forma compatível.
+    Suporta:
+    - Tokens muito antigos: identity = {"id": 1, "role": "ADMIN"}
+    - Tokens antigos: identity = 1 (int)
+    - Tokens novos: identity = "1" (string)
+    """
+    identity = get_jwt_identity()
+    if isinstance(identity, dict):
+        # Token MUITO antigo: identity = {"id": 1, "role": "ADMIN"}
+        return identity.get('id')
+    elif isinstance(identity, str):
+        # Token novo: identity = "1" (string) - converte para int
+        return int(identity)
+    else:
+        # Token antigo: identity = 1 (int)
+        return identity
 
 # Decorator para rotas que exigem permissão de administrador
 def admin_required():
@@ -14,9 +35,56 @@ def admin_required():
         @wraps(fn)
         @jwt_required()
         def decorator(*args, **kwargs):
+            print(f"🔐 [DECORATOR] Verificando permissão de admin para {fn.__name__}")
+            try:
+                # Pega o user_id do campo 'sub' (identity)
+                identity = get_jwt_identity()
+
+                # COMPATIBILIDADE: Suporta tokens antigos (identity=dict) e novos (identity=int)
+                if isinstance(identity, dict):
+                    # Token antigo: identity = {"id": 1, "role": "ADMIN"}
+                    print(f"⚠️ [DECORATOR] Token no formato ANTIGO detectado (identity é dict)")
+                    user_id = identity.get('id')
+                    role = identity.get('role')
+                else:
+                    # Token novo: identity = 1 (apenas o ID)
+                    user_id = identity
+                    # Pega o role dos additional_claims
+                    claims = get_jwt()
+                    role = claims.get('role')
+
+                print(f"🔐 [DECORATOR] User ID: {user_id}, Role: {role}")
+
+                if role != 'ADMIN':
+                    print(f"❌ [DECORATOR] Acesso negado - Role: {role}")
+                    return jsonify({"error": "Acesso negado. Requer permissão de administrador."}), 403
+                print(f"✅ [DECORATOR] Acesso autorizado - Role: ADMIN")
+                return fn(*args, **kwargs)
+            except Exception as e:
+                print(f"❌ [DECORATOR] Erro: {type(e).__name__}: {str(e)}")
+                raise
+        return decorator
+    return wrapper
+
+# Decorator para rotas que exigem permissão de colaborador
+def collaborator_required():
+    def wrapper(fn):
+        @wraps(fn)
+        @jwt_required()
+        def decorator(*args, **kwargs):
             identity = get_jwt_identity()
-            if identity.get('role') != 'ADMIN':
-                return jsonify({"error": "Acesso negado. Requer permissão de administrador."}), 403
+
+            # COMPATIBILIDADE: Suporta tokens antigos (identity=dict) e novos (identity=int)
+            if isinstance(identity, dict):
+                # Token antigo: identity = {"id": 1, "role": "ADMIN"}
+                role = identity.get('role')
+            else:
+                # Token novo: identity = 1 (apenas o ID)
+                claims = get_jwt()
+                role = claims.get('role')
+
+            if role not in ['COLLABORATOR', 'ADMIN']:
+                return jsonify({"error": "Acesso negado. Requer permissão de colaborador."}), 403
             return fn(*args, **kwargs)
         return decorator
     return wrapper
@@ -44,8 +112,7 @@ def login():
 def change_password():
     """Endpoint para alterar senha do usuário logado."""
     data = request.get_json()
-    identity = get_jwt_identity()
-    user_id = identity.get('id')
+    user_id = get_user_id_from_jwt()
 
     if not data or not all(k in data for k in ('senha_atual', 'nova_senha', 'confirmar_senha')):
         return jsonify({"error": "Dados incompletos para alteração de senha."}), 400
@@ -57,8 +124,7 @@ def change_password():
 @jwt_required()
 def get_profile():
     """Endpoint para obter perfil do usuário logado."""
-    identity = get_jwt_identity()
-    user_id = identity.get('id')
+    user_id = get_user_id_from_jwt()
 
     response, status_code = services.get_user_profile(user_id)
     return jsonify(response), status_code
@@ -68,8 +134,7 @@ def get_profile():
 def update_profile():
     """Endpoint para atualizar perfil do usuário logado."""
     data = request.get_json()
-    identity = get_jwt_identity()
-    user_id = identity.get('id')
+    user_id = get_user_id_from_jwt()
 
     if not data:
         return jsonify({"error": "Dados não fornecidos."}), 400
@@ -94,9 +159,66 @@ def get_users_route():
 @admin_required()
 def create_user_by_admin_route():
     data = request.get_json()
-    if not data or not all(k in data for k in ('email', 'senha', 'nome', 'role')):
-        return jsonify({"error": "Dados incompletos para criação de usuário."}), 400
-    
+
+    # Log para debug
+    print("=" * 50)
+    print("📥 Recebendo requisição para criar usuário")
+    print(f"📋 Dados recebidos: {data}")
+    print(f"📋 Tipo dos dados: {type(data)}")
+
+    if data:
+        print("📋 Campos presentes:")
+        for key, value in data.items():
+            print(f"   - {key}: {value} (tipo: {type(value).__name__})")
+
+    # Validação de campos obrigatórios
+    required_fields = ('email', 'senha', 'nome', 'role')
+    missing_fields = [field for field in required_fields if field not in data]
+
+    if not data:
+        print("❌ Erro: Nenhum dado recebido")
+        return jsonify({"error": "Nenhum dado recebido."}), 400
+
+    if missing_fields:
+        print(f"❌ Erro: Campos obrigatórios ausentes: {missing_fields}")
+        return jsonify({
+            "error": f"Dados incompletos. Campos obrigatórios ausentes: {', '.join(missing_fields)}"
+        }), 400
+
+    print("✅ Validação inicial passou, chamando service...")
+    response, status_code = services.create_user_by_admin(data)
+    print(f"📤 Resposta do service: {response} (status: {status_code})")
+    print("=" * 50)
+
+    return jsonify(response), status_code
+
+
+# ⚠️ ROTA TEMPORÁRIA SEM AUTENTICAÇÃO - REMOVER DEPOIS!
+@admin_bp.route('/create_user_temp', methods=['POST'])
+def create_user_temp_route():
+    """
+    ROTA TEMPORÁRIA para criar usuário SEM verificação JWT.
+    ⚠️ DEVE SER REMOVIDA após resolver o problema do token!
+    """
+    data = request.get_json()
+
+    print("=" * 50)
+    print("⚠️ [TEMP] Criando usuário SEM autenticação JWT")
+    print(f"📋 Dados recebidos: {data}")
+    print("=" * 50)
+
+    # Validação de campos obrigatórios
+    required_fields = ('email', 'senha', 'nome', 'role')
+    missing_fields = [field for field in required_fields if field not in data]
+
+    if not data:
+        return jsonify({"error": "Nenhum dado recebido."}), 400
+
+    if missing_fields:
+        return jsonify({
+            "error": f"Dados incompletos. Campos obrigatórios ausentes: {', '.join(missing_fields)}"
+        }), 400
+
     response, status_code = services.create_user_by_admin(data)
     return jsonify(response), status_code
 
@@ -237,8 +359,7 @@ def save_estoque_draft_route():
 @api_bp.route('/pedidos/me', methods=['GET'])
 @jwt_required()
 def get_my_pedidos_route():
-    identity = get_jwt_identity()
-    user_id = identity['id']
+    user_id = get_user_id_from_jwt()
     pedidos, _ = services.get_pedidos_by_user(user_id)
     return jsonify([p.to_dict() for p in pedidos])
 
@@ -246,8 +367,7 @@ def get_my_pedidos_route():
 @api_bp.route('/pedidos/submit', methods=['POST'])
 @jwt_required()
 def submit_pedidos_route():
-    identity = get_jwt_identity()
-    user_id = identity['id']
+    user_id = get_user_id_from_jwt()
     response, status = services.submit_pedidos(user_id)
     return jsonify(response), status
 
@@ -305,8 +425,7 @@ def update_estoque_route(estoque_id):
 @api_bp.route('/users/stats', methods=['GET'])
 @jwt_required()
 def get_user_stats_route():
-    identity = get_jwt_identity()
-    user_id = identity['id']
+    user_id = get_user_id_from_jwt()
     response, status = services.get_user_stats(user_id)
     return jsonify(response), status
 
@@ -351,4 +470,16 @@ def update_lista_route(lista_id):
 def delete_lista_route(lista_id):
     """Deleta uma lista permanentemente."""
     response, status = services.delete_lista(lista_id)
+    return jsonify(response), status
+
+# ============================================
+# COLLABORATOR ROUTES
+# ============================================
+
+@collaborator_bp.route('/dashboard-summary', methods=['GET'])
+@collaborator_required()
+def collaborator_dashboard_summary_route():
+    """Retorna estatísticas do dashboard do colaborador."""
+    user_id = get_user_id_from_jwt()
+    response, status = services.get_collaborator_dashboard_summary(user_id)
     return jsonify(response), status

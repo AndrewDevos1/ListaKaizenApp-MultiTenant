@@ -79,19 +79,23 @@ const Login: React.FC = () => {
 
             // Decode token to get user role and redirect accordingly
             const tokenPayload = JSON.parse(atob(response.data.access_token.split('.')[1]));
-            const user = tokenPayload.sub; // Extrai {id, role} do campo 'sub'
+            const userId = tokenPayload.sub; // ID do usuário (agora é número, não objeto)
+            const role = tokenPayload.role; // Role agora está diretamente no payload
 
             // DIAGNÓSTICO: Ver estrutura do token
             console.log('👤 Token payload completo:', tokenPayload);
-            console.log('👤 User extraído do sub:', user);
-            console.log('🔍 Campo role:', user.role);
+            console.log('👤 User ID:', userId);
+            console.log('🔍 Role:', role);
 
-            if (user.role === 'ADMIN') {
+            if (role === 'ADMIN') {
                 console.log('✅ Redirecionando ADMIN para /admin');
                 navigate('/admin');
+            } else if (role === 'COLLABORATOR') {
+                console.log('✅ Redirecionando COLLABORATOR para /collaborator');
+                navigate('/collaborator');
             } else {
-                console.log('➡️ Redirecionando colaborador para /admin');
-                navigate('/admin');
+                console.log('⚠️ Role desconhecido - redirecionando para /login');
+                navigate('/login');
             }
         } catch (err: any) {
             setError(err.response?.data?.error || 'Erro ao fazer login. Verifique suas credenciais.');
