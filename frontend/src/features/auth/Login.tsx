@@ -23,12 +23,15 @@ import { useNavigate, Link } from 'react-router-dom';
 import { Container, Row, Col, Card, Form, Button, Alert } from 'react-bootstrap';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faEye, faEyeSlash } from '@fortawesome/free-solid-svg-icons';
 import styles from './Login.module.css';
 
 const Login: React.FC = () => {
     const [email, setEmail] = useState('');
     const [senha, setSenha] = useState('');
     const [rememberMe, setRememberMe] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
@@ -146,15 +149,25 @@ const Login: React.FC = () => {
                                             <i className="fas fa-lock"></i>
                                             Senha
                                         </Form.Label>
-                                        <Form.Control
-                                            type="password"
-                                            placeholder="••••••••"
-                                            value={senha}
-                                            onChange={(e) => setSenha(e.target.value)}
-                                            className={styles.formInput}
-                                            required
-                                            disabled={loading}
-                                        />
+                                        <div className={styles.passwordInputWrapper}>
+                                            <Form.Control
+                                                type={showPassword ? "text" : "password"}
+                                                placeholder="••••••••"
+                                                value={senha}
+                                                onChange={(e) => setSenha(e.target.value)}
+                                                className={styles.formInput}
+                                                required
+                                                disabled={loading}
+                                            />
+                                            <button
+                                                type="button"
+                                                className={styles.togglePasswordButton}
+                                                onClick={() => setShowPassword(!showPassword)}
+                                                disabled={loading}
+                                            >
+                                                <FontAwesomeIcon icon={showPassword ? faEyeSlash : faEye} />
+                                            </button>
+                                        </div>
                                     </Form.Group>
 
                                     {/* Lembrar-me e Esqueci senha */}

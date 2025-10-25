@@ -39,6 +39,44 @@ def login():
     response, status_code = services.authenticate_user(data)
     return jsonify(response), status_code
 
+@auth_bp.route('/change-password', methods=['POST'])
+@jwt_required()
+def change_password():
+    """Endpoint para alterar senha do usuário logado."""
+    data = request.get_json()
+    identity = get_jwt_identity()
+    user_id = identity.get('id')
+
+    if not data or not all(k in data for k in ('senha_atual', 'nova_senha', 'confirmar_senha')):
+        return jsonify({"error": "Dados incompletos para alteração de senha."}), 400
+
+    response, status_code = services.change_password(user_id, data)
+    return jsonify(response), status_code
+
+@auth_bp.route('/profile', methods=['GET'])
+@jwt_required()
+def get_profile():
+    """Endpoint para obter perfil do usuário logado."""
+    identity = get_jwt_identity()
+    user_id = identity.get('id')
+
+    response, status_code = services.get_user_profile(user_id)
+    return jsonify(response), status_code
+
+@auth_bp.route('/profile', methods=['PUT'])
+@jwt_required()
+def update_profile():
+    """Endpoint para atualizar perfil do usuário logado."""
+    data = request.get_json()
+    identity = get_jwt_identity()
+    user_id = identity.get('id')
+
+    if not data:
+        return jsonify({"error": "Dados não fornecidos."}), 400
+
+    response, status_code = services.update_user_profile(user_id, data)
+    return jsonify(response), status_code
+
 @admin_bp.route('/users/<int:user_id>/approve', methods=['POST'])
 @admin_required()
 def approve(user_id):

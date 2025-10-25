@@ -4,7 +4,14 @@
       "Bash(.venv/Scripts/python.exe create_user_simple.py)",
       "Bash(rm -rf frontend/node_modules/.cache)",
       "Bash(.venv/Scripts/python.exe:*)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(python -m flask:*)",
+      "Bash(source:*)",
+      "Bash(timeout 5 python:*)",
+      "Bash(curl:*)",
+      "Bash(flask db migrate:*)",
+      "Bash(../.venv/Scripts/python.exe -m flask db migrate:*)",
+      "Bash(FLASK_APP=run.py .venv/Scripts/python.exe -m flask:*)"
     ],
     "deny": [],
     "ask": []

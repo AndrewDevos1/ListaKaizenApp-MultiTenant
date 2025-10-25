@@ -4,8 +4,8 @@
  * Esta página permite criar, visualizar, editar e deletar listas de compras
  */
 
-import React, { useState } from 'react';
-import { Container, Card, Button } from 'react-bootstrap';
+import React, { useState, useEffect } from 'react';
+import { Container, Card, Button, Modal, Form, Alert } from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faShoppingCart,
@@ -14,35 +14,138 @@ import {
     faEdit,
     faTrash,
     faListAlt,
+    faUsers,
+    faCalendar,
+    faCheckCircle,
+    faExclamationCircle,
 } from '@fortawesome/free-solid-svg-icons';
 import { Link } from 'react-router-dom';
+import api from '../../services/api';
 import styles from './ListasCompras.module.css';
 
+// Interfaces TypeScript
+interface Lista {
+    id: number;
+    nome: string;
+    descricao: string | null;
+    data_criacao: string; // ISO date string
+    colaboradores?: Array<{id: number; nome: string}>;
+}
+
+interface ListaFormData {
+    nome: string;
+    descricao: string;
+}
+
 const ListasCompras: React.FC = () => {
-    // Estado para gerenciar listas
-    const [listas] = useState([
-        {
-            id: 1,
-            nome: 'Lista de Compras - Exemplo',
-            descricao: 'Lista exemplo com itens básicos',
-            itens: 5,
-            data: '23/10/2025',
+    // Estados principais
+    const [listas, setListas] = useState<Lista[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+    // Estados dos modals
+    const [showModal, setShowModal] = useState(false);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [editingLista, setEditingLista] = useState<Lista | null>(null);
+    const [deletingLista, setDeletingLista] = useState<Lista | null>(null);
+    const [formData, setFormData] = useState<ListaFormData>({nome: '', descricao: ''});
+
+    // Buscar listas do backend
+    const fetchListas = async () => {
+        try {
+            setLoading(true);
+            setError(null);
+            const response = await api.get('/listas');
+            setListas(response.data);
+        } catch (err: any) {
+            setError(err.response?.data?.error || 'Erro ao carregar listas');
+            console.error('Erro ao buscar listas:', err);
+        } finally {
+            setLoading(false);
         }
-    ]);
-
-    const handleAdicionar = () => {
-        console.log('Adicionar nova lista');
-        // TODO: Implementar modal/página de criação
     };
 
-    const handleEditar = (id: number) => {
-        console.log('Editar lista:', id);
-        // TODO: Implementar edição
+    // useEffect para carregar listas na montagem
+    useEffect(() => {
+        fetchListas();
+    }, []);
+
+    // Funções do modal de criar/editar
+    const handleOpenCreateModal = () => {
+        setEditingLista(null);
+        setFormData({nome: '', descricao: ''});
+        setShowModal(true);
     };
 
-    const handleDeletar = (id: number) => {
-        console.log('Deletar lista:', id);
-        // TODO: Implementar deleção
+    const handleOpenEditModal = (lista: Lista) => {
+        setEditingLista(lista);
+        setFormData({
+            nome: lista.nome,
+            descricao: lista.descricao || ''
+        });
+        setShowModal(true);
+    };
+
+    const handleCloseModal = () => {
+        setShowModal(false);
+        setEditingLista(null);
+        setFormData({nome: '', descricao: ''});
+        setError(null);
+    };
+
+    const handleSubmit = async () => {
+        try {
+            if (!formData.nome.trim()) {
+                setError('O nome da lista é obrigatório');
+                return;
+            }
+
+            if (editingLista) {
+                // UPDATE
+                await api.put(`/listas/${editingLista.id}`, formData);
+                setSuccessMessage('Lista atualizada com sucesso!');
+            } else {
+                // CREATE
+                await api.post('/listas', formData);
+                setSuccessMessage('Lista criada com sucesso!');
+            }
+
+            handleCloseModal();
+            fetchListas(); // Recarregar listas
+
+            // Limpar mensagem após 3 segundos
+            setTimeout(() => setSuccessMessage(null), 3000);
+        } catch (err: any) {
+            setError(err.response?.data?.error || 'Erro ao salvar lista');
+        }
+    };
+
+    // Funções do modal de deletar
+    const handleOpenDeleteModal = (lista: Lista) => {
+        setDeletingLista(lista);
+        setShowDeleteModal(true);
+    };
+
+    const handleCloseDeleteModal = () => {
+        setShowDeleteModal(false);
+        setDeletingLista(null);
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!deletingLista) return;
+
+        try {
+            await api.delete(`/listas/${deletingLista.id}`);
+            setSuccessMessage('Lista deletada com sucesso!');
+            handleCloseDeleteModal();
+            fetchListas(); // Recarregar listas
+
+            setTimeout(() => setSuccessMessage(null), 3000);
+        } catch (err: any) {
+            setError(err.response?.data?.error || 'Erro ao deletar lista');
+            handleCloseDeleteModal();
+        }
     };
 
     return (
@@ -51,7 +154,7 @@ const ListasCompras: React.FC = () => {
                 {/* Header com botão voltar */}
                 <div className={styles.pageHeader}>
                     <div>
-                        <Link to="/admin" className={styles.backButton}>
+                        <Link to="/dashboardadm" className={styles.backButton}>
                             <FontAwesomeIcon icon={faArrowLeft} />
                             Voltar ao Dashboard
                         </Link>
@@ -66,7 +169,7 @@ const ListasCompras: React.FC = () => {
                     <Button
                         variant="success"
                         size="lg"
-                        onClick={handleAdicionar}
+                        onClick={handleOpenCreateModal}
                         className={styles.addButton}
                     >
                         <FontAwesomeIcon icon={faPlus} style={{ marginRight: '0.5rem' }} />
@@ -74,60 +177,164 @@ const ListasCompras: React.FC = () => {
                     </Button>
                 </div>
 
+                {/* Alertas de sucesso e erro */}
+                {successMessage && (
+                    <Alert variant="success" dismissible onClose={() => setSuccessMessage(null)}>
+                        <FontAwesomeIcon icon={faCheckCircle} style={{marginRight: '0.5rem'}} />
+                        {successMessage}
+                    </Alert>
+                )}
+
+                {error && !showModal && (
+                    <Alert variant="danger" dismissible onClose={() => setError(null)}>
+                        <FontAwesomeIcon icon={faExclamationCircle} style={{marginRight: '0.5rem'}} />
+                        {error}
+                    </Alert>
+                )}
+
+                {/* Loading spinner */}
+                {loading && (
+                    <div className={styles.loadingSpinner}>
+                        <div className="spinner-border text-primary" role="status">
+                            <span className="visually-hidden">Carregando...</span>
+                        </div>
+                        <p>Carregando listas...</p>
+                    </div>
+                )}
+
+                {/* Estado vazio */}
+                {!loading && listas.length === 0 && (
+                    <div className={styles.emptyState}>
+                        <FontAwesomeIcon icon={faListAlt} size="3x" style={{color: '#ccc', marginBottom: '1rem'}} />
+                        <h3>Nenhuma lista encontrada</h3>
+                        <p>Clique em "Adicionar Lista" para criar sua primeira lista</p>
+                    </div>
+                )}
+
                 {/* Grid com os cards */}
-                <div className={styles.listasGrid}>
-                    {/* Cards de listas existentes */}
-                    {listas.map((lista) => (
-                        <Card key={lista.id} className={`${styles.listaCard} ${styles.cardLista}`}>
-                            <div className={styles.cardHeader}>
-                                <div className={styles.cardIcon}>
-                                    <FontAwesomeIcon icon={faListAlt} />
+                {!loading && listas.length > 0 && (
+                    <div className={styles.listasGrid}>
+                        {listas.map((lista) => (
+                            <Card key={lista.id} className={`${styles.listaCard} ${styles.cardLista}`}>
+                                <div className={styles.cardHeader}>
+                                    <div className={styles.cardIcon}>
+                                        <FontAwesomeIcon icon={faListAlt} />
+                                    </div>
+                                    <div className={styles.cardActions}>
+                                        <Button
+                                            variant="link"
+                                            size="sm"
+                                            onClick={() => handleOpenEditModal(lista)}
+                                            className={styles.actionButton}
+                                            title="Editar"
+                                        >
+                                            <FontAwesomeIcon icon={faEdit} />
+                                        </Button>
+                                        <Button
+                                            variant="link"
+                                            size="sm"
+                                            onClick={() => handleOpenDeleteModal(lista)}
+                                            className={`${styles.actionButton} ${styles.deleteButton}`}
+                                            title="Deletar"
+                                        >
+                                            <FontAwesomeIcon icon={faTrash} />
+                                        </Button>
+                                    </div>
                                 </div>
-                                <div className={styles.cardActions}>
+                                <div className={styles.cardContent}>
+                                    <h3 className={styles.cardTitulo}>{lista.nome}</h3>
+                                    <p className={styles.cardDescricao}>
+                                        {lista.descricao || 'Sem descrição'}
+                                    </p>
+                                    <div className={styles.cardInfo}>
+                                        <span className={styles.infoItem}>
+                                            <FontAwesomeIcon icon={faUsers} style={{marginRight: '0.25rem'}} />
+                                            <strong>{lista.colaboradores?.length || 0}</strong> colaboradores
+                                        </span>
+                                        <span className={styles.infoItem}>
+                                            <FontAwesomeIcon icon={faCalendar} style={{marginRight: '0.25rem'}} />
+                                            {new Date(lista.data_criacao).toLocaleDateString('pt-BR')}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div className={styles.cardFooter}>
                                     <Button
-                                        variant="link"
-                                        size="sm"
-                                        onClick={() => handleEditar(lista.id)}
-                                        className={styles.actionButton}
-                                        title="Editar"
+                                        variant="outline-primary"
+                                        className={styles.cardButton}
+                                        onClick={() => handleOpenEditModal(lista)}
                                     >
-                                        <FontAwesomeIcon icon={faEdit} />
-                                    </Button>
-                                    <Button
-                                        variant="link"
-                                        size="sm"
-                                        onClick={() => handleDeletar(lista.id)}
-                                        className={`${styles.actionButton} ${styles.deleteButton}`}
-                                        title="Deletar"
-                                    >
-                                        <FontAwesomeIcon icon={faTrash} />
+                                        Ver Detalhes
                                     </Button>
                                 </div>
-                            </div>
-                            <div className={styles.cardContent}>
-                                <h3 className={styles.cardTitulo}>{lista.nome}</h3>
-                                <p className={styles.cardDescricao}>{lista.descricao}</p>
-                                <div className={styles.cardInfo}>
-                                    <span className={styles.infoItem}>
-                                        <strong>{lista.itens}</strong> itens
-                                    </span>
-                                    <span className={styles.infoItem}>
-                                        {lista.data}
-                                    </span>
-                                </div>
-                            </div>
-                            <div className={styles.cardFooter}>
-                                <Button
-                                    variant="outline-primary"
-                                    className={styles.cardButton}
-                                    onClick={() => handleEditar(lista.id)}
-                                >
-                                    Ver Detalhes
-                                </Button>
-                            </div>
-                        </Card>
-                    ))}
-                </div>
+                            </Card>
+                        ))}
+                    </div>
+                )}
+
+                {/* Modal Criar/Editar */}
+                <Modal show={showModal} onHide={handleCloseModal}>
+                    <Modal.Header closeButton>
+                        <Modal.Title>
+                            {editingLista ? 'Editar Lista' : 'Nova Lista'}
+                        </Modal.Title>
+                    </Modal.Header>
+                    <Modal.Body>
+                        {error && (
+                            <Alert variant="danger" dismissible onClose={() => setError(null)}>
+                                {error}
+                            </Alert>
+                        )}
+                        <Form>
+                            <Form.Group className="mb-3">
+                                <Form.Label>Nome *</Form.Label>
+                                <Form.Control
+                                    type="text"
+                                    placeholder="Ex: Lista Semanal"
+                                    value={formData.nome}
+                                    onChange={(e) => setFormData({...formData, nome: e.target.value})}
+                                    required
+                                />
+                            </Form.Group>
+                            <Form.Group className="mb-3">
+                                <Form.Label>Descrição</Form.Label>
+                                <Form.Control
+                                    as="textarea"
+                                    rows={3}
+                                    placeholder="Descreva o propósito desta lista..."
+                                    value={formData.descricao}
+                                    onChange={(e) => setFormData({...formData, descricao: e.target.value})}
+                                />
+                            </Form.Group>
+                        </Form>
+                    </Modal.Body>
+                    <Modal.Footer>
+                        <Button variant="secondary" onClick={handleCloseModal}>
+                            Cancelar
+                        </Button>
+                        <Button variant="primary" onClick={handleSubmit}>
+                            {editingLista ? 'Salvar Alterações' : 'Criar Lista'}
+                        </Button>
+                    </Modal.Footer>
+                </Modal>
+
+                {/* Modal Deletar */}
+                <Modal show={showDeleteModal} onHide={handleCloseDeleteModal}>
+                    <Modal.Header closeButton>
+                        <Modal.Title>Confirmar Deleção</Modal.Title>
+                    </Modal.Header>
+                    <Modal.Body>
+                        <p>Tem certeza que deseja deletar a lista <strong>{deletingLista?.nome}</strong>?</p>
+                        <p className="text-danger">Esta ação não pode ser desfeita.</p>
+                    </Modal.Body>
+                    <Modal.Footer>
+                        <Button variant="secondary" onClick={handleCloseDeleteModal}>
+                            Cancelar
+                        </Button>
+                        <Button variant="danger" onClick={handleConfirmDelete}>
+                            Deletar
+                        </Button>
+                    </Modal.Footer>
+                </Modal>
             </Container>
         </div>
     );

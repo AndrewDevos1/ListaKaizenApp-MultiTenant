@@ -11,24 +11,35 @@ def register_user(data):
     if Usuario.query.filter_by(email=data['email']).first():
         return {"error": "E-mail já cadastrado."}, 409
 
+    # Verifica se username já existe (se fornecido)
+    if data.get('username') and Usuario.query.filter_by(username=data['username']).first():
+        return {"error": "Nome de usuário já cadastrado."}, 409
+
     hashed_password = generate_password_hash(data['senha'])
-    
+
     new_user = Usuario(
         nome=data['nome'],
+        username=data.get('username'),
         email=data['email'],
         senha_hash=hashed_password,
         role=UserRoles.COLLABORATOR, # Por padrão, novos usuários são colaboradores
         aprovado=False # Novos usuários precisam de aprovação
     )
-    
+
     db.session.add(new_user)
     db.session.commit()
-    
+
     return {"message": "Solicitação de cadastro enviada com sucesso. Aguardando aprovação do administrador."}, 201
 
 def authenticate_user(data):
     """Autentica um usuário e retorna um token JWT."""
-    user = Usuario.query.filter_by(email=data['email']).first()
+    # Aceita login com email ou username
+    login_field = data.get('email') or data.get('username')
+
+    # Busca por email ou username
+    user = Usuario.query.filter(
+        (Usuario.email == login_field) | (Usuario.username == login_field)
+    ).first()
 
     if not user or not check_password_hash(user.senha_hash, data['senha']):
         return {"error": "Credenciais inválidas."}, 401
@@ -40,7 +51,7 @@ def authenticate_user(data):
     identity = {"id": user.id, "role": user.role.value}
     expires = timedelta(days=1)
     access_token = create_access_token(identity=identity, expires_delta=expires)
-    
+
     return {"access_token": access_token}, 200
 
 def approve_user(user_id):
@@ -58,25 +69,88 @@ def create_user_by_admin(data):
     if Usuario.query.filter_by(email=data['email']).first():
         return {"error": "E-mail já cadastrado."}, 409
 
+    # Verifica se username já existe (se fornecido)
+    if data.get('username') and Usuario.query.filter_by(username=data['username']).first():
+        return {"error": "Nome de usuário já cadastrado."}, 409
+
     hashed_password = generate_password_hash(data['senha'])
     role = UserRoles.ADMIN if data.get('role') == 'ADMIN' else UserRoles.COLLABORATOR
 
     new_user = Usuario(
         nome=data['nome'],
+        username=data.get('username'),
         email=data['email'],
         senha_hash=hashed_password,
         role=role,
         aprovado=True  # Criado por admin, já vem aprovado
     )
-    
+
     db.session.add(new_user)
     db.session.commit()
-    
-    return {"message": f"Usuário {new_user.nome} criado com sucesso como {role.value}."}, 201, 200
+
+    return {"message": f"Usuário {new_user.nome} criado com sucesso como {role.value}."}, 201
 
 def get_all_users():
     """Retorna todos os usuários cadastrados."""
     return repositories.get_all(Usuario), 200
+
+def change_password(user_id, data):
+    """Altera a senha de um usuário."""
+    user = Usuario.query.get(user_id)
+    if not user:
+        return {"error": "Usuário não encontrado."}, 404
+
+    # Verifica se a senha atual está correta
+    if not check_password_hash(user.senha_hash, data.get('senha_atual')):
+        return {"error": "Senha atual incorreta."}, 401
+
+    # Verifica se nova senha e confirmação são iguais
+    if data.get('nova_senha') != data.get('confirmar_senha'):
+        return {"error": "A nova senha e a confirmação não coincidem."}, 400
+
+    # Atualiza a senha
+    user.senha_hash = generate_password_hash(data.get('nova_senha'))
+    db.session.commit()
+
+    return {"message": "Senha alterada com sucesso."}, 200
+
+def update_user_profile(user_id, data):
+    """Atualiza o perfil de um usuário."""
+    user = Usuario.query.get(user_id)
+    if not user:
+        return {"error": "Usuário não encontrado."}, 404
+
+    # Verifica se o email já está em uso por outro usuário
+    if 'email' in data and data['email'] != user.email:
+        existing_user = Usuario.query.filter_by(email=data['email']).first()
+        if existing_user:
+            return {"error": "E-mail já está em uso."}, 409
+
+    # Verifica se o username já está em uso por outro usuário
+    if 'username' in data and data['username'] != user.username:
+        existing_user = Usuario.query.filter_by(username=data['username']).first()
+        if existing_user:
+            return {"error": "Nome de usuário já está em uso."}, 409
+
+    # Atualiza os campos permitidos
+    if 'nome' in data:
+        user.nome = data['nome']
+    if 'username' in data:
+        user.username = data['username']
+    if 'email' in data:
+        user.email = data['email']
+
+    db.session.commit()
+
+    return {"message": "Perfil atualizado com sucesso.", "user": user.to_dict()}, 200
+
+def get_user_profile(user_id):
+    """Retorna o perfil de um usuário."""
+    user = Usuario.query.get(user_id)
+    if not user:
+        return {"error": "Usuário não encontrado."}, 404
+
+    return user.to_dict(), 200
 
 
 # --- Serviços de Inventário ---

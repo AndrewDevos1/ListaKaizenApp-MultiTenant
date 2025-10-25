@@ -168,6 +168,42 @@
   color: #bdc3c7;
 }
 
+/* Password input wrapper */
+.passwordInputWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.passwordInputWrapper .formInput {
+  padding-right: 3rem;
+}
+
+.togglePasswordButton {
+  position: absolute;
+  right: 0.75rem;
+  background: none;
+  border: none;
+  color: #667eea;
+  cursor: pointer;
+  padding: 0.5rem;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+
+.togglePasswordButton:hover {
+  color: #764ba2;
+  transform: scale(1.1);
+}
+
+.togglePasswordButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* Checkbox e link */
 .rememberRow {
   display: flex;

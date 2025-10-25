@@ -21,6 +21,9 @@ import CriarLista from './features/admin/CriarLista';
 import ListasCompras from './features/admin/ListasCompras';
 import GerenciarUsuarios from './features/admin/GerenciarUsuarios';
 import Configuracoes from './features/admin/Configuracoes';
+import MudarSenha from './features/admin/MudarSenha';
+import EditarPerfil from './features/admin/EditarPerfil';
+import CriarUsuario from './features/admin/CriarUsuario';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
 import Layout from './components/Layout';
@@ -55,7 +58,10 @@ function App() {
               <Route index element={<AdminDashboard />} />
               <Route path="gerenciar-usuarios" element={<GerenciarUsuarios />} />
               <Route path="configuracoes" element={<Configuracoes />} />
+              <Route path="mudar-senha" element={<MudarSenha />} />
+              <Route path="editar-perfil" element={<EditarPerfil />} />
               <Route path="users" element={<UserManagement />} />
+              <Route path="users/new" element={<CriarUsuario />} />
               <Route path="listas" element={<ListManagement />} />
               <Route path="lista-tarefas" element={<CriarLista />} />
               <Route path="listas-compras" element={<ListasCompras />} />

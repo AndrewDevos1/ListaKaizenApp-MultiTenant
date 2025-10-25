@@ -29,6 +29,7 @@ class Usuario(db.Model, SerializerMixin):
     __tablename__ = "usuarios"
     id = db.Column(db.Integer, primary_key=True)
     nome = db.Column(db.String(100), nullable=False)
+    username = db.Column(db.String(50), unique=True, nullable=True)
     email = db.Column(db.String(120), unique=True, nullable=False)
     senha_hash = db.Column(db.String(128), nullable=False)
     role = db.Column(db.Enum(UserRoles), nullable=False, default=UserRoles.COLLABORATOR)
@@ -40,6 +41,7 @@ class Usuario(db.Model, SerializerMixin):
         return {
             "id": self.id,
             "nome": self.nome,
+            "username": self.username,
             "email": self.email,
             "role": self.role.value,
             "aprovado": self.aprovado,
