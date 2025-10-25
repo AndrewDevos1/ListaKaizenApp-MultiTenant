@@ -148,6 +148,17 @@ def approve(user_id):
     response, status_code = services.approve_user(user_id)
     return jsonify(response), status_code
 
+@admin_bp.route('/users/<int:user_id>', methods=['PUT'])
+@admin_required()
+def update_user(user_id):
+    """Atualiza os dados de um usuário pelo admin."""
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "Dados não fornecidos."}), 400
+    
+    response, status_code = services.update_user_by_admin(user_id, data)
+    return jsonify(response), status_code
+
 
 @admin_bp.route('/users', methods=['GET'])
 @admin_required()

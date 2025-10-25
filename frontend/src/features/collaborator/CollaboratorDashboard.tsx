@@ -27,10 +27,8 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Container, Row, Col, Card, Button, Table } from 'react-bootstrap';
 import {
-    faMapMarkedAlt,
     faListAlt,
     faCheckCircle,
-    faHourglassHalf,
     faFileInvoiceDollar,
     faChartLine,
     faArrowUp,
@@ -43,6 +41,8 @@ import {
     faUser,
     faKey,
     faClipboardList,
+    faShoppingCart,
+    faTasks,
 } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
@@ -242,26 +242,6 @@ const CollaboratorDashboard: React.FC = () => {
     useEffect(() => {
         const defaultWidgets: Widget[] = [
             {
-                id: 'widget-areas',
-                title: 'Minhas Áreas',
-                value: stats.minhas_areas,
-                icon: faMapMarkedAlt,
-                color: styles.widgetBlue,
-                link: '/collaborator/areas',
-                trend: '+2',
-                trendType: 'positive',
-            },
-            {
-                id: 'widget-submissions',
-                title: 'Submissões Pendentes',
-                value: stats.pending_submissions,
-                icon: faHourglassHalf,
-                color: styles.widgetYellow,
-                link: '/collaborator/submissions',
-                trend: '-1',
-                trendType: 'negative',
-            },
-            {
                 id: 'widget-completed',
                 title: 'Submissões Concluídas',
                 value: stats.completed_submissions,
@@ -269,6 +249,26 @@ const CollaboratorDashboard: React.FC = () => {
                 color: styles.widgetGreen,
                 link: '/collaborator/submissions',
                 trend: '+5',
+                trendType: 'positive',
+            },
+            {
+                id: 'widget-compras',
+                title: 'Minhas Compras',
+                value: 0,
+                icon: faShoppingCart,
+                color: styles.widgetPurple,
+                link: '/collaborator/compras',
+                trend: '',
+                trendType: 'positive',
+            },
+            {
+                id: 'widget-tarefas',
+                title: 'Minhas Tarefas',
+                value: 0,
+                icon: faTasks,
+                color: styles.widgetOrange,
+                link: '/collaborator/tarefas',
+                trend: '',
                 trendType: 'positive',
             },
         ];
@@ -298,11 +298,6 @@ const CollaboratorDashboard: React.FC = () => {
 
     // Quick actions configuration
     const quickActions = [
-        {
-            title: 'Minhas Áreas',
-            icon: faMapMarkedAlt,
-            link: '/collaborator/areas',
-        },
         {
             title: 'Meu Perfil',
             icon: faUser,

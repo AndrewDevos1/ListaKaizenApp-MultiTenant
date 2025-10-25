@@ -69,6 +69,28 @@ def approve_user(user_id):
     db.session.commit()
     return {"message": f"Usuário {user.nome} aprovado com sucesso."}
 
+def update_user_by_admin(user_id, data):
+    """Atualiza os dados de um usuário a pedido de um admin."""
+    user = Usuario.query.get(user_id)
+    if not user:
+        return {"error": "Usuário não encontrado."}, 404
+
+    # Validação de email duplicado
+    if 'email' in data and data['email'] != user.email:
+        if Usuario.query.filter_by(email=data['email']).first():
+            return {"error": "E-mail já cadastrado."}, 409
+
+    # Atualiza os campos
+    user.nome = data.get('nome', user.nome)
+    user.email = data.get('email', user.email)
+    
+    # Atualiza o role, se fornecido e válido
+    if 'role' in data and data['role'] in [r.value for r in UserRoles]:
+        user.role = UserRoles(data['role'])
+
+    db.session.commit()
+    return {"message": "Usuário atualizado com sucesso.", "user": user.to_dict()}, 200
+
 def create_user_by_admin(data):
     """Cria um novo usuário (admin ou colaborador) a pedido de um admin."""
     try:
