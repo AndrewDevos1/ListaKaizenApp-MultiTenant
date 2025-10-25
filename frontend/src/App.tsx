@@ -4,7 +4,6 @@ import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import HomePage from './pages/HomePage';
 import Login from './features/auth/Login';
 import Register from './features/auth/Register';
-import Dashboard from './features/dashboard/Dashboard';
 import GlobalDashboard from './features/dashboard/GlobalDashboard';
 import EstoqueLista from './features/inventory/EstoqueLista';
 import MinhasSubmissoes from './features/inventory/MinhasSubmissoes';
@@ -40,20 +39,8 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
 
-          {/* Dashboard Admin CoreUI - Rota Especial */}
+          {/* Rotas Administrativas */}
           <Route element={<Layout />}>
-            <Route path="/dashboardadm" element={<AdminRoute />}>
-              <Route index element={<AdminDashboard />} />
-            </Route>
-
-            {/* Rotas protegidas de usuário colaborador */}
-            <Route path="/dashboard" element={<ProtectedRoute />}>
-              <Route index element={<Dashboard />} />
-              <Route path="submissions" element={<MinhasSubmissoes />} />
-              <Route path="area/:areaId/estoque" element={<EstoqueLista />} />
-            </Route>
-
-            {/* Rotas administrativas */}
             <Route path="/admin" element={<AdminRoute />}>
               <Route index element={<AdminDashboard />} />
               <Route path="gerenciar-usuarios" element={<GerenciarUsuarios />} />

@@ -154,7 +154,7 @@ const ListasCompras: React.FC = () => {
                 {/* Header com botão voltar */}
                 <div className={styles.pageHeader}>
                     <div>
-                        <Link to="/dashboardadm" className={styles.backButton}>
+                        <Link to="/admin" className={styles.backButton}>
                             <FontAwesomeIcon icon={faArrowLeft} />
                             Voltar ao Dashboard
                         </Link>

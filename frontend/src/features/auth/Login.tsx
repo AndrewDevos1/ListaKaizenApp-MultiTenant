@@ -87,11 +87,11 @@ const Login: React.FC = () => {
             console.log('🔍 Campo role:', user.role);
 
             if (user.role === 'ADMIN') {
-                console.log('✅ Redirecionando ADMIN para /dashboardadm');
-                navigate('/dashboardadm');
+                console.log('✅ Redirecionando ADMIN para /admin');
+                navigate('/admin');
             } else {
-                console.log('➡️ Redirecionando colaborador para /dashboard');
-                navigate('/dashboard');
+                console.log('➡️ Redirecionando colaborador para /admin');
+                navigate('/admin');
             }
         } catch (err: any) {
             setError(err.response?.data?.error || 'Erro ao fazer login. Verifique suas credenciais.');

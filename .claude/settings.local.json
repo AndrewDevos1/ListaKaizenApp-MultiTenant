@@ -11,7 +11,8 @@
       "Bash(curl:*)",
       "Bash(flask db migrate:*)",
       "Bash(../.venv/Scripts/python.exe -m flask db migrate:*)",
-      "Bash(FLASK_APP=run.py .venv/Scripts/python.exe -m flask:*)"
+      "Bash(FLASK_APP=run.py .venv/Scripts/python.exe -m flask:*)",
+      "Bash(npm start)"
     ],
     "deny": [],
     "ask": []

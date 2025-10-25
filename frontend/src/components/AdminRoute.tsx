@@ -34,8 +34,8 @@ const AdminRoute: React.FC = () => {
     }
 
     if (user?.role !== 'ADMIN') {
-        console.log('❌ Usuário não é ADMIN - redirecionando para /dashboard');
-        return <Navigate to="/dashboard" replace />; // Redireciona para o dashboard de colaborador se não for admin
+        console.log('❌ Usuário não é ADMIN - redirecionando para /login');
+        return <Navigate to="/login" replace />; // Redireciona para login se não for admin
     }
 
     console.log('✅ Usuário ADMIN autenticado - renderizando Outlet');
