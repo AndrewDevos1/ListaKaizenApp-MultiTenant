@@ -412,3 +412,48 @@ npm start →
 ```
 
 **Suporta:** Windows, macOS, Linux
+
+---
+
+## 🔥 BONUS: Resolver Funcionalidade de Listas de Compras
+
+**Data de Implementação:** 2025-10-25 16:50
+
+### O Que Estava Faltando:
+
+❌ **Problema:** `/admin/listas-compras` existia mas sem forma de ADICIONAR ITENS à lista
+
+### Solução Implementada:
+
+✅ **3 Serviços novos:**
+- `adicionar_itens_na_lista()` - Cria estoques com lista_id
+- `obter_itens_da_lista()` - Lista itens da lista
+- `remover_item_da_lista()` - Remove itens
+
+✅ **3 Endpoints novos:**
+- `POST /api/admin/listas/{id}/itens` - Adicionar itens
+- `GET /api/admin/listas/{id}/itens` - Listar itens
+- `DELETE /api/admin/listas/{id}/itens/{item_id}` - Remover item
+
+✅ **Componente novo:**
+- `GerenciarItensLista.tsx` - Tela de gerenciar itens da lista
+
+✅ **Fluxo completo:**
+- Admin: Criar lista → Adicionar itens → Atribuir colaboradores
+- Colaborador: Ver listas → Preencher → Submeter
+- Admin: Ver consolidado em Lista Mãe
+
+### Arquivos Criados/Modificados:
+
+**Backend:**
+- `services.py` → 3 funções (95 linhas)
+- `controllers.py` → 3 endpoints (32 linhas)
+
+**Frontend:**
+- `GerenciarItensLista.tsx` → Novo componente (295 linhas)
+- `GerenciarItensLista.module.css` → Estilos (206 linhas)
+- `ListasCompras.tsx` → Botão "Gerenciar Itens" adicionado
+- `App.tsx` → Rota `/admin/listas/:listaId/gerenciar-itens`
+
+**Documentação:**
+- `implementacao-gerenciar-itens-listas.md` → Guia completo

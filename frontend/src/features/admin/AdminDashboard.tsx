@@ -245,16 +245,6 @@ const AdminDashboard: React.FC = () => {
     useEffect(() => {
         const defaultWidgets: Widget[] = [
             {
-                id: 'widget-lists',
-                title: 'Lista de Tarefas',
-                value: stats.total_lists,
-                icon: faListAlt,
-                color: styles.widgetGreen,
-                link: '/admin/lista-tarefas',
-                trend: '+8%',
-                trendType: 'positive',
-            },
-            {
                 id: 'widget-submissions',
                 title: 'Listas de Compras',
                 value: stats.pending_submissions,

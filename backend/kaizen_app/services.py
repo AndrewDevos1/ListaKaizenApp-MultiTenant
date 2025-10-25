@@ -764,3 +764,99 @@ def get_lista_mae_consolidada(lista_id):
     }
 
     return consolidado, 200
+
+def adicionar_itens_na_lista(lista_id, items_data):
+    """
+    Adiciona/atualiza itens de estoque em uma lista.
+
+    items_data: [
+        {"item_id": 1, "quantidade_minima": 10},
+        {"item_id": 2, "quantidade_minima": 5}
+    ]
+    """
+    lista = repositories.get_by_id(Lista, lista_id)
+    if not lista:
+        return {"error": "Lista não encontrada."}, 404
+
+    itens_adicionados = []
+
+    for item_data in items_data:
+        item_id = item_data.get('item_id')
+        quantidade_minima = item_data.get('quantidade_minima', 0)
+
+        if not item_id:
+            continue
+
+        item = repositories.get_by_id(Item, item_id)
+        if not item:
+            continue
+
+        # Verifica se o estoque já existe
+        estoque_existente = Estoque.query.filter_by(
+            lista_id=lista_id,
+            item_id=item_id
+        ).first()
+
+        if estoque_existente:
+            # Atualiza quantidade mínima
+            estoque_existente.quantidade_minima = quantidade_minima
+        else:
+            # Cria novo estoque vinculado à lista
+            novo_estoque = Estoque(
+                lista_id=lista_id,
+                item_id=item_id,
+                area_id=1,  # Padrão para listas (não é específico de área)
+                quantidade_atual=0,
+                quantidade_minima=quantidade_minima,
+                pedido=0
+            )
+            db.session.add(novo_estoque)
+            itens_adicionados.append(item.nome)
+
+    db.session.commit()
+
+    return {
+        "message": f"{len(itens_adicionados)} itens adicionados à lista.",
+        "itens_adicionados": itens_adicionados
+    }, 200
+
+def obter_itens_da_lista(lista_id):
+    """Retorna todos os itens (estoques) vinculados a uma lista"""
+    lista = repositories.get_by_id(Lista, lista_id)
+    if not lista:
+        return {"error": "Lista não encontrada."}, 404
+
+    estoques = Estoque.query.filter_by(lista_id=lista_id).all()
+
+    itens = []
+    for estoque in estoques:
+        itens.append({
+            "estoque_id": estoque.id,
+            "item_id": estoque.item_id,
+            "item_nome": estoque.item.nome,
+            "quantidade_minima": float(estoque.quantidade_minima),
+            "quantidade_atual": float(estoque.quantidade_atual),
+            "unidade_medida": estoque.item.unidade_medida,
+            "fornecedor_id": estoque.item.fornecedor_id
+        })
+
+    return itens, 200
+
+def remover_item_da_lista(lista_id, item_id):
+    """Remove um item (estoque) de uma lista"""
+    lista = repositories.get_by_id(Lista, lista_id)
+    if not lista:
+        return {"error": "Lista não encontrada."}, 404
+
+    estoque = Estoque.query.filter_by(
+        lista_id=lista_id,
+        item_id=item_id
+    ).first()
+
+    if not estoque:
+        return {"error": "Item não encontrado nesta lista."}, 404
+
+    db.session.delete(estoque)
+    db.session.commit()
+
+    return {"message": f"Item removido da lista."}, 200

@@ -538,3 +538,36 @@ def get_lista_mae_consolidada_route(lista_id):
     """
     response, status = services.get_lista_mae_consolidada(lista_id)
     return jsonify(response), status
+
+@admin_bp.route('/listas/<int:lista_id>/itens', methods=['POST'])
+@admin_required()
+def adicionar_itens_na_lista_route(lista_id):
+    """
+    Adiciona/atualiza itens de estoque em uma lista.
+
+    Payload: {
+        "itens": [
+            {"item_id": 1, "quantidade_minima": 10},
+            {"item_id": 2, "quantidade_minima": 5}
+        ]
+    }
+    """
+    data = request.get_json()
+    items_data = data.get('itens', [])
+
+    response, status = services.adicionar_itens_na_lista(lista_id, items_data)
+    return jsonify(response), status
+
+@admin_bp.route('/listas/<int:lista_id>/itens', methods=['GET'])
+@admin_required()
+def obter_itens_da_lista_route(lista_id):
+    """Retorna todos os itens (estoques) vinculados a uma lista"""
+    response, status = services.obter_itens_da_lista(lista_id)
+    return jsonify(response), status
+
+@admin_bp.route('/listas/<int:lista_id>/itens/<int:item_id>', methods=['DELETE'])
+@admin_required()
+def remover_item_da_lista_route(lista_id, item_id):
+    """Remove um item (estoque) de uma lista"""
+    response, status = services.remover_item_da_lista(lista_id, item_id)
+    return jsonify(response), status

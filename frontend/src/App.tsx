@@ -15,10 +15,9 @@ import AreaManagement from './features/admin/AreaManagement';
 import ItemManagement from './features/admin/ItemManagement';
 import AdminDashboard from './features/admin/AdminDashboard';
 import UserManagement from './features/admin/UserManagement';
-import ListManagement from './features/admin/ListManagement';
-import CriarLista from './features/admin/CriarLista';
 import ListasCompras from './features/admin/ListasCompras';
 import ListaMaeConsolidada from './features/admin/ListaMaeConsolidada';
+import GerenciarItensLista from './features/admin/GerenciarItensLista';
 import GerenciarUsuarios from './features/admin/GerenciarUsuarios';
 import Configuracoes from './features/admin/Configuracoes';
 import MudarSenha from './features/admin/MudarSenha';
@@ -54,10 +53,9 @@ function App() {
               <Route path="editar-perfil" element={<EditarPerfil />} />
               <Route path="users" element={<UserManagement />} />
               <Route path="users/new" element={<CriarUsuario />} />
-              <Route path="listas" element={<ListManagement />} />
-              <Route path="lista-tarefas" element={<CriarLista />} />
               <Route path="listas-compras" element={<ListasCompras />} />
               <Route path="listas/:listaId/lista-mae" element={<ListaMaeConsolidada />} />
+              <Route path="listas/:listaId/gerenciar-itens" element={<GerenciarItensLista />} />
               <Route path="items" element={<ItemManagement />} />
               <Route path="areas" element={<AreaManagement />} />
               <Route path="fornecedores" element={<FornecedorManagement />} />

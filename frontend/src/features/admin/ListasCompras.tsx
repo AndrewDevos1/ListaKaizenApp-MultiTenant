@@ -37,6 +37,13 @@ interface ListaFormData {
     descricao: string;
 }
 
+interface Usuario {
+    id: number;
+    nome: string;
+    email: string;
+    role: string;
+}
+
 const ListasCompras: React.FC = () => {
     // Estados principais
     const [listas, setListas] = useState<Lista[]>([]);
@@ -47,16 +54,24 @@ const ListasCompras: React.FC = () => {
     // Estados dos modals
     const [showModal, setShowModal] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [showAssignModal, setShowAssignModal] = useState(false);
     const [editingLista, setEditingLista] = useState<Lista | null>(null);
     const [deletingLista, setDeletingLista] = useState<Lista | null>(null);
+    const [assigningLista, setAssigningLista] = useState<Lista | null>(null);
     const [formData, setFormData] = useState<ListaFormData>({nome: '', descricao: ''});
+
+    // Estados para atribuição de colaboradores
+    const [allUsers, setAllUsers] = useState<Usuario[]>([]);
+    const [selectedCollaborators, setSelectedCollaborators] = useState<number[]>([]);
+    const [loadingUsers, setLoadingUsers] = useState(false);
+    const [assigningLoading, setAssigningLoading] = useState(false);
 
     // Buscar listas do backend
     const fetchListas = async () => {
         try {
             setLoading(true);
             setError(null);
-            const response = await api.get('/listas');
+            const response = await api.get('/v1/listas');
             setListas(response.data);
         } catch (err: any) {
             setError(err.response?.data?.error || 'Erro ao carregar listas');
@@ -103,11 +118,11 @@ const ListasCompras: React.FC = () => {
 
             if (editingLista) {
                 // UPDATE
-                await api.put(`/listas/${editingLista.id}`, formData);
+                await api.put(`/v1/listas/${editingLista.id}`, formData);
                 setSuccessMessage('Lista atualizada com sucesso!');
             } else {
                 // CREATE
-                await api.post('/listas', formData);
+                await api.post('/v1/listas', formData);
                 setSuccessMessage('Lista criada com sucesso!');
             }
 
@@ -136,7 +151,7 @@ const ListasCompras: React.FC = () => {
         if (!deletingLista) return;
 
         try {
-            await api.delete(`/listas/${deletingLista.id}`);
+            await api.delete(`/v1/listas/${deletingLista.id}`);
             setSuccessMessage('Lista deletada com sucesso!');
             handleCloseDeleteModal();
             fetchListas(); // Recarregar listas
@@ -145,6 +160,71 @@ const ListasCompras: React.FC = () => {
         } catch (err: any) {
             setError(err.response?.data?.error || 'Erro ao deletar lista');
             handleCloseDeleteModal();
+        }
+    };
+
+    // Funções para atribuição de colaboradores
+    const fetchAllUsers = async () => {
+        try {
+            setLoadingUsers(true);
+            const response = await api.get('/admin/users');
+            // Filtrar apenas usuários com role COLLABORATOR
+            const collaborators = response.data.filter((user: Usuario) => user.role === 'COLLABORATOR');
+            setAllUsers(collaborators);
+        } catch (err: any) {
+            console.error('Erro ao buscar usuários:', err);
+            setError('Erro ao carregar colaboradores');
+        } finally {
+            setLoadingUsers(false);
+        }
+    };
+
+    const handleOpenAssignModal = async (lista: Lista) => {
+        setAssigningLista(lista);
+        await fetchAllUsers();
+
+        // Pré-selecionar colaboradores já atribuídos
+        const assignedIds = lista.colaboradores?.map(c => c.id) || [];
+        setSelectedCollaborators(assignedIds);
+
+        setShowAssignModal(true);
+    };
+
+    const handleCloseAssignModal = () => {
+        setShowAssignModal(false);
+        setAssigningLista(null);
+        setSelectedCollaborators([]);
+        setAllUsers([]);
+        setError(null);
+    };
+
+    const handleToggleCollaborator = (userId: number) => {
+        setSelectedCollaborators(prev => {
+            if (prev.includes(userId)) {
+                return prev.filter(id => id !== userId);
+            } else {
+                return [...prev, userId];
+            }
+        });
+    };
+
+    const handleConfirmAssign = async () => {
+        if (!assigningLista) return;
+
+        try {
+            setAssigningLoading(true);
+            await api.post(`/v1/listas/${assigningLista.id}/assign`, {
+                colaborador_ids: selectedCollaborators
+            });
+            setSuccessMessage('Colaboradores atribuídos com sucesso!');
+            handleCloseAssignModal();
+            fetchListas(); // Recarregar listas
+
+            setTimeout(() => setSuccessMessage(null), 3000);
+        } catch (err: any) {
+            setError(err.response?.data?.error || 'Erro ao atribuir colaboradores');
+        } finally {
+            setAssigningLoading(false);
         }
     };
 
@@ -265,6 +345,24 @@ const ListasCompras: React.FC = () => {
                                     >
                                         Ver Detalhes
                                     </Button>
+                                    <Button
+                                        variant="secondary"
+                                        className={styles.cardButton}
+                                        onClick={() => handleOpenAssignModal(lista)}
+                                        title="Atribuir colaboradores a esta lista"
+                                    >
+                                        <FontAwesomeIcon icon={faUsers} style={{marginRight: '0.5rem'}} />
+                                        Atribuir
+                                    </Button>
+                                    <Link to={`/admin/listas/${lista.id}/gerenciar-itens`}>
+                                        <Button
+                                            variant="warning"
+                                            className={styles.cardButton}
+                                        >
+                                            <FontAwesomeIcon icon={faEdit} style={{marginRight: '0.5rem'}} />
+                                            Gerenciar Itens
+                                        </Button>
+                                    </Link>
                                     <Link to={`/admin/listas/${lista.id}/lista-mae`}>
                                         <Button
                                             variant="info"
@@ -341,6 +439,72 @@ const ListasCompras: React.FC = () => {
                         </Button>
                         <Button variant="danger" onClick={handleConfirmDelete}>
                             Deletar
+                        </Button>
+                    </Modal.Footer>
+                </Modal>
+
+                {/* Modal Atribuir Colaboradores */}
+                <Modal show={showAssignModal} onHide={handleCloseAssignModal} size="lg">
+                    <Modal.Header closeButton>
+                        <Modal.Title>
+                            <FontAwesomeIcon icon={faUsers} style={{marginRight: '0.5rem'}} />
+                            Atribuir Colaboradores - {assigningLista?.nome}
+                        </Modal.Title>
+                    </Modal.Header>
+                    <Modal.Body>
+                        {error && (
+                            <Alert variant="danger" dismissible onClose={() => setError(null)}>
+                                {error}
+                            </Alert>
+                        )}
+
+                        {loadingUsers ? (
+                            <div className="text-center my-4">
+                                <div className="spinner-border text-primary" role="status">
+                                    <span className="visually-hidden">Carregando...</span>
+                                </div>
+                                <p className="mt-2">Carregando colaboradores...</p>
+                            </div>
+                        ) : allUsers.length === 0 ? (
+                            <Alert variant="info">
+                                Nenhum colaborador disponível. Crie usuários com role COLLABORATOR primeiro.
+                            </Alert>
+                        ) : (
+                            <div style={{maxHeight: '400px', overflowY: 'auto'}}>
+                                {allUsers.map((user) => (
+                                    <Form.Check
+                                        key={user.id}
+                                        type="checkbox"
+                                        id={`user-${user.id}`}
+                                        label={`${user.nome} (${user.email})`}
+                                        checked={selectedCollaborators.includes(user.id)}
+                                        onChange={() => handleToggleCollaborator(user.id)}
+                                        className="mb-2"
+                                    />
+                                ))}
+                            </div>
+                        )}
+
+                        {allUsers.length > 0 && selectedCollaborators.length > 0 && (
+                            <Alert variant="success" className="mt-3">
+                                <strong>{selectedCollaborators.length}</strong> colaborador(es) selecionado(s)
+                            </Alert>
+                        )}
+                    </Modal.Body>
+                    <Modal.Footer>
+                        <Button
+                            variant="secondary"
+                            onClick={handleCloseAssignModal}
+                            disabled={assigningLoading}
+                        >
+                            Cancelar
+                        </Button>
+                        <Button
+                            variant="primary"
+                            onClick={handleConfirmAssign}
+                            disabled={assigningLoading || loadingUsers}
+                        >
+                            {assigningLoading ? 'Salvando...' : 'Salvar Atribuições'}
                         </Button>
                     </Modal.Footer>
                 </Modal>

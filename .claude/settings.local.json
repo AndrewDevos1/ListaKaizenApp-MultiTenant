@@ -20,7 +20,13 @@
       "Bash(.venvScriptspython.exe -m flask db current)",
       "Bash(cd:*)",
       "Bash(pip install:*)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(python:*)",
+      "Bash(.venvScriptsactivate)",
+      "Bash(flask --app run:app db upgrade:*)",
+      "Bash(.venvScriptspython.exe -m flask --app run:app db upgrade)",
+      "Bash(./.venv/Scripts/flask:*)",
+      "Read(//d//**)"
     ],
     "deny": [],
     "ask": []
