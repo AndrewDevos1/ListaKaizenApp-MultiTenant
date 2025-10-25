@@ -18,23 +18,39 @@ import {
     faCalendar,
     faCheckCircle,
     faExclamationCircle,
+    faTruck,
+    faTag,
+    faPhone,
 } from '@fortawesome/free-solid-svg-icons';
 import { Link } from 'react-router-dom';
 import api from '../../services/api';
 import styles from './ListasCompras.module.css';
 
 // Interfaces TypeScript
+interface Fornecedor {
+    id: number;
+    nome: string;
+    contato?: string;
+}
+
 interface Lista {
     id: number;
     nome: string;
     descricao: string | null;
     data_criacao: string; // ISO date string
+    fornecedor_id?: number;
+    fornecedor?: Fornecedor;
+    categoria?: string;
+    telefone_whatsapp?: string;
     colaboradores?: Array<{id: number; nome: string}>;
 }
 
 interface ListaFormData {
     nome: string;
     descricao: string;
+    fornecedor_id: string;
+    categoria: string;
+    telefone_whatsapp: string;
 }
 
 interface Usuario {
@@ -58,13 +74,27 @@ const ListasCompras: React.FC = () => {
     const [editingLista, setEditingLista] = useState<Lista | null>(null);
     const [deletingLista, setDeletingLista] = useState<Lista | null>(null);
     const [assigningLista, setAssigningLista] = useState<Lista | null>(null);
-    const [formData, setFormData] = useState<ListaFormData>({nome: '', descricao: ''});
+
+    // Estado para form data
+    const resetFormData = (): ListaFormData => ({
+        nome: '',
+        descricao: '',
+        fornecedor_id: '',
+        categoria: '',
+        telefone_whatsapp: '',
+    });
+
+    const [formData, setFormData] = useState<ListaFormData>(resetFormData());
 
     // Estados para atribuição de colaboradores
     const [allUsers, setAllUsers] = useState<Usuario[]>([]);
     const [selectedCollaborators, setSelectedCollaborators] = useState<number[]>([]);
     const [loadingUsers, setLoadingUsers] = useState(false);
     const [assigningLoading, setAssigningLoading] = useState(false);
+
+    // Estados para fornecedores
+    const [fornecedores, setFornecedores] = useState<Fornecedor[]>([]);
+    const [loadingFornecedores, setLoadingFornecedores] = useState(false);
 
     // Buscar listas do backend
     const fetchListas = async () => {
@@ -81,15 +111,30 @@ const ListasCompras: React.FC = () => {
         }
     };
 
-    // useEffect para carregar listas na montagem
+    // Buscar fornecedores do backend
+    const fetchFornecedores = async () => {
+        try {
+            setLoadingFornecedores(true);
+            const response = await api.get('/v1/fornecedores');
+            setFornecedores(response.data);
+        } catch (err: any) {
+            console.error('Erro ao buscar fornecedores:', err);
+            // Não mostrar erro, apenas log
+        } finally {
+            setLoadingFornecedores(false);
+        }
+    };
+
+    // useEffect para carregar listas e fornecedores na montagem
     useEffect(() => {
         fetchListas();
+        fetchFornecedores();
     }, []);
 
     // Funções do modal de criar/editar
     const handleOpenCreateModal = () => {
         setEditingLista(null);
-        setFormData({nome: '', descricao: ''});
+        setFormData(resetFormData());
         setShowModal(true);
     };
 
@@ -97,7 +142,10 @@ const ListasCompras: React.FC = () => {
         setEditingLista(lista);
         setFormData({
             nome: lista.nome,
-            descricao: lista.descricao || ''
+            descricao: lista.descricao || '',
+            fornecedor_id: lista.fornecedor_id?.toString() || '',
+            categoria: lista.categoria || '',
+            telefone_whatsapp: lista.telefone_whatsapp || '',
         });
         setShowModal(true);
     };
@@ -105,7 +153,7 @@ const ListasCompras: React.FC = () => {
     const handleCloseModal = () => {
         setShowModal(false);
         setEditingLista(null);
-        setFormData({nome: '', descricao: ''});
+        setFormData(resetFormData());
         setError(null);
     };
 
@@ -113,6 +161,16 @@ const ListasCompras: React.FC = () => {
         try {
             if (!formData.nome.trim()) {
                 setError('O nome da lista é obrigatório');
+                return;
+            }
+
+            if (!formData.fornecedor_id) {
+                setError('O fornecedor é obrigatório');
+                return;
+            }
+
+            if (!formData.categoria.trim()) {
+                setError('A categoria é obrigatória');
                 return;
             }
 
@@ -323,6 +381,31 @@ const ListasCompras: React.FC = () => {
                                 </div>
                                 <div className={styles.cardContent}>
                                     <h3 className={styles.cardTitulo}>{lista.nome}</h3>
+
+                                    {/* Fornecedor */}
+                                    {lista.fornecedor && (
+                                        <p className={styles.cardMetadata}>
+                                            <FontAwesomeIcon icon={faTruck} style={{marginRight: '0.5rem', color: '#f9b115'}} />
+                                            <strong>Fornecedor:</strong> {lista.fornecedor.nome}
+                                        </p>
+                                    )}
+
+                                    {/* Categoria */}
+                                    {lista.categoria && (
+                                        <p className={styles.cardMetadata}>
+                                            <FontAwesomeIcon icon={faTag} style={{marginRight: '0.5rem', color: '#667eea'}} />
+                                            <strong>Categoria:</strong> {lista.categoria}
+                                        </p>
+                                    )}
+
+                                    {/* WhatsApp */}
+                                    {lista.telefone_whatsapp && (
+                                        <p className={styles.cardMetadata}>
+                                            <FontAwesomeIcon icon={faPhone} style={{marginRight: '0.5rem', color: '#25d366'}} />
+                                            <strong>WhatsApp:</strong> {lista.telefone_whatsapp}
+                                        </p>
+                                    )}
+
                                     <p className={styles.cardDescricao}>
                                         {lista.descricao || 'Sem descrição'}
                                     </p>
@@ -393,7 +476,7 @@ const ListasCompras: React.FC = () => {
                         )}
                         <Form>
                             <Form.Group className="mb-3">
-                                <Form.Label>Nome *</Form.Label>
+                                <Form.Label>Nome da Lista *</Form.Label>
                                 <Form.Control
                                     type="text"
                                     placeholder="Ex: Lista Semanal"
@@ -402,6 +485,46 @@ const ListasCompras: React.FC = () => {
                                     required
                                 />
                             </Form.Group>
+
+                            <Form.Group className="mb-3">
+                                <Form.Label>Fornecedor *</Form.Label>
+                                <Form.Select
+                                    value={formData.fornecedor_id}
+                                    onChange={(e) => setFormData({...formData, fornecedor_id: e.target.value})}
+                                    required
+                                    disabled={loadingFornecedores}
+                                >
+                                    <option value="">Selecione um fornecedor...</option>
+                                    {fornecedores.map(f => (
+                                        <option key={f.id} value={f.id}>{f.nome}</option>
+                                    ))}
+                                </Form.Select>
+                            </Form.Group>
+
+                            <Form.Group className="mb-3">
+                                <Form.Label>Categoria *</Form.Label>
+                                <Form.Control
+                                    type="text"
+                                    placeholder="Ex: Alimentos, Limpeza, Material de Escritório..."
+                                    value={formData.categoria}
+                                    onChange={(e) => setFormData({...formData, categoria: e.target.value})}
+                                    required
+                                />
+                            </Form.Group>
+
+                            <Form.Group className="mb-3">
+                                <Form.Label>Telefone WhatsApp</Form.Label>
+                                <Form.Control
+                                    type="text"
+                                    placeholder="(00) 00000-0000"
+                                    value={formData.telefone_whatsapp}
+                                    onChange={(e) => setFormData({...formData, telefone_whatsapp: e.target.value})}
+                                />
+                                <Form.Text className="text-muted">
+                                    Opcional - Para contato direto via WhatsApp
+                                </Form.Text>
+                            </Form.Group>
+
                             <Form.Group className="mb-3">
                                 <Form.Label>Descrição</Form.Label>
                                 <Form.Control

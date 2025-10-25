@@ -218,6 +218,20 @@
   margin-bottom: 0.75rem;
 }
 
+.cardMetadata {
+  color: #7f8c8d;
+  font-size: 0.9rem;
+  margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.cardMetadata strong {
+  color: #2c3e50;
+  font-weight: 600;
+}
+
 .cardDescricao {
   color: #7f8c8d;
   font-size: 0.95rem;
