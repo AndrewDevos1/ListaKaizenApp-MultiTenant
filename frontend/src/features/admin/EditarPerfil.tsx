@@ -19,10 +19,12 @@ import {
     faExclamationTriangle,
     faEnvelope,
     faIdCard,
+    faSignOutAlt,
 } from '@fortawesome/free-solid-svg-icons';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import styles from './EditarPerfil.module.css';
+import { useAuth } from '../../context/AuthContext';
 
 interface UserProfile {
     id: number;
@@ -36,6 +38,7 @@ interface UserProfile {
 
 const EditarPerfil: React.FC = () => {
     const navigate = useNavigate();
+    const { logout } = useAuth();
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [formData, setFormData] = useState({
         nome: '',
@@ -273,6 +276,14 @@ const EditarPerfil: React.FC = () => {
 
                     {/* Botões de ação */}
                     <div className={styles.actions}>
+                        <Button
+                            variant="danger"
+                            onClick={logout}
+                            disabled={saving}
+                        >
+                            <FontAwesomeIcon icon={faSignOutAlt} style={{ marginRight: '0.5rem' }} />
+                            Sair
+                        </Button>
                         <Button
                             variant="outline-secondary"
                             onClick={handleCancel}
