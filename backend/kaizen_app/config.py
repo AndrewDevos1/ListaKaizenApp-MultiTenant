@@ -3,6 +3,7 @@ import os
 # Define o diretório base do projeto backend
 basedir = os.path.abspath(os.path.dirname(__file__))
 
+
 class Config:
     """Configurações base da aplicação."""
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'uma-chave-secreta-muito-segura'
@@ -12,16 +13,17 @@ class Config:
     JWT_TOKEN_LOCATION = ['headers']
     JWT_HEADER_NAME = 'Authorization'
     JWT_HEADER_TYPE = 'Bearer'
-    # Permite que o subject (sub) seja qualquer tipo (string, int, dict, etc)
     JWT_IDENTITY_CLAIM = 'sub'
     JWT_ERROR_MESSAGE_KEY = 'msg'
 
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
+
 class DevelopmentConfig(Config):
     """Configurações para o ambiente de desenvolvimento."""
     SQLALCHEMY_DATABASE_URI = os.environ.get('DEV_DATABASE_URL') or \
         'sqlite:///' + os.path.join(basedir, '..', 'kaizen_dev.db')
+
 
 class TestingConfig(Config):
     """Configurações para o ambiente de testes."""
@@ -29,10 +31,13 @@ class TestingConfig(Config):
     SQLALCHEMY_DATABASE_URI = os.environ.get('TEST_DATABASE_URL') or \
         'sqlite:///' + os.path.join(basedir, '..', 'kaizen_test.db')
 
+
 class ProductionConfig(Config):
     """Configurações para o ambiente de produção."""
-    # A URI do banco de dados de produção deve ser definida via variável de ambiente
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL')
+    # ✅ CORRIGIDO: Se DATABASE_URL não existir, usa SQLite
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
+        'sqlite:///kaizen_prod.db'
+
 
 # Mapeamento de nomes para as classes de configuração
 config_by_name = {
