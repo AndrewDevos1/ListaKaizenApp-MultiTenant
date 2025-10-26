@@ -3,7 +3,7 @@ from .config import config_by_name
 from .extensions import db, migrate, jwt, cors
 
 
-def create_app(config_name='ListaKaizen'):
+def create_app(config_name='production'):
     """Application Factory Function"""
     app = Flask(__name__)
 
