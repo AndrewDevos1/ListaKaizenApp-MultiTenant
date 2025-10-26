@@ -1,0 +1,17 @@
+backend/
+Manuais/
+planejamento/
+ProjetoPorEscrito/
+prints de erros/
+*.md
+.git/
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.db
+.sqlite
+node_modules/
+.env
+.env.local
+desktop.ini
