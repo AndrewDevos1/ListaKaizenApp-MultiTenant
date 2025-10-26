@@ -35,7 +35,7 @@ def admin_required():
         @wraps(fn)
         @jwt_required()
         def decorator(*args, **kwargs):
-            print(f"🔐 [DECORATOR] Verificando permissão de admin para {fn.__name__}")
+            print(f"[DECORATOR] Verificando permissao de admin para {fn.__name__}")
             try:
                 # Pega o user_id do campo 'sub' (identity)
                 identity = get_jwt_identity()
@@ -43,7 +43,7 @@ def admin_required():
                 # COMPATIBILIDADE: Suporta tokens antigos (identity=dict) e novos (identity=int)
                 if isinstance(identity, dict):
                     # Token antigo: identity = {"id": 1, "role": "ADMIN"}
-                    print(f"⚠️ [DECORATOR] Token no formato ANTIGO detectado (identity é dict)")
+                    print(f"[DECORATOR] Token no formato ANTIGO detectado (identity e dict)")
                     user_id = identity.get('id')
                     role = identity.get('role')
                 else:
@@ -53,15 +53,15 @@ def admin_required():
                     claims = get_jwt()
                     role = claims.get('role')
 
-                print(f"🔐 [DECORATOR] User ID: {user_id}, Role: {role}")
+                print(f"[DECORATOR] User ID: {user_id}, Role: {role}")
 
                 if role != 'ADMIN':
-                    print(f"❌ [DECORATOR] Acesso negado - Role: {role}")
+                    print(f"[DECORATOR] Acesso negado - Role: {role}")
                     return jsonify({"error": "Acesso negado. Requer permissão de administrador."}), 403
-                print(f"✅ [DECORATOR] Acesso autorizado - Role: ADMIN")
+                print(f"[DECORATOR] Acesso autorizado - Role: ADMIN")
                 return fn(*args, **kwargs)
             except Exception as e:
-                print(f"❌ [DECORATOR] Erro: {type(e).__name__}: {str(e)}")
+                print(f"[DECORATOR] Erro: {type(e).__name__}: {str(e)}")
                 raise
         return decorator
     return wrapper
@@ -155,10 +155,30 @@ def update_user(user_id):
     data = request.get_json()
     if not data:
         return jsonify({"error": "Dados não fornecidos."}), 400
-    
+
     response, status_code = services.update_user_by_admin(user_id, data)
     return jsonify(response), status_code
 
+@admin_bp.route('/users/<int:user_id>', methods=['DELETE'])
+@admin_required()
+def delete_user_route(user_id):
+    """Deleta um usuário permanentemente."""
+    response, status_code = services.delete_user(user_id)
+    return jsonify(response), status_code
+
+@admin_bp.route('/users/<int:user_id>/deactivate', methods=['POST'])
+@admin_required()
+def deactivate_user_route(user_id):
+    """Desativa um usuário (soft delete)."""
+    response, status_code = services.deactivate_user(user_id)
+    return jsonify(response), status_code
+
+@admin_bp.route('/users/<int:user_id>/reactivate', methods=['POST'])
+@admin_required()
+def reactivate_user_route(user_id):
+    """Reativa um usuário desativado."""
+    response, status_code = services.reactivate_user(user_id)
+    return jsonify(response), status_code
 
 @admin_bp.route('/users', methods=['GET'])
 @admin_required()
@@ -173,12 +193,12 @@ def create_user_by_admin_route():
 
     # Log para debug
     print("=" * 50)
-    print("📥 Recebendo requisição para criar usuário")
-    print(f"📋 Dados recebidos: {data}")
-    print(f"📋 Tipo dos dados: {type(data)}")
+    print("[CONTROLLER] Recebendo requisicao para criar usuario")
+    print(f"[CONTROLLER] Dados recebidos: {data}")
+    print(f"[CONTROLLER] Tipo dos dados: {type(data)}")
 
     if data:
-        print("📋 Campos presentes:")
+        print("[CONTROLLER] Campos presentes:")
         for key, value in data.items():
             print(f"   - {key}: {value} (tipo: {type(value).__name__})")
 
@@ -187,35 +207,35 @@ def create_user_by_admin_route():
     missing_fields = [field for field in required_fields if field not in data]
 
     if not data:
-        print("❌ Erro: Nenhum dado recebido")
+        print("[ERROR] Erro: Nenhum dado recebido")
         return jsonify({"error": "Nenhum dado recebido."}), 400
 
     if missing_fields:
-        print(f"❌ Erro: Campos obrigatórios ausentes: {missing_fields}")
+        print(f"[ERROR] Erro: Campos obrigatorios ausentes: {missing_fields}")
         return jsonify({
             "error": f"Dados incompletos. Campos obrigatórios ausentes: {', '.join(missing_fields)}"
         }), 400
 
-    print("✅ Validação inicial passou, chamando service...")
+    print("[OK] Validacao inicial passou, chamando service...")
     response, status_code = services.create_user_by_admin(data)
-    print(f"📤 Resposta do service: {response} (status: {status_code})")
+    print(f"[CONTROLLER] Resposta do service: {response} (status: {status_code})")
     print("=" * 50)
 
     return jsonify(response), status_code
 
 
-# ⚠️ ROTA TEMPORÁRIA SEM AUTENTICAÇÃO - REMOVER DEPOIS!
+# [AVISO] ROTA TEMPORARIA SEM AUTENTICACAO - REMOVER DEPOIS!
 @admin_bp.route('/create_user_temp', methods=['POST'])
 def create_user_temp_route():
     """
-    ROTA TEMPORÁRIA para criar usuário SEM verificação JWT.
-    ⚠️ DEVE SER REMOVIDA após resolver o problema do token!
+    ROTA TEMPORARIA para criar usuario SEM verificacao JWT.
+    [AVISO] DEVE SER REMOVIDA apos resolver o problema do token!
     """
     data = request.get_json()
 
     print("=" * 50)
-    print("⚠️ [TEMP] Criando usuário SEM autenticação JWT")
-    print(f"📋 Dados recebidos: {data}")
+    print("[TEMP] Criando usuario SEM autenticacao JWT")
+    print(f"[TEMP] Dados recebidos: {data}")
     print("=" * 50)
 
     # Validação de campos obrigatórios

@@ -5,8 +5,8 @@ import { useAuth } from '../context/AuthContext';
 const CollaboratorRoute: React.FC = () => {
     const { isAuthenticated, user, loading } = useAuth();
 
-    // DIAGNÓSTICO: Verificar autenticação
-    console.log('🔐 CollaboratorRoute Check:', {
+    // DIAGNOSTICO: Verificar autenticacao
+    console.log('[COLLAB_ROUTE] Check:', {
         isAuthenticated,
         user,
         userRole: user?.role,
@@ -15,7 +15,7 @@ const CollaboratorRoute: React.FC = () => {
 
     // Espera o loading terminar antes de redirecionar
     if (loading) {
-        console.log('⏳ Verificando autenticação colaborador...');
+        console.log('[COLLAB_ROUTE] Verificando autenticacao colaborador...');
         return (
             <div style={{
                 display: 'flex',
@@ -29,21 +29,21 @@ const CollaboratorRoute: React.FC = () => {
     }
 
     if (!isAuthenticated) {
-        console.log('❌ Não autenticado - redirecionando para /login');
+        console.log('[COLLAB_ROUTE] Nao autenticado - redirecionando para /login');
         return <Navigate to="/login" replace />;
     }
 
     if (user?.role === 'ADMIN') {
-        console.log('🔀 Usuário é ADMIN - redirecionando para /admin');
+        console.log('[COLLAB_ROUTE] Usuario e ADMIN - redirecionando para /admin');
         return <Navigate to="/admin" replace />; // Admin vai para seu dashboard
     }
 
     if (user?.role !== 'COLLABORATOR') {
-        console.log('❌ Usuário não é COLLABORATOR - redirecionando para /login');
+        console.log('[COLLAB_ROUTE] Usuario nao e COLLABORATOR - redirecionando para /login');
         return <Navigate to="/login" replace />;
     }
 
-    console.log('✅ Usuário COLLABORATOR autenticado - renderizando Outlet');
+    console.log('[COLLAB_ROUTE] Usuario COLLABORATOR autenticado - renderizando Outlet');
     return <Outlet />;
 };
 
