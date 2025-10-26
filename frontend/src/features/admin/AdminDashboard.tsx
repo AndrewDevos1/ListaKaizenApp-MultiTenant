@@ -43,6 +43,7 @@ import {
     faCog,
     faClipboardList,
     faBox,
+    faTruck,
 } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
@@ -306,6 +307,11 @@ const AdminDashboard: React.FC = () => {
             title: 'Gerenciar Usuários',
             icon: faUsers,
             link: '/admin/gerenciar-usuarios',
+        },
+        {
+            title: 'Fornecedores',
+            icon: faTruck,
+            link: '/admin/fornecedores',
         },
         {
             title: 'Cotações',

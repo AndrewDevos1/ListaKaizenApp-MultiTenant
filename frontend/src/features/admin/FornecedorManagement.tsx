@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Table, Button, Modal, Form, Spinner, Alert } from 'react-bootstrap';
 import api from '../../services/api';
 import Layout from '../../components/Layout';
@@ -11,6 +12,7 @@ interface Fornecedor {
 }
 
 const FornecedorManagement: React.FC = () => {
+    const navigate = useNavigate();
     const [fornecedores, setFornecedores] = useState<Fornecedor[]>([]);
     const [currentFornecedor, setCurrentFornecedor] = useState<Partial<Fornecedor> | null>(null);
     const [showModal, setShowModal] = useState(false);
@@ -120,10 +122,13 @@ const FornecedorManagement: React.FC = () => {
                             <td>{f.contato}</td>
                             <td>{f.meio_envio}</td>
                             <td>
-                                <Button variant="warning" size="sm" onClick={() => handleShowModal(f)}>
+                                <Button variant="info" size="sm" onClick={() => navigate(`/admin/fornecedores/${f.id}/detalhes`)} className="me-2">
+                                    <i className="fas fa-eye"></i>
+                                </Button>
+                                <Button variant="warning" size="sm" onClick={() => handleShowModal(f)} className="me-2">
                                     <i className="fas fa-edit"></i>
                                 </Button>
-                                <Button variant="danger" size="sm" onClick={() => handleShowDeleteModal(f)} className="ms-2">
+                                <Button variant="danger" size="sm" onClick={() => handleShowDeleteModal(f)}>
                                     <i className="fas fa-trash"></i>
                                 </Button>
                             </td>

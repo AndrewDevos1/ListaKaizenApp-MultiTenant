@@ -11,6 +11,7 @@ import GerarCotacao from './features/admin/GerarCotacao';
 import CotacaoList from './features/admin/CotacaoList';
 import CotacaoDetail from './features/admin/CotacaoDetail';
 import FornecedorManagement from './features/admin/FornecedorManagement';
+import FornecedorDetalhes from './features/admin/FornecedorDetalhes';
 import AreaManagement from './features/admin/AreaManagement';
 import ItemManagement from './features/admin/ItemManagement';
 import AdminDashboard from './features/admin/AdminDashboard';
@@ -59,6 +60,7 @@ function App() {
               <Route path="items" element={<ItemManagement />} />
               <Route path="areas" element={<AreaManagement />} />
               <Route path="fornecedores" element={<FornecedorManagement />} />
+              <Route path="fornecedores/:fornecedorId/detalhes" element={<FornecedorDetalhes />} />
               <Route path="gerar-cotacao" element={<GerarCotacao />} />
               <Route path="cotacoes" element={<CotacaoList />} />
               <Route path="cotacoes/:cotacaoId" element={<CotacaoDetail />} />

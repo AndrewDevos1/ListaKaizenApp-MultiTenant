@@ -1,6 +1,8 @@
 from flask import Flask, request
 from .config import config_by_name
 from .extensions import db, migrate, jwt, cors
+from flask import Flask, jsonify  # ← Adicione "jsonify"
+
 
 def create_app(config_name='default'):
     """Application Factory Function"""

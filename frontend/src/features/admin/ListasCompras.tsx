@@ -164,11 +164,6 @@ const ListasCompras: React.FC = () => {
                 return;
             }
 
-            if (!formData.fornecedor_id) {
-                setError('O fornecedor é obrigatório');
-                return;
-            }
-
             if (!formData.categoria.trim()) {
                 setError('A categoria é obrigatória');
                 return;
@@ -487,18 +482,20 @@ const ListasCompras: React.FC = () => {
                             </Form.Group>
 
                             <Form.Group className="mb-3">
-                                <Form.Label>Fornecedor *</Form.Label>
+                                <Form.Label>Fornecedor</Form.Label>
                                 <Form.Select
                                     value={formData.fornecedor_id}
                                     onChange={(e) => setFormData({...formData, fornecedor_id: e.target.value})}
-                                    required
                                     disabled={loadingFornecedores}
                                 >
-                                    <option value="">Selecione um fornecedor...</option>
+                                    <option value="">Sem fornecedor (adicionar depois)</option>
                                     {fornecedores.map(f => (
                                         <option key={f.id} value={f.id}>{f.nome}</option>
                                     ))}
                                 </Form.Select>
+                                <Form.Text className="text-muted">
+                                    Opcional - Pode ser adicionado depois
+                                </Form.Text>
                             </Form.Group>
 
                             <Form.Group className="mb-3">
