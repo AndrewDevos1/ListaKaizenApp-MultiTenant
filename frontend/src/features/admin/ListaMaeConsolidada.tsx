@@ -134,7 +134,7 @@ const ListaMaeConsolidada: React.FC = () => {
         }, {} as Record<string, ItemConsolidado[]>);
 
         Object.entries(porFornecedor).forEach(([fornecedor, itens]) => {
-            texto += `📦 ${fornecedor}:\n`;
+            texto += `[FORNECEDOR] ${fornecedor}:\n`;
             itens.forEach(item => {
                 texto += `  • ${item.item_nome} - ${item.pedido.toFixed(2)} ${item.item_unidade}\n`;
             });
@@ -143,7 +143,7 @@ const ListaMaeConsolidada: React.FC = () => {
 
         // Copiar para clipboard
         navigator.clipboard.writeText(texto).then(() => {
-            alert('✅ Conteúdo copiado para a área de transferência!');
+            alert('[OK] Conteudo copiado para a area de transferencia!');
         });
     };
 
@@ -243,7 +243,7 @@ const ListaMaeConsolidada: React.FC = () => {
                     <input
                         type="text"
                         className={styles.searchInput}
-                        placeholder="🔍 Buscar por item ou fornecedor..."
+                        placeholder="[BUSCA] Buscar por item ou fornecedor..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
