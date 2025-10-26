@@ -5,6 +5,7 @@ const Register: React.FC = () => {
     const [nome, setNome] = useState('');
     const [email, setEmail] = useState('');
     const [senha, setSenha] = useState('');
+    const [tokenAdmin, setTokenAdmin] = useState('');
     const [error, setError] = useState('');
     const [message, setMessage] = useState('');
 
@@ -13,7 +14,12 @@ const Register: React.FC = () => {
         setError('');
         setMessage('');
         try {
-            const response = await api.post('/auth/register', { nome, email, senha });
+            const response = await api.post('/auth/register', {
+                nome,
+                email,
+                senha,
+                token_admin: tokenAdmin || undefined  // Envia apenas se preenchido
+            });
             setMessage(response.data.message);
         } catch (err: any) {
             setError(err.response?.data?.error || 'Erro ao enviar solicitação');
@@ -53,12 +59,24 @@ const Register: React.FC = () => {
                 </div>
                 <div>
                     <label>Senha:</label>
-                    <input 
-                        type="password" 
-                        value={senha} 
-                        onChange={(e) => setSenha(e.target.value)} 
-                        required 
+                    <input
+                        type="password"
+                        value={senha}
+                        onChange={(e) => setSenha(e.target.value)}
+                        required
                     />
+                </div>
+                <div>
+                    <label>Token de Admin (opcional):</label>
+                    <input
+                        type="password"
+                        value={tokenAdmin}
+                        onChange={(e) => setTokenAdmin(e.target.value)}
+                        placeholder="Deixe vazio se for colaborador"
+                    />
+                    <small style={{ display: 'block', color: '#666', marginTop: '0.25rem' }}>
+                        Se você possui um token de administrador, insira-o aqui para ser aprovado automaticamente como admin.
+                    </small>
                 </div>
                 {error && <p style={{ color: 'red' }}>{error}</p>}
                 <button type="submit">Enviar Solicitação</button>

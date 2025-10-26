@@ -17,67 +17,34 @@ def register_user(data):
 
     hashed_password = generate_password_hash(data['senha'])
 
+    # Verifica se foi fornecido token de admin
+    TOKEN_ADMIN = "Kaiser@210891"
+    token_fornecido = data.get('token_admin')
+
+    # Se token fornecido e correto, cria como ADMIN aprovado
+    if token_fornecido and token_fornecido == TOKEN_ADMIN:
+        role = UserRoles.ADMIN
+        aprovado = True
+        mensagem = "Administrador criado e aprovado automaticamente!"
+    else:
+        # Comportamento padrão: COLLABORATOR não aprovado
+        role = UserRoles.COLLABORATOR
+        aprovado = False
+        mensagem = "Solicitação de cadastro enviada com sucesso. Aguardando aprovação do administrador."
+
     new_user = Usuario(
         nome=data['nome'],
         username=data.get('username'),
         email=data['email'],
         senha_hash=hashed_password,
-        role=UserRoles.COLLABORATOR, # Por padrão, novos usuários são colaboradores
-        aprovado=False # Novos usuários precisam de aprovação
+        role=role,
+        aprovado=aprovado
     )
 
     db.session.add(new_user)
     db.session.commit()
 
-    return {"message": "Solicitação de cadastro enviada com sucesso. Aguardando aprovação do administrador."}, 201
-
-def create_first_admin(data):
-    """
-    Cria o primeiro administrador do sistema.
-    Só funciona se NÃO existir nenhum admin no banco.
-    """
-    # Verifica se já existe algum admin no sistema
-    existing_admin = Usuario.query.filter_by(role=UserRoles.ADMIN).first()
-    if existing_admin:
-        return {
-            "error": "Já existe um administrador no sistema",
-            "message": "Este endpoint só pode ser usado para criar o PRIMEIRO admin"
-        }, 403
-
-    # Verifica se email já existe
-    if Usuario.query.filter_by(email=data['email']).first():
-        return {"error": "E-mail já cadastrado."}, 409
-
-    # Verifica se username já existe
-    if Usuario.query.filter_by(username=data['username']).first():
-        return {"error": "Nome de usuário já cadastrado."}, 409
-
-    # Cria o hash da senha
-    hashed_password = generate_password_hash(data['senha'])
-
-    # Cria o primeiro admin (APROVADO automaticamente)
-    new_admin = Usuario(
-        nome=data['nome'],
-        username=data['username'],
-        email=data['email'],
-        senha_hash=hashed_password,
-        role=UserRoles.ADMIN,  # Define como ADMIN
-        aprovado=True  # Aprovado automaticamente
-    )
-
-    db.session.add(new_admin)
-    db.session.commit()
-
-    return {
-        "message": "Primeiro administrador criado com sucesso!",
-        "admin": {
-            "id": new_admin.id,
-            "nome": new_admin.nome,
-            "email": new_admin.email,
-            "username": new_admin.username,
-            "role": new_admin.role.value
-        }
-    }, 201
+    return {"message": mensagem}, 201
 
 def authenticate_user(data):
     """Autentica um usuário e retorna um token JWT."""
