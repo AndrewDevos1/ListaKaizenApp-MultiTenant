@@ -117,12 +117,12 @@ const CriarUsuario: React.FC = () => {
                 payload.username = formData.username.trim();
             }
 
-            console.log('📤 Enviando payload para criar usuário:', payload);
+            console.log('[FORM] Enviando payload para criar usuario:', payload);
 
-            // ⚠️ TEMPORÁRIO: Usando rota sem JWT até resolver problema do token
+            // NOTA: Usando rota sem JWT ate resolver problema do token
             const response = await api.post('/admin/create_user_temp', payload);
 
-            console.log('✅ Resposta do servidor:', response.data);
+            console.log('[FORM] Resposta do servidor:', response.data);
             setSuccess(true);
 
             // Limpa o formulário
@@ -136,22 +136,22 @@ const CriarUsuario: React.FC = () => {
             });
 
             // Redireciona após 1.5 segundos
-            console.log('🔄 Redirecionando para /admin/gerenciar-usuarios em 1.5s...');
+            console.log('[FORM] Redirecionando para /admin/gerenciar-usuarios em 1.5s...');
             setTimeout(() => {
-                console.log('🔄 Executando navegação...');
+                console.log('[FORM] Executando navegacao...');
                 navigate('/admin/gerenciar-usuarios', { replace: true });
             }, 1500);
         } catch (err: any) {
-            console.error('❌ Erro ao criar usuário:', err);
-            console.error('📋 Status:', err.response?.status);
-            console.error('📋 Status Text:', err.response?.statusText);
-            console.error('📋 Response Data (DETALHADO):', JSON.stringify(err.response?.data, null, 2));
-            console.error('📋 Response completo:', err.response);
-            console.error('📋 Config da requisição:', err.config);
+            console.error('[FORM] Erro ao criar usuario:', err);
+            console.error('[FORM] Status:', err.response?.status);
+            console.error('[FORM] Status Text:', err.response?.statusText);
+            console.error('[FORM] Response Data (DETALHADO):', JSON.stringify(err.response?.data, null, 2));
+            console.error('[FORM] Response completo:', err.response);
+            console.error('[FORM] Config da requisicao:', err.config);
 
             // Alerta visual com o erro
             if (err.response?.data) {
-                console.error('🚨 ERRO DO BACKEND:', err.response.data);
+                console.error('[FORM] ERRO DO BACKEND:', err.response.data);
             }
 
             // Mensagem de erro detalhada

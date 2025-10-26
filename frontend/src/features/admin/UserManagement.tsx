@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Table, Button, Alert, Badge, Spinner, Modal, Form } from 'react-bootstrap';
 import api from '../../services/api';
-import Layout from '../../components/Layout';
 
 interface User {
     id: number;
@@ -9,7 +8,9 @@ interface User {
     email: string;
     role: string;
     aprovado: boolean;
+    ativo: boolean;
     approving?: boolean;
+    actionInProgress?: boolean;
 }
 
 const UserManagement: React.FC = () => {
@@ -75,6 +76,45 @@ const UserManagement: React.FC = () => {
         }
     };
 
+    const handleDelete = async (userId: number) => {
+        if (!window.confirm('Tem certeza que deseja deletar este usuário? Esta ação não pode ser desfeita.')) {
+            return;
+        }
+        try {
+            await api.delete(`/admin/users/${userId}`);
+            setSuccess('Usuário deletado com sucesso!');
+            setError('');
+            fetchUsers();
+        } catch (err: any) {
+            setError(err.response?.data?.error || 'Erro ao deletar usuário.');
+            setSuccess('');
+        }
+    };
+
+    const handleDeactivate = async (userId: number) => {
+        try {
+            await api.post(`/admin/users/${userId}/deactivate`);
+            setSuccess('Usuário desativado com sucesso!');
+            setError('');
+            fetchUsers();
+        } catch (err: any) {
+            setError(err.response?.data?.error || 'Erro ao desativar usuário.');
+            setSuccess('');
+        }
+    };
+
+    const handleReactivate = async (userId: number) => {
+        try {
+            await api.post(`/admin/users/${userId}/reactivate`);
+            setSuccess('Usuário reativado com sucesso!');
+            setError('');
+            fetchUsers();
+        } catch (err: any) {
+            setError(err.response?.data?.error || 'Erro ao reativar usuário.');
+            setSuccess('');
+        }
+    };
+
     const handleEditClick = (user: User) => {
         setEditingUser(user);
         setShowEditModal(true);
@@ -96,7 +136,7 @@ const UserManagement: React.FC = () => {
     };
 
     return (
-        <Layout>
+        <div>
             <div className="d-flex justify-content-between align-items-center mb-3">
                 <h2>Gerenciamento de Usuários</h2>
                 <Button variant="primary" onClick={() => setShowCreateModal(true)}>
@@ -114,14 +154,15 @@ const UserManagement: React.FC = () => {
                         <th>Nome</th>
                         <th>Email</th>
                         <th>Perfil</th>
+                        <th>Aprovação</th>
                         <th>Status</th>
-                        <th>Ação</th>
+                        <th>Ações</th>
                     </tr>
                 </thead>
                 <tbody>
                     {isLoading ? (
                         <tr>
-                            <td colSpan={6} className="text-center"><Spinner animation="border" /></td>
+                            <td colSpan={7} className="text-center"><Spinner animation="border" /></td>
                         </tr>
                     ) : users.map((user: any) => (
                         <tr key={user.id}>
@@ -135,6 +176,11 @@ const UserManagement: React.FC = () => {
                                 </Badge>
                             </td>
                             <td>
+                                <Badge bg={user.ativo ? "success" : "danger"}>
+                                    {user.ativo ? 'Ativo' : 'Inativo'}
+                                </Badge>
+                            </td>
+                            <td>
                                 {!user.aprovado && (
                                     <Button variant="success" size="sm" onClick={() => handleApprove(user.id)} disabled={user.approving}>
                                         {user.approving ? <Spinner as="span" animation="border" size="sm" /> : 'Aprovar'}
@@ -142,6 +188,18 @@ const UserManagement: React.FC = () => {
                                 )}
                                 <Button variant="warning" size="sm" className="ms-2" onClick={() => handleEditClick(user)}>
                                     Editar
+                                </Button>
+                                {user.ativo ? (
+                                    <Button variant="secondary" size="sm" className="ms-2" onClick={() => handleDeactivate(user.id)}>
+                                        Desativar
+                                    </Button>
+                                ) : (
+                                    <Button variant="info" size="sm" className="ms-2" onClick={() => handleReactivate(user.id)}>
+                                        Reativar
+                                    </Button>
+                                )}
+                                <Button variant="danger" size="sm" className="ms-2" onClick={() => handleDelete(user.id)}>
+                                    Deletar
                                 </Button>
                             </td>
                         </tr>
@@ -220,7 +278,7 @@ const UserManagement: React.FC = () => {
                     </Modal.Footer>
                 </Modal>
             )}
-        </Layout>
+        </div>
     );
 };
 
