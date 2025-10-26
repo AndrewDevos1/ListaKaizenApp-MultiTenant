@@ -1,0 +1,295 @@
+/*
+ * Fornecedor Detalhes - Gerenciamento de Itens e Estoques
+ */
+
+/* Container principal */
+.container {
+  background: #f0f3f8;
+  min-height: 100vh;
+  padding: 2rem 0;
+}
+
+/* Header */
+.header {
+  margin-bottom: 2rem;
+  animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #667eea;
+  text-decoration: none;
+  font-weight: 600;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.backLink:hover {
+  background: rgba(102, 126, 234, 0.1);
+  color: #5568d3;
+  transform: translateX(-4px);
+}
+
+/* Fornecedor Card */
+.fornecedorCard {
+  background: white;
+  border-radius: 12px;
+  border: none;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  margin-bottom: 2rem;
+  animation: slideUp 0.5s ease-out backwards;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.cardHeader {
+  background: linear-gradient(135deg, #fff8e6 0%, #fff 100%);
+  border-bottom: 1px solid #f0f0f0;
+  padding: 1.5rem;
+}
+
+.fornecedorNome {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #2c3e50;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.fornecedorInfo {
+  color: #7f8c8d;
+  font-size: 0.95rem;
+  margin-bottom: 0.5rem;
+  line-height: 1.6;
+}
+
+.fornecedorInfo strong {
+  color: #2c3e50;
+  font-weight: 600;
+}
+
+/* Itens Section */
+.itensSection {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  animation: slideUp 0.5s ease-out backwards 0.1s;
+}
+
+.sectionTitle {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #2c3e50;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* Table Wrapper */
+.tableWrapper {
+  overflow-x: auto;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+
+.estoquesTable {
+  margin-bottom: 0;
+}
+
+.tableHead {
+  background: linear-gradient(135deg, #667eea 0%, #5568d3 100%);
+  color: white;
+}
+
+.tableHead th {
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  letter-spacing: 0.5px;
+  padding: 1rem 0.75rem;
+  border: none;
+}
+
+.thNumero {
+  text-align: center;
+  width: 100px;
+}
+
+.rowEstoque {
+  transition: all 0.2s ease;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.rowEstoque:hover {
+  background: rgba(102, 126, 234, 0.05);
+}
+
+.rowSemEstoque {
+  background: rgba(249, 177, 21, 0.05);
+  border-bottom: 1px solid #e9ecef;
+}
+
+.rowSemEstoque:hover {
+  background: rgba(249, 177, 21, 0.1);
+}
+
+.tdItemNome {
+  font-weight: 600;
+  color: #2c3e50;
+  padding: 1rem 0.75rem;
+}
+
+.tdNumero {
+  text-align: center;
+  padding: 1rem 0.75rem;
+  font-weight: 500;
+  color: #2c3e50;
+}
+
+.tdAtual {
+  color: #667eea;
+}
+
+.tdMinimo {
+  color: #f9b115;
+}
+
+.tdPedidoAtivo {
+  color: #e55353;
+  font-weight: 700;
+}
+
+.tdPedidoZero {
+  color: #2eb85c;
+  font-weight: 700;
+}
+
+.tdAcoes {
+  text-align: center;
+  padding: 0.75rem;
+}
+
+/* Loading Spinner */
+.loadingSpinner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  text-align: center;
+}
+
+.loadingSpinner p {
+  margin-top: 1rem;
+  color: #7f8c8d;
+  font-size: 1rem;
+}
+
+/* Pedido Preview */
+.pedidoPreview {
+  background: linear-gradient(135deg, #e55353 0%, #d32f2f 100%);
+  color: white;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  margin-top: 0.5rem;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .container {
+    padding: 1rem 0;
+  }
+
+  .fornecedorNome {
+    font-size: 1.5rem;
+  }
+
+  .sectionTitle {
+    font-size: 1.1rem;
+  }
+
+  .tableHead th {
+    padding: 0.75rem 0.5rem;
+    font-size: 0.75rem;
+  }
+
+  .tdItemNome,
+  .tdNumero,
+  .tdAcoes {
+    padding: 0.75rem 0.5rem;
+    font-size: 0.9rem;
+  }
+
+  .thNumero {
+    width: 80px;
+  }
+
+  .itensSection {
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .container {
+    padding: 0.75rem 0;
+  }
+
+  .fornecedorNome {
+    font-size: 1.25rem;
+  }
+
+  .sectionTitle {
+    font-size: 1rem;
+  }
+
+  .tableWrapper {
+    overflow: auto;
+  }
+
+  .tableHead th {
+    padding: 0.5rem;
+    font-size: 0.7rem;
+  }
+
+  .tdItemNome,
+  .tdNumero,
+  .tdAcoes {
+    padding: 0.5rem 0.25rem;
+    font-size: 0.8rem;
+  }
+
+  .thNumero {
+    width: 60px;
+  }
+
+  .itensSection {
+    padding: 0.75rem;
+  }
+}

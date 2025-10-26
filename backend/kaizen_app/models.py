@@ -29,6 +29,7 @@ class Usuario(db.Model, SerializerMixin):
     __tablename__ = "usuarios"
     id = db.Column(db.Integer, primary_key=True)
     nome = db.Column(db.String(100), nullable=False)
+    username = db.Column(db.String(50), unique=True, nullable=True)
     email = db.Column(db.String(120), unique=True, nullable=False)
     senha_hash = db.Column(db.String(128), nullable=False)
     role = db.Column(db.Enum(UserRoles), nullable=False, default=UserRoles.COLLABORATOR)
@@ -40,6 +41,7 @@ class Usuario(db.Model, SerializerMixin):
         return {
             "id": self.id,
             "nome": self.nome,
+            "username": self.username,
             "email": self.email,
             "role": self.role.value,
             "aprovado": self.aprovado,
@@ -71,15 +73,30 @@ class Estoque(db.Model, SerializerMixin):
     id = db.Column(db.Integer, primary_key=True)
     item_id = db.Column(db.Integer, db.ForeignKey('itens.id'), nullable=False)
     area_id = db.Column(db.Integer, db.ForeignKey('areas.id'), nullable=False)
+    lista_id = db.Column(db.Integer, db.ForeignKey('listas.id'), nullable=True)
     quantidade_atual = db.Column(db.Numeric(10, 2), nullable=False, default=0.0)
     quantidade_minima = db.Column(db.Numeric(10, 2), nullable=False, default=0.0)
+    pedido = db.Column(db.Numeric(10, 2), nullable=True, default=0.0)
+    data_ultima_submissao = db.Column(db.DateTime, nullable=True)
+    usuario_ultima_submissao_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=True)
+
+    # Relacionamentos
     item = db.relationship('Item', backref=db.backref('estoques', lazy=True))
     area = db.relationship('Area', backref=db.backref('estoques', lazy=True))
+    lista = db.relationship('Lista', backref=db.backref('estoques', lazy=True))
+    usuario_ultima_submissao = db.relationship('Usuario', backref=db.backref('estoques_submetidos', lazy=True))
+
+    def calcular_pedido(self):
+        """Calcula o pedido baseado em qtd_minima e qtd_atual"""
+        return max(float(self.quantidade_minima) - float(self.quantidade_atual), 0)
 
     def to_dict(self):
         d = super(Estoque, self).to_dict()
         if self.item:
             d['item'] = self.item.to_dict()
+        # Garante que pedido sempre tenha um valor calculado
+        if d.get('pedido') is None:
+            d['pedido'] = self.calcular_pedido()
         return d
 
 class PedidoStatus(enum.Enum):
@@ -100,11 +117,16 @@ class Pedido(db.Model, SerializerMixin):
     fornecedor = db.relationship('Fornecedor', backref=db.backref('pedidos', lazy=True))
     usuario = db.relationship('Usuario', backref=db.backref('pedidos', lazy=True))
 
+class CotacaoStatus(enum.Enum):
+    PENDENTE = "PENDENTE"
+    CONCLUIDA = "CONCLUIDA"
+
 class Cotacao(db.Model, SerializerMixin):
     __tablename__ = "cotacoes"
     id = db.Column(db.Integer, primary_key=True)
     fornecedor_id = db.Column(db.Integer, db.ForeignKey('fornecedores.id'), nullable=False)
     data_cotacao = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    status = db.Column(db.Enum(CotacaoStatus), nullable=False, default=CotacaoStatus.PENDENTE)
     fornecedor = db.relationship('Fornecedor', backref=db.backref('cotacoes', lazy=True))
 
     def to_dict(self):
@@ -141,6 +163,7 @@ class Lista(db.Model, SerializerMixin):
     __tablename__ = "listas"
     id = db.Column(db.Integer, primary_key=True)
     nome = db.Column(db.String(100), nullable=False, unique=True)
+    descricao = db.Column(db.String(255), nullable=True)
     data_criacao = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     # Relacionamento muitos-para-muitos com os usuários (colaboradores)
     colaboradores = db.relationship('Usuario', secondary=lista_colaborador,

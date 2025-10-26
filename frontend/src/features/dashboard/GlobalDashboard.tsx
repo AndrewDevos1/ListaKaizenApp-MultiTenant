@@ -4,6 +4,7 @@ import { faClipboardList, faComments, faUsers, faChartLine } from '@fortawesome/
 import StatsCard from './StatsCard';
 import RecentSubmissions from './RecentSubmissions';
 import api from '../../services/api';
+import Spinner from '../../components/Spinner';
 import './Dashboard.css';
 
 const GlobalDashboard: React.FC = () => {
@@ -36,7 +37,7 @@ const GlobalDashboard: React.FC = () => {
       </div>
 
       {loading ? (
-        <div>Loading...</div>
+        <Spinner />
       ) : (
         <div className="row">
           <div className="col-xl-3 col-md-6 mb-4">

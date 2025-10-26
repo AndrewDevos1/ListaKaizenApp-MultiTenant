@@ -1,33 +1,45 @@
-from .models import Usuario, UserRoles, Item, Area, Fornecedor, Estoque, Cotacao, CotacaoItem, Pedido, Lista
+from .models import Usuario, UserRoles, Item, Area, Fornecedor, Estoque, Cotacao, CotacaoStatus, CotacaoItem, Pedido, Lista
 from .extensions import db
 from . import repositories
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_jwt_extended import create_access_token
-import datetime
+from datetime import datetime, timedelta
+from sqlalchemy import func
 
 def register_user(data):
     """Cria um novo usuário no sistema."""
     if Usuario.query.filter_by(email=data['email']).first():
         return {"error": "E-mail já cadastrado."}, 409
 
+    # Verifica se username já existe (se fornecido)
+    if data.get('username') and Usuario.query.filter_by(username=data['username']).first():
+        return {"error": "Nome de usuário já cadastrado."}, 409
+
     hashed_password = generate_password_hash(data['senha'])
-    
+
     new_user = Usuario(
         nome=data['nome'],
+        username=data.get('username'),
         email=data['email'],
         senha_hash=hashed_password,
         role=UserRoles.COLLABORATOR, # Por padrão, novos usuários são colaboradores
         aprovado=False # Novos usuários precisam de aprovação
     )
-    
+
     db.session.add(new_user)
     db.session.commit()
-    
+
     return {"message": "Solicitação de cadastro enviada com sucesso. Aguardando aprovação do administrador."}, 201
 
 def authenticate_user(data):
     """Autentica um usuário e retorna um token JWT."""
-    user = Usuario.query.filter_by(email=data['email']).first()
+    # Aceita login com email ou username
+    login_field = data.get('email') or data.get('username')
+
+    # Busca por email ou username
+    user = Usuario.query.filter(
+        (Usuario.email == login_field) | (Usuario.username == login_field)
+    ).first()
 
     if not user or not check_password_hash(user.senha_hash, data['senha']):
         return {"error": "Credenciais inválidas."}, 401
@@ -35,11 +47,16 @@ def authenticate_user(data):
     if not user.aprovado:
         return {"error": "Usuário pendente de aprovação."}, 403
 
-    # A identidade do token pode ser o ID do usuário e seu role
-    identity = {"id": user.id, "role": user.role.value}
-    expires = datetime.timedelta(days=1)
-    access_token = create_access_token(identity=identity, expires_delta=expires)
-    
+    # O identity deve ser uma STRING (Flask-JWT-Extended espera string no campo 'sub')
+    # Dados adicionais vão em additional_claims
+    additional_claims = {"role": user.role.value}
+    expires = timedelta(days=1)
+    access_token = create_access_token(
+        identity=str(user.id),  # Converte ID para string
+        additional_claims=additional_claims,  # Role e outros dados extras
+        expires_delta=expires
+    )
+
     return {"access_token": access_token}, 200
 
 def approve_user(user_id):
@@ -52,30 +69,149 @@ def approve_user(user_id):
     db.session.commit()
     return {"message": f"Usuário {user.nome} aprovado com sucesso."}
 
+def update_user_by_admin(user_id, data):
+    """Atualiza os dados de um usuário a pedido de um admin."""
+    user = Usuario.query.get(user_id)
+    if not user:
+        return {"error": "Usuário não encontrado."}, 404
+
+    # Validação de email duplicado
+    if 'email' in data and data['email'] != user.email:
+        if Usuario.query.filter_by(email=data['email']).first():
+            return {"error": "E-mail já cadastrado."}, 409
+
+    # Atualiza os campos
+    user.nome = data.get('nome', user.nome)
+    user.email = data.get('email', user.email)
+    
+    # Atualiza o role, se fornecido e válido
+    if 'role' in data and data['role'] in [r.value for r in UserRoles]:
+        user.role = UserRoles(data['role'])
+
+    db.session.commit()
+    return {"message": "Usuário atualizado com sucesso.", "user": user.to_dict()}, 200
+
 def create_user_by_admin(data):
     """Cria um novo usuário (admin ou colaborador) a pedido de um admin."""
-    if Usuario.query.filter_by(email=data['email']).first():
-        return {"error": "E-mail já cadastrado."}, 409
+    try:
+        print("🔍 [SERVICE] Iniciando criação de usuário...")
+        print(f"🔍 [SERVICE] Email: {data.get('email')}")
+        print(f"🔍 [SERVICE] Nome: {data.get('nome')}")
+        print(f"🔍 [SERVICE] Username: {data.get('username')}")
+        print(f"🔍 [SERVICE] Role: {data.get('role')}")
 
-    hashed_password = generate_password_hash(data['senha'])
-    role = UserRoles.ADMIN if data.get('role') == 'ADMIN' else UserRoles.COLLABORATOR
+        # Validação de email duplicado
+        if Usuario.query.filter_by(email=data['email']).first():
+            print(f"❌ [SERVICE] E-mail já existe: {data['email']}")
+            return {"error": "E-mail já cadastrado."}, 409
 
-    new_user = Usuario(
-        nome=data['nome'],
-        email=data['email'],
-        senha_hash=hashed_password,
-        role=role,
-        aprovado=True  # Criado por admin, já vem aprovado
-    )
-    
-    db.session.add(new_user)
-    db.session.commit()
-    
-    return {"message": f"Usuário {new_user.nome} criado com sucesso como {role.value}."}, 201, 200
+        # Verifica se username já existe (se fornecido)
+        if data.get('username'):
+            existing_username = Usuario.query.filter_by(username=data['username']).first()
+            if existing_username:
+                print(f"❌ [SERVICE] Username já existe: {data['username']}")
+                return {"error": "Nome de usuário já cadastrado."}, 409
+
+        # Hash da senha
+        hashed_password = generate_password_hash(data['senha'])
+        print("✅ [SERVICE] Senha hashada com sucesso")
+
+        # Define o role
+        role = UserRoles.ADMIN if data.get('role') == 'ADMIN' else UserRoles.COLLABORATOR
+        print(f"✅ [SERVICE] Role definida: {role}")
+
+        # Cria o novo usuário
+        new_user = Usuario(
+            nome=data['nome'],
+            username=data.get('username') if data.get('username') else None,
+            email=data['email'],
+            senha_hash=hashed_password,
+            role=role,
+            aprovado=True  # Criado por admin, já vem aprovado
+        )
+
+        print("✅ [SERVICE] Objeto Usuario criado")
+
+        db.session.add(new_user)
+        print("✅ [SERVICE] Usuario adicionado à sessão")
+
+        db.session.commit()
+        print(f"✅ [SERVICE] Usuario salvo no banco! ID: {new_user.id}")
+
+        return {"message": f"Usuário {new_user.nome} criado com sucesso como {role.value}."}, 201
+
+    except KeyError as e:
+        print(f"❌ [SERVICE] Campo obrigatório ausente: {e}")
+        return {"error": f"Campo obrigatório ausente: {str(e)}"}, 400
+
+    except Exception as e:
+        print(f"❌ [SERVICE] Erro inesperado: {type(e).__name__}: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        db.session.rollback()
+        return {"error": f"Erro ao criar usuário: {str(e)}"}, 500
 
 def get_all_users():
     """Retorna todos os usuários cadastrados."""
     return repositories.get_all(Usuario), 200
+
+def change_password(user_id, data):
+    """Altera a senha de um usuário."""
+    user = Usuario.query.get(user_id)
+    if not user:
+        return {"error": "Usuário não encontrado."}, 404
+
+    # Verifica se a senha atual está correta
+    if not check_password_hash(user.senha_hash, data.get('senha_atual')):
+        return {"error": "Senha atual incorreta."}, 401
+
+    # Verifica se nova senha e confirmação são iguais
+    if data.get('nova_senha') != data.get('confirmar_senha'):
+        return {"error": "A nova senha e a confirmação não coincidem."}, 400
+
+    # Atualiza a senha
+    user.senha_hash = generate_password_hash(data.get('nova_senha'))
+    db.session.commit()
+
+    return {"message": "Senha alterada com sucesso."}, 200
+
+def update_user_profile(user_id, data):
+    """Atualiza o perfil de um usuário."""
+    user = Usuario.query.get(user_id)
+    if not user:
+        return {"error": "Usuário não encontrado."}, 404
+
+    # Verifica se o email já está em uso por outro usuário
+    if 'email' in data and data['email'] != user.email:
+        existing_user = Usuario.query.filter_by(email=data['email']).first()
+        if existing_user:
+            return {"error": "E-mail já está em uso."}, 409
+
+    # Verifica se o username já está em uso por outro usuário
+    if 'username' in data and data['username'] != user.username:
+        existing_user = Usuario.query.filter_by(username=data['username']).first()
+        if existing_user:
+            return {"error": "Nome de usuário já está em uso."}, 409
+
+    # Atualiza os campos permitidos
+    if 'nome' in data:
+        user.nome = data['nome']
+    if 'username' in data:
+        user.username = data['username']
+    if 'email' in data:
+        user.email = data['email']
+
+    db.session.commit()
+
+    return {"message": "Perfil atualizado com sucesso.", "user": user.to_dict()}, 200
+
+def get_user_profile(user_id):
+    """Retorna o perfil de um usuário."""
+    user = Usuario.query.get(user_id)
+    if not user:
+        return {"error": "Usuário não encontrado."}, 404
+
+    return user.to_dict(), 200
 
 
 # --- Serviços de Inventário ---
@@ -122,9 +258,23 @@ def update_area(area_id, data):
     return updated_area.to_dict(), 200
 
 def delete_area(area_id):
+
     if not repositories.delete_instance(Area, area_id):
+
         return {"error": "Área não encontrada"}, 404
+
     return {}, 204
+
+
+
+def get_area_status(area_id):
+
+    """Verifica se uma área possui itens com quantidade atual abaixo da mínima."""
+
+    has_pending_items = Estoque.query.filter_by(area_id=area_id).filter(Estoque.quantidade_atual < Estoque.quantidade_minima).first() is not None
+
+    return {"has_pending_items": has_pending_items}, 200
+
 
 
 def create_fornecedor(data):
@@ -230,6 +380,30 @@ def update_estoque_item(estoque_id, data):
         estoque_item.quantidade_atual = data['quantidade_atual']
         db.session.commit()
         return {"message": "Estoque atualizado"}, 200
+
+def save_estoque_draft(data):
+    """Salva um rascunho do estoque de uma área."""
+    area_id = data.get('area_id')
+    items_data = data.get('items', [])
+
+    if not area_id:
+        return {"error": "ID da área não fornecido."}, 400
+
+    for item_data in items_data:
+        estoque_id = item_data.get('id')
+        quantidade_atual = item_data.get('quantidade_atual')
+
+        if estoque_id is None or quantidade_atual is None:
+            continue # Pula itens mal formatados
+
+        estoque_item = repositories.get_by_id(Estoque, estoque_id)
+        if estoque_item and estoque_item.area_id == area_id:
+            estoque_item.quantidade_atual = quantidade_atual
+            db.session.add(estoque_item)
+    
+    db.session.commit()
+    return {"message": "Rascunho do estoque salvo com sucesso!"}, 200
+
 def get_pedidos_by_user(user_id):
     """Retorna todos os pedidos feitos por um usuário."""
     pedidos = Pedido.query.filter_by(usuario_id=user_id).order_by(Pedido.data_pedido.desc()).all()
@@ -257,6 +431,86 @@ def submit_pedidos(user_id):
     
     db.session.commit()
     return {"message": f"{len(novos_pedidos)} pedidos foram gerados com sucesso." }, 201
+
+def atualizar_estoque_e_calcular_pedido(estoque_id, quantidade_atual, usuario_id):
+    """
+    Atualiza a quantidade atual de um estoque e calcula o pedido automaticamente.
+    Também registra auditoria (usuário e data da submissão).
+    """
+    estoque = repositories.get_by_id(Estoque, estoque_id)
+    if not estoque:
+        return {"error": "Item de estoque não encontrado."}, 404
+
+    # Atualiza quantidade atual
+    estoque.quantidade_atual = quantidade_atual
+
+    # Calcula pedido automaticamente
+    estoque.pedido = estoque.calcular_pedido()
+
+    # Registra auditoria
+    estoque.data_ultima_submissao = datetime.utcnow()
+    estoque.usuario_ultima_submissao_id = usuario_id
+
+    db.session.commit()
+    return estoque.to_dict(), 200
+
+def submit_estoque_lista(lista_id, usuario_id, items_data):
+    """
+    Submete múltiplos itens de estoque de uma lista.
+    Calcula pedidos automaticamente e cria registros de Pedido se necessário.
+
+    items_data: [{"estoque_id": 1, "quantidade_atual": 5}, ...]
+    """
+    lista = repositories.get_by_id(Lista, lista_id)
+    if not lista:
+        return {"error": "Lista não encontrada."}, 404
+
+    # Valida se usuário está atribuído à lista
+    if usuario_id not in [u.id for u in lista.colaboradores]:
+        return {"error": "Você não tem acesso a esta lista."}, 403
+
+    pedidos_criados = []
+    estoques_atualizados = []
+
+    for item_data in items_data:
+        estoque_id = item_data.get('estoque_id')
+        quantidade_atual = item_data.get('quantidade_atual')
+
+        if not estoque_id or quantidade_atual is None:
+            continue
+
+        estoque = repositories.get_by_id(Estoque, estoque_id)
+        if not estoque or estoque.lista_id != lista_id:
+            continue
+
+        # Atualiza quantidade e calcula pedido
+        estoque.quantidade_atual = quantidade_atual
+        estoque.pedido = estoque.calcular_pedido()
+        estoque.data_ultima_submissao = datetime.utcnow()
+        estoque.usuario_ultima_submissao_id = usuario_id
+
+        db.session.add(estoque)
+        estoques_atualizados.append(estoque)
+
+        # Cria Pedido se quantidade está abaixo do mínimo
+        if float(quantidade_atual) < float(estoque.quantidade_minima):
+            quantidade_a_pedir = float(estoque.quantidade_minima) - float(quantidade_atual)
+            novo_pedido = Pedido(
+                item_id=estoque.item_id,
+                fornecedor_id=estoque.item.fornecedor_id,
+                quantidade_solicitada=quantidade_a_pedir,
+                usuario_id=usuario_id
+            )
+            db.session.add(novo_pedido)
+            pedidos_criados.append(novo_pedido)
+
+    db.session.commit()
+
+    return {
+        "message": f"Lista submetida com sucesso! {len(pedidos_criados)} pedido(s) criado(s).",
+        "estoques_atualizados": len(estoques_atualizados),
+        "pedidos_criados": len(pedidos_criados)
+    }, 201
 
 # --- Serviços de Lista ---
 
@@ -321,6 +575,39 @@ def unassign_colaborador_from_lista(lista_id, data):
     else:
         return {"error": "Colaborador não está atribuído a esta lista."}, 400
 
+def update_lista(lista_id, data):
+    """Atualiza nome e/ou descrição de uma lista."""
+    lista = repositories.get_by_id(Lista, lista_id)
+    if not lista:
+        return {"error": "Lista não encontrada."}, 404
+
+    # Validar se nome já existe (se estiver sendo alterado)
+    if 'nome' in data and data['nome'] != lista.nome:
+        existing = Lista.query.filter_by(nome=data['nome']).first()
+        if existing:
+            return {"error": "Já existe uma lista com esse nome."}, 400
+
+    # Atualizar campos
+    if 'nome' in data:
+        lista.nome = data['nome']
+    if 'descricao' in data:
+        lista.descricao = data['descricao']
+
+    db.session.commit()
+    return lista.to_dict(), 200
+
+def delete_lista(lista_id):
+    """Deleta uma lista e suas associações com colaboradores."""
+    lista = repositories.get_by_id(Lista, lista_id)
+    if not lista:
+        return {"error": "Lista não encontrada."}, 404
+
+    # O relacionamento many-to-many será limpo automaticamente
+    db.session.delete(lista)
+    db.session.commit()
+
+    return {"message": "Lista deletada com sucesso."}, 200
+
 
 # --- Serviços de Dashboard ---
 
@@ -338,15 +625,238 @@ def get_user_stats(user_id):
 
 def get_dashboard_summary():
     """Retorna dados agregados para o dashboard do admin."""
-    total_usuarios = Usuario.query.count()
-    usuarios_pendentes = Usuario.query.filter_by(aprovado=False).count()
-    total_listas = Lista.query.count()
-    # Outras métricas podem ser adicionadas aqui
+    total_users = Usuario.query.count()
+    pending_users = Usuario.query.filter_by(aprovado=False).count()
+    total_lists = Lista.query.count()
+    pending_cotacoes = Cotacao.query.filter_by(status=CotacaoStatus.PENDENTE).count()
+    completed_cotacoes = Cotacao.query.filter_by(status=CotacaoStatus.CONCLUIDA).count()
 
     summary_data = {
-        'total_usuarios': total_usuarios,
-        'usuarios_pendentes': usuarios_pendentes,
-        'total_listas': total_listas,
+        'total_users': total_users,
+        'pending_users': pending_users,
+        'total_lists': total_lists,
+        'pending_cotacoes': pending_cotacoes,
+        'completed_cotacoes': completed_cotacoes,
     }
     
     return summary_data, 200
+
+def get_activity_summary():
+    """Retorna o número de pedidos por dia nos últimos 7 dias."""
+    today = datetime.utcnow().date()
+    dates = [today - timedelta(days=i) for i in range(6, -1, -1)] # Últimos 7 dias
+    
+    activity_data = []
+    for d in dates:
+        count = Pedido.query.filter(func.date(Pedido.data_pedido) == d).count()
+        activity_data.append(count)
+
+    labels = [d.strftime('%d/%m') for d in dates]
+
+    return {"labels": labels, "data": activity_data}, 200
+
+def get_collaborator_dashboard_summary(user_id):
+    """Retorna estatísticas do dashboard para colaboradores."""
+    from .models import Usuario, Pedido, Lista
+    from .extensions import db
+
+    # Buscar o usuário
+    usuario = Usuario.query.get(user_id)
+    if not usuario:
+        return {"error": "Usuário não encontrado"}, 404
+
+    # Número de áreas atribuídas ao colaborador (via listas)
+    minhas_areas = db.session.query(Lista).filter(
+        Lista.colaboradores.any(id=user_id)
+    ).count()
+
+    # Submissões pendentes do colaborador
+    pending_submissions = Pedido.query.filter_by(
+        criado_por=user_id,
+        status='PENDENTE'
+    ).count()
+
+    # Submissões concluídas do colaborador
+    completed_submissions = Pedido.query.filter_by(
+        criado_por=user_id,
+        status='APROVADO'
+    ).count()
+
+    # Pedidos pendentes
+    pedidos_pendentes = Pedido.query.filter_by(
+        criado_por=user_id,
+        status='PENDENTE'
+    ).count()
+
+    summary_data = {
+        "minhas_areas": minhas_areas,
+        "pending_submissions": pending_submissions,
+        "completed_submissions": completed_submissions,
+        "pedidos_pendentes": pedidos_pendentes
+    }
+
+    return summary_data, 200
+
+# --- Serviços de Listas com Estoque (Nova Feature) ---
+
+def get_minhas_listas(user_id):
+    """Retorna todas as listas atribuídas a um colaborador."""
+    usuario = repositories.get_by_id(Usuario, user_id)
+    if not usuario:
+        return {"error": "Usuário não encontrado."}, 404
+
+    listas = usuario.listas_atribuidas
+    return [lista.to_dict() for lista in listas], 200
+
+def get_estoque_by_lista(lista_id):
+    """Retorna todos os estoques (itens) de uma lista específica."""
+    lista = repositories.get_by_id(Lista, lista_id)
+    if not lista:
+        return {"error": "Lista não encontrada."}, 404
+
+    estoques = Estoque.query.filter_by(lista_id=lista_id).all()
+    return [estoque.to_dict() for estoque in estoques], 200
+
+def get_lista_mae_consolidada(lista_id):
+    """
+    Retorna a Lista Mãe consolidada com última submissão de cada item.
+    Usada pelo admin para visualizar o consolidado de todas as submissões.
+    """
+    lista = repositories.get_by_id(Lista, lista_id)
+    if not lista:
+        return {"error": "Lista não encontrada."}, 404
+
+    estoques = Estoque.query.filter_by(lista_id=lista_id).all()
+
+    itens_consolidados = []
+    for estoque in estoques:
+        usuario_submissao = None
+        if estoque.usuario_ultima_submissao:
+            usuario_submissao = {
+                "id": estoque.usuario_ultima_submissao.id,
+                "nome": estoque.usuario_ultima_submissao.nome
+            }
+
+        item_consolidado = {
+            "estoque_id": estoque.id,
+            "item_id": estoque.item_id,
+            "item_nome": estoque.item.nome,
+            "item_unidade": estoque.item.unidade_medida,
+            "fornecedor_id": estoque.item.fornecedor_id,
+            "fornecedor_nome": estoque.item.fornecedor.nome if estoque.item.fornecedor else None,
+            "quantidade_minima": float(estoque.quantidade_minima),
+            "quantidade_atual": float(estoque.quantidade_atual),
+            "pedido": float(estoque.pedido) if estoque.pedido else estoque.calcular_pedido(),
+            "data_ultima_submissao": estoque.data_ultima_submissao.isoformat() if estoque.data_ultima_submissao else None,
+            "usuario_ultima_submissao": usuario_submissao
+        }
+        itens_consolidados.append(item_consolidado)
+
+    consolidado = {
+        "lista_id": lista.id,
+        "lista_nome": lista.nome,
+        "lista_descricao": lista.descricao,
+        "data_criacao": lista.data_criacao.isoformat() if lista.data_criacao else None,
+        "itens": itens_consolidados,
+        "total_itens": len(itens_consolidados),
+        "total_em_falta": sum(1 for item in itens_consolidados if item["pedido"] > 0),
+        "total_pedido": sum(item["pedido"] for item in itens_consolidados)
+    }
+
+    return consolidado, 200
+
+def adicionar_itens_na_lista(lista_id, items_data):
+    """
+    Adiciona/atualiza itens de estoque em uma lista.
+
+    items_data: [
+        {"item_id": 1, "quantidade_minima": 10},
+        {"item_id": 2, "quantidade_minima": 5}
+    ]
+    """
+    lista = repositories.get_by_id(Lista, lista_id)
+    if not lista:
+        return {"error": "Lista não encontrada."}, 404
+
+    itens_adicionados = []
+
+    for item_data in items_data:
+        item_id = item_data.get('item_id')
+        quantidade_minima = item_data.get('quantidade_minima', 0)
+
+        if not item_id:
+            continue
+
+        item = repositories.get_by_id(Item, item_id)
+        if not item:
+            continue
+
+        # Verifica se o estoque já existe
+        estoque_existente = Estoque.query.filter_by(
+            lista_id=lista_id,
+            item_id=item_id
+        ).first()
+
+        if estoque_existente:
+            # Atualiza quantidade mínima
+            estoque_existente.quantidade_minima = quantidade_minima
+        else:
+            # Cria novo estoque vinculado à lista
+            novo_estoque = Estoque(
+                lista_id=lista_id,
+                item_id=item_id,
+                area_id=1,  # Padrão para listas (não é específico de área)
+                quantidade_atual=0,
+                quantidade_minima=quantidade_minima,
+                pedido=0
+            )
+            db.session.add(novo_estoque)
+            itens_adicionados.append(item.nome)
+
+    db.session.commit()
+
+    return {
+        "message": f"{len(itens_adicionados)} itens adicionados à lista.",
+        "itens_adicionados": itens_adicionados
+    }, 200
+
+def obter_itens_da_lista(lista_id):
+    """Retorna todos os itens (estoques) vinculados a uma lista"""
+    lista = repositories.get_by_id(Lista, lista_id)
+    if not lista:
+        return {"error": "Lista não encontrada."}, 404
+
+    estoques = Estoque.query.filter_by(lista_id=lista_id).all()
+
+    itens = []
+    for estoque in estoques:
+        itens.append({
+            "estoque_id": estoque.id,
+            "item_id": estoque.item_id,
+            "item_nome": estoque.item.nome,
+            "quantidade_minima": float(estoque.quantidade_minima),
+            "quantidade_atual": float(estoque.quantidade_atual),
+            "unidade_medida": estoque.item.unidade_medida,
+            "fornecedor_id": estoque.item.fornecedor_id
+        })
+
+    return itens, 200
+
+def remover_item_da_lista(lista_id, item_id):
+    """Remove um item (estoque) de uma lista"""
+    lista = repositories.get_by_id(Lista, lista_id)
+    if not lista:
+        return {"error": "Lista não encontrada."}, 404
+
+    estoque = Estoque.query.filter_by(
+        lista_id=lista_id,
+        item_id=item_id
+    ).first()
+
+    if not estoque:
+        return {"error": "Item não encontrado nesta lista."}, 404
+
+    db.session.delete(estoque)
+    db.session.commit()
+
+    return {"message": f"Item removido da lista."}, 200

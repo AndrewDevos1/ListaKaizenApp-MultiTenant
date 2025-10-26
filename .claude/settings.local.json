@@ -1,0 +1,34 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(.venv/Scripts/python.exe create_user_simple.py)",
+      "Bash(rm -rf frontend/node_modules/.cache)",
+      "Bash(.venv/Scripts/python.exe:*)",
+      "Bash(npm run build:*)",
+      "Bash(python -m flask:*)",
+      "Bash(source:*)",
+      "Bash(timeout 5 python:*)",
+      "Bash(curl:*)",
+      "Bash(flask db migrate:*)",
+      "Bash(../.venv/Scripts/python.exe -m flask db migrate:*)",
+      "Bash(FLASK_APP=run.py .venv/Scripts/python.exe -m flask:*)",
+      "Bash(npm start)",
+      "Bash(dir:*)",
+      "Bash(find:*)",
+      "Bash(taskkill:*)",
+      "Bash(../.venv/Scripts/python.exe -m pip show:*)",
+      "Bash(.venvScriptspython.exe -m flask db current)",
+      "Bash(cd:*)",
+      "Bash(pip install:*)",
+      "Bash(npm install:*)",
+      "Bash(python:*)",
+      "Bash(.venvScriptsactivate)",
+      "Bash(flask --app run:app db upgrade:*)",
+      "Bash(.venvScriptspython.exe -m flask --app run:app db upgrade)",
+      "Bash(./.venv/Scripts/flask:*)",
+      "Read(//d//**)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
