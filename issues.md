@@ -68,3 +68,15 @@
 - **Testes e Correção de Bugs:**
   - [ ] Testar de forma completa todas as novas funcionalidades implementadas.
   - [ ] Corrigir quaisquer bugs que sejam encontrados durante os testes.
+
+## Resolução de Problemas de Acesso em Rede
+
+- **[CONCLUÍDO] Correção de Acesso Local e CORS:**
+  - **Problema:** A aplicação falhava no login quando acessada de qualquer dispositivo na rede local que não fosse a máquina principal.
+  - **Causa Raiz:** Um problema de múltiplas camadas foi identificado:
+    1.  **Rede:** O servidor backend (Flask) estava configurado para aceitar apenas conexões locais (`127.0.0.1`), bloqueando o acesso de outros dispositivos.
+    2.  **CORS:** A política de CORS do backend não autorizava explicitamente o acesso vindo do IP da rede local (ex: `192.168.88.122`), resultando em um bloqueio pelo navegador.
+  - **Solução:**
+    1.  O arquivo `backend/run.py` foi alterado para `app.run(host='0.0.0.0')`, permitindo que o servidor aceite conexões da rede.
+    2.  Um arquivo `.env.local` foi criado no frontend para que o ambiente de desenvolvimento aponte para o IP correto do backend na rede.
+    3.  O arquivo `backend/kaizen_app/__init__.py` foi atualizado para incluir o IP da rede local na lista de `origins` permitidas pelo CORS.

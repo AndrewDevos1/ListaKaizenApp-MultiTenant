@@ -21,7 +21,8 @@ def create_app(config_name='production'):
             "origins": [
                 "https://lista-kaizen-app.vercel.app",
                 "http://localhost:3000",
-                "http://127.0.0.1:3000"
+                "http://127.0.0.1:3000",
+                "http://192.168.88.122:3000"
             ],
             "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
             "allow_headers": ["Content-Type", "Authorization"],
