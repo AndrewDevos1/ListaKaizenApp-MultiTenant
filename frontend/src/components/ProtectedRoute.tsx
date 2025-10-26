@@ -5,11 +5,11 @@ import { useAuth } from '../context/AuthContext';
 const ProtectedRoute: React.FC = () => {
     const { isAuthenticated, user, loading } = useAuth();
 
-    console.log('[PROTECTED_ROUTE] check:', { isAuthenticated, user, loading });
+    console.log('🔐 ProtectedRoute check:', { isAuthenticated, user, loading });
 
     // Espera o loading terminar antes de redirecionar
     if (loading) {
-        console.log('[PROTECTED_ROUTE] Verificando autenticacao...');
+        console.log('⏳ Verificando autenticação...');
         return (
             <div style={{
                 display: 'flex',
@@ -23,11 +23,11 @@ const ProtectedRoute: React.FC = () => {
     }
 
     if (!isAuthenticated) {
-        console.log('[PROTECTED_ROUTE] Nao autenticado - redirecionando para /login');
+        console.log('❌ Não autenticado - redirecionando para /login');
         return <Navigate to="/login" replace />;
     }
 
-    console.log('[PROTECTED_ROUTE] Autenticado - permitindo acesso');
+    console.log('✅ Autenticado - permitindo acesso');
     return <Outlet />;
 };
 

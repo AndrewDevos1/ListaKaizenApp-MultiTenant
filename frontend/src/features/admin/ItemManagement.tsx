@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Table, Button, Modal, Form, Spinner, Alert } from 'react-bootstrap';
 import api from '../../services/api';
+import Layout from '../../components/Layout';
 
 interface Item {
     id: number;
@@ -101,8 +102,7 @@ const ItemManagement: React.FC = () => {
     };
 
     return (
-        <div>
-            <h2>Gestão de Itens</h2>
+        <Layout title="Gestão de Itens">
             {error && <Alert variant="danger" onClose={() => setError('')} dismissible>{error}</Alert>}
             <Button variant="primary" onClick={() => handleShowModal()} className="mb-3">
                 <i className="fas fa-plus me-2"></i>Adicionar Item
@@ -185,7 +185,7 @@ const ItemManagement: React.FC = () => {
                     <Button variant="danger" onClick={handleDelete}>Excluir</Button>
                 </Modal.Footer>
             </Modal>
-        </div>
+        </Layout>
     );
 };
 

@@ -158,7 +158,7 @@ const EstoqueListaCompras: React.FC = () => {
             );
 
             setSuccess(
-                `[OK] Lista submetida com sucesso! ${response.data.pedidos_criados} pedido(s) criado(s).`
+                `✅ Lista submetida com sucesso! ${response.data.pedidos_criados} pedido(s) criado(s).`
             );
 
             // Recarrega os dados
@@ -228,7 +228,7 @@ const EstoqueListaCompras: React.FC = () => {
                     <Form.Group>
                         <Form.Control
                             type="text"
-                            placeholder="[BUSCA] Buscar item..."
+                            placeholder="🔍 Buscar item..."
                             value={searchTerm}
                             onChange={e => setSearchTerm(e.target.value)}
                             className={styles.searchInput}

@@ -185,8 +185,8 @@ const AdminDashboard: React.FC = () => {
         setIsEditMode(!isEditMode);
     };
 
-    // DIAGNOSTICO: Verificar se este componente esta sendo carregado
-    console.log('[DASHBOARD] COREUI CARREGADO!', {
+    // DIAGNÓSTICO: Verificar se este componente está sendo carregado
+    console.log('🎨 DASHBOARD COREUI CARREGADO!', {
         styles,
         hasWrapper: !!styles.dashboardWrapper,
         hasWidgetCard: !!styles.widgetCard

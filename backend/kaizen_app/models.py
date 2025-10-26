@@ -34,7 +34,6 @@ class Usuario(db.Model, SerializerMixin):
     senha_hash = db.Column(db.String(128), nullable=False)
     role = db.Column(db.Enum(UserRoles), nullable=False, default=UserRoles.COLLABORATOR)
     aprovado = db.Column(db.Boolean, default=False, nullable=False)
-    ativo = db.Column(db.Boolean, default=True, nullable=False)
     criado_em = db.Column(db.DateTime, default=datetime.utcnow)
 
     def to_dict(self):
@@ -46,7 +45,6 @@ class Usuario(db.Model, SerializerMixin):
             "email": self.email,
             "role": self.role.value,
             "aprovado": self.aprovado,
-            "ativo": self.ativo,
             "criado_em": self.criado_em.isoformat()
         }
 

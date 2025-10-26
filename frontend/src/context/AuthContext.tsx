@@ -25,7 +25,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             if (sessionExpiry) {
                 const expiryTime = parseInt(sessionExpiry, 10);
                 if (Date.now() > expiryTime) {
-                    console.log('[AUTH] Sessao expirada - fazendo logout automatico');
+                    console.log('⏰ Sessão expirada - fazendo logout automático');
                     localStorage.removeItem('accessToken');
                     localStorage.removeItem('sessionExpiry');
                     setUser(null);
@@ -37,21 +37,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             // Token válido, decodificar e restaurar usuário
             try {
                 const decodedUser: any = jwtDecode(token);
-                console.log('[AUTH] Sessao restaurada do localStorage');
-                console.log('[DEBUG] Decoded user:', decodedUser);
+                console.log('✅ Sessão restaurada do localStorage');
+                console.log('🔍 Decoded user:', decodedUser);
                 // Monta o objeto user com id e role
                 setUser({
                     id: decodedUser.sub,      // ID do usuário
                     role: decodedUser.role    // Role está no payload agora
                 });
             } catch (error) {
-                console.error("[AUTH] Token invalido ao restaurar sessao", error);
+                console.error("❌ Token inválido ao restaurar sessão", error);
                 localStorage.removeItem('accessToken');
                 localStorage.removeItem('sessionExpiry');
                 setUser(null);
             }
         } else {
-            console.log('[AUTH] Nenhum token encontrado - usuario nao autenticado');
+            console.log('ℹ️ Nenhum token encontrado - usuário não autenticado');
         }
 
         setLoading(false); // Finaliza loading após verificação
@@ -64,7 +64,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             if (sessionExpiry) {
                 const expiryTime = parseInt(sessionExpiry, 10);
                 if (Date.now() > expiryTime) {
-                    console.log('[AUTH] Sessao expirada - fazendo logout automatico');
+                    console.log('⏰ Sessão expirada - fazendo logout automático');
                     logout();
                 }
             }
@@ -80,9 +80,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         localStorage.setItem('accessToken', token);
         try {
             const decodedUser: any = jwtDecode(token);
-            console.log('[AUTH] Login Called:', decodedUser);
-            console.log('[USER] ID (sub):', decodedUser.sub);
-            console.log('[USER] Role:', decodedUser.role);
+            console.log('🔑 Auth Login Called:', decodedUser);
+            console.log('👤 User ID (sub):', decodedUser.sub);
+            console.log('👤 User Role:', decodedUser.role);
             // Monta o objeto user com id e role
             setUser({
                 id: decodedUser.sub,      // ID do usuário

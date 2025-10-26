@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Table, Button, Modal, Form, Spinner, Alert } from 'react-bootstrap';
 import api from '../../services/api';
+import Layout from '../../components/Layout';
 
 interface Fornecedor {
     id: number;
@@ -93,8 +94,7 @@ const FornecedorManagement: React.FC = () => {
     };
 
     return (
-        <div>
-            <h2>Gestão de Fornecedores</h2>
+        <Layout title="Gestão de Fornecedores">
             {error && <Alert variant="danger" onClose={() => setError('')} dismissible>{error}</Alert>}
             <Button variant="primary" onClick={() => handleShowModal()} className="mb-3">
                 <i className="fas fa-plus me-2"></i>Adicionar Fornecedor
@@ -177,7 +177,7 @@ const FornecedorManagement: React.FC = () => {
                     <Button variant="danger" onClick={handleDelete}>Excluir</Button>
                 </Modal.Footer>
             </Modal>
-        </div>
+        </Layout>
     );
 };
 

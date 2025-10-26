@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Table, Button, Modal, Form, Spinner, Alert } from 'react-bootstrap';
 import api from '../../services/api';
+import Layout from '../../components/Layout';
 
 interface Area {
     id: number;
@@ -94,8 +95,7 @@ const AreaManagement: React.FC = () => {
     );
 
     return (
-        <div>
-            <h2>Gestão de Áreas</h2>
+        <Layout title="Gestão de Áreas">
             {error && <Alert variant="danger" onClose={() => setError('')} dismissible>{error}</Alert>}
             <Button variant="primary" onClick={() => handleShowModal()} className="mb-3">
                 <i className="fas fa-plus me-2"></i>Adicionar Área
@@ -172,7 +172,7 @@ const AreaManagement: React.FC = () => {
                     <Button variant="danger" onClick={handleDelete}>Excluir</Button>
                 </Modal.Footer>
             </Modal>
-        </div>
+        </Layout>
     );
 };
 

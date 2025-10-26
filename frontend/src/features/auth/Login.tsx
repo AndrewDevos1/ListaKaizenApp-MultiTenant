@@ -71,7 +71,7 @@ const Login: React.FC = () => {
             const expiryTime = Date.now() + sessionTimeout;
             localStorage.setItem('sessionExpiry', expiryTime.toString());
 
-            console.log('[LOGIN] Timeout de sessao configurado:', {
+            console.log('⏰ Timeout de sessão configurado:', {
                 minutos: timeoutMinutes,
                 milliseconds: sessionTimeout,
                 expiraEm: new Date(expiryTime).toLocaleString(),
@@ -82,19 +82,19 @@ const Login: React.FC = () => {
             const userId = tokenPayload.sub; // ID do usuário (agora é número, não objeto)
             const role = tokenPayload.role; // Role agora está diretamente no payload
 
-            // DIAGNOSTICO: Ver estrutura do token
-            console.log('[LOGIN] Token payload completo:', tokenPayload);
-            console.log('[LOGIN] User ID:', userId);
-            console.log('[LOGIN] Role:', role);
+            // DIAGNÓSTICO: Ver estrutura do token
+            console.log('👤 Token payload completo:', tokenPayload);
+            console.log('👤 User ID:', userId);
+            console.log('🔍 Role:', role);
 
             if (role === 'ADMIN') {
-                console.log('[LOGIN] Redirecionando ADMIN para /admin');
+                console.log('✅ Redirecionando ADMIN para /admin');
                 navigate('/admin');
             } else if (role === 'COLLABORATOR') {
-                console.log('[LOGIN] Redirecionando COLLABORATOR para /collaborator');
+                console.log('✅ Redirecionando COLLABORATOR para /collaborator');
                 navigate('/collaborator');
             } else {
-                console.log('[LOGIN] Role desconhecido - redirecionando para /login');
+                console.log('⚠️ Role desconhecido - redirecionando para /login');
                 navigate('/login');
             }
         } catch (err: any) {

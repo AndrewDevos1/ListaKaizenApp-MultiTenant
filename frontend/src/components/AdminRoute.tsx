@@ -5,8 +5,8 @@ import { useAuth } from '../context/AuthContext';
 const AdminRoute: React.FC = () => {
     const { isAuthenticated, user, loading } = useAuth();
 
-    // DIAGNOSTICO: Verificar autenticacao
-    console.log('[ADMIN_ROUTE] Check:', {
+    // DIAGNÓSTICO: Verificar autenticação
+    console.log('🔐 AdminRoute Check:', {
         isAuthenticated,
         user,
         userRole: user?.role,
@@ -15,7 +15,7 @@ const AdminRoute: React.FC = () => {
 
     // Espera o loading terminar antes de redirecionar
     if (loading) {
-        console.log('[ADMIN_ROUTE] Verificando autenticacao admin...');
+        console.log('⏳ Verificando autenticação admin...');
         return (
             <div style={{
                 display: 'flex',
@@ -29,16 +29,16 @@ const AdminRoute: React.FC = () => {
     }
 
     if (!isAuthenticated) {
-        console.log('[ADMIN_ROUTE] Nao autenticado - redirecionando para /login');
+        console.log('❌ Não autenticado - redirecionando para /login');
         return <Navigate to="/login" replace />;
     }
 
     if (user?.role !== 'ADMIN') {
-        console.log('[ADMIN_ROUTE] Usuario nao e ADMIN - redirecionando para /login');
+        console.log('❌ Usuário não é ADMIN - redirecionando para /login');
         return <Navigate to="/login" replace />; // Redireciona para login se não for admin
     }
 
-    console.log('[ADMIN_ROUTE] Usuario ADMIN autenticado - renderizando Outlet');
+    console.log('✅ Usuário ADMIN autenticado - renderizando Outlet');
     return <Outlet />;
 };
 

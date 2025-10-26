@@ -53,7 +53,7 @@ const Configuracoes: React.FC = () => {
             setShowSuccess(false);
         }, 3000);
 
-        console.log('[CONFIG] Configuracao salva:', {
+        console.log('✅ Configuração salva:', {
             sessionTimeout: sessionTimeout,
             sessionTimeoutMs: sessionTimeout * 60 * 1000,
         });
