@@ -180,8 +180,8 @@ const CollaboratorDashboard: React.FC = () => {
         setIsEditMode(!isEditMode);
     };
 
-    // DIAGNÓSTICO: Verificar se este componente está sendo carregado
-    console.log('🎨 COLLABORATOR DASHBOARD CARREGADO!', {
+    // DIAGNOSTICO: Verificar se este componente esta sendo carregado
+    console.log('[DASHBOARD] COLLABORATOR CARREGADO!', {
         styles,
         hasWrapper: !!styles.dashboardWrapper,
         hasWidgetCard: !!styles.widgetCard

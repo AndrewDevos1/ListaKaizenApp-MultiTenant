@@ -37,15 +37,15 @@ def create_admin():
         # Verifica se o banco de dados está inicializado
         try:
             db.create_all()
-            print("✅ Banco de dados inicializado")
+            print("[OK] Banco de dados inicializado")
         except Exception as e:
-            print(f"⚠️  Aviso ao criar tabelas: {e}")
+            print(f"[AVISO] Aviso ao criar tabelas: {e}")
 
         # Verifica se o usuário já existe
         existing_user = Usuario.query.filter_by(email=ADMIN_EMAIL).first()
 
         if existing_user:
-            print(f"\n⚠️  USUÁRIO JÁ EXISTE!")
+            print(f"\n[AVISO] USUARIO JA EXISTE!")
             print(f"   Email: {existing_user.email}")
             print(f"   Nome: {existing_user.nome}")
             print(f"   Role: {existing_user.role.value}")
@@ -54,16 +54,16 @@ def create_admin():
             print(f"   Criado em: {existing_user.criado_em}")
 
             # Pergunta se quer atualizar a senha
-            resposta = input("\n🔄 Deseja atualizar a senha deste usuário? (s/n): ")
+            resposta = input("\n[UPDATE] Deseja atualizar a senha deste usuario? (s/n): ")
 
             if resposta.lower() == 's':
                 existing_user.senha_hash = generate_password_hash(ADMIN_PASSWORD)
                 existing_user.aprovado = True
                 existing_user.role = UserRoles.ADMIN
                 db.session.commit()
-                print("✅ Senha atualizada com sucesso!")
+                print("[OK] Senha atualizada com sucesso!")
             else:
-                print("❌ Nenhuma alteração foi feita.")
+                print("[INFO] Nenhuma alteracao foi feita.")
 
             return
 
@@ -83,7 +83,7 @@ def create_admin():
         db.session.add(admin_user)
         db.session.commit()
 
-        print("\n✅ USUÁRIO ADMINISTRADOR CRIADO COM SUCESSO!")
+        print("\n[OK] USUARIO ADMINISTRADOR CRIADO COM SUCESSO!")
         print(f"   Email: {admin_user.email}")
         print(f"   Nome: {admin_user.nome}")
         print(f"   Role: {admin_user.role.value}")
@@ -91,28 +91,28 @@ def create_admin():
         print(f"   ID: {admin_user.id}")
         print(f"   Criado em: {admin_user.criado_em}")
 
-        print("\n📋 CREDENCIAIS DE ACESSO:")
+        print("\n[INFO] CREDENCIAIS DE ACESSO:")
         print(f"   Email: {ADMIN_EMAIL}")
         print(f"   Senha: {ADMIN_PASSWORD}")
 
-        print("\n🔗 Para fazer login, acesse:")
+        print("\n[INFO] Para fazer login, acesse:")
         print("   Frontend: http://localhost:3000/login")
         print("   Ou use a API: POST /api/auth/login")
 
 if __name__ == "__main__":
     print("=" * 60)
-    print("🔧 SCRIPT DE CRIAÇÃO DE USUÁRIO ADMINISTRADOR")
+    print("SCRIPT DE CRIACAO DE USUARIO ADMINISTRADOR")
     print("=" * 60)
     print()
 
     try:
         create_admin()
     except Exception as e:
-        print(f"\n❌ ERRO ao criar usuário: {e}")
+        print(f"\n[ERRO] ERRO ao criar usuario: {e}")
         import traceback
         traceback.print_exc()
         sys.exit(1)
 
     print("\n" + "=" * 60)
-    print("✅ Script finalizado com sucesso!")
+    print("[OK] Script finalizado com sucesso!")
     print("=" * 60)

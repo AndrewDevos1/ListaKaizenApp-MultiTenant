@@ -15,7 +15,7 @@ const AuthDebug: React.FC = () => {
         if (!token) {
             setTokenInfo({
                 exists: false,
-                message: '❌ Nenhum token encontrado no localStorage'
+                message: '[DEBUG] Nenhum token encontrado no localStorage'
             });
             return;
         }
@@ -27,7 +27,7 @@ const AuthDebug: React.FC = () => {
                 setTokenInfo({
                     exists: true,
                     valid: false,
-                    message: '⚠️ Token com formato inválido'
+                    message: '[DEBUG] Token com formato invalido'
                 });
                 return;
             }
@@ -44,13 +44,13 @@ const AuthDebug: React.FC = () => {
                 expiresAt: new Date(payload.exp * 1000).toLocaleString(),
                 expired: expired,
                 user: { id: payload.sub, role: payload.role }, // Novo formato
-                message: expired ? '⚠️ Token EXPIRADO!' : '✅ Token válido'
+                message: expired ? '[DEBUG] Token EXPIRADO!' : '[DEBUG] Token valido'
             });
         } catch (error) {
             setTokenInfo({
                 exists: true,
                 valid: false,
-                message: '❌ Erro ao decodificar token',
+                message: '[DEBUG] Erro ao decodificar token',
                 error: String(error)
             });
         }
@@ -68,14 +68,14 @@ const AuthDebug: React.FC = () => {
     return (
         <Card className="mb-3" style={{ backgroundColor: '#f8f9fa' }}>
             <Card.Header>
-                <strong>🔍 Debug de Autenticação</strong>
+                <strong>[DEBUG] Autenticacao</strong>
             </Card.Header>
             <Card.Body>
                 <Button size="sm" onClick={checkAuth} className="mb-3 me-2">
-                    🔄 Atualizar
+                    [REFRESH] Atualizar
                 </Button>
                 <Button size="sm" variant="danger" onClick={clearToken} className="mb-3">
-                    🗑️ Limpar Token
+                    [DELETE] Limpar Token
                 </Button>
 
                 {tokenInfo && (
@@ -96,7 +96,7 @@ const AuthDebug: React.FC = () => {
                                             <code>{JSON.stringify(tokenInfo.user, null, 2)}</code>
                                         </p>
                                         <p><strong>Expira em:</strong> {tokenInfo.expiresAt}</p>
-                                        <p><strong>Status:</strong> {tokenInfo.expired ? '🔴 Expirado' : '🟢 Válido'}</p>
+                                        <p><strong>Status:</strong> {tokenInfo.expired ? '[RED] Expirado' : '[GREEN] Valido'}</p>
                                     </>
                                 )}
 
@@ -109,9 +109,9 @@ const AuthDebug: React.FC = () => {
                         {!tokenInfo.exists && (
                             <Alert variant="info">
                                 <p className="mb-0">
-                                    <strong>📝 Instruções:</strong><br />
-                                    1. Faça login em <code>/login</code><br />
-                                    2. O token será salvo automaticamente<br />
+                                    <strong>[NOTE] Instrucoes:</strong><br />
+                                    1. Faca login em <code>/login</code><br />
+                                    2. O token sera salvo automaticamente<br />
                                     3. Volte aqui para verificar
                                 </p>
                             </Alert>

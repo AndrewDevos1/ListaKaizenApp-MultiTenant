@@ -62,6 +62,9 @@ def authenticate_user(data):
     if not user.aprovado:
         return {"error": "Usuário pendente de aprovação."}, 403
 
+    if not user.ativo:
+        return {"error": "Usuário desativado. Entre em contato com o administrador."}, 403
+
     # O identity deve ser uma STRING (Flask-JWT-Extended espera string no campo 'sub')
     # Dados adicionais vão em additional_claims
     additional_claims = {"role": user.role.value}
@@ -109,31 +112,31 @@ def update_user_by_admin(user_id, data):
 def create_user_by_admin(data):
     """Cria um novo usuário (admin ou colaborador) a pedido de um admin."""
     try:
-        print("🔍 [SERVICE] Iniciando criação de usuário...")
-        print(f"🔍 [SERVICE] Email: {data.get('email')}")
-        print(f"🔍 [SERVICE] Nome: {data.get('nome')}")
-        print(f"🔍 [SERVICE] Username: {data.get('username')}")
-        print(f"🔍 [SERVICE] Role: {data.get('role')}")
+        print("[SERVICE] Iniciando criacao de usuario...")
+        print(f"[SERVICE] Email: {data.get('email')}")
+        print(f"[SERVICE] Nome: {data.get('nome')}")
+        print(f"[SERVICE] Username: {data.get('username')}")
+        print(f"[SERVICE] Role: {data.get('role')}")
 
         # Validação de email duplicado
         if Usuario.query.filter_by(email=data['email']).first():
-            print(f"❌ [SERVICE] E-mail já existe: {data['email']}")
+            print(f"[SERVICE] E-mail ja existe: {data['email']}")
             return {"error": "E-mail já cadastrado."}, 409
 
         # Verifica se username já existe (se fornecido)
         if data.get('username'):
             existing_username = Usuario.query.filter_by(username=data['username']).first()
             if existing_username:
-                print(f"❌ [SERVICE] Username já existe: {data['username']}")
+                print(f"[SERVICE] Username ja existe: {data['username']}")
                 return {"error": "Nome de usuário já cadastrado."}, 409
 
         # Hash da senha
         hashed_password = generate_password_hash(data['senha'])
-        print("✅ [SERVICE] Senha hashada com sucesso")
+        print("[SERVICE] Senha hashada com sucesso")
 
         # Define o role
         role = UserRoles.ADMIN if data.get('role') == 'ADMIN' else UserRoles.COLLABORATOR
-        print(f"✅ [SERVICE] Role definida: {role}")
+        print(f"[SERVICE] Role definida: {role}")
 
         # Cria o novo usuário
         new_user = Usuario(
@@ -145,22 +148,22 @@ def create_user_by_admin(data):
             aprovado=True  # Criado por admin, já vem aprovado
         )
 
-        print("✅ [SERVICE] Objeto Usuario criado")
+        print("[SERVICE] Objeto Usuario criado")
 
         db.session.add(new_user)
-        print("✅ [SERVICE] Usuario adicionado à sessão")
+        print("[SERVICE] Usuario adicionado a sessao")
 
         db.session.commit()
-        print(f"✅ [SERVICE] Usuario salvo no banco! ID: {new_user.id}")
+        print(f"[SERVICE] Usuario salvo no banco! ID: {new_user.id}")
 
         return {"message": f"Usuário {new_user.nome} criado com sucesso como {role.value}."}, 201
 
     except KeyError as e:
-        print(f"❌ [SERVICE] Campo obrigatório ausente: {e}")
+        print(f"[SERVICE] Campo obrigatorio ausente: {e}")
         return {"error": f"Campo obrigatório ausente: {str(e)}"}, 400
 
     except Exception as e:
-        print(f"❌ [SERVICE] Erro inesperado: {type(e).__name__}: {str(e)}")
+        print(f"[SERVICE] Erro inesperado: {type(e).__name__}: {str(e)}")
         import traceback
         traceback.print_exc()
         db.session.rollback()
@@ -227,6 +230,50 @@ def get_user_profile(user_id):
         return {"error": "Usuário não encontrado."}, 404
 
     return user.to_dict(), 200
+
+def delete_user(user_id):
+    """Deleta um usuário e todos os registros relacionados."""
+    user = Usuario.query.get(user_id)
+    if not user:
+        return {"error": "Usuário não encontrado."}, 404
+
+    # Remove relacionamentos many-to-many com listas
+    user.listas_atribuidas = []
+    db.session.flush()
+
+    # SQLAlchemy vai lidar com cascade delete automático para registros relacionados
+    db.session.delete(user)
+    db.session.commit()
+
+    return {"message": f"Usuário {user.nome} deletado com sucesso."}, 200
+
+def deactivate_user(user_id):
+    """Desativa um usuário (não conseguirá fazer login)."""
+    user = Usuario.query.get(user_id)
+    if not user:
+        return {"error": "Usuário não encontrado."}, 404
+
+    if not user.ativo:
+        return {"error": "Usuário já está desativado."}, 400
+
+    user.ativo = False
+    db.session.commit()
+
+    return {"message": f"Usuário {user.nome} desativado com sucesso."}, 200
+
+def reactivate_user(user_id):
+    """Reativa um usuário desativado."""
+    user = Usuario.query.get(user_id)
+    if not user:
+        return {"error": "Usuário não encontrado."}, 404
+
+    if user.ativo:
+        return {"error": "Usuário já está ativo."}, 400
+
+    user.ativo = True
+    db.session.commit()
+
+    return {"message": f"Usuário {user.nome} reativado com sucesso."}, 200
 
 
 # --- Serviços de Inventário ---
