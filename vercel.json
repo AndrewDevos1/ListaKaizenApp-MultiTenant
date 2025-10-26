@@ -1,8 +1,13 @@
 {
-  "buildCommand": "cd frontend && npm install && npm run build",
+  "version": 2,
+  "name": "kaizen-lists-frontend",
+  "projectSettings": {
+    "sourceFilesOutsideRootDirectory": true
+  },
+  "buildCommand": "cd frontend && npm run build",
   "outputDirectory": "frontend/build",
   "installCommand": "cd frontend && npm install",
-  "framework": null,
+  "framework": "create-react-app",
   "rewrites": [
     {
       "source": "/(.*)",
