@@ -107,6 +107,37 @@ def login():
     response, status_code = services.authenticate_user(data)
     return jsonify(response), status_code
 
+@auth_bp.route('/create-first-admin', methods=['POST'])
+def create_first_admin():
+    """
+    Endpoint especial para criar o primeiro admin em produção.
+    Protegido por senha mestra e só funciona se não houver nenhum admin.
+    """
+    data = request.get_json()
+
+    # Validação de dados obrigatórios
+    required_fields = ['senha_mestra', 'nome', 'email', 'username', 'senha']
+    if not data or not all(field in data for field in required_fields):
+        return jsonify({
+            "error": "Dados incompletos",
+            "required": required_fields
+        }), 400
+
+    # Verificar senha mestra
+    SENHA_MESTRA = "Kaiser@210891"
+    if data.get('senha_mestra') != SENHA_MESTRA:
+        return jsonify({"error": "Senha mestra inválida"}), 403
+
+    # Chamar serviço para criar primeiro admin
+    response, status_code = services.create_first_admin({
+        'nome': data['nome'],
+        'email': data['email'],
+        'username': data['username'],
+        'senha': data['senha']
+    })
+
+    return jsonify(response), status_code
+
 @auth_bp.route('/change-password', methods=['POST'])
 @jwt_required()
 def change_password():

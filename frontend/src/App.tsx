@@ -4,6 +4,7 @@ import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import HomePage from './pages/HomePage';
 import Login from './features/auth/Login';
 import Register from './features/auth/Register';
+import CreateFirstAdmin from './features/auth/CreateFirstAdmin';
 import GlobalDashboard from './features/dashboard/GlobalDashboard';
 import EstoqueLista from './features/inventory/EstoqueLista';
 import MinhasSubmissoes from './features/inventory/MinhasSubmissoes';
@@ -43,6 +44,7 @@ function App() {
           {/* Rotas de Autenticação */}
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/create-first-admin" element={<CreateFirstAdmin />} />
 
           {/* Rotas Administrativas */}
           <Route element={<Layout />}>
