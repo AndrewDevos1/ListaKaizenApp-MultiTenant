@@ -14,7 +14,20 @@ def create_app(config_name='production'):
     db.init_app(app)
     migrate.init_app(app, db)
     jwt.init_app(app)
-    cors.init_app(app, resources={r"/api/*": {"origins": "*"}})
+
+    # Configuração CORS para permitir Vercel e localhost
+    cors.init_app(app,
+        resources={r"/api/*": {
+            "origins": [
+                "https://lista-kaizen-app.vercel.app",
+                "http://localhost:3000",
+                "http://127.0.0.1:3000"
+            ],
+            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+            "allow_headers": ["Content-Type", "Authorization"],
+            "supports_credentials": True
+        }}
+    )
 
     # Middleware para log de todas as requisições
     @app.before_request
