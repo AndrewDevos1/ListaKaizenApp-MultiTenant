@@ -57,8 +57,10 @@ flask db downgrade
 **Running the Backend:**
 ```bash
 # From backend/ directory
-flask run
-# Server runs on http://127.0.0.1:5000
+flask run --host=0.0.0.0
+# Server runs on http://0.0.0.0:5000 and is accessible on your local network.
+# IMPORTANT: For local network development, see the guide in README.md 
+# to configure the frontend's .env.local file.
 ```
 
 **Testing:**
