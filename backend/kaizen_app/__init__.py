@@ -1,10 +1,9 @@
-from flask import Flask, request
+from flask import Flask, request, jsonify
 from .config import config_by_name
 from .extensions import db, migrate, jwt, cors
-from flask import Flask, jsonify  # ← Adicione "jsonify"
 
 
-def create_app(config_name='default'):
+def create_app(config_name='ListaKaizen'):
     """Application Factory Function"""
     app = Flask(__name__)
 
@@ -15,7 +14,7 @@ def create_app(config_name='default'):
     db.init_app(app)
     migrate.init_app(app, db)
     jwt.init_app(app)
-    cors.init_app(app, resources={r"/api/*": {"origins": "*"}}) # Configuração básica de CORS para a API
+    cors.init_app(app, resources={r"/api/*": {"origins": "*"}})
 
     # Middleware para log de todas as requisições
     @app.before_request
@@ -29,7 +28,7 @@ def create_app(config_name='default'):
         print(f"🌐 [FLASK] View Args: {request.view_args}")
         print(f"🌐 [FLASK] Headers:")
         for header, value in request.headers:
-            if header.lower() != 'authorization':  # Não mostrar token completo
+            if header.lower() != 'authorization':
                 print(f"         {header}: {value}")
             else:
                 has_auth = 'Bearer' in value
@@ -37,7 +36,6 @@ def create_app(config_name='default'):
 
         if request.method in ['POST', 'PUT', 'PATCH']:
             try:
-                # Tenta ler o JSON SEM silent para ver se há erro
                 print(f"🌐 [FLASK] Content-Type: {request.content_type}")
                 print(f"🌐 [FLASK] Content-Length: {request.content_length}")
 
@@ -60,7 +58,6 @@ def create_app(config_name='default'):
         print(f"📤 [FLASK] Status: {response.status}")
         print(f"📤 [FLASK] Path: {request.path}")
 
-        # Se for erro, mostrar o corpo da resposta
         if response.status_code >= 400:
             try:
                 data = response.get_json()
@@ -70,6 +67,25 @@ def create_app(config_name='default'):
 
         print("📤" * 30 + "\n")
         return response
+
+    # ✅ ADICIONE ESTAS ROTAS (FALTAVAM!)
+    @app.route("/", methods=["GET"])
+    def health_check():
+        """Health check da API - Rota raiz"""
+        return jsonify({
+            "status": "ok",
+            "message": "Kaizen Lists API está rodando!",
+            "version": "1.0.0"
+        }), 200
+
+    @app.route("/api/v1/health", methods=["GET"])
+    def api_health():
+        """Health check da API em /api/v1/health"""
+        return jsonify({
+            "status": "ok",
+            "database": "connected",
+            "message": "API pronta!"
+        }), 200
 
     # Handler para erros 422
     @app.errorhandler(422)
@@ -88,7 +104,6 @@ def create_app(config_name='default'):
         traceback.print_exc()
         print("❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌\n")
 
-        # Retorna erro detalhado
         return jsonify({
             "error": "Dados inválidos",
             "message": str(e.description if hasattr(e, 'description') else e),
@@ -106,7 +121,6 @@ def create_app(config_name='default'):
         traceback.print_exc()
         print("🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥\n")
 
-        # Se for erro HTTP conhecido, mantém o status
         if hasattr(e, 'code'):
             return jsonify({
                 "error": "Erro do servidor",
@@ -114,7 +128,6 @@ def create_app(config_name='default'):
                 "type": type(e).__name__
             }), e.code
 
-        # Erro 500 para outros casos
         return jsonify({
             "error": "Erro interno do servidor",
             "message": str(e),
@@ -128,5 +141,8 @@ def create_app(config_name='default'):
         app.register_blueprint(admin_bp)
         app.register_blueprint(api_bp)
         app.register_blueprint(collaborator_bp)
+
+        # Cria as tabelas do banco
+        db.create_all()
 
         return app
