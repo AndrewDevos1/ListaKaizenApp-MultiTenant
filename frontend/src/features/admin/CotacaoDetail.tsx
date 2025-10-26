@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { Table, Button, Form, Spinner, Alert, Card, Col, Row } from 'react-bootstrap';
 import api from '../../services/api';
-import Layout from '../../components/Layout';
 
 interface CotacaoItem {
     id: number;
@@ -80,19 +79,20 @@ const CotacaoDetail: React.FC = () => {
     };
 
     if (isLoading && !cotacao) {
-        return <Layout title="Carregando..."><div className="text-center"><Spinner animation="border" /></div></Layout>;
+        return <div><h2>Carregando...</h2><div className="text-center"><Spinner animation="border" /></div></div>;
     }
 
     if (error) {
-        return <Layout title="Erro"><Alert variant="danger">{error}</Alert></Layout>;
+        return <div><h2>Erro</h2><Alert variant="danger">{error}</Alert></div>;
     }
 
     if (!cotacao) {
-        return <Layout title="Cotação não encontrada"><Alert variant="warning">Cotação não encontrada.</Alert></Layout>;
+        return <div><h2>Cotação não encontrada</h2><Alert variant="warning">Cotação não encontrada.</Alert></div>;
     }
 
     return (
-        <Layout title={`Detalhes da Cotação #${cotacao.id}`}>
+        <div>
+            <h2>Detalhes da Cotação #{cotacao.id}</h2>
             {success && <Alert variant="success" onClose={() => setSuccess('')} dismissible>{success}</Alert>}
             <Card className="mb-4">
                 <Card.Header as="h4">Informações da Cotação</Card.Header>
@@ -145,7 +145,7 @@ const CotacaoDetail: React.FC = () => {
                     </Button>
                 </div>
             </Form>
-        </Layout>
+        </div>
     );
 };
 
