@@ -20,7 +20,7 @@ api.interceptors.request.use(async (config) => {
     console.warn('[INTERCEPTOR] NENHUM TOKEN ENCONTRADO!');
   }
 
-  console.log('[INTERCEPTOR] Headers da requisicao:', config.headers);
+  console.log('[INTERCEPTOR] Headers da requisição:', config.headers);
   return config;
 }, (error) => {
   console.error('[INTERCEPTOR] Erro no interceptor:', error);
