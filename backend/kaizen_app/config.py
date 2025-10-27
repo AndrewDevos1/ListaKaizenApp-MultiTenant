@@ -43,6 +43,14 @@ class ProductionConfig(Config):
 
     SQLALCHEMY_DATABASE_URI = database_url
 
+    # Configuração para desabilitar verificação de SSL (Render PostgreSQL)
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        'connect_args': {
+            'sslmode': 'prefer',
+            'connect_timeout': 10
+        }
+    }
+
 
 # Mapeamento de nomes para as classes de configuração
 config_by_name = {
