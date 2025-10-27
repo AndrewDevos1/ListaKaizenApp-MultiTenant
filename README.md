@@ -74,6 +74,24 @@ kaizen-lists/
     ```
     A aplicação estará disponível em `http://localhost:3000`.
 
+## Sobre CORS em Desenvolvimento
+
+O CORS está configurado de forma **dinâmica e automática** baseado no ambiente:
+
+**Em Desenvolvimento (Local):**
+- CORS aberto para TODAS as origens
+- Funciona em qualquer rede/IP sem configuração
+- Mude de rede (casa → trabalho → café) sem problemas
+- Acesse de qualquer dispositivo na mesma rede local
+
+**Como Funciona:**
+O arquivo `backend/kaizen_app/__init__.py` detecta automaticamente:
+- Se `FLASK_CONFIG=development` (padrão local) → CORS aberto para `*`
+- Se `FLASK_CONFIG=production` (Render) → CORS restrito apenas a `https://lista-kaizen-app.vercel.app`
+
+**Resultado:**
+Você **nunca mais precisa editar configurações de CORS** ao mudar de rede. Simplesmente execute o backend e frontend localmente e tudo funciona!
+
 ## Executando os Testes
 
 ### Testes do Backend
