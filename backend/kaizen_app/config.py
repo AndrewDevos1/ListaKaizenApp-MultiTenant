@@ -41,10 +41,6 @@ class ProductionConfig(Config):
     if database_url.startswith('postgres://'):
         database_url = database_url.replace('postgres://', 'postgresql://', 1)
 
-    # Adiciona sslmode=require para Render PostgreSQL
-    if database_url.startswith('postgresql://') and '?sslmode' not in database_url:
-        database_url += '?sslmode=require'
-
     SQLALCHEMY_DATABASE_URI = database_url
 
 
