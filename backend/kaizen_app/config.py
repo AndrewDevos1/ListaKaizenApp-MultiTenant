@@ -41,15 +41,14 @@ class ProductionConfig(Config):
     if database_url.startswith('postgres://'):
         database_url = database_url.replace('postgres://', 'postgresql://', 1)
 
-    SQLALCHEMY_DATABASE_URI = database_url
+    # Remove query params existentes para recriar
+    if '?' in database_url:
+        database_url = database_url.split('?')[0]
 
-    # Configuração para desabilitar verificação de SSL (Render PostgreSQL)
-    SQLALCHEMY_ENGINE_OPTIONS = {
-        'connect_args': {
-            'sslmode': 'prefer',
-            'connect_timeout': 10
-        }
-    }
+    # Adiciona parâmetros SSL seguros para Render
+    database_url += '?sslmode=allow&connect_timeout=10'
+
+    SQLALCHEMY_DATABASE_URI = database_url
 
 
 # Mapeamento de nomes para as classes de configuração
