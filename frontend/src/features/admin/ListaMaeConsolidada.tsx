@@ -10,7 +10,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Container, Card, Button, Table, Alert, Row, Col, Badge, Spinner } from 'react-bootstrap';
+import { Container, Card, Button, Table, Alert, Row, Col, Badge, Spinner, Modal, Form } from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faArrowLeft,
@@ -19,7 +19,10 @@ import {
     faExclamationTriangle,
     faCheckCircle,
     faClipboardList,
-    faChevronRight
+    faChevronRight,
+    faPlus,
+    faEdit,
+    faTrash
 } from '@fortawesome/free-solid-svg-icons';
 import api from '../../services/api';
 import styles from './ListaMaeConsolidada.module.css';
@@ -62,11 +65,18 @@ const ListaMaeConsolidada: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [filterByPedido, setFilterByPedido] = useState(false);
+    const [showAddModal, setShowAddModal] = useState(false);
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [selectedItem, setSelectedItem] = useState<ItemConsolidado | null>(null);
+    const [editQuantidade, setEditQuantidade] = useState('');
+    const [itens, setItens] = useState<any[]>([]);
+    const [itemSelecionado, setItemSelecionado] = useState<number | null>(null);
+    const [quantidadeMinima, setQuantidadeMinima] = useState('');
 
-    // Carregar lista consolidada
     useEffect(() => {
         if (listaId) {
             fetchListaMae();
+            fetchItens();
         }
     }, [listaId]);
 
@@ -81,6 +91,61 @@ const ListaMaeConsolidada: React.FC = () => {
             console.error('Erro:', err);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const fetchItens = async () => {
+        try {
+            const response = await api.get(`/api/v1/items`);
+            setItens(response.data);
+        } catch (err) {
+            console.error('Erro ao carregar itens:', err);
+        }
+    };
+
+    const handleAdicionarItem = async () => {
+        if (!itemSelecionado || !quantidadeMinima || !listaId) {
+            setError('Selecione um item e defina a quantidade mínima');
+            return;
+        }
+
+        try {
+            await api.post(`/admin/listas/${listaId}/itens`, {
+                itens: [{ item_id: itemSelecionado, quantidade_minima: parseFloat(quantidadeMinima) }]
+            });
+            setShowAddModal(false);
+            setItemSelecionado(null);
+            setQuantidadeMinima('');
+            fetchListaMae();
+        } catch (err: any) {
+            setError(err.response?.data?.error || 'Erro ao adicionar item');
+        }
+    };
+
+    const handleEditarQuantidade = async () => {
+        if (!selectedItem || !editQuantidade || !listaId) return;
+
+        try {
+            await api.put(`/api/v1/estoque/${selectedItem.estoque_id}`, {
+                quantidade_atual: parseFloat(editQuantidade)
+            });
+            setShowEditModal(false);
+            setSelectedItem(null);
+            setEditQuantidade('');
+            fetchListaMae();
+        } catch (err: any) {
+            setError(err.response?.data?.error || 'Erro ao editar item');
+        }
+    };
+
+    const handleDeletarItem = async (listaIdParam: number, itemId: number) => {
+        if (!window.confirm('Tem certeza que deseja remover este item?')) return;
+
+        try {
+            await api.delete(`/admin/listas/${listaIdParam}/itens/${itemId}`);
+            fetchListaMae();
+        } catch (err: any) {
+            setError(err.response?.data?.error || 'Erro ao remover item');
         }
     };
 
@@ -239,22 +304,29 @@ const ListaMaeConsolidada: React.FC = () => {
 
             {/* Controles */}
             <Row className="mb-4 g-2">
-                <Col md={8}>
+                <Col md={6}>
                     <input
                         type="text"
                         className={styles.searchInput}
-                        placeholder="[BUSCA] Buscar por item ou fornecedor..."
+                        placeholder="Buscar por item ou fornecedor..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
                 </Col>
-                <Col md={4} className={styles.buttonGroup}>
+                <Col md={6} className={styles.buttonGroup}>
+                    <Button
+                        variant="primary"
+                        size="sm"
+                        onClick={() => setShowAddModal(true)}
+                    >
+                        <FontAwesomeIcon icon={faPlus} /> Adicionar Item
+                    </Button>
                     <Button
                         variant={filterByPedido ? 'danger' : 'outline-danger'}
                         size="sm"
                         onClick={() => setFilterByPedido(!filterByPedido)}
                     >
-                        {filterByPedido ? '✓ Apenas Pedidos' : 'Ver Tudo'}
+                        {filterByPedido ? 'Apenas Pedidos' : 'Ver Tudo'}
                     </Button>
                     <Button
                         variant="success"
@@ -279,6 +351,7 @@ const ListaMaeConsolidada: React.FC = () => {
                             <th className="text-center">Pedido</th>
                             <th>Fornecedor</th>
                             <th>Última Submissão</th>
+                            <th className="text-center">Ações</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -321,10 +394,31 @@ const ListaMaeConsolidada: React.FC = () => {
                                         <small className="text-muted">-</small>
                                     )}
                                 </td>
+                                <td className="text-center">
+                                    <Button
+                                        variant="outline-primary"
+                                        size="sm"
+                                        onClick={() => {
+                                            setSelectedItem(item);
+                                            setEditQuantidade(item.quantidade_atual.toString());
+                                            setShowEditModal(true);
+                                        }}
+                                        className="me-2"
+                                    >
+                                        <FontAwesomeIcon icon={faEdit} />
+                                    </Button>
+                                    <Button
+                                        variant="outline-danger"
+                                        size="sm"
+                                        onClick={() => handleDeletarItem(parseInt(listaId || '0'), item.item_id)}
+                                    >
+                                        <FontAwesomeIcon icon={faTrash} />
+                                    </Button>
+                                </td>
                             </tr>
                         )) : (
                             <tr>
-                                <td colSpan={7} className="text-center text-muted py-5">
+                                <td colSpan={8} className="text-center text-muted py-5">
                                     Nenhum item encontrado
                                 </td>
                             </tr>
@@ -339,6 +433,83 @@ const ListaMaeConsolidada: React.FC = () => {
                     <FontAwesomeIcon icon={faArrowLeft} /> Voltar para Listas
                 </Button>
             </div>
+
+            {/* Modal Adicionar Item */}
+            <Modal show={showAddModal} onHide={() => setShowAddModal(false)}>
+                <Modal.Header closeButton>
+                    <Modal.Title>Adicionar Item na Lista</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <Form>
+                        <Form.Group className="mb-3">
+                            <Form.Label>Item</Form.Label>
+                            <Form.Select
+                                value={itemSelecionado || ''}
+                                onChange={(e) => setItemSelecionado(parseInt(e.target.value))}
+                            >
+                                <option value="">Selecione um item</option>
+                                {itens.map((item) => (
+                                    <option key={item.id} value={item.id}>
+                                        {item.nome}
+                                    </option>
+                                ))}
+                            </Form.Select>
+                        </Form.Group>
+                        <Form.Group className="mb-3">
+                            <Form.Label>Quantidade Mínima</Form.Label>
+                            <Form.Control
+                                type="number"
+                                step="0.01"
+                                value={quantidadeMinima}
+                                onChange={(e) => setQuantidadeMinima(e.target.value)}
+                                placeholder="0.00"
+                            />
+                        </Form.Group>
+                    </Form>
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="secondary" onClick={() => setShowAddModal(false)}>
+                        Cancelar
+                    </Button>
+                    <Button variant="primary" onClick={handleAdicionarItem}>
+                        Adicionar
+                    </Button>
+                </Modal.Footer>
+            </Modal>
+
+            {/* Modal Editar Quantidade Atual */}
+            <Modal show={showEditModal} onHide={() => setShowEditModal(false)}>
+                <Modal.Header closeButton>
+                    <Modal.Title>Editar Quantidade Atual</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    {selectedItem && (
+                        <Form>
+                            <Form.Group className="mb-3">
+                                <Form.Label>Item: <strong>{selectedItem.item_nome}</strong></Form.Label>
+                            </Form.Group>
+                            <Form.Group className="mb-3">
+                                <Form.Label>Quantidade Atual</Form.Label>
+                                <Form.Control
+                                    type="number"
+                                    step="0.01"
+                                    value={editQuantidade}
+                                    onChange={(e) => setEditQuantidade(e.target.value)}
+                                    placeholder="0.00"
+                                />
+                            </Form.Group>
+                        </Form>
+                    )}
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="secondary" onClick={() => setShowEditModal(false)}>
+                        Cancelar
+                    </Button>
+                    <Button variant="primary" onClick={handleEditarQuantidade}>
+                        Salvar
+                    </Button>
+                </Modal.Footer>
+            </Modal>
         </Container>
     );
 };
