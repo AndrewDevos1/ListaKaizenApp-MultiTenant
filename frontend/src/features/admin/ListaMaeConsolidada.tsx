@@ -92,6 +92,15 @@ const ListaMaeConsolidada: React.FC = () => {
             const response = await api.post(`/admin/listas/${listaId}/mae-itens`, novoItem);
             console.log('[LISTA MAE] Item adicionado com sucesso:', response.data);
 
+            // Adiciona o item retornado pela API à lista local
+            if (listaMae) {
+                setListaMae({
+                    ...listaMae,
+                    itens: [...listaMae.itens, response.data],
+                    total_itens: listaMae.total_itens + 1
+                });
+            }
+
             setNovoItem({
                 nome: '',
                 unidade: 'Kg',
@@ -99,7 +108,6 @@ const ListaMaeConsolidada: React.FC = () => {
                 quantidade_minima: 0
             });
             setError(null);
-            fetchListaMae();
         } catch (err: any) {
             console.error('[LISTA MAE] Erro completo:', err);
             console.error('[LISTA MAE] Response data:', err.response?.data);
@@ -113,10 +121,18 @@ const ListaMaeConsolidada: React.FC = () => {
 
         try {
             await api.put(`/admin/listas/${listaId}/mae-itens/${item.id}`, item);
+
+            // Atualiza o item na lista local
+            if (listaMae) {
+                setListaMae({
+                    ...listaMae,
+                    itens: listaMae.itens.map(i => i.id === item.id ? item : i)
+                });
+            }
+
             setEditandoId(null);
             setItemEditando(null);
             setError(null);
-            fetchListaMae();
         } catch (err: any) {
             setError(err.response?.data?.error || 'Erro ao editar item');
         }
@@ -127,8 +143,17 @@ const ListaMaeConsolidada: React.FC = () => {
 
         try {
             await api.delete(`/admin/listas/${listaId}/mae-itens/${itemId}`);
+
+            // Remove o item da lista local
+            if (listaMae) {
+                setListaMae({
+                    ...listaMae,
+                    itens: listaMae.itens.filter(i => i.id !== itemId),
+                    total_itens: listaMae.total_itens - 1
+                });
+            }
+
             setError(null);
-            fetchListaMae();
         } catch (err: any) {
             setError(err.response?.data?.error || 'Erro ao remover item');
         }
