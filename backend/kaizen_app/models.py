@@ -170,4 +170,33 @@ class Lista(db.Model, SerializerMixin):
     # Relacionamento muitos-para-muitos com os usuários (colaboradores)
     colaboradores = db.relationship('Usuario', secondary=lista_colaborador,
                                     lazy='subquery', backref=db.backref('listas_atribuidas', lazy=True))
+    # Relacionamento um-para-muitos com ListaMaeItem
+    itens = db.relationship('ListaMaeItem', backref='lista', lazy=True, cascade='all, delete-orphan')
+
+
+class ListaMaeItem(db.Model, SerializerMixin):
+    """
+    Representa um item na Lista Mãe.
+    Cada item tem um ID único para ser referenciado em Cotações futuras.
+    """
+    __tablename__ = "lista_mae_itens"
+
+    id = db.Column(db.Integer, primary_key=True)
+    lista_mae_id = db.Column(db.Integer, db.ForeignKey('listas.id'), nullable=False)
+    nome = db.Column(db.String(255), nullable=False)
+    unidade = db.Column(db.String(50), nullable=False)  # Kg, Litro, Unidade
+    quantidade_atual = db.Column(db.Float, default=0, nullable=False)
+    quantidade_minima = db.Column(db.Float, default=0, nullable=False)
+    criado_em = db.Column(db.DateTime, default=datetime.utcnow)
+    atualizado_em = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    def to_dict(self):
+        """Serializa o item com o cálculo de pedido."""
+        d = super().to_dict()
+        d['pedido'] = self.get_pedido()
+        return d
+
+    def get_pedido(self):
+        """Calcula o pedido: max(0, qtd_minima - qtd_atual)"""
+        return max(0, self.quantidade_minima - self.quantidade_atual)
 

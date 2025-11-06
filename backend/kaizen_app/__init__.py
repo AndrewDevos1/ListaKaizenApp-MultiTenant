@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify
 from .config import config_by_name
-from .extensions import db, migrate, jwt, cors
+from .extensions import db, migrate, jwt
 
 
 def create_app(config_name='production'):
@@ -15,21 +15,23 @@ def create_app(config_name='production'):
     migrate.init_app(app, db)
     jwt.init_app(app)
 
-    # Configuração CORS - Dinâmica (Dev vs Prod)
-    if config_name == 'development':
-        # DEV: CORS aberto para qualquer origem
-        # Resolve problema de IP mudando quando muda de rede
-        cors.init_app(app, resources={r"/api/*": {"origins": "*"}})
-    else:
-        # PROD: CORS restrito apenas ao domínio Vercel (segurança)
-        cors.init_app(app,
-            resources={r"/api/*": {
-                "origins": ["https://lista-kaizen-app.vercel.app"],
-                "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-                "allow_headers": ["Content-Type", "Authorization"],
-                "supports_credentials": True
-            }}
-        )
+    # CORS manualmente com after_request hook
+    @app.after_request
+    def add_cors_headers(response):
+        """Adiciona headers CORS a TODAS as respostas"""
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        response.headers['Access-Control-Allow-Methods'] = 'GET, HEAD, POST, PUT, DELETE, OPTIONS, PATCH'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With'
+        response.headers['Access-Control-Max-Age'] = '86400'
+        return response
+
+    # Rota para lidar com OPTIONS requests
+    @app.before_request
+    def handle_preflight():
+        """Responde a requisições OPTIONS (CORS preflight)"""
+        if request.method == 'OPTIONS':
+            response = app.make_default_options_response()
+            return response
 
     # Middleware para log de todas as requisições
     @app.before_request

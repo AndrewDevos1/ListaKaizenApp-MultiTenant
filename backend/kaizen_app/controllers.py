@@ -591,3 +591,39 @@ def remover_item_da_lista_route(lista_id, item_id):
     """Remove um item (estoque) de uma lista"""
     response, status = services.remover_item_da_lista(lista_id, item_id)
     return jsonify(response), status
+
+
+# ===== LISTA MAE ITENS ENDPOINTS (Nova Funcionalidade) =====
+
+@admin_bp.route('/listas/<int:lista_id>/lista-mae', methods=['GET'])
+@admin_required()
+def get_lista_mae_route(lista_id):
+    """Retorna a Lista Mãe com todos os seus itens"""
+    response, status = services.obter_lista_mae(lista_id)
+    return jsonify(response), status
+
+
+@admin_bp.route('/listas/<int:lista_id>/mae-itens', methods=['POST'])
+@admin_required()
+def adicionar_item_lista_mae_route(lista_id):
+    """Adiciona um novo item à Lista Mãe"""
+    data = request.get_json()
+    response, status = services.adicionar_item_lista_mae(lista_id, data)
+    return jsonify(response), status
+
+
+@admin_bp.route('/listas/<int:lista_id>/mae-itens/<int:item_id>', methods=['PUT'])
+@admin_required()
+def editar_item_lista_mae_route(lista_id, item_id):
+    """Edita um item da Lista Mãe"""
+    data = request.get_json()
+    response, status = services.editar_item_lista_mae(lista_id, item_id, data)
+    return jsonify(response), status
+
+
+@admin_bp.route('/listas/<int:lista_id>/mae-itens/<int:item_id>', methods=['DELETE'])
+@admin_required()
+def deletar_item_lista_mae_route(lista_id, item_id):
+    """Deleta um item da Lista Mãe"""
+    response, status = services.deletar_item_lista_mae(lista_id, item_id)
+    return jsonify(response), status

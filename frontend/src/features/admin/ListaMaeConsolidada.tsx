@@ -1,25 +1,20 @@
 /**
- * Lista Mãe Consolidada - Visão do Administrador
+ * Lista Mãe Consolidada - Visão do Administrador (Simplificada)
  *
- * Exibe todos os itens de uma lista com:
- * - Última quantidade reportada
- * - Estoque mínimo
- * - Pedido calculado automaticamente
- * - Informações de quem submeteu e quando
+ * Tabela simples para gerenciar itens de uma lista:
+ * - Nome, Unidade, Qtd Atual, Qtd Mínima
+ * - Pedido é calculado automaticamente (qtd_min - qtd_atual)
+ * - Admin pode adicionar, editar e deletar itens
  */
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Container, Card, Button, Table, Alert, Row, Col, Badge, Spinner, Modal, Form } from 'react-bootstrap';
+import { Container, Card, Button, Table, Alert, Row, Col, Badge, Spinner, Form } from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faArrowLeft,
-    faDownload,
-    faFileExport,
     faExclamationTriangle,
-    faCheckCircle,
     faClipboardList,
-    faChevronRight,
     faPlus,
     faEdit,
     faTrash
@@ -27,22 +22,14 @@ import {
 import api from '../../services/api';
 import styles from './ListaMaeConsolidada.module.css';
 
-// Interfaces
-interface ItemConsolidado {
-    estoque_id: number;
-    item_id: number;
-    item_nome: string;
-    item_unidade: string;
-    fornecedor_id: number;
-    fornecedor_nome: string;
-    quantidade_minima: number;
+// Interface do Item
+interface ListaMaeItem {
+    id?: number;
+    nome: string;
+    unidade: 'Kg' | 'Litro' | 'Unidade';
     quantidade_atual: number;
-    pedido: number;
-    data_ultima_submissao: string | null;
-    usuario_ultima_submissao: {
-        id: number;
-        nome: string;
-    } | null;
+    quantidade_minima: number;
+    pedido?: number;
 }
 
 interface ListaMae {
@@ -50,10 +37,8 @@ interface ListaMae {
     lista_nome: string;
     lista_descricao: string;
     data_criacao: string;
-    itens: ItemConsolidado[];
+    itens: ListaMaeItem[];
     total_itens: number;
-    total_em_falta: number;
-    total_pedido: number;
 }
 
 const ListaMaeConsolidada: React.FC = () => {
@@ -63,20 +48,22 @@ const ListaMaeConsolidada: React.FC = () => {
     const [listaMae, setListaMae] = useState<ListaMae | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [searchTerm, setSearchTerm] = useState('');
-    const [filterByPedido, setFilterByPedido] = useState(false);
-    const [showAddModal, setShowAddModal] = useState(false);
-    const [showEditModal, setShowEditModal] = useState(false);
-    const [selectedItem, setSelectedItem] = useState<ItemConsolidado | null>(null);
-    const [editQuantidade, setEditQuantidade] = useState('');
-    const [itens, setItens] = useState<any[]>([]);
-    const [itemSelecionado, setItemSelecionado] = useState<number | null>(null);
-    const [quantidadeMinima, setQuantidadeMinima] = useState('');
+
+    // Estado para adicionar novo item
+    const [novoItem, setNovoItem] = useState<ListaMaeItem>({
+        nome: '',
+        unidade: 'Kg',
+        quantidade_atual: 0,
+        quantidade_minima: 0
+    });
+
+    // Estado para edição inline
+    const [editandoId, setEditandoId] = useState<number | null>(null);
+    const [itemEditando, setItemEditando] = useState<ListaMaeItem | null>(null);
 
     useEffect(() => {
         if (listaId) {
             fetchListaMae();
-            fetchItens();
         }
     }, [listaId]);
 
@@ -87,129 +74,68 @@ const ListaMaeConsolidada: React.FC = () => {
             const response = await api.get<ListaMae>(`/admin/listas/${listaId}/lista-mae`);
             setListaMae(response.data);
         } catch (err: any) {
-            setError(err.response?.data?.error || 'Erro ao carregar lista mãe consolidada');
+            setError(err.response?.data?.error || 'Erro ao carregar lista mãe');
             console.error('Erro:', err);
         } finally {
             setLoading(false);
         }
     };
 
-    const fetchItens = async () => {
-        try {
-            const response = await api.get(`/api/v1/items`);
-            setItens(response.data);
-        } catch (err) {
-            console.error('Erro ao carregar itens:', err);
-        }
-    };
-
     const handleAdicionarItem = async () => {
-        if (!itemSelecionado || !quantidadeMinima || !listaId) {
-            setError('Selecione um item e defina a quantidade mínima');
+        if (!novoItem.nome || !novoItem.unidade) {
+            setError('Preencha nome e unidade do item');
             return;
         }
 
         try {
-            await api.post(`/admin/listas/${listaId}/itens`, {
-                itens: [{ item_id: itemSelecionado, quantidade_minima: parseFloat(quantidadeMinima) }]
+            console.log('[LISTA MAE] Adicionando item:', novoItem);
+            const response = await api.post(`/admin/listas/${listaId}/mae-itens`, novoItem);
+            console.log('[LISTA MAE] Item adicionado com sucesso:', response.data);
+
+            setNovoItem({
+                nome: '',
+                unidade: 'Kg',
+                quantidade_atual: 0,
+                quantidade_minima: 0
             });
-            setShowAddModal(false);
-            setItemSelecionado(null);
-            setQuantidadeMinima('');
+            setError(null);
             fetchListaMae();
         } catch (err: any) {
-            setError(err.response?.data?.error || 'Erro ao adicionar item');
+            console.error('[LISTA MAE] Erro completo:', err);
+            console.error('[LISTA MAE] Response data:', err.response?.data);
+            console.error('[LISTA MAE] Response status:', err.response?.status);
+            setError(err.response?.data?.error || err.message || 'Erro ao adicionar item');
         }
     };
 
-    const handleEditarQuantidade = async () => {
-        if (!selectedItem || !editQuantidade || !listaId) return;
+    const handleEditarItem = async (item: ListaMaeItem) => {
+        if (!item.id) return;
 
         try {
-            await api.put(`/api/v1/estoque/${selectedItem.estoque_id}`, {
-                quantidade_atual: parseFloat(editQuantidade)
-            });
-            setShowEditModal(false);
-            setSelectedItem(null);
-            setEditQuantidade('');
+            await api.put(`/admin/listas/${listaId}/mae-itens/${item.id}`, item);
+            setEditandoId(null);
+            setItemEditando(null);
+            setError(null);
             fetchListaMae();
         } catch (err: any) {
             setError(err.response?.data?.error || 'Erro ao editar item');
         }
     };
 
-    const handleDeletarItem = async (listaIdParam: number, itemId: number) => {
+    const handleDeletarItem = async (itemId: number) => {
         if (!window.confirm('Tem certeza que deseja remover este item?')) return;
 
         try {
-            await api.delete(`/admin/listas/${listaIdParam}/itens/${itemId}`);
+            await api.delete(`/admin/listas/${listaId}/mae-itens/${itemId}`);
+            setError(null);
             fetchListaMae();
         } catch (err: any) {
             setError(err.response?.data?.error || 'Erro ao remover item');
         }
     };
 
-    // Filtrar itens
-    const filteredItems = useMemo(() => {
-        if (!listaMae) return [];
-
-        let filtered = listaMae.itens.filter(item =>
-            item.item_nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            item.fornecedor_nome.toLowerCase().includes(searchTerm.toLowerCase())
-        );
-
-        if (filterByPedido) {
-            filtered = filtered.filter(item => item.pedido > 0);
-        }
-
-        return filtered;
-    }, [listaMae, searchTerm, filterByPedido]);
-
-    // Formatar data
-    const formatarData = (data: string | null): string => {
-        if (!data) return '-';
-        try {
-            return new Date(data).toLocaleString('pt-BR');
-        } catch {
-            return '-';
-        }
-    };
-
-    // Exportar para texto (para copiar ao WhatsApp, etc)
-    const handleExport = () => {
-        if (!listaMae) return;
-
-        const itemsParaExportar = filterByPedido
-            ? filteredItems.filter(item => item.pedido > 0)
-            : filteredItems;
-
-        let texto = `LISTA: ${listaMae.lista_nome}\n`;
-        texto += `Data: ${new Date().toLocaleString('pt-BR')}\n`;
-        texto += `\nITENS PARA PEDIR:\n`;
-        texto += `${'='.repeat(50)}\n\n`;
-
-        // Agrupar por fornecedor
-        const porFornecedor = itemsParaExportar.reduce((acc, item) => {
-            const fornecedor = item.fornecedor_nome || 'Sem fornecedor';
-            if (!acc[fornecedor]) {
-                acc[fornecedor] = [];
-            }
-            acc[fornecedor].push(item);
-            return acc;
-        }, {} as Record<string, ItemConsolidado[]>);
-
-        Object.entries(porFornecedor).forEach(([fornecedor, itens]) => {
-            texto += `[FORNECEDOR] ${fornecedor}:\n`;
-            itens.forEach(item => {
-                texto += `  • ${item.item_nome} - ${item.pedido.toFixed(2)} ${item.item_unidade}\n`;
-            });
-            texto += `\n`;
-        });
-
-        // Copiar para clipboard
-        navigator.clipboard.writeText(texto).then(() => {
-            alert('[OK] Conteudo copiado para a area de transferencia!');
-        });
+    const calcularPedido = (qtdMin: number, qtdAtual: number) => {
+        return Math.max(0, qtdMin - qtdAtual);
     };
 
     if (loading) {
@@ -266,7 +192,7 @@ const ListaMaeConsolidada: React.FC = () => {
 
             {/* Resumo */}
             <Row className="mb-4 g-3">
-                <Col md={3}>
+                <Col md={4}>
                     <Card className={styles.statsCard}>
                         <Card.Body className="text-center">
                             <h3 className={styles.statValue}>{listaMae.total_itens}</h3>
@@ -274,23 +200,7 @@ const ListaMaeConsolidada: React.FC = () => {
                         </Card.Body>
                     </Card>
                 </Col>
-                <Col md={3}>
-                    <Card className={`${styles.statsCard} ${styles.alertCard}`}>
-                        <Card.Body className="text-center">
-                            <h3 className={styles.statValue}>{listaMae.total_em_falta}</h3>
-                            <p className={styles.statLabel}>Itens em Falta</p>
-                        </Card.Body>
-                    </Card>
-                </Col>
-                <Col md={3}>
-                    <Card className={`${styles.statsCard} ${styles.dangerCard}`}>
-                        <Card.Body className="text-center">
-                            <h3 className={styles.statValue}>{listaMae.total_pedido.toFixed(0)}</h3>
-                            <p className={styles.statLabel}>Total de Pedido</p>
-                        </Card.Body>
-                    </Card>
-                </Col>
-                <Col md={3}>
+                <Col md={4}>
                     <Card className={styles.statsCard}>
                         <Card.Body className="text-center">
                             <small className="text-muted">Criada em</small>
@@ -302,124 +212,197 @@ const ListaMaeConsolidada: React.FC = () => {
                 </Col>
             </Row>
 
-            {/* Controles */}
-            <Row className="mb-4 g-2">
-                <Col md={6}>
-                    <input
-                        type="text"
-                        className={styles.searchInput}
-                        placeholder="Buscar por item ou fornecedor..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                </Col>
-                <Col md={6} className={styles.buttonGroup}>
-                    <Button
-                        variant="primary"
-                        size="sm"
-                        onClick={() => setShowAddModal(true)}
-                    >
-                        <FontAwesomeIcon icon={faPlus} /> Adicionar Item
-                    </Button>
-                    <Button
-                        variant={filterByPedido ? 'danger' : 'outline-danger'}
-                        size="sm"
-                        onClick={() => setFilterByPedido(!filterByPedido)}
-                    >
-                        {filterByPedido ? 'Apenas Pedidos' : 'Ver Tudo'}
-                    </Button>
-                    <Button
-                        variant="success"
-                        size="sm"
-                        onClick={handleExport}
-                        disabled={filteredItems.filter(i => i.pedido > 0).length === 0}
-                    >
-                        <FontAwesomeIcon icon={faDownload} /> Exportar
-                    </Button>
-                </Col>
-            </Row>
-
             {/* Tabela */}
             <div className={styles.tableWrapper}>
                 <Table striped bordered hover responsive className={styles.table}>
                     <thead>
                         <tr className={styles.tableHeader}>
-                            <th>Item</th>
-                            <th className="text-center">Unidade</th>
-                            <th className="text-center">Qtd. Mín.</th>
-                            <th className="text-center">Qtd. Atual</th>
-                            <th className="text-center">Pedido</th>
-                            <th>Fornecedor</th>
-                            <th>Última Submissão</th>
-                            <th className="text-center">Ações</th>
+                            <th>Nome</th>
+                            <th className="text-center" style={{ width: '100px' }}>Unidade</th>
+                            <th className="text-center" style={{ width: '120px' }}>Qtd Atual</th>
+                            <th className="text-center" style={{ width: '120px' }}>Qtd Mín</th>
+                            <th className="text-center" style={{ width: '100px' }}>Pedido</th>
+                            <th className="text-center" style={{ width: '100px' }}>Ações</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {filteredItems.length > 0 ? filteredItems.map(item => (
-                            <tr key={item.estoque_id} className={item.pedido > 0 ? styles.warningRow : ''}>
-                                <td className={styles.itemCell}>
-                                    <strong>{item.item_nome}</strong>
-                                </td>
-                                <td className="text-center">
-                                    <Badge bg="light" text="dark">{item.item_unidade}</Badge>
-                                </td>
-                                <td className="text-center">
-                                    <Badge bg="secondary">{item.quantidade_minima.toFixed(2)}</Badge>
-                                </td>
-                                <td className="text-center">
-                                    {item.quantidade_atual.toFixed(2)}
-                                </td>
-                                <td className="text-center">
-                                    {item.pedido > 0 ? (
-                                        <Badge bg="danger" className={styles.pedidoBadge}>
-                                            {item.pedido.toFixed(2)}
-                                        </Badge>
+                        {/* Linha para adicionar novo item */}
+                        <tr className={styles.addItemRow}>
+                            <td>
+                                <input
+                                    type="text"
+                                    className="form-control form-control-sm"
+                                    placeholder="Nome do item"
+                                    value={novoItem.nome}
+                                    onChange={(e) => setNovoItem({ ...novoItem, nome: e.target.value })}
+                                />
+                            </td>
+                            <td>
+                                <select
+                                    className="form-select form-select-sm"
+                                    value={novoItem.unidade}
+                                    onChange={(e) => setNovoItem({ ...novoItem, unidade: e.target.value as 'Kg' | 'Litro' | 'Unidade' })}
+                                >
+                                    <option value="Kg">Kg</option>
+                                    <option value="Litro">Litro</option>
+                                    <option value="Unidade">Unidade</option>
+                                </select>
+                            </td>
+                            <td>
+                                <input
+                                    type="number"
+                                    step="0.01"
+                                    className="form-control form-control-sm"
+                                    placeholder="0"
+                                    value={novoItem.quantidade_atual}
+                                    onChange={(e) => setNovoItem({ ...novoItem, quantidade_atual: parseFloat(e.target.value) || 0 })}
+                                />
+                            </td>
+                            <td>
+                                <input
+                                    type="number"
+                                    step="0.01"
+                                    className="form-control form-control-sm"
+                                    placeholder="0"
+                                    value={novoItem.quantidade_minima}
+                                    onChange={(e) => setNovoItem({ ...novoItem, quantidade_minima: parseFloat(e.target.value) || 0 })}
+                                />
+                            </td>
+                            <td className="text-center">
+                                <Badge bg="info">
+                                    {calcularPedido(novoItem.quantidade_minima, novoItem.quantidade_atual)}
+                                </Badge>
+                            </td>
+                            <td className="text-center">
+                                <Button
+                                    variant="success"
+                                    size="sm"
+                                    onClick={handleAdicionarItem}
+                                    title="Adicionar item"
+                                >
+                                    <FontAwesomeIcon icon={faPlus} />
+                                </Button>
+                            </td>
+                        </tr>
+
+                        {/* Itens salvos */}
+                        {listaMae.itens && listaMae.itens.length > 0 ? (
+                            listaMae.itens.map((item) => (
+                                <tr key={item.id} className={item.pedido && item.pedido > 0 ? styles.warningRow : ''}>
+                                    {editandoId === item.id && itemEditando ? (
+                                        <>
+                                            <td>
+                                                <input
+                                                    type="text"
+                                                    className="form-control form-control-sm"
+                                                    value={itemEditando.nome}
+                                                    onChange={(e) => setItemEditando({ ...itemEditando, nome: e.target.value })}
+                                                />
+                                            </td>
+                                            <td>
+                                                <select
+                                                    className="form-select form-select-sm"
+                                                    value={itemEditando.unidade}
+                                                    onChange={(e) => setItemEditando({ ...itemEditando, unidade: e.target.value as 'Kg' | 'Litro' | 'Unidade' })}
+                                                >
+                                                    <option value="Kg">Kg</option>
+                                                    <option value="Litro">Litro</option>
+                                                    <option value="Unidade">Unidade</option>
+                                                </select>
+                                            </td>
+                                            <td>
+                                                <input
+                                                    type="number"
+                                                    step="0.01"
+                                                    className="form-control form-control-sm"
+                                                    value={itemEditando.quantidade_atual}
+                                                    onChange={(e) => setItemEditando({ ...itemEditando, quantidade_atual: parseFloat(e.target.value) || 0 })}
+                                                />
+                                            </td>
+                                            <td>
+                                                <input
+                                                    type="number"
+                                                    step="0.01"
+                                                    className="form-control form-control-sm"
+                                                    value={itemEditando.quantidade_minima}
+                                                    onChange={(e) => setItemEditando({ ...itemEditando, quantidade_minima: parseFloat(e.target.value) || 0 })}
+                                                />
+                                            </td>
+                                            <td className="text-center">
+                                                <Badge bg="info">
+                                                    {calcularPedido(itemEditando.quantidade_minima, itemEditando.quantidade_atual)}
+                                                </Badge>
+                                            </td>
+                                            <td className="text-center">
+                                                <Button
+                                                    variant="success"
+                                                    size="sm"
+                                                    onClick={() => handleEditarItem(itemEditando)}
+                                                    className="me-2"
+                                                    title="Salvar"
+                                                >
+                                                    ✓
+                                                </Button>
+                                                <Button
+                                                    variant="secondary"
+                                                    size="sm"
+                                                    onClick={() => {
+                                                        setEditandoId(null);
+                                                        setItemEditando(null);
+                                                    }}
+                                                    title="Cancelar"
+                                                >
+                                                    ✕
+                                                </Button>
+                                            </td>
+                                        </>
                                     ) : (
-                                        <Badge bg="success">0</Badge>
+                                        <>
+                                            <td>{item.nome}</td>
+                                            <td className="text-center">
+                                                <Badge bg="light" text="dark">{item.unidade}</Badge>
+                                            </td>
+                                            <td className="text-center">{item.quantidade_atual.toFixed(2)}</td>
+                                            <td className="text-center">
+                                                <Badge bg="secondary">{item.quantidade_minima.toFixed(2)}</Badge>
+                                            </td>
+                                            <td className="text-center">
+                                                {item.pedido && item.pedido > 0 ? (
+                                                    <Badge bg="danger">{item.pedido.toFixed(2)}</Badge>
+                                                ) : (
+                                                    <Badge bg="success">0</Badge>
+                                                )}
+                                            </td>
+                                            <td className="text-center">
+                                                <Button
+                                                    variant="outline-primary"
+                                                    size="sm"
+                                                    onClick={() => {
+                                                        setEditandoId(item.id || null);
+                                                        setItemEditando({ ...item });
+                                                    }}
+                                                    className="me-2"
+                                                    title="Editar"
+                                                >
+                                                    <FontAwesomeIcon icon={faEdit} />
+                                                </Button>
+                                                <Button
+                                                    variant="outline-danger"
+                                                    size="sm"
+                                                    onClick={() => item.id && handleDeletarItem(item.id)}
+                                                    title="Deletar"
+                                                >
+                                                    <FontAwesomeIcon icon={faTrash} />
+                                                </Button>
+                                            </td>
+                                        </>
                                     )}
-                                </td>
-                                <td>
-                                    <small>{item.fornecedor_nome || '-'}</small>
-                                </td>
-                                <td className={styles.submissaoCell}>
-                                    {item.usuario_ultima_submissao ? (
-                                        <small>
-                                            <strong>{item.usuario_ultima_submissao.nome}</strong>
-                                            <br />
-                                            <span className="text-muted">
-                                                {formatarData(item.data_ultima_submissao)}
-                                            </span>
-                                        </small>
-                                    ) : (
-                                        <small className="text-muted">-</small>
-                                    )}
-                                </td>
-                                <td className="text-center">
-                                    <Button
-                                        variant="outline-primary"
-                                        size="sm"
-                                        onClick={() => {
-                                            setSelectedItem(item);
-                                            setEditQuantidade(item.quantidade_atual.toString());
-                                            setShowEditModal(true);
-                                        }}
-                                        className="me-2"
-                                    >
-                                        <FontAwesomeIcon icon={faEdit} />
-                                    </Button>
-                                    <Button
-                                        variant="outline-danger"
-                                        size="sm"
-                                        onClick={() => handleDeletarItem(parseInt(listaId || '0'), item.item_id)}
-                                    >
-                                        <FontAwesomeIcon icon={faTrash} />
-                                    </Button>
-                                </td>
-                            </tr>
-                        )) : (
+                                </tr>
+                            ))
+                        ) : (
                             <tr>
-                                <td colSpan={8} className="text-center text-muted py-5">
-                                    Nenhum item encontrado
+                                <td colSpan={6} className="text-center text-muted py-5">
+                                    Nenhum item adicionado ainda
                                 </td>
                             </tr>
                         )}
@@ -433,83 +416,6 @@ const ListaMaeConsolidada: React.FC = () => {
                     <FontAwesomeIcon icon={faArrowLeft} /> Voltar para Listas
                 </Button>
             </div>
-
-            {/* Modal Adicionar Item */}
-            <Modal show={showAddModal} onHide={() => setShowAddModal(false)}>
-                <Modal.Header closeButton>
-                    <Modal.Title>Adicionar Item na Lista</Modal.Title>
-                </Modal.Header>
-                <Modal.Body>
-                    <Form>
-                        <Form.Group className="mb-3">
-                            <Form.Label>Item</Form.Label>
-                            <Form.Select
-                                value={itemSelecionado || ''}
-                                onChange={(e) => setItemSelecionado(parseInt(e.target.value))}
-                            >
-                                <option value="">Selecione um item</option>
-                                {itens.map((item) => (
-                                    <option key={item.id} value={item.id}>
-                                        {item.nome}
-                                    </option>
-                                ))}
-                            </Form.Select>
-                        </Form.Group>
-                        <Form.Group className="mb-3">
-                            <Form.Label>Quantidade Mínima</Form.Label>
-                            <Form.Control
-                                type="number"
-                                step="0.01"
-                                value={quantidadeMinima}
-                                onChange={(e) => setQuantidadeMinima(e.target.value)}
-                                placeholder="0.00"
-                            />
-                        </Form.Group>
-                    </Form>
-                </Modal.Body>
-                <Modal.Footer>
-                    <Button variant="secondary" onClick={() => setShowAddModal(false)}>
-                        Cancelar
-                    </Button>
-                    <Button variant="primary" onClick={handleAdicionarItem}>
-                        Adicionar
-                    </Button>
-                </Modal.Footer>
-            </Modal>
-
-            {/* Modal Editar Quantidade Atual */}
-            <Modal show={showEditModal} onHide={() => setShowEditModal(false)}>
-                <Modal.Header closeButton>
-                    <Modal.Title>Editar Quantidade Atual</Modal.Title>
-                </Modal.Header>
-                <Modal.Body>
-                    {selectedItem && (
-                        <Form>
-                            <Form.Group className="mb-3">
-                                <Form.Label>Item: <strong>{selectedItem.item_nome}</strong></Form.Label>
-                            </Form.Group>
-                            <Form.Group className="mb-3">
-                                <Form.Label>Quantidade Atual</Form.Label>
-                                <Form.Control
-                                    type="number"
-                                    step="0.01"
-                                    value={editQuantidade}
-                                    onChange={(e) => setEditQuantidade(e.target.value)}
-                                    placeholder="0.00"
-                                />
-                            </Form.Group>
-                        </Form>
-                    )}
-                </Modal.Body>
-                <Modal.Footer>
-                    <Button variant="secondary" onClick={() => setShowEditModal(false)}>
-                        Cancelar
-                    </Button>
-                    <Button variant="primary" onClick={handleEditarQuantidade}>
-                        Salvar
-                    </Button>
-                </Modal.Footer>
-            </Modal>
         </Container>
     );
 };

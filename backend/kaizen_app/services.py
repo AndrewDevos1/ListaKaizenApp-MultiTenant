@@ -1,4 +1,4 @@
-from .models import Usuario, UserRoles, Item, Area, Fornecedor, Estoque, Cotacao, CotacaoStatus, CotacaoItem, Pedido, Lista
+from .models import Usuario, UserRoles, Item, Area, Fornecedor, Estoque, Cotacao, CotacaoStatus, CotacaoItem, Pedido, Lista, ListaMaeItem
 from .extensions import db
 from . import repositories
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -922,3 +922,93 @@ def remover_item_da_lista(lista_id, item_id):
     db.session.commit()
 
     return {"message": f"Item removido da lista."}, 200
+
+
+# ===== LISTA MAE ITENS (Nova Funcionalidade) =====
+
+def adicionar_item_lista_mae(lista_id, data):
+    """Adiciona um novo item à Lista Mãe."""
+    try:
+        lista = Lista.query.get(lista_id)
+        if not lista:
+            return {"error": "Lista não encontrada"}, 404
+
+        novo_item = ListaMaeItem(
+            lista_mae_id=lista_id,
+            nome=data.get('nome'),
+            unidade=data.get('unidade'),
+            quantidade_atual=data.get('quantidade_atual', 0),
+            quantidade_minima=data.get('quantidade_minima', 0)
+        )
+
+        db.session.add(novo_item)
+        db.session.commit()
+
+        return novo_item.to_dict(), 201
+    except Exception as e:
+        db.session.rollback()
+        return {"error": str(e)}, 500
+
+
+def editar_item_lista_mae(lista_id, item_id, data):
+    """Edita um item da Lista Mãe."""
+    try:
+        item = ListaMaeItem.query.filter_by(
+            id=item_id,
+            lista_mae_id=lista_id
+        ).first()
+
+        if not item:
+            return {"error": "Item não encontrado"}, 404
+
+        item.nome = data.get('nome', item.nome)
+        item.unidade = data.get('unidade', item.unidade)
+        item.quantidade_atual = data.get('quantidade_atual', item.quantidade_atual)
+        item.quantidade_minima = data.get('quantidade_minima', item.quantidade_minima)
+        item.atualizado_em = datetime.utcnow()
+
+        db.session.commit()
+        return item.to_dict(), 200
+    except Exception as e:
+        db.session.rollback()
+        return {"error": str(e)}, 500
+
+
+def deletar_item_lista_mae(lista_id, item_id):
+    """Deleta um item da Lista Mãe."""
+    try:
+        item = ListaMaeItem.query.filter_by(
+            id=item_id,
+            lista_mae_id=lista_id
+        ).first()
+
+        if not item:
+            return {"error": "Item não encontrado"}, 404
+
+        db.session.delete(item)
+        db.session.commit()
+        return {"message": "Item removido com sucesso"}, 200
+    except Exception as e:
+        db.session.rollback()
+        return {"error": str(e)}, 500
+
+
+def obter_lista_mae(lista_id):
+    """Retorna a Lista Mãe com todos os seus itens."""
+    try:
+        lista = Lista.query.get(lista_id)
+        if not lista:
+            return {"error": "Lista não encontrada"}, 404
+
+        itens = ListaMaeItem.query.filter_by(lista_mae_id=lista_id).all()
+
+        return {
+            "lista_id": lista.id,
+            "lista_nome": lista.nome,
+            "lista_descricao": lista.descricao,
+            "data_criacao": lista.data_criacao.isoformat(),
+            "itens": [item.to_dict() for item in itens],
+            "total_itens": len(itens)
+        }, 200
+    except Exception as e:
+        return {"error": str(e)}, 500
