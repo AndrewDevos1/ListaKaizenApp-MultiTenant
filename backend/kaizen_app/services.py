@@ -996,10 +996,13 @@ def deletar_item_lista_mae(lista_id, item_id):
 def obter_lista_mae(lista_id):
     """Retorna a Lista Mãe com todos os seus itens."""
     try:
-        lista = Lista.query.get(lista_id)
+        # Busca a lista diretamente
+        lista = Lista.query.filter(Lista.id == lista_id).first()
+
         if not lista:
             return {"error": "Lista não encontrada"}, 404
 
+        # Busca itens separadamente garantindo que estão no banco
         itens = ListaMaeItem.query.filter_by(lista_mae_id=lista_id).all()
 
         return {
