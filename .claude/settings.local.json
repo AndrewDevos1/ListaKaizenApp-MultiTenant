@@ -26,7 +26,20 @@
       "Bash(flask --app run:app db upgrade:*)",
       "Bash(.venvScriptspython.exe -m flask --app run:app db upgrade)",
       "Bash(./.venv/Scripts/flask:*)",
-      "Read(//d//**)"
+      "Read(//d//**)",
+      "Bash(git merge:*)",
+      "Bash(FLASK_APP=backend/run.py python -m flask:*)",
+      "Bash(FLASK_APP=run.py python -m flask db migrate:*)",
+      "Bash(FLASK_APP=run.py python -m flask:*)",
+      "Bash(.venvScriptspython.exe -m flask db migrate -m \"Add ListaMaeItem model for master list items\")",
+      "Bash(\"D:\\Codigos VSCode\\Kaizen_lista_app\\.venv\\Scripts\\python.exe\" -m flask db migrate -m \"Add ListaMaeItem model for master list items\")",
+      "Bash(FLASK_CONFIG=development FLASK_APP=run.py python -m flask run:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(awk:*)",
+      "Bash(xargs kill:*)",
+      "Bash(pkill:*)",
+      "Bash(git reset:*)"
     ],
     "deny": [],
     "ask": []

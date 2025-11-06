@@ -3,7 +3,7 @@ from .config import config_by_name
 from .extensions import db, migrate, jwt
 
 
-def create_app(config_name='production'):
+def create_app(config_name='development'):
     """Application Factory Function"""
     app = Flask(__name__)
 
@@ -158,8 +158,5 @@ def create_app(config_name='production'):
         app.register_blueprint(admin_bp)
         app.register_blueprint(api_bp)
         app.register_blueprint(collaborator_bp)
-
-        # Cria as tabelas do banco
-        db.create_all()
 
         return app

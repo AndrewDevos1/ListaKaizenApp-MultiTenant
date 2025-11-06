@@ -995,23 +995,40 @@ def deletar_item_lista_mae(lista_id, item_id):
 
 def obter_lista_mae(lista_id):
     """Retorna a Lista Mãe com todos os seus itens."""
+    from flask import current_app
+
     try:
+        current_app.logger.info(f"[LISTA MAE GET] Iniciando obter_lista_mae para lista_id={lista_id}")
+
         # Busca a lista diretamente
         lista = Lista.query.filter(Lista.id == lista_id).first()
+        current_app.logger.info(f"[LISTA MAE GET] Lista encontrada: {lista is not None}")
 
         if not lista:
+            current_app.logger.info(f"[LISTA MAE GET] Lista não encontrada com id={lista_id}")
             return {"error": "Lista não encontrada"}, 404
 
         # Busca itens separadamente garantindo que estão no banco
+        current_app.logger.info(f"[LISTA MAE GET] Consultando itens para lista_mae_id={lista_id}")
         itens = ListaMaeItem.query.filter_by(lista_mae_id=lista_id).all()
+        current_app.logger.info(f"[LISTA MAE GET] Total de itens encontrados: {len(itens)}")
 
-        return {
+        for idx, item in enumerate(itens):
+            current_app.logger.info(f"[LISTA MAE GET] Item {idx}: id={item.id}, nome={item.nome}, pedido={item.get_pedido()}")
+
+        result = {
             "lista_id": lista.id,
             "lista_nome": lista.nome,
             "lista_descricao": lista.descricao,
             "data_criacao": lista.data_criacao.isoformat(),
             "itens": [item.to_dict() for item in itens],
             "total_itens": len(itens)
-        }, 200
+        }
+
+        current_app.logger.info(f"[LISTA MAE GET] Retornando {result['total_itens']} itens")
+        return result, 200
     except Exception as e:
+        current_app.logger.error(f"[LISTA MAE GET] ERRO: {type(e).__name__}: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return {"error": str(e)}, 500
