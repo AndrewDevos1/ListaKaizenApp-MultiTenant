@@ -120,13 +120,22 @@ const ListaMaeConsolidada: React.FC = () => {
         if (!item.id) return;
 
         try {
-            await api.put(`/admin/listas/${listaId}/mae-itens/${item.id}`, item);
+            // Envia apenas os campos editáveis, sem enviar 'pedido' (calculado no servidor)
+            const dataToSend = {
+                nome: item.nome,
+                unidade: item.unidade,
+                quantidade_atual: item.quantidade_atual,
+                quantidade_minima: item.quantidade_minima
+            };
 
-            // Atualiza o item na lista local
+            const response = await api.put(`/admin/listas/${listaId}/mae-itens/${item.id}`, dataToSend);
+            const updatedItem = response.data;
+
+            // Atualiza o item na lista local COM os dados retornados pelo servidor (inclui pedido recalculado)
             if (listaMae) {
                 setListaMae({
                     ...listaMae,
-                    itens: listaMae.itens.map(i => i.id === item.id ? item : i)
+                    itens: listaMae.itens.map(i => i.id === item.id ? updatedItem : i)
                 });
             }
 
