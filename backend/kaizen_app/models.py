@@ -171,7 +171,7 @@ class Lista(db.Model, SerializerMixin):
     colaboradores = db.relationship('Usuario', secondary=lista_colaborador,
                                     lazy='subquery', backref=db.backref('listas_atribuidas', lazy=True))
     # Relacionamento um-para-muitos com ListaMaeItem
-    itens = db.relationship('ListaMaeItem', backref='lista', lazy=True, cascade='all, delete-orphan')
+    itens = db.relationship('ListaMaeItem', backref='lista', lazy='subquery', cascade='all, delete-orphan')
 
 
 class ListaMaeItem(db.Model, SerializerMixin):

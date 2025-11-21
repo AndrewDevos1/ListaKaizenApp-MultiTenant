@@ -39,7 +39,10 @@
       "Bash(awk:*)",
       "Bash(xargs kill:*)",
       "Bash(pkill:*)",
-      "Bash(git reset:*)"
+      "Bash(git reset:*)",
+      "Bash(xargs findstr:*)",
+      "Bash(sqlite3:*)",
+      "Bash(nul)"
     ],
     "deny": [],
     "ask": []

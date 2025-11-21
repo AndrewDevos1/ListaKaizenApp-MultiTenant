@@ -589,10 +589,7 @@ def remover_item_da_lista_route(lista_id, item_id):
 @admin_required()
 def get_lista_mae_route(lista_id):
     """Retorna a Lista Mãe com todos os seus itens"""
-    from flask import current_app
-    current_app.logger.warning(f"[ROUTE] get_lista_mae_route called with lista_id={lista_id}")
     response, status = services.obter_lista_mae(lista_id)
-    current_app.logger.warning(f"[ROUTE] Response: {response}")
     return jsonify(response), status
 
 
