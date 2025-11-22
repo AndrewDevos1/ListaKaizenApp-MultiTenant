@@ -441,6 +441,16 @@ const ListasCompras: React.FC = () => {
                                             Lista Mãe
                                         </Button>
                                     </Link>
+                                    <Button
+                                        variant="secondary"
+                                        className={styles.cardButton}
+                                        onClick={() => {
+                                            // TODO: Implementar visualização como colaborador
+                                        }}
+                                    >
+                                        <FontAwesomeIcon icon={faShoppingCart} style={{marginRight: '0.5rem'}} />
+                                        Lista do Colaborador
+                                    </Button>
                                 </div>
                             </Card>
                         ))}
