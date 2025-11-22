@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Table, Button, Modal, Form, Spinner, Alert } from 'react-bootstrap';
 import api from '../../services/api';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faArrowLeft } from '@fortawesome/free-solid-svg-icons';
 
 interface Fornecedor {
     id: number;
@@ -96,6 +98,12 @@ const FornecedorManagement: React.FC = () => {
 
     return (
         <div>
+            <div style={{ marginBottom: '1.5rem' }}>
+                <Button variant="secondary" onClick={() => navigate(-1)} style={{ marginBottom: '1rem' }}>
+                    <FontAwesomeIcon icon={faArrowLeft} className="me-2" />
+                    Voltar
+                </Button>
+            </div>
             <h2>Gestão de Fornecedores</h2>
             {error && <Alert variant="danger" onClose={() => setError('')} dismissible>{error}</Alert>}
             <Button variant="primary" onClick={() => handleShowModal()} className="mb-3">
