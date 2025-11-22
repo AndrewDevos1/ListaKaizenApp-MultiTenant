@@ -5,6 +5,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask_jwt_extended import create_access_token
 from datetime import datetime, timedelta
 from sqlalchemy import func
+from flask import current_app
 
 def register_user(data):
     """Cria um novo usuário no sistema."""

@@ -84,6 +84,11 @@ const ListaMaeConsolidada: React.FC = () => {
     const [mostrarModalFornecedor, setMostrarModalFornecedor] = useState(false);
     const [carregandoPedidos, setCarregandoPedidos] = useState(false);
 
+    // Estado para importação em lote
+    const [mostrarModalImportacao, setMostrarModalImportacao] = useState(false);
+    const [textoImportacao, setTextoImportacao] = useState('');
+    const [carregandoImportacao, setCarregandoImportacao] = useState(false);
+
     useEffect(() => {
         if (listaId) {
             fetchListaMae();
@@ -276,6 +281,71 @@ const ListaMaeConsolidada: React.FC = () => {
 
     const calcularPedido = (qtdMin: number, qtdAtual: number) => {
         return Math.max(0, qtdMin - qtdAtual);
+    };
+
+    const handleImportarItemsEmLote = async () => {
+        if (!textoImportacao.trim()) {
+            setError('Cole a lista de itens');
+            return;
+        }
+
+        try {
+            setCarregandoImportacao(true);
+            setError(null);
+
+            // Parse das linhas - extrai apenas o nome do item
+            const linhas = textoImportacao
+                .split('\n')
+                .map(linha => linha.trim())
+                .filter(linha => linha.length > 0);
+
+            let itensCriados = 0;
+            let erros = 0;
+
+            // Para cada linha, tenta extrair o nome do item
+            for (const linha of linhas) {
+                try {
+                    // Remove números, parênteses, emojis e observações comuns
+                    let nomeItem = linha
+                        .replace(/\d+\s*x\s*\d+\s*kg/gi, '') // Remove "6x5kg"
+                        .replace(/\(\s*.*?\s*\)/g, '') // Remove conteúdo entre parênteses
+                        .replace(/🍄|🥢|🍱|🍜/g, '') // Remove emojis comuns
+                        .replace(/\(.*\)/g, '') // Remove observações entre parênteses
+                        .replace(/\\/g, '') // Remove barras invertidas
+                        .trim();
+
+                    // Se ficou muito curto, ignora
+                    if (nomeItem.length < 3) continue;
+
+                    // Adiciona o item
+                    await api.post(`/v1/listas/${listaId}/itens`, {
+                        nome: nomeItem,
+                        unidade: 'Unidade', // Padrão - usuário pode editar depois
+                        quantidade_atual: 0,
+                        quantidade_minima: 0
+                    });
+
+                    itensCriados++;
+                } catch (err: any) {
+                    console.error(`Erro ao adicionar item "${linha}":`, err);
+                    erros++;
+                }
+            }
+
+            // Recarrega a lista
+            await fetchListaMae();
+
+            setSuccess(`${itensCriados} item(ns) importado(s) com sucesso!${erros > 0 ? ` (${erros} erro(s))` : ''}`);
+            setTextoImportacao('');
+            setMostrarModalImportacao(false);
+
+            setTimeout(() => setSuccess(null), 5000);
+        } catch (err: any) {
+            setError('Erro ao importar itens em lote');
+            console.error('Erro:', err);
+        } finally {
+            setCarregandoImportacao(false);
+        }
     };
 
     if (loading) {
