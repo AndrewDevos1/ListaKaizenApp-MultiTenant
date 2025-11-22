@@ -31,4 +31,7 @@ nul
 
 # Build files
 frontend/build/
-frontend/dist/ 
+frontend/dist/
+
+# Claude Code local settings
+.claude/settings.local.json 
