@@ -1,3 +1,4 @@
+import os
 from flask import Flask, request, jsonify
 from .config import config_by_name
 from .extensions import db, migrate, jwt, cors
@@ -15,10 +16,22 @@ def create_app(config_name='development'):
     migrate.init_app(app, db)
     jwt.init_app(app)
 
-    # Inicializa CORS com configuração permissiva para desenvolvimento e produção
+    # Lê origens permitidas da variável de ambiente CORS_ORIGINS
+    # Formato: "https://lista-kaizen-app.vercel.app,https://outro-dominio.com"
+    cors_origins_str = os.environ.get('CORS_ORIGINS', '*')
+
+    # Se não for *, divide por vírgula para criar lista de origens
+    if cors_origins_str == '*':
+        allowed_origins = '*'
+    else:
+        allowed_origins = [origin.strip() for origin in cors_origins_str.split(',') if origin.strip()]
+
+    print(f"\n[CORS] Configurando CORS com origens permitidas: {allowed_origins}\n")
+
+    # Inicializa CORS com configuração baseada na variável de ambiente
     cors.init_app(app, resources={
         r"/api/*": {
-            "origins": ["*"],
+            "origins": allowed_origins,
             "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
             "allow_headers": ["Content-Type", "Authorization", "X-Requested-With"],
             "expose_headers": ["Content-Type", "Authorization"],
@@ -31,7 +44,14 @@ def create_app(config_name='development'):
     @app.after_request
     def add_cors_headers(response):
         """Adiciona headers CORS a TODAS as respostas"""
-        response.headers['Access-Control-Allow-Origin'] = '*'
+        # Usa a mesma lógica da variável de ambiente
+        origin = request.headers.get('Origin')
+
+        if cors_origins_str == '*':
+            response.headers['Access-Control-Allow-Origin'] = '*'
+        elif origin and (origin in allowed_origins):
+            response.headers['Access-Control-Allow-Origin'] = origin
+
         response.headers['Access-Control-Allow-Methods'] = 'GET, HEAD, POST, PUT, DELETE, OPTIONS, PATCH'
         response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With'
         response.headers['Access-Control-Max-Age'] = '86400'
