@@ -3,10 +3,10 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { Container, Card, Table, Button, Modal, Form, Alert, Spinner, Row, Col } from 'react-bootstrap';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { Container, Card, Table, Button, Modal, Form, Alert, Spinner, Row, Col, Badge } from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faArrowLeft, faEdit, faBox, faPhone, faPencil, faCheckCircle, faExclamationCircle } from '@fortawesome/free-solid-svg-icons';
+import { faArrowLeft, faEdit, faBox, faPhone, faPencil, faCheckCircle, faExclamationCircle, faClipboardList } from '@fortawesome/free-solid-svg-icons';
 import api from '../../services/api';
 import styles from './FornecedorDetalhes.module.css';
 
@@ -46,6 +46,7 @@ interface Estoque {
 
 const FornecedorDetalhes: React.FC = () => {
     const { fornecedorId } = useParams();
+    const navigate = useNavigate();
     const [fornecedor, setFornecedor] = useState<Fornecedor | null>(null);
     const [itens, setItens] = useState<Item[]>([]);
     const [estoques, setEstoques] = useState<{ [key: number]: Estoque[] }>({});
@@ -287,9 +288,27 @@ const FornecedorDetalhes: React.FC = () => {
                             </p>
                         </Col>
                         <Col md={6}>
-                            <p className={styles.fornecedorInfo}>
-                                <strong>Listas Atribuídas:</strong> {fornecedor.listas && fornecedor.listas.length > 0 ? fornecedor.listas.map(l => l.nome).join(', ') : 'Nenhuma'}
-                            </p>
+                            <div>
+                                <strong style={{ display: 'block', marginBottom: '0.5rem' }}>Listas Atribuídas:</strong>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                                    {fornecedor.listas && fornecedor.listas.length > 0 ? (
+                                        fornecedor.listas.map(lista => (
+                                            <Button
+                                                key={lista.id}
+                                                variant="info"
+                                                size="sm"
+                                                onClick={() => navigate(`/admin/listas/${lista.id}/lista-mae`)}
+                                                style={{ cursor: 'pointer' }}
+                                            >
+                                                <FontAwesomeIcon icon={faClipboardList} style={{ marginRight: '0.5rem' }} />
+                                                {lista.nome}
+                                            </Button>
+                                        ))
+                                    ) : (
+                                        <Badge bg="secondary">Nenhuma</Badge>
+                                    )}
+                                </div>
+                            </div>
                         </Col>
                     </Row>
                     {fornecedor.observacao && (
