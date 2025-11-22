@@ -71,6 +71,10 @@ class Fornecedor(db.Model, SerializerMixin):
     meio_envio = db.Column(db.String(20))
     responsavel = db.Column(db.String(100))
     observacao = db.Column(db.String(600))
+    lista_id = db.Column(db.Integer, db.ForeignKey('listas.id'), nullable=True)
+
+    # Relacionamento com Lista
+    lista = db.relationship('Lista', backref=db.backref('fornecedores', lazy=True))
 
 class Estoque(db.Model, SerializerMixin):
     __tablename__ = "estoques"

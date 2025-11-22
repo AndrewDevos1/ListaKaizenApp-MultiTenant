@@ -17,6 +17,11 @@ interface Fornecedor {
     meio_envio: string;
     responsavel?: string;
     observacao?: string;
+    lista_id?: number;
+    lista?: {
+        id: number;
+        nome: string;
+    };
 }
 
 interface Item {
@@ -200,6 +205,11 @@ const FornecedorDetalhes: React.FC = () => {
                         <Col md={6}>
                             <p className={styles.fornecedorInfo}>
                                 <strong>Responsável:</strong> {fornecedor.responsavel || 'Não informado'}
+                            </p>
+                        </Col>
+                        <Col md={6}>
+                            <p className={styles.fornecedorInfo}>
+                                <strong>Lista:</strong> {fornecedor.lista?.nome || 'Não atribuída'}
                             </p>
                         </Col>
                     </Row>

@@ -12,11 +12,23 @@ interface Fornecedor {
     meio_envio: string;
     responsavel?: string;
     observacao?: string;
+    lista_id?: number;
+    lista?: {
+        id: number;
+        nome: string;
+    };
+}
+
+interface Lista {
+    id: number;
+    nome: string;
+    descricao?: string;
 }
 
 const FornecedorManagement: React.FC = () => {
     const navigate = useNavigate();
     const [fornecedores, setFornecedores] = useState<Fornecedor[]>([]);
+    const [listas, setListas] = useState<Lista[]>([]);
     const [currentFornecedor, setCurrentFornecedor] = useState<Partial<Fornecedor> | null>(null);
     const [showModal, setShowModal] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
@@ -38,8 +50,18 @@ const FornecedorManagement: React.FC = () => {
         }
     };
 
+    const fetchListas = async () => {
+        try {
+            const response = await api.get('/v1/listas');
+            setListas(response.data);
+        } catch (err) {
+            console.error('Falha ao carregar as listas:', err);
+        }
+    };
+
     useEffect(() => {
         fetchFornecedores();
+        fetchListas();
     }, []);
 
     const handleShowModal = (fornecedor?: Fornecedor) => {
@@ -119,13 +141,14 @@ const FornecedorManagement: React.FC = () => {
                         <th>Meio de Envio</th>
                         <th>Responsável</th>
                         <th>Observações</th>
+                        <th>Lista</th>
                         <th>Ações</th>
                     </tr>
                 </thead>
                 <tbody>
                     {isLoading ? (
                         <tr>
-                            <td colSpan={7} className="text-center"><Spinner animation="border" /></td>
+                            <td colSpan={8} className="text-center"><Spinner animation="border" /></td>
                         </tr>
                     ) : fornecedores.map(f => (
                         <tr key={f.id}>
@@ -135,6 +158,7 @@ const FornecedorManagement: React.FC = () => {
                             <td>{f.meio_envio}</td>
                             <td>{f.responsavel || '-'}</td>
                             <td title={f.observacao || ''}>{f.observacao ? (f.observacao.length > 50 ? f.observacao.substring(0, 50) + '...' : f.observacao) : '-'}</td>
+                            <td>{f.lista?.nome || '-'}</td>
                             <td>
                                 <Button variant="info" onClick={() => navigate(`/admin/fornecedores/${f.id}/detalhes`)} className="me-2">
                                     <i className="fas fa-eye me-1"></i>Ver Detalhes
@@ -178,6 +202,15 @@ const FornecedorManagement: React.FC = () => {
                             <Form.Label>Observações (máximo 600 caracteres)</Form.Label>
                             <Form.Control as="textarea" rows={4} placeholder="Ex: Notas sobre o fornecedor..." value={currentFornecedor?.observacao || ''} onChange={e => setCurrentFornecedor({...currentFornecedor, observacao: e.target.value.substring(0, 600)})} maxLength={600} />
                             <small className="text-muted">{(currentFornecedor?.observacao || '').length}/600 caracteres</small>
+                        </Form.Group>
+                        <Form.Group className="mb-3">
+                            <Form.Label>Lista</Form.Label>
+                            <Form.Select value={currentFornecedor?.lista_id || ''} onChange={e => setCurrentFornecedor({...currentFornecedor, lista_id: e.target.value ? Number(e.target.value) : undefined})}>
+                                <option value="">Selecione uma lista (opcional)</option>
+                                {listas.map(lista => (
+                                    <option key={lista.id} value={lista.id}>{lista.nome}</option>
+                                ))}
+                            </Form.Select>
                         </Form.Group>
                         <div className="d-grid gap-2">
                             <Button variant="primary" type="submit">{isEditing ? 'Salvar Alterações' : 'Adicionar Fornecedor'}</Button>
