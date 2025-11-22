@@ -107,6 +107,12 @@ def login():
     response, status_code = services.authenticate_user(data)
     return jsonify(response), status_code
 
+@auth_bp.route('/test-users', methods=['GET'])
+def get_test_users():
+    """Retorna usuários ativos para atalho de login (desenvolvimento/testes)."""
+    response, status_code = services.get_test_users()
+    return jsonify(response), status_code
+
 @auth_bp.route('/change-password', methods=['POST'])
 @jwt_required()
 def change_password():

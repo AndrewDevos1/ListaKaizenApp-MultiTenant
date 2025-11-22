@@ -78,6 +78,28 @@ def authenticate_user(data):
 
     return {"access_token": access_token}, 200
 
+def get_test_users():
+    """Retorna lista de usuários ativos para atalho de login em desenvolvimento."""
+    try:
+        # Buscar todos os usuários aprovados e ativos
+        usuarios = Usuario.query.filter_by(aprovado=True, ativo=True).all()
+
+        usuarios_data = []
+        for user in usuarios:
+            usuarios_data.append({
+                "id": user.id,
+                "nome": user.nome,
+                "email": user.email,
+                "role": user.role.value,
+                # Nota: senha padrão para testes (não é a senha real armazenada)
+                "senha_padrao": "teste123"  # Apenas para interface de desenvolvimento
+            })
+
+        return {"usuarios": usuarios_data}, 200
+    except Exception as e:
+        current_app.logger.error(f"[GET_TEST_USERS] Erro: {str(e)}")
+        return {"error": "Erro ao buscar usuários de teste"}, 500
+
 def approve_user(user_id):
     """Aprova o cadastro de um usuário."""
     user = Usuario.query.get(user_id)
