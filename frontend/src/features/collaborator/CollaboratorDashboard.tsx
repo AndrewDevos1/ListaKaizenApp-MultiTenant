@@ -257,7 +257,7 @@ const CollaboratorDashboard: React.FC = () => {
                 value: 0,
                 icon: faShoppingCart,
                 color: styles.widgetPurple,
-                link: '/collaborator/compras',
+                link: '/collaborator/listas',
                 trend: '',
                 trendType: 'positive',
             },

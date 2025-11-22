@@ -21,6 +21,7 @@ import {
     faTruck,
     faTag,
     faPhone,
+    faEye,
 } from '@fortawesome/free-solid-svg-icons';
 import { Link } from 'react-router-dom';
 import api from '../../services/api';
@@ -432,24 +433,25 @@ const ListasCompras: React.FC = () => {
                                         <FontAwesomeIcon icon={faUsers} style={{marginRight: '0.5rem'}} />
                                         Atribuir
                                     </Button>
-                                    <Link to={`/admin/listas/${lista.id}/gerenciar-itens`}>
-                                        <Button
-                                            variant="warning"
-                                            className={styles.cardButton}
-                                        >
-                                            <FontAwesomeIcon icon={faEdit} style={{marginRight: '0.5rem'}} />
-                                            Gerenciar Itens
-                                        </Button>
-                                    </Link>
                                     <Link to={`/admin/listas/${lista.id}/lista-mae`}>
                                         <Button
-                                            variant="info"
+                                            variant="warning"
                                             className={styles.cardButton}
                                         >
                                             <FontAwesomeIcon icon={faShoppingCart} style={{marginRight: '0.5rem'}} />
                                             Lista Mãe
                                         </Button>
                                     </Link>
+                                    <Button
+                                        variant="success"
+                                        className={styles.cardButton}
+                                        onClick={() => {
+                                            // TODO: Implementar visualização como colaborador
+                                        }}
+                                    >
+                                        <FontAwesomeIcon icon={faEye} style={{marginRight: '0.5rem'}} />
+                                        Lista do Colaborador
+                                    </Button>
                                 </div>
                             </Card>
                         ))}

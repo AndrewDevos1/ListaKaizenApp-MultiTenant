@@ -1,18 +1,27 @@
 /*
- * Login Page - CoreUI Inspired Styles
- * Paleta de cores moderna com gradientes e sombras suaves
+ * Register Page - CoreUI Inspired Styles
+ * Mesmo design do Login com ajustes para formulário maior
  */
 
-.loginWrapper {
+.registerWrapper {
   min-height: 100vh;
+  height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   background-size: 400% 400%;
   animation: gradientShift 15s ease infinite;
-  position: relative;
-  overflow: hidden;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow-y: auto;
+  padding: 2rem 0;
+  /* Previne scroll infinito no mobile */
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Animação de gradiente suave */
@@ -29,7 +38,7 @@
 }
 
 /* Efeito de bolhas no fundo */
-.loginWrapper::before {
+.registerWrapper::before {
   content: '';
   position: absolute;
   width: 500px;
@@ -39,9 +48,10 @@
   top: -250px;
   right: -250px;
   animation: float 20s infinite ease-in-out;
+  pointer-events: none;
 }
 
-.loginWrapper::after {
+.registerWrapper::after {
   content: '';
   position: absolute;
   width: 300px;
@@ -51,6 +61,7 @@
   bottom: -150px;
   left: -150px;
   animation: float 15s infinite ease-in-out reverse;
+  pointer-events: none;
 }
 
 @keyframes float {
@@ -62,8 +73,8 @@
   }
 }
 
-/* Card de login */
-.loginCard {
+/* Card de registro */
+.registerCard {
   background: rgba(255, 255, 255, 0.98);
   border-radius: 20px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
@@ -72,6 +83,9 @@
   animation: slideIn 0.6s ease-out;
   position: relative;
   z-index: 1;
+  width: 100%;
+  max-width: 500px;
+  margin: auto;
 }
 
 @keyframes slideIn {
@@ -85,7 +99,7 @@
   }
 }
 
-.loginCard:hover {
+.registerCard:hover {
   box-shadow: 0 25px 70px rgba(0, 0, 0, 0.35);
   transform: translateY(-2px);
   transition: all 0.3s ease;
@@ -204,29 +218,33 @@
   cursor: not-allowed;
 }
 
-/* Checkbox e link */
-.rememberRow {
+/* Info box para token admin */
+.infoBox {
+  background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
+  border-left: 4px solid #667eea;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-top: 0.5rem;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
+  align-items: start;
+  gap: 0.75rem;
 }
 
-.forgotLink {
+.infoBox i {
   color: #667eea;
-  text-decoration: none;
-  font-size: 0.9rem;
-  font-weight: 500;
-  transition: color 0.3s;
+  font-size: 1.2rem;
+  margin-top: 0.1rem;
 }
 
-.forgotLink:hover {
-  color: #764ba2;
-  text-decoration: underline;
+.infoBox p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #5a6c7d;
+  line-height: 1.5;
 }
 
-/* Botão de login */
-.loginButton {
+/* Botão de registro */
+.registerButton {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border: none;
   border-radius: 10px;
@@ -240,15 +258,20 @@
   letter-spacing: 0.5px;
 }
 
-.loginButton:hover {
+.registerButton:hover:not(:disabled) {
   background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
   box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
   transform: translateY(-3px);
 }
 
-.loginButton:active {
+.registerButton:active {
   transform: translateY(-1px);
   box-shadow: 0 3px 10px rgba(102, 126, 234, 0.4);
+}
+
+.registerButton:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
 }
 
 /* Divider */
@@ -257,94 +280,12 @@
   border-top: 1px solid #e0e6ed;
 }
 
-/* Seção de usuários de teste */
-.testUsersSection {
-  margin-bottom: 1.5rem;
-  padding: 1rem;
-  background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
-  border-radius: 10px;
-  border: 1px solid rgba(102, 126, 234, 0.2);
-}
-
-.testUsersLabel {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: #667eea;
-  margin: 0 0 0.75rem 0;
-  display: flex;
-  align-items: center;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.testUsersGrid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.75rem;
-}
-
-.testUserButton {
-  background: white;
-  border: 2px solid #e0e6ed;
-  border-radius: 8px;
-  padding: 0.75rem;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  font-size: 0.85rem;
-  font-weight: 500;
-  color: #34495e;
-}
-
-.testUserButton:hover:not(:disabled) {
-  border-color: #667eea;
-  background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.05) 100%);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
-}
-
-.testUserButton:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.testUserButton i {
-  font-size: 1rem;
-  color: #667eea;
-  min-width: 1rem;
-}
-
-.testUserInfo {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  flex: 1;
-  min-width: 0;
-}
-
-.testUserName {
-  font-weight: 600;
-  color: #2c3e50;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.testUserRole {
-  font-size: 0.7rem;
-  color: #95a5a6;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-}
-
-/* Link de registro */
-.registerRow {
+/* Link de login */
+.loginRow {
   text-align: center;
 }
 
-.registerLink {
+.loginLink {
   color: #667eea;
   text-decoration: none;
   font-weight: 500;
@@ -352,7 +293,7 @@
   transition: color 0.3s;
 }
 
-.registerLink:hover {
+.loginLink:hover {
   color: #764ba2;
   text-decoration: underline;
 }
@@ -364,6 +305,9 @@
   padding: 1rem;
   margin-bottom: 1.5rem;
   animation: shake 0.5s;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 @keyframes shake {
@@ -378,23 +322,98 @@
   }
 }
 
-/* Responsividade */
-@media (max-width: 768px) {
-  .loginCard {
-    margin: 1rem;
-    border-radius: 15px;
-  }
+/* Success screen */
+.successScreen {
+  text-align: center;
+  padding: 2rem;
+}
 
-  .appTitle {
-    font-size: 1.75rem;
-  }
+.successIcon {
+  font-size: 5rem;
+  color: #2eb85c;
+  animation: successPulse 1s ease-out;
+  margin-bottom: 1.5rem;
+}
 
-  .logoIcon {
-    font-size: 3rem;
+@keyframes successPulse {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
   }
 }
 
-/* Loading spinner (para futura implementação) */
+.successTitle {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #2c3e50;
+  margin-bottom: 1rem;
+}
+
+.successMessage {
+  font-size: 1rem;
+  color: #7f8c8d;
+  line-height: 1.6;
+  margin-bottom: 2rem;
+}
+
+.successSteps {
+  background: #f8f9fa;
+  border-radius: 10px;
+  padding: 1.5rem;
+  text-align: left;
+  margin-bottom: 2rem;
+}
+
+.successSteps h4 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #34495e;
+  margin-bottom: 1rem;
+}
+
+.successSteps ol {
+  padding-left: 1.5rem;
+  margin: 0;
+}
+
+.successSteps li {
+  color: #5a6c7d;
+  margin-bottom: 0.75rem;
+  line-height: 1.5;
+}
+
+.backButton {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  border-radius: 10px;
+  padding: 0.75rem 2rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: white;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+  transition: all 0.3s ease;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.backButton:hover {
+  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+  transform: translateY(-3px);
+  color: white;
+  text-decoration: none;
+}
+
+/* Loading spinner */
 .spinner {
   display: inline-block;
   width: 20px;
@@ -408,4 +427,45 @@
 
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .registerWrapper {
+    padding: 1rem 0;
+  }
+
+  .registerCard {
+    margin: 1rem;
+    border-radius: 15px;
+  }
+
+  .appTitle {
+    font-size: 1.75rem;
+  }
+
+  .logoIcon {
+    font-size: 3rem;
+  }
+
+  .formGroup {
+    margin-bottom: 1.25rem;
+  }
+
+  .successIcon {
+    font-size: 4rem;
+  }
+
+  .successTitle {
+    font-size: 1.5rem;
+  }
+}
+
+/* Melhoria adicional para evitar scroll infinito */
+@media (max-width: 768px) {
+  .registerWrapper {
+    height: auto;
+    min-height: 100vh;
+    min-height: -webkit-fill-available;
+  }
 }

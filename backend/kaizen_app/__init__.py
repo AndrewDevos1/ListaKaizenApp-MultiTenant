@@ -1,9 +1,9 @@
 from flask import Flask, request, jsonify
 from .config import config_by_name
-from .extensions import db, migrate, jwt, cors
+from .extensions import db, migrate, jwt
 
 
-def create_app(config_name='production'):
+def create_app(config_name='development'):
     """Application Factory Function"""
     app = Flask(__name__)
 
@@ -15,20 +15,23 @@ def create_app(config_name='production'):
     migrate.init_app(app, db)
     jwt.init_app(app)
 
-    # Configuração CORS para permitir Vercel e localhost
-    cors.init_app(app,
-        resources={r"/api/*": {
-            "origins": [
-                "https://lista-kaizen-app.vercel.app",
-                "http://localhost:3000",
-                "http://127.0.0.1:3000",
-                "http://192.168.88.122:3000"
-            ],
-            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-            "allow_headers": ["Content-Type", "Authorization"],
-            "supports_credentials": True
-        }}
-    )
+    # CORS manualmente com after_request hook
+    @app.after_request
+    def add_cors_headers(response):
+        """Adiciona headers CORS a TODAS as respostas"""
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        response.headers['Access-Control-Allow-Methods'] = 'GET, HEAD, POST, PUT, DELETE, OPTIONS, PATCH'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With'
+        response.headers['Access-Control-Max-Age'] = '86400'
+        return response
+
+    # Rota para lidar com OPTIONS requests
+    @app.before_request
+    def handle_preflight():
+        """Responde a requisições OPTIONS (CORS preflight)"""
+        if request.method == 'OPTIONS':
+            response = app.make_default_options_response()
+            return response
 
     # Middleware para log de todas as requisições
     @app.before_request
@@ -155,8 +158,5 @@ def create_app(config_name='production'):
         app.register_blueprint(admin_bp)
         app.register_blueprint(api_bp)
         app.register_blueprint(collaborator_bp)
-
-        # Cria as tabelas do banco
-        db.create_all()
 
         return app

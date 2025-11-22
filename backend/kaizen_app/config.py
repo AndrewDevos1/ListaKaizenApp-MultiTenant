@@ -34,7 +34,6 @@ class TestingConfig(Config):
 
 class ProductionConfig(Config):
     """Configurações para o ambiente de produção."""
-    # ✅ CORRIGIDO: Se DATABASE_URL não existir, usa SQLite
     database_url = os.environ.get('DATABASE_URL') or 'sqlite:///kaizen_prod.db'
 
     # Fix para Render: converte postgres:// para postgresql://
@@ -46,7 +45,8 @@ class ProductionConfig(Config):
         database_url = database_url.split('?')[0]
 
     # Adiciona parâmetros SSL seguros para Render
-    database_url += '?sslmode=allow&connect_timeout=10'
+    if not database_url.startswith('sqlite'):
+        database_url += '?sslmode=allow&connect_timeout=10'
 
     SQLALCHEMY_DATABASE_URI = database_url
 

@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Limpar Tokens - Kaizen Lists</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+        }
+        
+        .icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+        }
+        
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 28px;
+        }
+        
+        p {
+            color: #7f8c8d;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 50px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            margin: 10px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+        
+        .btn:active {
+            transform: translateY(-1px);
+        }
+        
+        .status {
+            margin-top: 30px;
+            padding: 20px;
+            border-radius: 10px;
+            font-weight: 600;
+            display: none;
+        }
+        
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .info-box {
+            background: #e3f2fd;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin: 20px 0;
+            text-align: left;
+            border-radius: 5px;
+        }
+        
+        .info-box strong {
+            color: #2c3e50;
+            display: block;
+            margin-bottom: 10px;
+        }
+        
+        .info-box ul {
+            list-style: none;
+            padding-left: 0;
+        }
+        
+        .info-box li {
+            color: #5a6c7d;
+            padding: 5px 0;
+            font-size: 14px;
+        }
+        
+        .info-box li::before {
+            content: "✓ ";
+            color: #667eea;
+            font-weight: bold;
+            margin-right: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="icon">🧹</div>
+        <h1>Limpar Tokens do Browser</h1>
+        <p>
+            Esta ferramenta remove todos os tokens JWT e dados de sessão armazenados
+            no seu navegador para o Kaizen Lists.
+        </p>
+        
+        <div class="info-box">
+            <strong>O que será removido:</strong>
+            <ul>
+                <li>Token de acesso (accessToken)</li>
+                <li>Expiração de sessão (sessionExpiry)</li>
+                <li>Email lembrado (rememberedEmail)</li>
+                <li>Configurações de timeout</li>
+            </ul>
+        </div>
+        
+        <button class="btn" onclick="limparTokens()">🗑️ Limpar Tokens</button>
+        <button class="btn" onclick="limparTudo()">🔥 Limpar Tudo (localStorage completo)</button>
+        
+        <div id="status" class="status"></div>
+        
+        <p style="margin-top: 30px; font-size: 14px;">
+            Após limpar, você precisará fazer login novamente.
+        </p>
+    </div>
+    
+    <script>
+        function mostrarStatus(mensagem, tipo) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = mensagem;
+            statusDiv.className = `status ${tipo}`;
+            statusDiv.style.display = 'block';
+            
+            // Auto-hide após 5 segundos
+            setTimeout(() => {
+                statusDiv.style.display = 'none';
+            }, 5000);
+        }
+        
+        function limparTokens() {
+            try {
+                const itensRemovidos = [];
+                
+                // Lista de itens para remover
+                const chavesParaRemover = [
+                    'accessToken',
+                    'sessionExpiry',
+                    'rememberedEmail',
+                    'configSessionTimeout'
+                ];
+                
+                chavesParaRemover.forEach(chave => {
+                    if (localStorage.getItem(chave) !== null) {
+                        localStorage.removeItem(chave);
+                        itensRemovidos.push(chave);
+                    }
+                });
+                
+                if (itensRemovidos.length > 0) {
+                    console.log('✅ Tokens removidos:', itensRemovidos);
+                    mostrarStatus(
+                        `✅ ${itensRemovidos.length} item(ns) removido(s) com sucesso! Você pode fazer login novamente.`,
+                        'success'
+                    );
+                } else {
+                    mostrarStatus('ℹ️ Nenhum token encontrado para remover.', 'success');
+                }
+            } catch (error) {
+                console.error('Erro ao limpar tokens:', error);
+                mostrarStatus('❌ Erro ao limpar tokens: ' + error.message, 'error');
+            }
+        }
+        
+        function limparTudo() {
+            if (confirm('⚠️ Isso vai remover TODOS os dados do localStorage. Tem certeza?')) {
+                try {
+                    const tamanho = localStorage.length;
+                    localStorage.clear();
+                    console.log('✅ localStorage completamente limpo!');
+                    mostrarStatus(
+                        `✅ localStorage limpo! ${tamanho} item(ns) removido(s). Você pode fazer login novamente.`,
+                        'success'
+                    );
+                } catch (error) {
+                    console.error('Erro ao limpar localStorage:', error);
+                    mostrarStatus('❌ Erro ao limpar localStorage: ' + error.message, 'error');
+                }
+            }
+        }
+        
+        // Mostrar informações ao carregar
+        window.onload = function() {
+            console.log('=================================');
+            console.log('🧹 Limpador de Tokens - Kaizen Lists');
+            console.log('=================================');
+            console.log('localStorage atual:', localStorage);
+            console.log('Total de itens:', localStorage.length);
+            console.log('=================================');
+        };
+    </script>
+</body>
+</html>

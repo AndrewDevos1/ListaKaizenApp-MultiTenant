@@ -1,3 +1,44 @@
+● Pronto! Criei 4 scripts na raiz do projeto:
+
+  Para Windows:
+  - run-backend.bat - Ativa o venv e roda o backend
+  - run-frontend.bat - Instala dependências e roda o frontend
+
+  Para Linux/macOS:
+  - run-backend.sh - Ativa o venv e roda o backend
+  - run-frontend.sh - Instala dependências e roda o frontend
+
+  Como usar:
+
+  No Windows, basta dar duplo-clique nos arquivos .bat ou executar no terminal:
+  run-backend.bat
+  run-frontend.bat
+
+  No Linux/macOS, primeiro dê permissão de execução e depois rode:
+  chmod +x run-backend.sh run-frontend.sh
+  ./run-backend.sh
+  ./run-frontend.sh
+
+  Abra dois terminais - um para cada script!
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 Terminal 1: Rodar o Backend (Servidor)
 Ative o ambiente virtual do Python:
 
@@ -13,7 +54,7 @@ Inicie o servidor Flask:
 
 shell
 flask run
-ou 
+ou
 python run.py
 O servidor do backend estará rodando em http://127.0.0.1:5000. Deixe este terminal aberto.
 

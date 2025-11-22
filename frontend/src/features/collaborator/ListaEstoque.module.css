@@ -1,0 +1,114 @@
+.container {
+    padding: 2rem 0;
+    max-width: 1000px;
+}
+
+.header {
+    margin-bottom: 2rem;
+}
+
+.header h2 {
+    color: #2c3e50;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.header p {
+    color: #6c757d;
+    font-size: 0.95rem;
+    margin: 0;
+}
+
+.table {
+    margin-bottom: 0;
+}
+
+.itemName {
+    font-weight: 500;
+    position: relative;
+}
+
+.changedBadge {
+    display: inline-block;
+    background-color: #fff3cd;
+    color: #856404;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-left: 0.5rem;
+}
+
+.inputChanged {
+    border-color: #ffc107 !important;
+    background-color: #fffbf0 !important;
+}
+
+.minValue {
+    color: #6c757d;
+    font-weight: 500;
+}
+
+.pedidoAlert {
+    display: inline-block;
+    background-color: #f8d7da;
+    color: #721c24;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.pedidoOk {
+    display: inline-block;
+    background-color: #d4edda;
+    color: #155724;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.warningRow {
+    background-color: #fff3cd;
+}
+
+.warningRow:hover {
+    background-color: #ffe8a8;
+}
+
+.actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+    padding: 1rem 0;
+}
+
+.actions button {
+    min-width: 150px;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+    .container {
+        padding: 1rem 0;
+    }
+
+    .header h2 {
+        font-size: 1.5rem;
+    }
+
+    .actions {
+        flex-direction: column;
+    }
+
+    .actions button {
+        width: 100%;
+    }
+
+    .pedidoAlert,
+    .pedidoOk {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.8rem;
+    }
+}

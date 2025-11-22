@@ -93,6 +93,17 @@
   font-weight: 600;
 }
 
+.observacaoText {
+  background: #f8f9fa;
+  border-left: 4px solid #667eea;
+  padding: 1rem;
+  border-radius: 4px;
+  color: #555;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 /* Itens Section */
 .itensSection {
   background: white;
