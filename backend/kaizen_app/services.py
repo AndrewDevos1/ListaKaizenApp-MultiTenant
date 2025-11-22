@@ -84,15 +84,21 @@ def get_test_users():
         # Buscar todos os usuários aprovados e ativos
         usuarios = Usuario.query.filter_by(aprovado=True, ativo=True).all()
 
+        # Mapeamento de senhas para testes (desenvolvimento apenas)
+        senhas_teste = {
+            "Andrew": "210891",
+            "Joya": "Joya"
+        }
+
         usuarios_data = []
         for user in usuarios:
+            senha_teste = senhas_teste.get(user.nome, "teste123")
             usuarios_data.append({
                 "id": user.id,
                 "nome": user.nome,
                 "email": user.email,
                 "role": user.role.value,
-                # Nota: senha padrão para testes (não é a senha real armazenada)
-                "senha_padrao": "teste123"  # Apenas para interface de desenvolvimento
+                "senha_padrao": senha_teste  # Senha para testes (desenvolvimento)
             })
 
         return {"usuarios": usuarios_data}, 200
