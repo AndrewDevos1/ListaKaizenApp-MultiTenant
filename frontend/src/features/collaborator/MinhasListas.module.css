@@ -1,0 +1,134 @@
+.minhasListasCard {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(111, 66, 193, 0.15);
+    overflow: hidden;
+    transition: all 0.3s ease;
+    height: 100%;
+}
+
+.minhasListasCard:hover {
+    box-shadow: 0 4px 16px rgba(111, 66, 193, 0.25);
+}
+
+.cardHeader {
+    background: linear-gradient(135deg, #6f42c1 0%, #8b5cf6 100%);
+    color: white;
+    border: none;
+    padding: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.headerIcon {
+    font-size: 1.5rem;
+    opacity: 0.9;
+}
+
+.cardTitle {
+    margin: 0;
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+.cardBody {
+    padding: 1rem;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.loadingContainer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    padding: 2rem 1rem;
+    color: #6f42c1;
+}
+
+.loadingText {
+    font-size: 0.9rem;
+    color: #6f42c1;
+}
+
+.listaItem {
+    cursor: pointer;
+    padding: 1rem;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    margin-bottom: 0.75rem;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.listaItem:hover {
+    background-color: #f8f5ff;
+    border-color: #6f42c1;
+    transform: translateX(4px);
+}
+
+.listaContent {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    gap: 1rem;
+}
+
+.listaInfo {
+    flex: 1;
+    min-width: 0;
+}
+
+.listaNome {
+    margin: 0;
+    font-weight: 600;
+    color: #2c3e50;
+    font-size: 0.95rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.listaDescricao {
+    margin: 0.25rem 0 0 0;
+    font-size: 0.85rem;
+    color: #6c757d;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.listaArrow {
+    color: #6f42c1;
+    opacity: 0.6;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.listaItem:hover .listaArrow {
+    opacity: 1;
+    transform: translateX(4px);
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+    .cardBody {
+        max-height: 300px;
+    }
+
+    .listaItem {
+        padding: 0.75rem;
+    }
+
+    .listaNome {
+        font-size: 0.9rem;
+    }
+
+    .listaDescricao {
+        display: none;
+    }
+}

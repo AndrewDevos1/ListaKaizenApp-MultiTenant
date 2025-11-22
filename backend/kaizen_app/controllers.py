@@ -554,6 +554,31 @@ def minhas_listas_route():
     response, status = services.get_minhas_listas(user_id)
     return jsonify(response), status
 
+@collaborator_bp.route('/listas/<int:lista_id>', methods=['GET'])
+@jwt_required()
+def get_lista_collaborator_route(lista_id):
+    """Retorna uma lista específica atribuída ao colaborador."""
+    user_id = get_user_id_from_jwt()
+    response, status = services.get_lista_colaborador(user_id, lista_id)
+    return jsonify(response), status
+
+@collaborator_bp.route('/listas/<int:lista_id>/estoque', methods=['GET'])
+@jwt_required()
+def get_lista_estoque_collaborator_route(lista_id):
+    """Retorna itens de estoque de uma lista para um colaborador."""
+    user_id = get_user_id_from_jwt()
+    response, status = services.get_estoque_lista_colaborador(user_id, lista_id)
+    return jsonify(response), status
+
+@collaborator_bp.route('/estoque/<int:estoque_id>', methods=['PUT'])
+@jwt_required()
+def update_estoque_collaborator_route(estoque_id):
+    """Atualiza a quantidade_atual de um item de estoque."""
+    user_id = get_user_id_from_jwt()
+    data = request.get_json()
+    response, status = services.update_estoque_colaborador(user_id, estoque_id, data)
+    return jsonify(response), status
+
 @api_bp.route('/listas/<int:lista_id>/estoque', methods=['GET'])
 @jwt_required()
 def get_lista_estoque_route(lista_id):

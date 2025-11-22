@@ -26,6 +26,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Container, Row, Col, Card, Button, Table } from 'react-bootstrap';
+import MinhasListas from './MinhasListas';
 import {
     faListAlt,
     faCheckCircle,
@@ -380,6 +381,13 @@ const CollaboratorDashboard: React.FC = () => {
                         ))}
                     </div>
                 </div>
+
+                {/* Minhas Listas */}
+                <Row className="mb-4">
+                    <Col lg={4} className="mb-4">
+                        <MinhasListas />
+                    </Col>
+                </Row>
 
                 <Row>
                     {/* Status das Áreas */}

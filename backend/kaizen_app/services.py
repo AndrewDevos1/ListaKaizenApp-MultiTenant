@@ -898,7 +898,7 @@ def get_minhas_listas(user_id):
         return {"error": "Usuário não encontrado."}, 404
 
     listas = usuario.listas_atribuidas
-    return [lista.to_dict() for lista in listas], 200
+    return {"listas": [lista.to_dict() for lista in listas]}, 200
 
 def get_estoque_by_lista(lista_id):
     """Retorna todos os estoques (itens) de uma lista específica."""
@@ -1331,4 +1331,113 @@ def importar_items_em_lote(lista_id, data):
         current_app.logger.error(f"[IMPORTAR ITEMS] ERRO: {type(e).__name__}: {str(e)}")
         import traceback
         traceback.print_exc()
+        return {"error": str(e)}, 500
+
+
+def get_lista_colaborador(user_id, lista_id):
+    """Retorna dados da lista para um colaborador."""
+    # Verificar se o usuário tem acesso a esta lista
+    usuario = repositories.get_by_id(Usuario, user_id)
+    if not usuario:
+        return {"error": "Usuário não encontrado."}, 404
+
+    lista = repositories.get_by_id(Lista, lista_id)
+    if not lista:
+        return {"error": "Lista não encontrada."}, 404
+
+    # Verificar se o colaborador está atribuído a esta lista
+    if lista not in usuario.listas_atribuidas:
+        return {"error": "Acesso negado. Esta lista não foi atribuída a você."}, 403
+
+    return lista.to_dict(), 200
+
+
+def get_estoque_lista_colaborador(user_id, lista_id):
+    """Retorna itens de estoque da lista para um colaborador."""
+    # Verificar se o usuário tem acesso a esta lista
+    usuario = repositories.get_by_id(Usuario, user_id)
+    if not usuario:
+        return {"error": "Usuário não encontrado."}, 404
+
+    lista = repositories.get_by_id(Lista, lista_id)
+    if not lista:
+        return {"error": "Lista não encontrada."}, 404
+
+    # Verificar se o colaborador está atribuído a esta lista
+    if lista not in usuario.listas_atribuidas:
+        return {"error": "Acesso negado. Esta lista não foi atribuída a você."}, 403
+
+    # Buscar estoques da lista
+    estoques = Estoque.query.filter_by(lista_id=lista_id).all()
+
+    # Preparar resposta com dados do item
+    estoques_data = []
+    for estoque in estoques:
+        item = estoque.item
+        estoque_dict = {
+            "id": estoque.id,
+            "item_id": estoque.item_id,
+            "lista_id": estoque.lista_id,
+            "quantidade_atual": float(estoque.quantidade_atual),
+            "quantidade_minima": float(estoque.quantidade_minima),
+            "pedido": max(0, float(estoque.quantidade_minima - estoque.quantidade_atual)),
+            "item": {
+                "id": item.id,
+                "nome": item.nome,
+                "unidade_medida": item.unidade_medida
+            } if item else None
+        }
+        estoques_data.append(estoque_dict)
+
+    return estoques_data, 200
+
+
+def update_estoque_colaborador(user_id, estoque_id, data):
+    """Atualiza apenas a quantidade_atual de um estoque para um colaborador."""
+    # Verificar se o usuário existe
+    usuario = repositories.get_by_id(Usuario, user_id)
+    if not usuario:
+        return {"error": "Usuário não encontrado."}, 404
+
+    # Buscar estoque
+    estoque = repositories.get_by_id(Estoque, estoque_id)
+    if not estoque:
+        return {"error": "Estoque não encontrado."}, 404
+
+    # Verificar se o colaborador está atribuído à lista deste estoque
+    if estoque.lista not in usuario.listas_atribuidas:
+        return {"error": "Acesso negado. Esta lista não foi atribuída a você."}, 403
+
+    # Validar que apenas quantidade_atual está sendo atualizado
+    if "quantidade_atual" not in data:
+        return {"error": "Dados inválidos. Forneça quantidade_atual."}, 400
+
+    # Validar que o valor é um número válido
+    try:
+        quantidade_atual = float(data.get("quantidade_atual", 0))
+        if quantidade_atual < 0:
+            return {"error": "A quantidade não pode ser negativa."}, 400
+    except (ValueError, TypeError):
+        return {"error": "Quantidade deve ser um número válido."}, 400
+
+    try:
+        # Atualizar apenas quantidade_atual
+        estoque.quantidade_atual = quantidade_atual
+        estoque.data_ultima_submissao = datetime.utcnow()
+        estoque.usuario_ultima_submissao_id = user_id
+
+        db.session.commit()
+
+        return {
+            "message": "Estoque atualizado com sucesso.",
+            "estoque": {
+                "id": estoque.id,
+                "quantidade_atual": float(estoque.quantidade_atual),
+                "quantidade_minima": float(estoque.quantidade_minima),
+                "pedido": max(0, float(estoque.quantidade_minima - estoque.quantidade_atual))
+            }
+        }, 200
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"[UPDATE ESTOQUE COLABORADOR] ERRO: {type(e).__name__}: {str(e)}")
         return {"error": str(e)}, 500
