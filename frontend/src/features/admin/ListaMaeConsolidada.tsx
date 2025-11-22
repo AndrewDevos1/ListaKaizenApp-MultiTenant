@@ -317,9 +317,8 @@ const ListaMaeConsolidada: React.FC = () => {
                 </Button>
 
                 <h1 className={styles.title}>
-                    <FontAwesomeIcon icon={faClipboardList} /> Lista Mãe Consolidada
+                    <FontAwesomeIcon icon={faClipboardList} /> {listaMae.lista_nome}
                 </h1>
-                <h2 className={styles.subtitle}>{listaMae.lista_nome}</h2>
                 {listaMae.lista_descricao && (
                     <p className="text-muted">{listaMae.lista_descricao}</p>
                 )}
