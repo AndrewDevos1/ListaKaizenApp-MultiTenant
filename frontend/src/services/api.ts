@@ -55,4 +55,21 @@ api.interceptors.response.use(
   }
 );
 
+/**
+ * Pinga o backend para acordar o serviço Render (plano free dorme após inatividade).
+ * Faz requisição silenciosa ao health check endpoint.
+ * Ignora erros para não bloquear a interface.
+ */
+export const pingBackend = async (): Promise<void> => {
+  try {
+    console.log('[PING] Acordando backend Render...');
+    await api.get('/v1/health', { timeout: 10000 });
+    console.log('[PING] Backend acordado com sucesso!');
+  } catch (error) {
+    // Ignora erro silenciosamente (backend pode estar dormindo)
+    const message = error instanceof Error ? error.message : 'sleeping';
+    console.log('[PING] Backend ping:', message);
+  }
+};
+
 export default api;

@@ -274,6 +274,15 @@ def activity_summary_route():
 # Blueprint para a API principal
 api_bp = Blueprint('api_bp', __name__, url_prefix='/api/v1')
 
+# --- Health Check (para acordar Render) ---
+@api_bp.route('/health', methods=['GET'])
+def health_check():
+    """
+    Health check endpoint - wakes up Render service from sleep.
+    No authentication required.
+    """
+    return jsonify({"status": "ok", "service": "kaizen-lists-api"}), 200
+
 # --- Rotas de Itens ---
 @api_bp.route('/items', methods=['POST'])
 @admin_required()

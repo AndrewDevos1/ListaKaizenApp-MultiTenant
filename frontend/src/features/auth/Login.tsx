@@ -22,7 +22,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Container, Row, Col, Card, Form, Button, Alert } from 'react-bootstrap';
 import { useAuth } from '../../context/AuthContext';
-import api from '../../services/api';
+import api, { pingBackend } from '../../services/api';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEye, faEyeSlash } from '@fortawesome/free-solid-svg-icons';
 import styles from './Login.module.css';
@@ -49,6 +49,9 @@ const Login: React.FC = () => {
 
     // Carregar email salvo ao montar o componente
     useEffect(() => {
+        // Pinga backend para acordar serviço Render (evita espera no primeiro login)
+        pingBackend();
+
         const savedEmail = localStorage.getItem('rememberedEmail');
         if (savedEmail) {
             setEmail(savedEmail);
