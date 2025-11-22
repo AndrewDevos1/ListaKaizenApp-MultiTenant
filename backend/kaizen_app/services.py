@@ -371,17 +371,23 @@ def get_fornecedor_by_id(fornecedor_id):
     return repositories.get_by_id(Fornecedor, fornecedor_id), 200
 
 def update_fornecedor(fornecedor_id, data):
+    from .extensions import db
+    from .models import Lista
+
     # Extrai lista_ids do data se existir
     lista_ids = data.pop('lista_ids', None)
 
-    # Atualiza campos do fornecedor
-    updated_fornecedor = repositories.update_instance(Fornecedor, fornecedor_id, data)
+    # Busca o fornecedor
+    updated_fornecedor = repositories.get_by_id(Fornecedor, fornecedor_id)
     if not updated_fornecedor:
         return {"error": "Fornecedor não encontrado"}, 404
 
+    # Atualiza campos do fornecedor
+    for key, value in data.items():
+        setattr(updated_fornecedor, key, value)
+
     # Atualiza as listas se foi fornecido lista_ids
     if lista_ids is not None:
-        from .models import Lista
         # Remove todas as listas anteriores
         updated_fornecedor.listas.clear()
 
@@ -390,7 +396,9 @@ def update_fornecedor(fornecedor_id, data):
             lista = repositories.get_by_id(Lista, lista_id)
             if lista:
                 updated_fornecedor.listas.append(lista)
-        repositories.add_instance(updated_fornecedor)
+
+    # Faz um único commit para todas as mudanças
+    db.session.commit()
 
     return updated_fornecedor.to_dict(), 200
 
