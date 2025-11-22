@@ -59,6 +59,11 @@ const FornecedorDetalhes: React.FC = () => {
     const [novoMinimo, setNovoMinimo] = useState('');
     const [editingLoading, setEditingLoading] = useState(false);
 
+    // Estados para modal de exportação
+    const [showExportModal, setShowExportModal] = useState(false);
+    const [exportType, setExportType] = useState<'por-lista' | 'consolidado'>('consolidado');
+    const [exportLoading, setExportLoading] = useState(false);
+
     useEffect(() => {
         fetchData();
     }, [fornecedorId]);
@@ -124,6 +129,81 @@ const FornecedorDetalhes: React.FC = () => {
             console.error('Erro ao salvar:', err);
         } finally {
             setEditingLoading(false);
+        }
+    };
+
+    const convertToCSV = (data: any[], headers: string[]): string => {
+        const csv = [headers.join(',')];
+        data.forEach(row => {
+            csv.push(headers.map(header => `"${row[header] || ''}"`).join(','));
+        });
+        return csv.join('\n');
+    };
+
+    const handleExportPedidos = async () => {
+        if (!fornecedor) return;
+
+        try {
+            setExportLoading(true);
+            const endpoint = exportType === 'por-lista'
+                ? `/v1/fornecedores/${fornecedor.id}/pedidos-por-lista`
+                : `/v1/fornecedores/${fornecedor.id}/pedidos-consolidados`;
+
+            const response = await api.get(endpoint);
+            const data = response.data;
+
+            let csvContent = '';
+            const now = new Date().toLocaleDateString('pt-BR');
+
+            if (exportType === 'consolidado') {
+                // Exportação consolidada
+                csvContent = `Pedidos Consolidados - ${data.fornecedor_nome}\n`;
+                csvContent += `Data de Exportação: ${now}\n`;
+                csvContent += `Contato: ${data.fornecedor_contato}\n`;
+                csvContent += `Meio de Envio: ${data.fornecedor_meio_envio}\n`;
+                csvContent += `\n`;
+                csvContent += convertToCSV(
+                    data.pedidos,
+                    ['item_nome', 'quantidade', 'unidade', 'usuario']
+                );
+
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = `pedidos_${fornecedor.nome}_consolidado_${now}.csv`;
+                link.click();
+            } else {
+                // Exportação por lista
+                for (const listaId in data) {
+                    const lista = data[listaId];
+                    let listaCsv = `Pedidos - ${lista.lista_nome}\n`;
+                    listaCsv += `Data de Exportação: ${now}\n`;
+                    listaCsv += `Fornecedor: ${fornecedor.nome}\n`;
+                    listaCsv += `\n`;
+                    listaCsv += convertToCSV(
+                        lista.pedidos,
+                        ['item_nome', 'quantidade', 'unidade', 'usuario']
+                    );
+
+                    const blob = new Blob([listaCsv], { type: 'text/csv;charset=utf-8;' });
+                    const link = document.createElement('a');
+                    link.href = URL.createObjectURL(blob);
+                    link.download = `pedidos_${lista.lista_nome}_${now}.csv`;
+                    link.click();
+
+                    // Pequeno delay entre downloads
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                }
+            }
+
+            setShowExportModal(false);
+            setSuccessMessage('Pedidos exportados com sucesso!');
+            setTimeout(() => setSuccessMessage(null), 3000);
+        } catch (err: any) {
+            setError(err.response?.data?.error || 'Erro ao exportar pedidos');
+            console.error('Erro ao exportar:', err);
+        } finally {
+            setExportLoading(false);
         }
     };
 
@@ -224,6 +304,17 @@ const FornecedorDetalhes: React.FC = () => {
                     )}
                 </Card.Body>
             </Card>
+
+            {/* Botão de Exportação */}
+            <div style={{ marginBottom: '2rem' }}>
+                <Button
+                    variant="success"
+                    onClick={() => setShowExportModal(true)}
+                    style={{ marginRight: '1rem' }}
+                >
+                    <i className="fas fa-download me-2"></i>Exportar Pedidos
+                </Button>
+            </div>
 
             {/* Tabela de Itens */}
             <div className={styles.itensSection}>
@@ -356,6 +447,47 @@ const FornecedorDetalhes: React.FC = () => {
                     </Button>
                     <Button variant="primary" onClick={handleSalvarMinimo} disabled={editingLoading || !novoMinimo}>
                         {editingLoading ? 'Salvando...' : 'Salvar'}
+                    </Button>
+                </Modal.Footer>
+            </Modal>
+
+            {/* Modal de Exportação de Pedidos */}
+            <Modal show={showExportModal} onHide={() => setShowExportModal(false)} centered>
+                <Modal.Header closeButton>
+                    <Modal.Title>
+                        <i className="fas fa-download me-2"></i>Exportar Pedidos
+                    </Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <p className="mb-3">Escolha como você deseja exportar os pedidos deste fornecedor:</p>
+                    <Form>
+                        <Form.Check
+                            type="radio"
+                            id="consolidado"
+                            label="Consolidado - Um arquivo com todos os pedidos"
+                            name="exportType"
+                            value="consolidado"
+                            checked={exportType === 'consolidado'}
+                            onChange={(e) => setExportType('consolidado')}
+                            className="mb-3"
+                        />
+                        <Form.Check
+                            type="radio"
+                            id="por-lista"
+                            label="Por Lista - Um arquivo para cada lista atribuída"
+                            name="exportType"
+                            value="por-lista"
+                            checked={exportType === 'por-lista'}
+                            onChange={(e) => setExportType('por-lista')}
+                        />
+                    </Form>
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="secondary" onClick={() => setShowExportModal(false)} disabled={exportLoading}>
+                        Cancelar
+                    </Button>
+                    <Button variant="success" onClick={handleExportPedidos} disabled={exportLoading}>
+                        {exportLoading ? 'Exportando...' : 'Exportar em CSV'}
                     </Button>
                 </Modal.Footer>
             </Modal>

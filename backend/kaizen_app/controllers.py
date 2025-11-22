@@ -375,6 +375,18 @@ def delete_fornecedor_route(fornecedor_id):
     response, status = services.delete_fornecedor(fornecedor_id)
     return jsonify(response), status
 
+@api_bp.route('/fornecedores/<int:fornecedor_id>/pedidos-por-lista', methods=['GET'])
+@admin_required()
+def get_pedidos_fornecedor_por_lista_route(fornecedor_id):
+    pedidos, status = services.get_pedidos_fornecedor_por_lista(fornecedor_id)
+    return jsonify(pedidos), status
+
+@api_bp.route('/fornecedores/<int:fornecedor_id>/pedidos-consolidados', methods=['GET'])
+@admin_required()
+def get_pedidos_fornecedor_consolidado_route(fornecedor_id):
+    pedidos, status = services.get_pedidos_fornecedor_consolidado(fornecedor_id)
+    return jsonify(pedidos), status
+
 # --- Rotas de Estoque ---
 
 

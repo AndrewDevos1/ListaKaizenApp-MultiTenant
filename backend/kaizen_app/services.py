@@ -400,6 +400,89 @@ def delete_fornecedor(fornecedor_id):
     return {}, 204
 
 
+def get_pedidos_fornecedor_por_lista(fornecedor_id):
+    """
+    Retorna os pedidos de um fornecedor agrupados por lista.
+    Formato: {lista_id: {lista_nome: str, pedidos: [...]}}
+    """
+    fornecedor = repositories.get_by_id(Fornecedor, fornecedor_id)
+    if not fornecedor:
+        return {"error": "Fornecedor não encontrado"}, 404
+
+    # Agrupa pedidos por lista
+    resultado = {}
+
+    # Para cada lista atribuída ao fornecedor
+    for lista in fornecedor.listas:
+        # Busca itens que pertencem a essa lista
+        itens_lista = Item.query.filter_by(fornecedor_id=fornecedor_id).all()
+
+        pedidos_lista = []
+        for item in itens_lista:
+            # Busca pedidos pendentes para esse item
+            pedidos_item = Pedido.query.filter_by(
+                item_id=item.id,
+                fornecedor_id=fornecedor_id,
+                status='PENDENTE'
+            ).all()
+
+            for pedido in pedidos_item:
+                pedidos_lista.append({
+                    'item_nome': item.nome,
+                    'quantidade': float(pedido.quantidade_solicitada),
+                    'unidade': item.unidade_medida,
+                    'data_pedido': pedido.data_pedido.isoformat(),
+                    'usuario': pedido.usuario.nome if pedido.usuario else 'N/A'
+                })
+
+        if pedidos_lista:
+            resultado[lista.id] = {
+                'lista_nome': lista.nome,
+                'pedidos': pedidos_lista,
+                'total_itens': len(pedidos_lista)
+            }
+
+    return resultado, 200
+
+
+def get_pedidos_fornecedor_consolidado(fornecedor_id):
+    """
+    Retorna todos os pedidos de um fornecedor consolidados (sem separação por lista).
+    """
+    fornecedor = repositories.get_by_id(Fornecedor, fornecedor_id)
+    if not fornecedor:
+        return {"error": "Fornecedor não encontrado"}, 404
+
+    # Busca todos os itens desse fornecedor
+    itens_fornecedor = Item.query.filter_by(fornecedor_id=fornecedor_id).all()
+
+    pedidos_consolidados = []
+    for item in itens_fornecedor:
+        # Busca todos os pedidos pendentes para esse item
+        pedidos_item = Pedido.query.filter_by(
+            item_id=item.id,
+            fornecedor_id=fornecedor_id,
+            status='PENDENTE'
+        ).all()
+
+        for pedido in pedidos_item:
+            pedidos_consolidados.append({
+                'item_nome': item.nome,
+                'quantidade': float(pedido.quantidade_solicitada),
+                'unidade': item.unidade_medida,
+                'data_pedido': pedido.data_pedido.isoformat(),
+                'usuario': pedido.usuario.nome if pedido.usuario else 'N/A'
+            })
+
+    return {
+        'fornecedor_nome': fornecedor.nome,
+        'fornecedor_contato': fornecedor.contato,
+        'fornecedor_meio_envio': fornecedor.meio_envio,
+        'total_pedidos': len(pedidos_consolidados),
+        'pedidos': pedidos_consolidados
+    }, 200
+
+
 # --- Serviços de Cotação ---
 
 def create_quotation_from_stock(fornecedor_id):
