@@ -44,7 +44,9 @@
       "Bash(sqlite3:*)",
       "Bash(nul)",
       "Bash(git branch:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(set:*)",
+      "Bash(.venvScriptspython.exe -m flask db migrate -m \"Add responsavel and observacao fields to Fornecedor\")"
     ],
     "deny": [],
     "ask": []

@@ -69,6 +69,8 @@ class Fornecedor(db.Model, SerializerMixin):
     nome = db.Column(db.String(100), nullable=False)
     contato = db.Column(db.String(100))
     meio_envio = db.Column(db.String(20))
+    responsavel = db.Column(db.String(100))
+    observacao = db.Column(db.String(600))
 
 class Estoque(db.Model, SerializerMixin):
     __tablename__ = "estoques"

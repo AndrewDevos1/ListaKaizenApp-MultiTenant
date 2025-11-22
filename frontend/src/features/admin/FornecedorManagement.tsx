@@ -8,6 +8,8 @@ interface Fornecedor {
     nome: string;
     contato: string;
     meio_envio: string;
+    responsavel?: string;
+    observacao?: string;
 }
 
 const FornecedorManagement: React.FC = () => {
@@ -43,7 +45,7 @@ const FornecedorManagement: React.FC = () => {
             setCurrentFornecedor(fornecedor);
             setIsEditing(true);
         } else {
-            setCurrentFornecedor({ nome: '', contato: '', meio_envio: '' });
+            setCurrentFornecedor({ nome: '', contato: '', meio_envio: '', responsavel: '', observacao: '' });
             setIsEditing(false);
         }
         setShowModal(true);
@@ -155,6 +157,15 @@ const FornecedorManagement: React.FC = () => {
                         <Form.Group className="mb-3">
                             <Form.Label>Meio de Envio</Form.Label>
                             <Form.Control type="text" placeholder="Ex: Email, WhatsApp" value={currentFornecedor?.meio_envio || ''} onChange={e => setCurrentFornecedor({...currentFornecedor, meio_envio: e.target.value})} required />
+                        </Form.Group>
+                        <Form.Group className="mb-3">
+                            <Form.Label>Responsável</Form.Label>
+                            <Form.Control type="text" placeholder="Ex: João Silva" value={currentFornecedor?.responsavel || ''} onChange={e => setCurrentFornecedor({...currentFornecedor, responsavel: e.target.value})} />
+                        </Form.Group>
+                        <Form.Group className="mb-3">
+                            <Form.Label>Observações (máximo 600 caracteres)</Form.Label>
+                            <Form.Control as="textarea" rows={4} placeholder="Ex: Notas sobre o fornecedor..." value={currentFornecedor?.observacao || ''} onChange={e => setCurrentFornecedor({...currentFornecedor, observacao: e.target.value.substring(0, 600)})} maxLength={600} />
+                            <small className="text-muted">{(currentFornecedor?.observacao || '').length}/600 caracteres</small>
                         </Form.Group>
                         <div className="d-grid gap-2">
                             <Button variant="primary" type="submit">{isEditing ? 'Salvar Alterações' : 'Adicionar Fornecedor'}</Button>
