@@ -6,6 +6,7 @@
 
 .sidebarWrapper {
   min-height: 100vh;
+  max-height: 100vh;
   width: 18rem;
   transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1), margin 0.35s cubic-bezier(0.4, 0, 0.2, 1);
   background: linear-gradient(180deg, #2c3e50 0%, #34495e 100%);
@@ -18,7 +19,7 @@
   margin-right: -18rem;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow-x: hidden;
 }
 
 /* Collapsed state (desktop) */
@@ -385,7 +386,7 @@
    ================================ */
 
 .pageContentWrapper {
-  min-width: 100vw;
+  width: 100%;
   transition: margin-right 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -587,6 +588,10 @@
 
   .searchContainer {
     margin: 0.75rem 0.75rem 0.5rem;
+  }
+
+  .menuContainer {
+    max-height: calc(100vh - 260px);
   }
 
   .menuGroupTitle {
