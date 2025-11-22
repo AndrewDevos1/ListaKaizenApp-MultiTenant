@@ -109,13 +109,15 @@ const FornecedorManagement: React.FC = () => {
                         <th>Nome</th>
                         <th>Contato</th>
                         <th>Meio de Envio</th>
+                        <th>Responsável</th>
+                        <th>Observações</th>
                         <th>Ações</th>
                     </tr>
                 </thead>
                 <tbody>
                     {isLoading ? (
                         <tr>
-                            <td colSpan={5} className="text-center"><Spinner animation="border" /></td>
+                            <td colSpan={7} className="text-center"><Spinner animation="border" /></td>
                         </tr>
                     ) : fornecedores.map(f => (
                         <tr key={f.id}>
@@ -123,6 +125,8 @@ const FornecedorManagement: React.FC = () => {
                             <td>{f.nome}</td>
                             <td>{f.contato}</td>
                             <td>{f.meio_envio}</td>
+                            <td>{f.responsavel || '-'}</td>
+                            <td title={f.observacao || ''}>{f.observacao ? (f.observacao.length > 50 ? f.observacao.substring(0, 50) + '...' : f.observacao) : '-'}</td>
                             <td>
                                 <Button variant="info" onClick={() => navigate(`/admin/fornecedores/${f.id}/detalhes`)} className="me-2">
                                     <i className="fas fa-eye me-1"></i>Ver Detalhes
