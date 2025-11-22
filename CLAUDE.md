@@ -6,6 +6,37 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Kaizen Lists is a web application for automating inventory management, order generation, and quotation control. The application uses a monolithic modular architecture with Flask on the backend and React with TypeScript on the frontend.
 
+## Documentation Structure
+
+All project documentation is organized in the `docs/` folder for easy discoverability:
+
+- **[docs/troubleshooting/](docs/troubleshooting/)** - **START HERE FOR ERRORS**
+  - [Render Deployment Issues](docs/troubleshooting/deployment-render.md) - 502 errors, SQLite in production, missing tables/columns
+  - [CORS Issues](docs/troubleshooting/cors-registration-fix.md) - CORS configuration and fixes
+  - [JWT Authentication](docs/troubleshooting/jwt-final-resolution.md) - Login/auth problems
+  - [Database Migrations](docs/troubleshooting/database-migration-notes.md) - Migration errors
+  - See [docs/troubleshooting/README.md](docs/troubleshooting/README.md) for complete index
+
+- **[docs/guides/](docs/guides/)** - How-to guides
+  - [Running Locally](docs/guides/running-locally.md)
+  - [CORS Configuration](docs/guides/cors-configuration.md)
+  - [User Management](docs/guides/user-management.md)
+
+- **[docs/architecture/](docs/architecture/)** - System architecture
+  - [Project Purpose](docs/architecture/project-purpose.md)
+  - [Backend Architecture](docs/architecture/backend-flask.md)
+  - [Database Design](docs/architecture/database.md)
+  - [Data Flow](docs/architecture/data-flow.md)
+
+- **[docs/planning/](docs/planning/)** - Roadmap and plans
+  - [Roadmap](docs/planning/roadmap.md) - Next steps and issues
+
+**Quick troubleshooting paths:**
+- Can't login / 502 error → `docs/troubleshooting/deployment-render.md`
+- CORS errors → `docs/troubleshooting/cors-*-fix.md`
+- Can't delete lists → `docs/troubleshooting/deployment-render.md` (missing tables section)
+- Migration errors → `docs/troubleshooting/deployment-render.md` (migrations section)
+
 ## Technology Stack
 
 **Backend:**
