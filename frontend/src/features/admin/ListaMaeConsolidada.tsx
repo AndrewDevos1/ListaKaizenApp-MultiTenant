@@ -20,7 +20,8 @@ import {
     faEdit,
     faTrash,
     faCheck,
-    faTruck
+    faTruck,
+    faArrowRight
 } from '@fortawesome/free-solid-svg-icons';
 import api from '../../services/api';
 import styles from './ListaMaeConsolidada.module.css';
@@ -332,7 +333,24 @@ const ListaMaeConsolidada: React.FC = () => {
                         <Row>
                             {listaMae.fornecedores.map((fornecedor) => (
                                 <Col key={fornecedor.id} md={6} className="mb-3">
-                                    <Card style={{ height: '100%', backgroundColor: '#f9f9f9' }}>
+                                    <Card style={{ height: '100%', backgroundColor: '#f9f9f9', position: 'relative' }}>
+                                        <Button
+                                            variant="link"
+                                            style={{
+                                                position: 'absolute',
+                                                top: '10px',
+                                                right: '10px',
+                                                padding: '5px 10px',
+                                                color: '#495057',
+                                                textDecoration: 'none',
+                                                cursor: 'pointer',
+                                                fontSize: '1.2rem'
+                                            }}
+                                            onClick={() => navigate('/admin/fornecedores')}
+                                            title="Ir para Fornecedores"
+                                        >
+                                            <FontAwesomeIcon icon={faArrowRight} />
+                                        </Button>
                                         <Card.Body>
                                             <h5 style={{ marginBottom: '0.5rem', color: '#2c3e50' }}>
                                                 {fornecedor.nome}
