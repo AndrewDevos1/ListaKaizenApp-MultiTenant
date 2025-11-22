@@ -37,13 +37,39 @@ All project documentation is organized in the `docs/` folder for easy discoverab
 - Can't delete lists → `docs/troubleshooting/deployment-render.md` (missing tables section)
 - Migration errors → `docs/troubleshooting/deployment-render.md` (migrations section)
 
+## Database Configuration
+
+**Development:** Supports both SQLite (default) and PostgreSQL (recommended)
+**Production:** PostgreSQL on Render
+
+### Using PostgreSQL Locally (Recommended)
+
+PostgreSQL local provides parity with production and avoids SQLite-specific bugs.
+
+**Quick setup:**
+1. See comprehensive guide: [docs/guides/postgresql-setup.md](docs/guides/postgresql-setup.md)
+2. Create `.env` file in `backend/` (use `.env.example` as template)
+3. Set: `DATABASE_URL=postgresql://postgres:PASSWORD@localhost:5432/kaizen_dev`
+4. Run migrations: `flask db upgrade`
+
+### Using SQLite (Default)
+
+No configuration needed! Just run `flask run` and SQLite is used automatically.
+
+**Database detection:**
+The app automatically logs which database is being used on startup:
+- `💾 Database: 🐘 PostgreSQL` - Using PostgreSQL
+- `💾 Database: 📁 SQLite` - Using SQLite fallback
+
+**For full setup instructions:** [docs/guides/running-locally.md](docs/guides/running-locally.md)
+
 ## Technology Stack
 
 **Backend:**
 - Flask with SQLAlchemy ORM
 - Flask-Migrate for database migrations
 - Flask-JWT-Extended for authentication
-- SQLite for development, PostgreSQL ready for production
+- Database: SQLite (default) or PostgreSQL (recommended) for development, PostgreSQL for production
 - pytest for testing
 
 **Frontend:**
