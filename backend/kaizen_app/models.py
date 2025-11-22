@@ -63,6 +63,13 @@ class Area(db.Model, SerializerMixin):
     id = db.Column(db.Integer, primary_key=True)
     nome = db.Column(db.String(50), unique=True, nullable=False)
 
+# Tabela de associação para o relacionamento muitos-para-muitos entre Fornecedores e Listas
+fornecedor_lista = db.Table('fornecedor_lista',
+    db.Column('fornecedor_id', db.Integer, db.ForeignKey('fornecedores.id'), primary_key=True),
+    db.Column('lista_id', db.Integer, db.ForeignKey('listas.id'), primary_key=True),
+    db.Column('criado_em', db.DateTime, default=datetime.utcnow)
+)
+
 class Fornecedor(db.Model, SerializerMixin):
     __tablename__ = "fornecedores"
     id = db.Column(db.Integer, primary_key=True)
@@ -71,10 +78,11 @@ class Fornecedor(db.Model, SerializerMixin):
     meio_envio = db.Column(db.String(20))
     responsavel = db.Column(db.String(100))
     observacao = db.Column(db.String(600))
-    lista_id = db.Column(db.Integer, db.ForeignKey('listas.id'), nullable=True)
 
-    # Relacionamento com Lista
-    lista = db.relationship('Lista', backref=db.backref('fornecedores', lazy=True))
+    # Relacionamento many-to-many com Lista através da tabela fornecedor_lista
+    listas = db.relationship('Lista', secondary='fornecedor_lista',
+                            backref=db.backref('fornecedores', lazy=True),
+                            lazy='subquery')
 
 class Estoque(db.Model, SerializerMixin):
     __tablename__ = "estoques"

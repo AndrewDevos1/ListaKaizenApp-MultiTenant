@@ -17,11 +17,10 @@ interface Fornecedor {
     meio_envio: string;
     responsavel?: string;
     observacao?: string;
-    lista_id?: number;
-    lista?: {
+    listas?: {
         id: number;
         nome: string;
-    };
+    }[];
 }
 
 interface Item {
@@ -209,7 +208,7 @@ const FornecedorDetalhes: React.FC = () => {
                         </Col>
                         <Col md={6}>
                             <p className={styles.fornecedorInfo}>
-                                <strong>Lista:</strong> {fornecedor.lista?.nome || 'Não atribuída'}
+                                <strong>Listas Atribuídas:</strong> {fornecedor.listas && fornecedor.listas.length > 0 ? fornecedor.listas.map(l => l.nome).join(', ') : 'Nenhuma'}
                             </p>
                         </Col>
                     </Row>

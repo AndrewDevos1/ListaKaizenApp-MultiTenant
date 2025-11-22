@@ -227,6 +227,13 @@ frontend/src/
 - Require admin approval (aprovado=False initially)
 - Role field is an enum (models.py:24-26)
 
+**Database Design Best Practices:**
+- **Many-to-Many Relationships:** SEMPRE usar tabelas auxiliares (junção) em vez de adicionar campos denormalizados
+  - Exemplo: `fornecedor_lista` table para relacionamento entre Fornecedor e Lista
+  - Vantagens: Escalável, normalizável, flexível para adicionar metadata futura, segue padrão SQL
+  - Nunca adicionar campos tipo `listas_ids` em tabelas existentes
+- Tabelas auxiliares devem ter apenas: `id`, chaves estrangeiras, e opcionalmente `criado_em`
+
 ## Common Workflows
 
 **Adding a New Model:**

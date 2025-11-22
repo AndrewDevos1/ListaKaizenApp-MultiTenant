@@ -13,11 +13,7 @@ interface Fornecedor {
     meio_envio: string;
     responsavel?: string;
     observacao?: string;
-    lista_id?: number;
-    lista?: {
-        id: number;
-        nome: string;
-    };
+    listas?: Lista[];
 }
 
 interface Lista {
@@ -31,6 +27,7 @@ const FornecedorManagement: React.FC = () => {
     const [fornecedores, setFornecedores] = useState<Fornecedor[]>([]);
     const [listas, setListas] = useState<Lista[]>([]);
     const [currentFornecedor, setCurrentFornecedor] = useState<Partial<Fornecedor> | null>(null);
+    const [selectedListIds, setSelectedListIds] = useState<Set<number>>(new Set());
     const [showModal, setShowModal] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
@@ -69,9 +66,13 @@ const FornecedorManagement: React.FC = () => {
         if (fornecedor) {
             setCurrentFornecedor(fornecedor);
             setIsEditing(true);
+            // Se editando, carrega as listas já atribuídas
+            const listasIds = new Set(fornecedor.listas?.map(l => l.id) || []);
+            setSelectedListIds(listasIds);
         } else {
             setCurrentFornecedor({ nome: '', contato: '', meio_envio: '', responsavel: '', observacao: '' });
             setIsEditing(false);
+            setSelectedListIds(new Set());
         }
         setShowModal(true);
     };
@@ -102,13 +103,28 @@ const FornecedorManagement: React.FC = () => {
         }
     };
 
+    const toggleListSelection = (listaId: number) => {
+        const newSet = new Set(selectedListIds);
+        if (newSet.has(listaId)) {
+            newSet.delete(listaId);
+        } else {
+            newSet.add(listaId);
+        }
+        setSelectedListIds(newSet);
+    };
+
     const handleFormSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!currentFornecedor?.nome) return;
 
+        const fornecedorData = {
+            ...currentFornecedor,
+            lista_ids: Array.from(selectedListIds)
+        };
+
         const apiCall = isEditing
-            ? api.put(`/v1/fornecedores/${currentFornecedor.id}`, currentFornecedor)
-            : api.post('/v1/fornecedores', currentFornecedor);
+            ? api.put(`/v1/fornecedores/${currentFornecedor.id}`, fornecedorData)
+            : api.post('/v1/fornecedores', fornecedorData);
 
         try {
             await apiCall;
@@ -157,7 +173,7 @@ const FornecedorManagement: React.FC = () => {
                             <td>{f.meio_envio}</td>
                             <td>{f.responsavel || '-'}</td>
                             <td title={f.observacao || ''}>{f.observacao ? (f.observacao.length > 50 ? f.observacao.substring(0, 50) + '...' : f.observacao) : '-'}</td>
-                            <td>{f.lista?.nome || '-'}</td>
+                            <td>{f.listas && f.listas.length > 0 ? f.listas.map(l => l.nome).join(', ') : '-'}</td>
                             <td>
                                 <Button variant="info" onClick={() => navigate(`/admin/fornecedores/${f.id}/detalhes`)} className="me-2">
                                     <i className="fas fa-eye me-1"></i>Ver Detalhes
@@ -203,13 +219,24 @@ const FornecedorManagement: React.FC = () => {
                             <small className="text-muted">{(currentFornecedor?.observacao || '').length}/600 caracteres</small>
                         </Form.Group>
                         <Form.Group className="mb-3">
-                            <Form.Label>Lista</Form.Label>
-                            <Form.Select value={currentFornecedor?.lista_id || ''} onChange={e => setCurrentFornecedor({...currentFornecedor, lista_id: e.target.value ? Number(e.target.value) : undefined})}>
-                                <option value="">Selecione uma lista (opcional)</option>
-                                {listas.map(lista => (
-                                    <option key={lista.id} value={lista.id}>{lista.nome}</option>
-                                ))}
-                            </Form.Select>
+                            <Form.Label>Listas Atribuídas</Form.Label>
+                            <div style={{ border: '1px solid #ced4da', borderRadius: '0.375rem', padding: '0.75rem', maxHeight: '200px', overflowY: 'auto' }}>
+                                {listas.length === 0 ? (
+                                    <p className="text-muted mb-0">Nenhuma lista disponível</p>
+                                ) : (
+                                    listas.map(lista => (
+                                        <Form.Check
+                                            key={lista.id}
+                                            type="checkbox"
+                                            id={`lista-${lista.id}`}
+                                            label={lista.nome}
+                                            checked={selectedListIds.has(lista.id)}
+                                            onChange={() => toggleListSelection(lista.id)}
+                                            className="mb-2"
+                                        />
+                                    ))
+                                )}
+                            </div>
                         </Form.Group>
                         <div className="d-grid gap-2">
                             <Button variant="primary" type="submit">{isEditing ? 'Salvar Alterações' : 'Adicionar Fornecedor'}</Button>

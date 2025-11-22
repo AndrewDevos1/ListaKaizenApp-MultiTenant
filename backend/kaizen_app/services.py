@@ -340,8 +340,28 @@ def get_area_status(area_id):
 
 
 def create_fornecedor(data):
-    new_fornecedor = Fornecedor(nome=data['nome'], contato=data.get('contato'), meio_envio=data.get('meio_envio'))
+    # Extrai lista_ids do data se existir
+    lista_ids = data.pop('lista_ids', [])
+
+    # Cria novo fornecedor com campos básicos
+    new_fornecedor = Fornecedor(
+        nome=data['nome'],
+        contato=data.get('contato'),
+        meio_envio=data.get('meio_envio'),
+        responsavel=data.get('responsavel'),
+        observacao=data.get('observacao')
+    )
     repositories.add_instance(new_fornecedor)
+
+    # Adiciona as listas ao fornecedor se houver
+    if lista_ids:
+        from models import Lista
+        for lista_id in lista_ids:
+            lista = repositories.get_by_id(Lista, lista_id)
+            if lista:
+                new_fornecedor.listas.append(lista)
+        repositories.add_instance(new_fornecedor)
+
     return {"id": new_fornecedor.id, "nome": new_fornecedor.nome}, 201
 
 def get_all_fornecedores():
@@ -351,9 +371,27 @@ def get_fornecedor_by_id(fornecedor_id):
     return repositories.get_by_id(Fornecedor, fornecedor_id), 200
 
 def update_fornecedor(fornecedor_id, data):
+    # Extrai lista_ids do data se existir
+    lista_ids = data.pop('lista_ids', None)
+
+    # Atualiza campos do fornecedor
     updated_fornecedor = repositories.update_instance(Fornecedor, fornecedor_id, data)
     if not updated_fornecedor:
         return {"error": "Fornecedor não encontrado"}, 404
+
+    # Atualiza as listas se foi fornecido lista_ids
+    if lista_ids is not None:
+        from models import Lista
+        # Remove todas as listas anteriores
+        updated_fornecedor.listas.clear()
+
+        # Adiciona as novas listas
+        for lista_id in lista_ids:
+            lista = repositories.get_by_id(Lista, lista_id)
+            if lista:
+                updated_fornecedor.listas.append(lista)
+        repositories.add_instance(updated_fornecedor)
+
     return updated_fornecedor.to_dict(), 200
 
 def delete_fornecedor(fornecedor_id):
