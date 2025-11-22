@@ -1145,11 +1145,24 @@ def obter_lista_mae(lista_id):
         for idx, item in enumerate(itens[:3]):
             print(f"  [{idx}] ID={item.id}, Nome={item.nome}, lista_mae_id={item.lista_mae_id}", flush=True, file=sys.stdout)
 
+        # Busca os fornecedores atribuídos à lista
+        fornecedores_data = []
+        for fornecedor in lista.fornecedores:
+            fornecedores_data.append({
+                "id": fornecedor.id,
+                "nome": fornecedor.nome,
+                "contato": fornecedor.contato,
+                "meio_envio": fornecedor.meio_envio,
+                "responsavel": fornecedor.responsavel,
+                "observacao": fornecedor.observacao
+            })
+
         result = {
             "lista_id": lista.id,
             "lista_nome": lista.nome,
             "lista_descricao": lista.descricao,
             "data_criacao": lista.data_criacao.isoformat(),
+            "fornecedores": fornecedores_data,
             "itens": [item.to_dict() for item in itens],
             "total_itens": len(itens)
         }

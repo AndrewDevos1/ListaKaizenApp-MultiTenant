@@ -40,6 +40,7 @@ interface ListaMae {
     lista_nome: string;
     lista_descricao: string;
     data_criacao: string;
+    fornecedores: Fornecedor[];
     itens: ListaMaeItem[];
     total_itens: number;
 }
@@ -49,6 +50,8 @@ interface Fornecedor {
     nome: string;
     contato?: string;
     meio_envio?: string;
+    responsavel?: string;
+    observacao?: string;
 }
 
 const ListaMaeConsolidada: React.FC = () => {
@@ -318,6 +321,48 @@ const ListaMaeConsolidada: React.FC = () => {
                 <h2 className={styles.subtitle}>{listaMae.lista_nome}</h2>
                 {listaMae.lista_descricao && (
                     <p className="text-muted">{listaMae.lista_descricao}</p>
+                )}
+
+                {/* Seção de Fornecedores */}
+                {listaMae.fornecedores && listaMae.fornecedores.length > 0 && (
+                    <div style={{ marginTop: '2rem', borderTop: '1px solid #e0e0e0', paddingTop: '1.5rem' }}>
+                        <h4 style={{ marginBottom: '1rem', fontWeight: 'bold' }}>
+                            Fornecedores Atribuídos ({listaMae.fornecedores.length})
+                        </h4>
+                        <Row>
+                            {listaMae.fornecedores.map((fornecedor) => (
+                                <Col key={fornecedor.id} md={6} className="mb-3">
+                                    <Card style={{ height: '100%', backgroundColor: '#f9f9f9' }}>
+                                        <Card.Body>
+                                            <h5 style={{ marginBottom: '0.5rem', color: '#2c3e50' }}>
+                                                {fornecedor.nome}
+                                            </h5>
+                                            {fornecedor.responsavel && (
+                                                <p style={{ marginBottom: '0.3rem', fontSize: '0.9rem' }}>
+                                                    <strong>Responsável:</strong> {fornecedor.responsavel}
+                                                </p>
+                                            )}
+                                            {fornecedor.contato && (
+                                                <p style={{ marginBottom: '0.3rem', fontSize: '0.9rem' }}>
+                                                    <strong>Contato:</strong> {fornecedor.contato}
+                                                </p>
+                                            )}
+                                            {fornecedor.meio_envio && (
+                                                <p style={{ marginBottom: '0.3rem', fontSize: '0.9rem' }}>
+                                                    <strong>Meio de Envio:</strong> {fornecedor.meio_envio}
+                                                </p>
+                                            )}
+                                            {fornecedor.observacao && (
+                                                <p style={{ marginTop: '0.5rem', marginBottom: '0', fontSize: '0.9rem', color: '#666', fontStyle: 'italic' }}>
+                                                    <strong>Obs:</strong> {fornecedor.observacao}
+                                                </p>
+                                            )}
+                                        </Card.Body>
+                                    </Card>
+                                </Col>
+                            ))}
+                        </Row>
+                    </div>
                 )}
             </div>
 
