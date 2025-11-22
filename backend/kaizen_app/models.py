@@ -183,7 +183,7 @@ class Lista(db.Model, SerializerMixin):
     data_criacao = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     # Relacionamento muitos-para-muitos com os usuários (colaboradores)
     colaboradores = db.relationship('Usuario', secondary=lista_colaborador,
-                                    lazy='subquery', backref=db.backref('listas_atribuidas', lazy=True))
+                                    lazy=True, backref=db.backref('listas_atribuidas', lazy=True))
     # Relacionamento um-para-muitos com ListaMaeItem
     itens = db.relationship('ListaMaeItem', backref='lista', lazy='subquery', cascade='all, delete-orphan')
 

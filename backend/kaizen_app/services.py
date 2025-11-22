@@ -893,11 +893,18 @@ def get_collaborator_dashboard_summary(user_id):
 
 def get_minhas_listas(user_id):
     """Retorna todas as listas atribuídas a um colaborador."""
+    current_app.logger.info(f"[GET_MINHAS_LISTAS] user_id: {user_id}")
+
     usuario = repositories.get_by_id(Usuario, user_id)
     if not usuario:
+        current_app.logger.error(f"[GET_MINHAS_LISTAS] Usuário {user_id} não encontrado")
         return {"error": "Usuário não encontrado."}, 404
 
     listas = usuario.listas_atribuidas
+    current_app.logger.info(f"[GET_MINHAS_LISTAS] Usuário: {usuario.nome}, Listas atribuídas: {len(listas)}")
+    for lista in listas:
+        current_app.logger.info(f"  - Lista: {lista.id} - {lista.nome}")
+
     return {"listas": [lista.to_dict() for lista in listas]}, 200
 
 def get_estoque_by_lista(lista_id):
