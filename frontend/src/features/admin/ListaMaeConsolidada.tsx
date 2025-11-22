@@ -299,49 +299,48 @@ const ListaMaeConsolidada: React.FC = () => {
                 .map(linha => linha.trim())
                 .filter(linha => linha.length > 0);
 
-            let itensCriados = 0;
-            let erros = 0;
-
-            // Para cada linha, tenta extrair o nome do item
-            for (const linha of linhas) {
-                try {
-                    // Remove números, parênteses, emojis e observações comuns
+            // Para cada linha, extrai o nome do item removendo números, parênteses, emojis
+            const nomesItems = linhas
+                .map(linha => {
                     let nomeItem = linha
                         .replace(/\d+\s*x\s*\d+\s*kg/gi, '') // Remove "6x5kg"
                         .replace(/\(\s*.*?\s*\)/g, '') // Remove conteúdo entre parênteses
-                        .replace(/🍄|🥢|🍱|🍜/g, '') // Remove emojis comuns
-                        .replace(/\(.*\)/g, '') // Remove observações entre parênteses
+                        .replace(/🍄|🥢|🍱|🍜|🍚|🥡/g, '') // Remove emojis comuns
                         .replace(/\\/g, '') // Remove barras invertidas
                         .trim();
 
                     // Se ficou muito curto, ignora
-                    if (nomeItem.length < 3) continue;
+                    return nomeItem.length >= 2 ? nomeItem : null;
+                })
+                .filter((nome): nome is string => nome !== null);
 
-                    // Adiciona o item
-                    await api.post(`/v1/listas/${listaId}/itens`, {
-                        nome: nomeItem,
-                        unidade: 'Unidade', // Padrão - usuário pode editar depois
-                        quantidade_atual: 0,
-                        quantidade_minima: 0
-                    });
-
-                    itensCriados++;
-                } catch (err: any) {
-                    console.error(`Erro ao adicionar item "${linha}":`, err);
-                    erros++;
-                }
+            if (nomesItems.length === 0) {
+                setError('Nenhum item válido encontrado na lista');
+                setCarregandoImportacao(false);
+                return;
             }
+
+            // Envia todos os itens de uma vez
+            const response = await api.post(`/v1/listas/${listaId}/items-import`, {
+                nomes: nomesItems
+            });
 
             // Recarrega a lista
             await fetchListaMae();
 
-            setSuccess(`${itensCriados} item(ns) importado(s) com sucesso!${erros > 0 ? ` (${erros} erro(s))` : ''}`);
+            const { items_criados, items_duplicados } = response.data;
+            let mensagem = `${items_criados} item(ns) importado(s) com sucesso!`;
+            if (items_duplicados > 0) {
+                mensagem += ` (${items_duplicados} duplicado(s) ignorado(s))`;
+            }
+
+            setSuccess(mensagem);
             setTextoImportacao('');
             setMostrarModalImportacao(false);
 
             setTimeout(() => setSuccess(null), 5000);
         } catch (err: any) {
-            setError('Erro ao importar itens em lote');
+            setError(err.response?.data?.error || 'Erro ao importar itens em lote');
             console.error('Erro:', err);
         } finally {
             setCarregandoImportacao(false);

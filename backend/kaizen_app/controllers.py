@@ -653,3 +653,11 @@ def atribuir_fornecedor_lista_mae_route(lista_id):
     data = request.get_json()
     response, status = services.atribuir_fornecedor_lista_mae(lista_id, data)
     return jsonify(response), status
+
+@api_bp.route('/listas/<int:lista_id>/items-import', methods=['POST'])
+@admin_required()
+def importar_items_em_lote_route(lista_id):
+    """Importa múltiplos itens em lote para uma Lista Mãe"""
+    data = request.get_json()
+    response, status = services.importar_items_em_lote(lista_id, data)
+    return jsonify(response), status

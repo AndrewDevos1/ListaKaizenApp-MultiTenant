@@ -1261,3 +1261,74 @@ def atribuir_fornecedor_lista_mae(lista_id, data):
         import traceback
         traceback.print_exc()
         return {"error": str(e)}, 500
+
+def importar_items_em_lote(lista_id, data):
+    """
+    Importa múltiplos itens em lote para uma Lista Mãe.
+
+    Recebe:
+        lista_id: ID da Lista Mãe
+        data: {
+            "nomes": ["Alga Nori", "Arroz Grao Curto", "BAO com vegetais", ...]
+        }
+
+    Retorna:
+        Quantidade de itens importados
+    """
+    try:
+        nomes = data.get('nomes', [])
+
+        if not nomes or not isinstance(nomes, list):
+            return {"error": "nomes deve ser um array de strings"}, 400
+
+        # Validar que lista existe
+        lista = Lista.query.get(lista_id)
+        if not lista:
+            return {"error": "Lista não encontrada"}, 404
+
+        items_criados = 0
+        items_duplicados = 0
+
+        for nome in nomes:
+            nome_limpo = nome.strip()
+
+            # Ignorar nomes muito curtos ou vazios
+            if len(nome_limpo) < 2:
+                continue
+
+            # Verificar se item com esse nome já existe nesta lista
+            item_existe = ListaMaeItem.query.filter_by(
+                lista_mae_id=lista_id,
+                nome=nome_limpo
+            ).first()
+
+            if item_existe:
+                items_duplicados += 1
+                continue
+
+            # Criar novo item
+            novo_item = ListaMaeItem(
+                lista_mae_id=lista_id,
+                nome=nome_limpo,
+                unidade='Unidade',  # Padrão - usuário pode editar depois
+                quantidade_atual=0,
+                quantidade_minima=0
+            )
+            db.session.add(novo_item)
+            items_criados += 1
+
+        # Commit de todos os itens
+        db.session.commit()
+
+        return {
+            "message": f"{items_criados} item(ns) criado(s)",
+            "items_criados": items_criados,
+            "items_duplicados": items_duplicados
+        }, 201
+
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"[IMPORTAR ITEMS] ERRO: {type(e).__name__}: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return {"error": str(e)}, 500
