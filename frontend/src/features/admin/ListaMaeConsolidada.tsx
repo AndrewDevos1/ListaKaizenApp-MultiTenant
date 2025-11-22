@@ -89,6 +89,12 @@ const ListaMaeConsolidada: React.FC = () => {
     const [textoImportacao, setTextoImportacao] = useState('');
     const [carregandoImportacao, setCarregandoImportacao] = useState(false);
 
+    // Estados para filtros e busca
+    const [buscaNome, setBuscaNome] = useState('');
+    const [filtroUnidade, setFiltroUnidade] = useState('');
+    const [filtroPedidoMin, setFiltroPedidoMin] = useState('');
+    const [filtroPedidoMax, setFiltroPedidoMax] = useState('');
+
     useEffect(() => {
         if (listaId) {
             fetchListaMae();
@@ -281,6 +287,41 @@ const ListaMaeConsolidada: React.FC = () => {
 
     const calcularPedido = (qtdMin: number, qtdAtual: number) => {
         return Math.max(0, qtdMin - qtdAtual);
+    };
+
+    // Função para filtrar itens
+    const getItensFiltrados = () => {
+        if (!listaMae?.itens) return [];
+
+        return listaMae.itens.filter(item => {
+            // Filtro por nome (busca)
+            if (buscaNome && !item.nome.toLowerCase().includes(buscaNome.toLowerCase())) {
+                return false;
+            }
+
+            // Filtro por unidade
+            if (filtroUnidade && item.unidade !== filtroUnidade) {
+                return false;
+            }
+
+            // Filtro por intervalo de pedido
+            const pedido = calcularPedido(item.quantidade_minima, item.quantidade_atual);
+            if (filtroPedidoMin && pedido < parseFloat(filtroPedidoMin)) {
+                return false;
+            }
+            if (filtroPedidoMax && pedido > parseFloat(filtroPedidoMax)) {
+                return false;
+            }
+
+            return true;
+        });
+    };
+
+    // Obter lista de unidades únicas
+    const getUnidadesUnicas = () => {
+        if (!listaMae?.itens) return [];
+        const unidades = new Set(listaMae.itens.map(item => item.unidade));
+        return Array.from(unidades).sort();
     };
 
     const handleImportarItemsEmLote = async () => {
@@ -544,6 +585,80 @@ const ListaMaeConsolidada: React.FC = () => {
                 </Col>
             </Row>
 
+            {/* Seção de Filtros */}
+            <Card className="mb-3">
+                <Card.Body>
+                    <Row>
+                        <Col md={3}>
+                            <Form.Group>
+                                <Form.Label className="mb-2"><strong>🔍 Buscar por Nome</strong></Form.Label>
+                                <Form.Control
+                                    type="text"
+                                    placeholder="Digite o nome do item..."
+                                    value={buscaNome}
+                                    onChange={(e) => setBuscaNome(e.target.value)}
+                                    size="sm"
+                                />
+                            </Form.Group>
+                        </Col>
+                        <Col md={2}>
+                            <Form.Group>
+                                <Form.Label className="mb-2"><strong>Unidade</strong></Form.Label>
+                                <Form.Select
+                                    value={filtroUnidade}
+                                    onChange={(e) => setFiltroUnidade(e.target.value)}
+                                    size="sm"
+                                >
+                                    <option value="">Todas</option>
+                                    {getUnidadesUnicas().map(unidade => (
+                                        <option key={unidade} value={unidade}>{unidade}</option>
+                                    ))}
+                                </Form.Select>
+                            </Form.Group>
+                        </Col>
+                        <Col md={2}>
+                            <Form.Group>
+                                <Form.Label className="mb-2"><strong>Pedido Mín</strong></Form.Label>
+                                <Form.Control
+                                    type="number"
+                                    placeholder="Mínimo"
+                                    value={filtroPedidoMin}
+                                    onChange={(e) => setFiltroPedidoMin(e.target.value)}
+                                    size="sm"
+                                />
+                            </Form.Group>
+                        </Col>
+                        <Col md={2}>
+                            <Form.Group>
+                                <Form.Label className="mb-2"><strong>Pedido Máx</strong></Form.Label>
+                                <Form.Control
+                                    type="number"
+                                    placeholder="Máximo"
+                                    value={filtroPedidoMax}
+                                    onChange={(e) => setFiltroPedidoMax(e.target.value)}
+                                    size="sm"
+                                />
+                            </Form.Group>
+                        </Col>
+                        <Col md={3} className="d-flex align-items-end">
+                            <Button
+                                variant="outline-secondary"
+                                size="sm"
+                                onClick={() => {
+                                    setBuscaNome('');
+                                    setFiltroUnidade('');
+                                    setFiltroPedidoMin('');
+                                    setFiltroPedidoMax('');
+                                }}
+                                className="w-100"
+                            >
+                                ✕ Limpar Filtros
+                            </Button>
+                        </Col>
+                    </Row>
+                </Card.Body>
+            </Card>
+
             {/* Tabela */}
             <div className={styles.tableWrapper}>
                 <Table striped bordered hover responsive className={styles.table}>
@@ -627,8 +742,8 @@ const ListaMaeConsolidada: React.FC = () => {
                         </tr>
 
                         {/* Itens salvos */}
-                        {listaMae.itens && listaMae.itens.length > 0 ? (
-                            listaMae.itens.map((item) => (
+                        {getItensFiltrados().length > 0 ? (
+                            getItensFiltrados().map((item) => (
                                 <tr key={item.id} className={item.pedido && item.pedido > 0 ? styles.warningRow : ''}>
                                     <td className="text-center">
                                         <input
@@ -750,13 +865,25 @@ const ListaMaeConsolidada: React.FC = () => {
                         ) : (
                             <tr>
                                 <td colSpan={7} className="text-center text-muted py-5">
-                                    Nenhum item adicionado ainda
+                                    {listaMae.itens && listaMae.itens.length > 0
+                                        ? '❌ Nenhum item corresponde aos filtros aplicados'
+                                        : 'Nenhum item adicionado ainda'}
                                 </td>
                             </tr>
                         )}
                     </tbody>
                 </Table>
             </div>
+
+            {/* Resumo de Filtros */}
+            {(buscaNome || filtroUnidade || filtroPedidoMin || filtroPedidoMax) && (
+                <Alert variant="info" className="mt-3">
+                    📊 Mostrando <strong>{getItensFiltrados().length}</strong> de <strong>{listaMae?.itens.length || 0}</strong> itens
+                    {buscaNome && ` • Nome: "${buscaNome}"`}
+                    {filtroUnidade && ` • Unidade: ${filtroUnidade}`}
+                    {(filtroPedidoMin || filtroPedidoMax) && ` • Pedido: ${filtroPedidoMin || '0'} - ${filtroPedidoMax || '∞'}`}
+                </Alert>
+            )}
 
             {/* Ações finais */}
             <div className={styles.actions}>
