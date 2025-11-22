@@ -21,6 +21,7 @@ import {
     faTruck,
     faTag,
     faPhone,
+    faEye,
 } from '@fortawesome/free-solid-svg-icons';
 import { Link } from 'react-router-dom';
 import api from '../../services/api';
@@ -442,13 +443,13 @@ const ListasCompras: React.FC = () => {
                                         </Button>
                                     </Link>
                                     <Button
-                                        variant="secondary"
+                                        variant="success"
                                         className={styles.cardButton}
                                         onClick={() => {
                                             // TODO: Implementar visualização como colaborador
                                         }}
                                     >
-                                        <FontAwesomeIcon icon={faShoppingCart} style={{marginRight: '0.5rem'}} />
+                                        <FontAwesomeIcon icon={faEye} style={{marginRight: '0.5rem'}} />
                                         Lista do Colaborador
                                     </Button>
                                 </div>
