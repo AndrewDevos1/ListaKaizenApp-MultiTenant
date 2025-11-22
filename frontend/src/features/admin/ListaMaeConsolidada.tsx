@@ -532,6 +532,19 @@ const ListaMaeConsolidada: React.FC = () => {
                 </Row>
             )}
 
+            {/* Botão de Importação em Lote */}
+            <Row className="mb-3">
+                <Col>
+                    <Button
+                        variant="info"
+                        size="sm"
+                        onClick={() => setMostrarModalImportacao(true)}
+                    >
+                        <FontAwesomeIcon icon={faPlus} /> Importar Itens em Lote
+                    </Button>
+                </Col>
+            </Row>
+
             {/* Tabela */}
             <div className={styles.tableWrapper}>
                 <Table striped bordered hover responsive className={styles.table}>
@@ -819,6 +832,62 @@ const ListaMaeConsolidada: React.FC = () => {
                         ) : (
                             <>
                                 <FontAwesomeIcon icon={faCheck} /> Confirmar
+                            </>
+                        )}
+                    </Button>
+                </Modal.Footer>
+            </Modal>
+
+            {/* Modal de Importação em Lote */}
+            <Modal show={mostrarModalImportacao} onHide={() => setMostrarModalImportacao(false)} size="lg" centered>
+                <Modal.Header closeButton>
+                    <Modal.Title>
+                        <FontAwesomeIcon icon={faPlus} /> Importar Itens em Lote
+                    </Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <Form>
+                        <Form.Group className="mb-3">
+                            <Form.Label><strong>Cole a lista de itens (um por linha)</strong></Form.Label>
+                            <Form.Control
+                                as="textarea"
+                                rows={10}
+                                placeholder={`Algá Nori
+ARROZ GRAO CURTO HEISEI FARDO (6X5KG)
+BAO com vegetais
+Cogumelo 🍄 kg
+Gergelim branco
+...`}
+                                value={textoImportacao}
+                                onChange={(e) => setTextoImportacao(e.target.value)}
+                            />
+                            <Form.Text className="d-block mt-2">
+                                💡 <strong>Dica:</strong> Cole a lista tal como está. A aplicação vai extrair automaticamente os nomes dos itens,
+                                ignorando quantidades, unidades, observações e emojis. Depois você pode editar cada item.
+                            </Form.Text>
+                        </Form.Group>
+                    </Form>
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="secondary" onClick={() => {
+                        setMostrarModalImportacao(false);
+                        setTextoImportacao('');
+                    }}>
+                        Cancelar
+                    </Button>
+                    <Button
+                        variant="primary"
+                        onClick={handleImportarItemsEmLote}
+                        disabled={!textoImportacao.trim() || carregandoImportacao}
+                    >
+                        {carregandoImportacao ? (
+                            <>
+                                <Spinner as="span" animation="border" size="sm" className="me-2" />
+                                Importando...
+                            </>
+                        ) : (
+                            <>
+                                <FontAwesomeIcon icon={faPlus} /> Importar
                             </>
                         )}
                     </Button>
