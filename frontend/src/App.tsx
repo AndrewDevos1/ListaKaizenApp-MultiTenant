@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import HomePage from './pages/HomePage';
 import Login from './features/auth/Login';
@@ -32,9 +32,24 @@ import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
 import CollaboratorRoute from './components/CollaboratorRoute';
 import Layout from './components/Layout';
+import { pingBackend } from './services/api';
 import './App.css';
 
 function App() {
+  // Ping periódico para manter backend Render sempre ativo
+  useEffect(() => {
+    // Ping inicial imediato ao abrir app
+    pingBackend();
+
+    // Ping a cada 60 segundos (1 minuto)
+    const interval = setInterval(() => {
+      pingBackend();
+    }, 60000);
+
+    // Cleanup: para o intervalo quando app é fechado
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <Router>
         <Routes>
