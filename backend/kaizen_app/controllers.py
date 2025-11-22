@@ -352,7 +352,15 @@ def create_fornecedor_route():
 @jwt_required()
 def get_fornecedores_route():
     fornecedores, _ = services.get_all_fornecedores()
-    return jsonify([f.to_dict() for f in fornecedores])
+    result = []
+    for fornecedor in fornecedores:
+        fornecedor_dict = fornecedor.to_dict()
+        fornecedor_dict['listas'] = [
+            {'id': lista.id, 'nome': lista.nome}
+            for lista in fornecedor.listas
+        ]
+        result.append(fornecedor_dict)
+    return jsonify(result)
 
 @api_bp.route('/fornecedores/<int:fornecedor_id>', methods=['GET'])
 @admin_required()
