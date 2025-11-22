@@ -1,0 +1,108 @@
+.container {
+    padding: 2rem 0;
+    max-width: 1200px;
+}
+
+.header {
+    margin-bottom: 3rem;
+}
+
+.header h2 {
+    color: #2c3e50;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    margin-top: 0;
+    font-size: 2rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.header p {
+    color: #6c757d;
+    font-size: 0.95rem;
+    margin: 0;
+}
+
+.loadingContainer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6rem 2rem;
+    color: #6c757d;
+}
+
+.listaCard {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    height: 100%;
+    background-color: white;
+}
+
+.listaCard:hover {
+    box-shadow: 0 12px 24px rgba(111, 66, 193, 0.15);
+    transform: translateY(-6px);
+    border-color: #6f42c1;
+}
+
+.listaCardContent {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+}
+
+.listaCardTitle {
+    color: #2c3e50;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    margin-top: 0;
+    font-size: 1.1rem;
+}
+
+.listaCardDescricao {
+    color: #6c757d;
+    font-size: 0.9rem;
+    margin-bottom: 0;
+    margin-top: 0.5rem;
+}
+
+/* Responsividade */
+@media (max-width: 992px) {
+    .container {
+        padding: 1.5rem 0;
+    }
+
+    .header h2 {
+        font-size: 1.75rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .container {
+        padding: 1rem 0;
+    }
+
+    .header h2 {
+        font-size: 1.5rem;
+    }
+
+    .header p {
+        font-size: 0.85rem;
+    }
+
+    .listaCardContent {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .listaCardTitle {
+        font-size: 1rem;
+    }
+
+    .listaCardDescricao {
+        font-size: 0.85rem;
+    }
+}

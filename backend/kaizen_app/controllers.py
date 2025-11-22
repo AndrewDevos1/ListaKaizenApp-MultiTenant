@@ -107,6 +107,12 @@ def login():
     response, status_code = services.authenticate_user(data)
     return jsonify(response), status_code
 
+@auth_bp.route('/test-users', methods=['GET'])
+def get_test_users():
+    """Retorna usuários ativos para atalho de login (desenvolvimento/testes)."""
+    response, status_code = services.get_test_users()
+    return jsonify(response), status_code
+
 @auth_bp.route('/change-password', methods=['POST'])
 @jwt_required()
 def change_password():
@@ -352,7 +358,15 @@ def create_fornecedor_route():
 @jwt_required()
 def get_fornecedores_route():
     fornecedores, _ = services.get_all_fornecedores()
-    return jsonify([f.to_dict() for f in fornecedores])
+    result = []
+    for fornecedor in fornecedores:
+        fornecedor_dict = fornecedor.to_dict()
+        fornecedor_dict['listas'] = [
+            {'id': lista.id, 'nome': lista.nome}
+            for lista in fornecedor.listas
+        ]
+        result.append(fornecedor_dict)
+    return jsonify(result)
 
 @api_bp.route('/fornecedores/<int:fornecedor_id>', methods=['GET'])
 @admin_required()
@@ -360,7 +374,14 @@ def get_fornecedor_route(fornecedor_id):
     fornecedor, _ = services.get_fornecedor_by_id(fornecedor_id)
     if not fornecedor:
         return jsonify({"error": "Fornecedor não encontrado"}), 404
-    return jsonify(fornecedor.to_dict())
+
+    # Serializa o fornecedor e inclui as listas
+    fornecedor_dict = fornecedor.to_dict()
+    fornecedor_dict['listas'] = [
+        {'id': lista.id, 'nome': lista.nome}
+        for lista in fornecedor.listas
+    ]
+    return jsonify(fornecedor_dict)
 
 @api_bp.route('/fornecedores/<int:fornecedor_id>', methods=['PUT'])
 @admin_required()
@@ -374,6 +395,18 @@ def update_fornecedor_route(fornecedor_id):
 def delete_fornecedor_route(fornecedor_id):
     response, status = services.delete_fornecedor(fornecedor_id)
     return jsonify(response), status
+
+@api_bp.route('/fornecedores/<int:fornecedor_id>/pedidos-por-lista', methods=['GET'])
+@admin_required()
+def get_pedidos_fornecedor_por_lista_route(fornecedor_id):
+    pedidos, status = services.get_pedidos_fornecedor_por_lista(fornecedor_id)
+    return jsonify(pedidos), status
+
+@api_bp.route('/fornecedores/<int:fornecedor_id>/pedidos-consolidados', methods=['GET'])
+@admin_required()
+def get_pedidos_fornecedor_consolidado_route(fornecedor_id):
+    pedidos, status = services.get_pedidos_fornecedor_consolidado(fornecedor_id)
+    return jsonify(pedidos), status
 
 # --- Rotas de Estoque ---
 
@@ -527,6 +560,31 @@ def minhas_listas_route():
     response, status = services.get_minhas_listas(user_id)
     return jsonify(response), status
 
+@collaborator_bp.route('/listas/<int:lista_id>', methods=['GET'])
+@jwt_required()
+def get_lista_collaborator_route(lista_id):
+    """Retorna uma lista específica atribuída ao colaborador."""
+    user_id = get_user_id_from_jwt()
+    response, status = services.get_lista_colaborador(user_id, lista_id)
+    return jsonify(response), status
+
+@collaborator_bp.route('/listas/<int:lista_id>/estoque', methods=['GET'])
+@jwt_required()
+def get_lista_estoque_collaborator_route(lista_id):
+    """Retorna itens de estoque de uma lista para um colaborador."""
+    user_id = get_user_id_from_jwt()
+    response, status = services.get_estoque_lista_colaborador(user_id, lista_id)
+    return jsonify(response), status
+
+@collaborator_bp.route('/estoque/<int:estoque_id>', methods=['PUT'])
+@jwt_required()
+def update_estoque_collaborator_route(estoque_id):
+    """Atualiza a quantidade_atual de um item de estoque."""
+    user_id = get_user_id_from_jwt()
+    data = request.get_json()
+    response, status = services.update_estoque_colaborador(user_id, estoque_id, data)
+    return jsonify(response), status
+
 @api_bp.route('/listas/<int:lista_id>/estoque', methods=['GET'])
 @jwt_required()
 def get_lista_estoque_route(lista_id):
@@ -616,4 +674,21 @@ def editar_item_lista_mae_route(lista_id, item_id):
 def deletar_item_lista_mae_route(lista_id, item_id):
     """Deleta um item da Lista Mãe"""
     response, status = services.deletar_item_lista_mae(lista_id, item_id)
+    return jsonify(response), status
+
+
+@admin_bp.route('/listas/<int:lista_id>/atribuir-fornecedor', methods=['POST'])
+@admin_required()
+def atribuir_fornecedor_lista_mae_route(lista_id):
+    """Atribui um fornecedor a múltiplos itens da Lista Mãe e gera pedidos"""
+    data = request.get_json()
+    response, status = services.atribuir_fornecedor_lista_mae(lista_id, data)
+    return jsonify(response), status
+
+@api_bp.route('/listas/<int:lista_id>/items-import', methods=['POST'])
+@admin_required()
+def importar_items_em_lote_route(lista_id):
+    """Importa múltiplos itens em lote para uma Lista Mãe"""
+    data = request.get_json()
+    response, status = services.importar_items_em_lote(lista_id, data)
     return jsonify(response), status

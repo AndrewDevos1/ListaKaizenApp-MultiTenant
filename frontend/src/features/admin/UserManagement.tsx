@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Table, Button, Alert, Badge, Spinner, Modal, Form } from 'react-bootstrap';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faArrowLeft } from '@fortawesome/free-solid-svg-icons';
 import api from '../../services/api';
 
 interface User {
@@ -14,6 +17,7 @@ interface User {
 }
 
 const UserManagement: React.FC = () => {
+    const navigate = useNavigate();
     const [users, setUsers] = useState<User[]>([]);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
@@ -137,6 +141,15 @@ const UserManagement: React.FC = () => {
 
     return (
         <div>
+            <Button
+                variant="outline-secondary"
+                size="sm"
+                onClick={() => navigate('/admin')}
+                className="mb-3"
+            >
+                <FontAwesomeIcon icon={faArrowLeft} /> Voltar
+            </Button>
+
             <div className="d-flex justify-content-between align-items-center mb-3">
                 <h2>Gerenciamento de Usuários</h2>
                 <Button variant="primary" onClick={() => setShowCreateModal(true)}>

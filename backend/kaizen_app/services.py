@@ -5,6 +5,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask_jwt_extended import create_access_token
 from datetime import datetime, timedelta
 from sqlalchemy import func
+from flask import current_app
 
 def register_user(data):
     """Cria um novo usuário no sistema."""
@@ -76,6 +77,34 @@ def authenticate_user(data):
     )
 
     return {"access_token": access_token}, 200
+
+def get_test_users():
+    """Retorna lista de usuários ativos para atalho de login em desenvolvimento."""
+    try:
+        # Buscar todos os usuários aprovados e ativos
+        usuarios = Usuario.query.filter_by(aprovado=True, ativo=True).all()
+
+        # Mapeamento de senhas para testes (desenvolvimento apenas)
+        senhas_teste = {
+            "Andrew": "210891",
+            "Joya": "Joya"
+        }
+
+        usuarios_data = []
+        for user in usuarios:
+            senha_teste = senhas_teste.get(user.nome, "teste123")
+            usuarios_data.append({
+                "id": user.id,
+                "nome": user.nome,
+                "email": user.email,
+                "role": user.role.value,
+                "senha_padrao": senha_teste  # Senha para testes (desenvolvimento)
+            })
+
+        return {"usuarios": usuarios_data}, 200
+    except Exception as e:
+        current_app.logger.error(f"[GET_TEST_USERS] Erro: {str(e)}")
+        return {"error": "Erro ao buscar usuários de teste"}, 500
 
 def approve_user(user_id):
     """Aprova o cadastro de um usuário."""
@@ -340,8 +369,28 @@ def get_area_status(area_id):
 
 
 def create_fornecedor(data):
-    new_fornecedor = Fornecedor(nome=data['nome'], contato=data.get('contato'), meio_envio=data.get('meio_envio'))
+    # Extrai lista_ids do data se existir
+    lista_ids = data.pop('lista_ids', [])
+
+    # Cria novo fornecedor com campos básicos
+    new_fornecedor = Fornecedor(
+        nome=data['nome'],
+        contato=data.get('contato'),
+        meio_envio=data.get('meio_envio'),
+        responsavel=data.get('responsavel'),
+        observacao=data.get('observacao')
+    )
     repositories.add_instance(new_fornecedor)
+
+    # Adiciona as listas ao fornecedor se houver
+    if lista_ids:
+        from .models import Lista
+        for lista_id in lista_ids:
+            lista = repositories.get_by_id(Lista, lista_id)
+            if lista:
+                new_fornecedor.listas.append(lista)
+        repositories.add_instance(new_fornecedor)
+
     return {"id": new_fornecedor.id, "nome": new_fornecedor.nome}, 201
 
 def get_all_fornecedores():
@@ -351,15 +400,124 @@ def get_fornecedor_by_id(fornecedor_id):
     return repositories.get_by_id(Fornecedor, fornecedor_id), 200
 
 def update_fornecedor(fornecedor_id, data):
-    updated_fornecedor = repositories.update_instance(Fornecedor, fornecedor_id, data)
+    from .extensions import db
+    from .models import Lista
+
+    # Extrai lista_ids do data se existir
+    lista_ids = data.pop('lista_ids', None)
+
+    # Busca o fornecedor
+    updated_fornecedor = repositories.get_by_id(Fornecedor, fornecedor_id)
     if not updated_fornecedor:
         return {"error": "Fornecedor não encontrado"}, 404
+
+    # Atualiza campos do fornecedor
+    for key, value in data.items():
+        setattr(updated_fornecedor, key, value)
+
+    # Atualiza as listas se foi fornecido lista_ids
+    if lista_ids is not None:
+        # Remove todas as listas anteriores
+        updated_fornecedor.listas.clear()
+
+        # Adiciona as novas listas
+        for lista_id in lista_ids:
+            lista = repositories.get_by_id(Lista, lista_id)
+            if lista:
+                updated_fornecedor.listas.append(lista)
+
+    # Faz um único commit para todas as mudanças
+    db.session.commit()
+
     return updated_fornecedor.to_dict(), 200
 
 def delete_fornecedor(fornecedor_id):
     if not repositories.delete_instance(Fornecedor, fornecedor_id):
         return {"error": "Fornecedor não encontrado"}, 404
     return {}, 204
+
+
+def get_pedidos_fornecedor_por_lista(fornecedor_id):
+    """
+    Retorna os pedidos de um fornecedor agrupados por lista.
+    Formato: {lista_id: {lista_nome: str, pedidos: [...]}}
+    """
+    fornecedor = repositories.get_by_id(Fornecedor, fornecedor_id)
+    if not fornecedor:
+        return {"error": "Fornecedor não encontrado"}, 404
+
+    # Agrupa pedidos por lista
+    resultado = {}
+
+    # Para cada lista atribuída ao fornecedor
+    for lista in fornecedor.listas:
+        # Busca itens que pertencem a essa lista
+        itens_lista = Item.query.filter_by(fornecedor_id=fornecedor_id).all()
+
+        pedidos_lista = []
+        for item in itens_lista:
+            # Busca pedidos pendentes para esse item
+            pedidos_item = Pedido.query.filter_by(
+                item_id=item.id,
+                fornecedor_id=fornecedor_id,
+                status='PENDENTE'
+            ).all()
+
+            for pedido in pedidos_item:
+                pedidos_lista.append({
+                    'item_nome': item.nome,
+                    'quantidade': float(pedido.quantidade_solicitada),
+                    'unidade': item.unidade_medida,
+                    'data_pedido': pedido.data_pedido.isoformat(),
+                    'usuario': pedido.usuario.nome if pedido.usuario else 'N/A'
+                })
+
+        if pedidos_lista:
+            resultado[lista.id] = {
+                'lista_nome': lista.nome,
+                'pedidos': pedidos_lista,
+                'total_itens': len(pedidos_lista)
+            }
+
+    return resultado, 200
+
+
+def get_pedidos_fornecedor_consolidado(fornecedor_id):
+    """
+    Retorna todos os pedidos de um fornecedor consolidados (sem separação por lista).
+    """
+    fornecedor = repositories.get_by_id(Fornecedor, fornecedor_id)
+    if not fornecedor:
+        return {"error": "Fornecedor não encontrado"}, 404
+
+    # Busca todos os itens desse fornecedor
+    itens_fornecedor = Item.query.filter_by(fornecedor_id=fornecedor_id).all()
+
+    pedidos_consolidados = []
+    for item in itens_fornecedor:
+        # Busca todos os pedidos pendentes para esse item
+        pedidos_item = Pedido.query.filter_by(
+            item_id=item.id,
+            fornecedor_id=fornecedor_id,
+            status='PENDENTE'
+        ).all()
+
+        for pedido in pedidos_item:
+            pedidos_consolidados.append({
+                'item_nome': item.nome,
+                'quantidade': float(pedido.quantidade_solicitada),
+                'unidade': item.unidade_medida,
+                'data_pedido': pedido.data_pedido.isoformat(),
+                'usuario': pedido.usuario.nome if pedido.usuario else 'N/A'
+            })
+
+    return {
+        'fornecedor_nome': fornecedor.nome,
+        'fornecedor_contato': fornecedor.contato,
+        'fornecedor_meio_envio': fornecedor.meio_envio,
+        'total_pedidos': len(pedidos_consolidados),
+        'pedidos': pedidos_consolidados
+    }, 200
 
 
 # --- Serviços de Cotação ---
@@ -763,12 +921,19 @@ def get_collaborator_dashboard_summary(user_id):
 
 def get_minhas_listas(user_id):
     """Retorna todas as listas atribuídas a um colaborador."""
+    current_app.logger.info(f"[GET_MINHAS_LISTAS] user_id: {user_id}")
+
     usuario = repositories.get_by_id(Usuario, user_id)
     if not usuario:
+        current_app.logger.error(f"[GET_MINHAS_LISTAS] Usuário {user_id} não encontrado")
         return {"error": "Usuário não encontrado."}, 404
 
     listas = usuario.listas_atribuidas
-    return [lista.to_dict() for lista in listas], 200
+    current_app.logger.info(f"[GET_MINHAS_LISTAS] Usuário: {usuario.nome}, Listas atribuídas: {len(listas)}")
+    for lista in listas:
+        current_app.logger.info(f"  - Lista: {lista.id} - {lista.nome}")
+
+    return {"listas": [lista.to_dict() for lista in listas]}, 200
 
 def get_estoque_by_lista(lista_id):
     """Retorna todos os estoques (itens) de uma lista específica."""
@@ -1016,11 +1181,24 @@ def obter_lista_mae(lista_id):
         for idx, item in enumerate(itens[:3]):
             print(f"  [{idx}] ID={item.id}, Nome={item.nome}, lista_mae_id={item.lista_mae_id}", flush=True, file=sys.stdout)
 
+        # Busca os fornecedores atribuídos à lista
+        fornecedores_data = []
+        for fornecedor in lista.fornecedores:
+            fornecedores_data.append({
+                "id": fornecedor.id,
+                "nome": fornecedor.nome,
+                "contato": fornecedor.contato,
+                "meio_envio": fornecedor.meio_envio,
+                "responsavel": fornecedor.responsavel,
+                "observacao": fornecedor.observacao
+            })
+
         result = {
             "lista_id": lista.id,
             "lista_nome": lista.nome,
             "lista_descricao": lista.descricao,
             "data_criacao": lista.data_criacao.isoformat(),
+            "fornecedores": fornecedores_data,
             "itens": [item.to_dict() for item in itens],
             "total_itens": len(itens)
         }
@@ -1031,4 +1209,270 @@ def obter_lista_mae(lista_id):
         current_app.logger.error(f"[LISTA MAE GET] ERRO: {type(e).__name__}: {str(e)}")
         import traceback
         traceback.print_exc()
+        return {"error": str(e)}, 500
+
+
+def atribuir_fornecedor_lista_mae(lista_id, data):
+    """
+    Atribui um fornecedor a múltiplos itens da Lista Mãe e gera Pedidos.
+
+    Recebe:
+        lista_id: ID da Lista Mãe
+        data: {
+            "item_ids": [1, 2, 3],  # IDs dos itens
+            "fornecedor_id": 5      # ID do fornecedor
+        }
+
+    Retorna:
+        Lista de pedidos criados
+    """
+    try:
+        # Validar entrada
+        item_ids = data.get('item_ids', [])
+        fornecedor_id = data.get('fornecedor_id')
+
+        if not item_ids or not fornecedor_id:
+            return {"error": "item_ids e fornecedor_id são obrigatórios"}, 400
+
+        # Validar que lista existe
+        lista = Lista.query.get(lista_id)
+        if not lista:
+            return {"error": "Lista não encontrada"}, 404
+
+        # Validar que fornecedor existe
+        fornecedor = Fornecedor.query.get(fornecedor_id)
+        if not fornecedor:
+            return {"error": "Fornecedor não encontrado"}, 404
+
+        # Validar que itens existem e pertencem a esta lista
+        itens = ListaMaeItem.query.filter(
+            ListaMaeItem.id.in_(item_ids),
+            ListaMaeItem.lista_mae_id == lista_id
+        ).all()
+
+        if len(itens) != len(item_ids):
+            return {"error": "Um ou mais itens não encontrados na lista"}, 404
+
+        # Criar pedidos para cada item
+        pedidos_criados = []
+        usuario_id = get_current_user_id()
+
+        for item in itens:
+            # Calcular quantidade do pedido
+            quantidade_pedido = max(0, item.quantidade_minima - item.quantidade_atual)
+
+            if quantidade_pedido > 0:
+                # Verificar se já existe pedido pendente para este item/fornecedor
+                pedido_existe = Pedido.query.filter_by(
+                    item_id=item.id,
+                    fornecedor_id=fornecedor_id,
+                    status=PedidoStatus.PENDENTE
+                ).first()
+
+                if not pedido_existe:
+                    novo_pedido = Pedido(
+                        item_id=item.id,
+                        fornecedor_id=fornecedor_id,
+                        quantidade_solicitada=quantidade_pedido,
+                        usuario_id=usuario_id,
+                        status=PedidoStatus.PENDENTE,
+                        data_pedido=datetime.utcnow()
+                    )
+                    db.session.add(novo_pedido)
+                    pedidos_criados.append(novo_pedido)
+
+        # Commit de todos os pedidos
+        db.session.commit()
+
+        return {
+            "message": f"{len(pedidos_criados)} pedido(s) criado(s)",
+            "pedidos": [p.to_dict() for p in pedidos_criados],
+            "total_pedidos": len(pedidos_criados)
+        }, 201
+
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"[ATRIBUIR FORNECEDOR] ERRO: {type(e).__name__}: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return {"error": str(e)}, 500
+
+def importar_items_em_lote(lista_id, data):
+    """
+    Importa múltiplos itens em lote para uma Lista Mãe.
+
+    Recebe:
+        lista_id: ID da Lista Mãe
+        data: {
+            "nomes": ["Alga Nori", "Arroz Grao Curto", "BAO com vegetais", ...]
+        }
+
+    Retorna:
+        Quantidade de itens importados
+    """
+    try:
+        nomes = data.get('nomes', [])
+
+        if not nomes or not isinstance(nomes, list):
+            return {"error": "nomes deve ser um array de strings"}, 400
+
+        # Validar que lista existe
+        lista = Lista.query.get(lista_id)
+        if not lista:
+            return {"error": "Lista não encontrada"}, 404
+
+        items_criados = 0
+        items_duplicados = 0
+
+        for nome in nomes:
+            nome_limpo = nome.strip()
+
+            # Ignorar nomes muito curtos ou vazios
+            if len(nome_limpo) < 2:
+                continue
+
+            # Verificar se item com esse nome já existe nesta lista
+            item_existe = ListaMaeItem.query.filter_by(
+                lista_mae_id=lista_id,
+                nome=nome_limpo
+            ).first()
+
+            if item_existe:
+                items_duplicados += 1
+                continue
+
+            # Criar novo item
+            novo_item = ListaMaeItem(
+                lista_mae_id=lista_id,
+                nome=nome_limpo,
+                unidade='Unidade',  # Padrão - usuário pode editar depois
+                quantidade_atual=0,
+                quantidade_minima=0
+            )
+            db.session.add(novo_item)
+            items_criados += 1
+
+        # Commit de todos os itens
+        db.session.commit()
+
+        return {
+            "message": f"{items_criados} item(ns) criado(s)",
+            "items_criados": items_criados,
+            "items_duplicados": items_duplicados
+        }, 201
+
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"[IMPORTAR ITEMS] ERRO: {type(e).__name__}: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return {"error": str(e)}, 500
+
+
+def get_lista_colaborador(user_id, lista_id):
+    """Retorna dados da lista para um colaborador."""
+    # Verificar se o usuário tem acesso a esta lista
+    usuario = repositories.get_by_id(Usuario, user_id)
+    if not usuario:
+        return {"error": "Usuário não encontrado."}, 404
+
+    lista = repositories.get_by_id(Lista, lista_id)
+    if not lista:
+        return {"error": "Lista não encontrada."}, 404
+
+    # Verificar se o colaborador está atribuído a esta lista
+    if lista not in usuario.listas_atribuidas:
+        return {"error": "Acesso negado. Esta lista não foi atribuída a você."}, 403
+
+    return lista.to_dict(), 200
+
+
+def get_estoque_lista_colaborador(user_id, lista_id):
+    """Retorna itens de estoque da lista para um colaborador."""
+    # Verificar se o usuário tem acesso a esta lista
+    usuario = repositories.get_by_id(Usuario, user_id)
+    if not usuario:
+        return {"error": "Usuário não encontrado."}, 404
+
+    lista = repositories.get_by_id(Lista, lista_id)
+    if not lista:
+        return {"error": "Lista não encontrada."}, 404
+
+    # Verificar se o colaborador está atribuído a esta lista
+    if lista not in usuario.listas_atribuidas:
+        return {"error": "Acesso negado. Esta lista não foi atribuída a você."}, 403
+
+    # Buscar estoques da lista
+    estoques = Estoque.query.filter_by(lista_id=lista_id).all()
+
+    # Preparar resposta com dados do item
+    estoques_data = []
+    for estoque in estoques:
+        item = estoque.item
+        estoque_dict = {
+            "id": estoque.id,
+            "item_id": estoque.item_id,
+            "lista_id": estoque.lista_id,
+            "quantidade_atual": float(estoque.quantidade_atual),
+            "quantidade_minima": float(estoque.quantidade_minima),
+            "pedido": max(0, float(estoque.quantidade_minima - estoque.quantidade_atual)),
+            "item": {
+                "id": item.id,
+                "nome": item.nome,
+                "unidade_medida": item.unidade_medida
+            } if item else None
+        }
+        estoques_data.append(estoque_dict)
+
+    return estoques_data, 200
+
+
+def update_estoque_colaborador(user_id, estoque_id, data):
+    """Atualiza apenas a quantidade_atual de um estoque para um colaborador."""
+    # Verificar se o usuário existe
+    usuario = repositories.get_by_id(Usuario, user_id)
+    if not usuario:
+        return {"error": "Usuário não encontrado."}, 404
+
+    # Buscar estoque
+    estoque = repositories.get_by_id(Estoque, estoque_id)
+    if not estoque:
+        return {"error": "Estoque não encontrado."}, 404
+
+    # Verificar se o colaborador está atribuído à lista deste estoque
+    if estoque.lista not in usuario.listas_atribuidas:
+        return {"error": "Acesso negado. Esta lista não foi atribuída a você."}, 403
+
+    # Validar que apenas quantidade_atual está sendo atualizado
+    if "quantidade_atual" not in data:
+        return {"error": "Dados inválidos. Forneça quantidade_atual."}, 400
+
+    # Validar que o valor é um número válido
+    try:
+        quantidade_atual = float(data.get("quantidade_atual", 0))
+        if quantidade_atual < 0:
+            return {"error": "A quantidade não pode ser negativa."}, 400
+    except (ValueError, TypeError):
+        return {"error": "Quantidade deve ser um número válido."}, 400
+
+    try:
+        # Atualizar apenas quantidade_atual
+        estoque.quantidade_atual = quantidade_atual
+        estoque.data_ultima_submissao = datetime.utcnow()
+        estoque.usuario_ultima_submissao_id = user_id
+
+        db.session.commit()
+
+        return {
+            "message": "Estoque atualizado com sucesso.",
+            "estoque": {
+                "id": estoque.id,
+                "quantidade_atual": float(estoque.quantidade_atual),
+                "quantidade_minima": float(estoque.quantidade_minima),
+                "pedido": max(0, float(estoque.quantidade_minima - estoque.quantidade_atual))
+            }
+        }, 200
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"[UPDATE ESTOQUE COLABORADOR] ERRO: {type(e).__name__}: {str(e)}")
         return {"error": str(e)}, 500
