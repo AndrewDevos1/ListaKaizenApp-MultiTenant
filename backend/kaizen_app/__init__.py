@@ -12,6 +12,27 @@ def create_app(config_name='development'):
 
     # Inicializa as extensões
     db.init_app(app)
+
+    # LOG: Mostra qual banco de dados está sendo usado
+    db_uri = app.config['SQLALCHEMY_DATABASE_URI']
+    if db_uri.startswith('postgresql'):
+        db_type = '🐘 PostgreSQL'
+        # Ocultar senha no log (segurança)
+        safe_uri = db_uri.split('@')[1] if '@' in db_uri else db_uri
+        print(f"\n{'='*60}")
+        print(f"  💾 Database: {db_type}")
+        print(f"  🔗 Connection: {safe_uri}")
+        print(f"  🏷️  Environment: {config_name}")
+        print(f"{'='*60}\n")
+    elif db_uri.startswith('sqlite'):
+        db_type = '📁 SQLite'
+        db_file = db_uri.replace('sqlite:///', '')
+        print(f"\n{'='*60}")
+        print(f"  💾 Database: {db_type}")
+        print(f"  📂 File: {db_file}")
+        print(f"  🏷️  Environment: {config_name}")
+        print(f"{'='*60}\n")
+
     migrate.init_app(app, db)
     jwt.init_app(app)
 

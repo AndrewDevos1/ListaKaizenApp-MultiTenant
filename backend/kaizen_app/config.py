@@ -21,7 +21,17 @@ class Config:
 
 class DevelopmentConfig(Config):
     """Configurações para o ambiente de desenvolvimento."""
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DEV_DATABASE_URL') or \
+    # Database configuration priority:
+    # 1. DATABASE_URL from .env (PostgreSQL local recommended)
+    #    Example: postgresql://postgres:password@localhost:5432/kaizen_dev
+    # 2. Fallback to SQLite if DATABASE_URL not set
+    #    File: backend/kaizen_dev.db
+    #
+    # To use PostgreSQL locally:
+    # - Copy .env.example to .env
+    # - Uncomment and configure DATABASE_URL
+    # - See docs/guides/postgresql-setup.md for setup instructions
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
         'sqlite:///' + os.path.join(basedir, '..', 'kaizen_dev.db')
 
 
