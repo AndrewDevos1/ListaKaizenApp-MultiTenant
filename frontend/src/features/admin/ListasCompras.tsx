@@ -435,7 +435,7 @@ const ListasCompras: React.FC = () => {
                                     </Button>
                                     <Link to={`/admin/listas/${lista.id}/lista-mae`}>
                                         <Button
-                                            variant="info"
+                                            variant="warning"
                                             className={styles.cardButton}
                                         >
                                             <FontAwesomeIcon icon={faShoppingCart} style={{marginRight: '0.5rem'}} />
