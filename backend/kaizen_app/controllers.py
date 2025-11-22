@@ -617,3 +617,12 @@ def deletar_item_lista_mae_route(lista_id, item_id):
     """Deleta um item da Lista Mãe"""
     response, status = services.deletar_item_lista_mae(lista_id, item_id)
     return jsonify(response), status
+
+
+@admin_bp.route('/listas/<int:lista_id>/atribuir-fornecedor', methods=['POST'])
+@admin_required()
+def atribuir_fornecedor_lista_mae_route(lista_id):
+    """Atribui um fornecedor a múltiplos itens da Lista Mãe e gera pedidos"""
+    data = request.get_json()
+    response, status = services.atribuir_fornecedor_lista_mae(lista_id, data)
+    return jsonify(response), status

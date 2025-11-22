@@ -1,15 +1,16 @@
 /**
- * Lista Mãe Consolidada - Visão do Administrador (Simplificada)
+ * Lista Mãe Consolidada - Visão do Administrador
  *
- * Tabela simples para gerenciar itens de uma lista:
+ * Tabela para gerenciar itens de uma lista:
  * - Nome, Unidade, Qtd Atual, Qtd Mínima
  * - Pedido é calculado automaticamente (qtd_min - qtd_atual)
  * - Admin pode adicionar, editar e deletar itens
+ * - NOVO: Selecionar múltiplos itens e atribuir fornecedor para gerar pedidos
  */
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Container, Card, Button, Table, Alert, Row, Col, Badge, Spinner, Form } from 'react-bootstrap';
+import { Container, Card, Button, Table, Alert, Row, Col, Badge, Spinner, Form, Modal } from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faArrowLeft,
@@ -17,7 +18,9 @@ import {
     faClipboardList,
     faPlus,
     faEdit,
-    faTrash
+    faTrash,
+    faCheck,
+    faTruck
 } from '@fortawesome/free-solid-svg-icons';
 import api from '../../services/api';
 import styles from './ListaMaeConsolidada.module.css';
@@ -41,6 +44,13 @@ interface ListaMae {
     total_itens: number;
 }
 
+interface Fornecedor {
+    id: number;
+    nome: string;
+    contato?: string;
+    meio_envio?: string;
+}
+
 const ListaMaeConsolidada: React.FC = () => {
     const { listaId } = useParams<{ listaId: string }>();
     const navigate = useNavigate();
@@ -48,6 +58,7 @@ const ListaMaeConsolidada: React.FC = () => {
     const [listaMae, setListaMae] = useState<ListaMae | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [success, setSuccess] = useState<string | null>(null);
 
     // Estado para adicionar novo item
     const [novoItem, setNovoItem] = useState<ListaMaeItem>({
@@ -61,9 +72,18 @@ const ListaMaeConsolidada: React.FC = () => {
     const [editandoId, setEditandoId] = useState<number | null>(null);
     const [itemEditando, setItemEditando] = useState<ListaMaeItem | null>(null);
 
+    // Estado para seleção e atribuição de fornecedor
+    const [itensSelecionados, setItensSelecionados] = useState<Set<number>>(new Set());
+    const [todosVerificados, setTodosVerificados] = useState(false);
+    const [fornecedores, setFornecedores] = useState<Fornecedor[]>([]);
+    const [fornecedorSelecionado, setFornecedorSelecionado] = useState<number | null>(null);
+    const [mostrarModalFornecedor, setMostrarModalFornecedor] = useState(false);
+    const [carregandoPedidos, setCarregandoPedidos] = useState(false);
+
     useEffect(() => {
         if (listaId) {
             fetchListaMae();
+            fetchFornecedores();
         }
     }, [listaId]);
 
@@ -81,6 +101,15 @@ const ListaMaeConsolidada: React.FC = () => {
         }
     };
 
+    const fetchFornecedores = async () => {
+        try {
+            const response = await api.get<Fornecedor[]>('/admin/fornecedores');
+            setFornecedores(response.data);
+        } catch (err: any) {
+            console.error('Erro ao carregar fornecedores:', err);
+        }
+    };
+
     const handleAdicionarItem = async () => {
         if (!novoItem.nome || !novoItem.unidade) {
             setError('Preencha nome e unidade do item');
@@ -92,7 +121,6 @@ const ListaMaeConsolidada: React.FC = () => {
             const response = await api.post(`/admin/listas/${listaId}/mae-itens`, novoItem);
             console.log('[LISTA MAE] Item adicionado com sucesso:', response.data);
 
-            // Adiciona o item retornado pela API à lista local
             if (listaMae) {
                 setListaMae({
                     ...listaMae,
@@ -108,10 +136,10 @@ const ListaMaeConsolidada: React.FC = () => {
                 quantidade_minima: 0
             });
             setError(null);
+            setSuccess('Item adicionado com sucesso!');
+            setTimeout(() => setSuccess(null), 3000);
         } catch (err: any) {
             console.error('[LISTA MAE] Erro completo:', err);
-            console.error('[LISTA MAE] Response data:', err.response?.data);
-            console.error('[LISTA MAE] Response status:', err.response?.status);
             setError(err.response?.data?.error || err.message || 'Erro ao adicionar item');
         }
     };
@@ -120,7 +148,6 @@ const ListaMaeConsolidada: React.FC = () => {
         if (!item.id) return;
 
         try {
-            // Envia apenas os campos editáveis, sem enviar 'pedido' (calculado no servidor)
             const dataToSend = {
                 nome: item.nome,
                 unidade: item.unidade,
@@ -131,7 +158,6 @@ const ListaMaeConsolidada: React.FC = () => {
             const response = await api.put(`/admin/listas/${listaId}/mae-itens/${item.id}`, dataToSend);
             const updatedItem = response.data;
 
-            // Atualiza o item na lista local COM os dados retornados pelo servidor (inclui pedido recalculado)
             if (listaMae) {
                 setListaMae({
                     ...listaMae,
@@ -142,6 +168,8 @@ const ListaMaeConsolidada: React.FC = () => {
             setEditandoId(null);
             setItemEditando(null);
             setError(null);
+            setSuccess('Item atualizado com sucesso!');
+            setTimeout(() => setSuccess(null), 3000);
         } catch (err: any) {
             setError(err.response?.data?.error || 'Erro ao editar item');
         }
@@ -153,7 +181,6 @@ const ListaMaeConsolidada: React.FC = () => {
         try {
             await api.delete(`/admin/listas/${listaId}/mae-itens/${itemId}`);
 
-            // Remove o item da lista local
             if (listaMae) {
                 setListaMae({
                     ...listaMae,
@@ -162,9 +189,84 @@ const ListaMaeConsolidada: React.FC = () => {
                 });
             }
 
+            // Remove da seleção se estava selecionado
+            const novosSelecionados = new Set(itensSelecionados);
+            novosSelecionados.delete(itemId);
+            setItensSelecionados(novosSelecionados);
+
             setError(null);
+            setSuccess('Item removido com sucesso!');
+            setTimeout(() => setSuccess(null), 3000);
         } catch (err: any) {
             setError(err.response?.data?.error || 'Erro ao remover item');
+        }
+    };
+
+    // Funções para checkbox
+    const toggleItemSelecionado = (itemId: number | undefined) => {
+        if (!itemId) return;
+
+        const novosSelecionados = new Set(itensSelecionados);
+        if (novosSelecionados.has(itemId)) {
+            novosSelecionados.delete(itemId);
+        } else {
+            novosSelecionados.add(itemId);
+        }
+        setItensSelecionados(novosSelecionados);
+    };
+
+    const toggleTodosSelecionados = () => {
+        if (todosVerificados || itensSelecionados.size > 0) {
+            setItensSelecionados(new Set());
+            setTodosVerificados(false);
+        } else {
+            const todosIds = new Set(listaMae?.itens.map(item => item.id).filter(id => id !== undefined) as number[]);
+            setItensSelecionados(todosIds);
+            setTodosVerificados(true);
+        }
+    };
+
+    // Gerar pedidos
+    const handleAtribuirFornecedor = async () => {
+        if (!fornecedorSelecionado) {
+            setError('Selecione um fornecedor');
+            return;
+        }
+
+        if (itensSelecionados.size === 0) {
+            setError('Selecione pelo menos um item');
+            return;
+        }
+
+        try {
+            setCarregandoPedidos(true);
+            setError(null);
+
+            const response = await api.post(
+                `/admin/listas/${listaId}/atribuir-fornecedor`,
+                {
+                    item_ids: Array.from(itensSelecionados),
+                    fornecedor_id: fornecedorSelecionado
+                }
+            );
+
+            setSuccess(`${response.data.total_pedidos} pedido(s) criado(s) com sucesso!`);
+
+            // Limpar seleção
+            setItensSelecionados(new Set());
+            setTodosVerificados(false);
+            setFornecedorSelecionado(null);
+            setMostrarModalFornecedor(false);
+
+            // Recarregar lista
+            fetchListaMae();
+
+            setTimeout(() => setSuccess(null), 5000);
+        } catch (err: any) {
+            console.error('Erro ao atribuir fornecedor:', err);
+            setError(err.response?.data?.error || 'Erro ao gerar pedidos');
+        } finally {
+            setCarregandoPedidos(false);
         }
     };
 
@@ -195,6 +297,8 @@ const ListaMaeConsolidada: React.FC = () => {
         );
     }
 
+    const fornecedorNome = fornecedores.find(f => f.id === fornecedorSelecionado)?.nome;
+
     return (
         <Container fluid className={`py-4 ${styles.container}`}>
             {/* Header */}
@@ -223,6 +327,11 @@ const ListaMaeConsolidada: React.FC = () => {
                     <FontAwesomeIcon icon={faExclamationTriangle} /> {error}
                 </Alert>
             )}
+            {success && (
+                <Alert variant="success" onClose={() => setSuccess(null)} dismissible>
+                    <FontAwesomeIcon icon={faCheck} /> {success}
+                </Alert>
+            )}
 
             {/* Resumo */}
             <Row className="mb-4 g-3">
@@ -231,6 +340,14 @@ const ListaMaeConsolidada: React.FC = () => {
                         <Card.Body className="text-center">
                             <h3 className={styles.statValue}>{listaMae.total_itens}</h3>
                             <p className={styles.statLabel}>Total de Itens</p>
+                        </Card.Body>
+                    </Card>
+                </Col>
+                <Col md={4}>
+                    <Card className={styles.statsCard}>
+                        <Card.Body className="text-center">
+                            <h3 className={styles.statValue}>{itensSelecionados.size}</h3>
+                            <p className={styles.statLabel}>Itens Selecionados</p>
                         </Card.Body>
                     </Card>
                 </Col>
@@ -246,11 +363,56 @@ const ListaMaeConsolidada: React.FC = () => {
                 </Col>
             </Row>
 
+            {/* Barra de Ações */}
+            {itensSelecionados.size > 0 && (
+                <Row className="mb-3">
+                    <Col>
+                        <Card className="bg-light">
+                            <Card.Body className="py-2">
+                                <Row className="align-items-center">
+                                    <Col>
+                                        <strong>{itensSelecionados.size} item(ns) selecionado(s)</strong>
+                                    </Col>
+                                    <Col className="text-end">
+                                        <Button
+                                            variant="primary"
+                                            size="sm"
+                                            onClick={() => setMostrarModalFornecedor(true)}
+                                        >
+                                            <FontAwesomeIcon icon={faTruck} /> Atribuir Fornecedor
+                                        </Button>
+                                        <Button
+                                            variant="outline-secondary"
+                                            size="sm"
+                                            onClick={() => {
+                                                setItensSelecionados(new Set());
+                                                setTodosVerificados(false);
+                                            }}
+                                            className="ms-2"
+                                        >
+                                            Limpar Seleção
+                                        </Button>
+                                    </Col>
+                                </Row>
+                            </Card.Body>
+                        </Card>
+                    </Col>
+                </Row>
+            )}
+
             {/* Tabela */}
             <div className={styles.tableWrapper}>
                 <Table striped bordered hover responsive className={styles.table}>
                     <thead>
                         <tr className={styles.tableHeader}>
+                            <th style={{ width: '40px' }}>
+                                <input
+                                    type="checkbox"
+                                    checked={todosVerificados}
+                                    onChange={toggleTodosSelecionados}
+                                    title="Selecionar todos"
+                                />
+                            </th>
                             <th>Nome</th>
                             <th className="text-center" style={{ width: '100px' }}>Unidade</th>
                             <th className="text-center" style={{ width: '120px' }}>Qtd Atual</th>
@@ -262,6 +424,7 @@ const ListaMaeConsolidada: React.FC = () => {
                     <tbody>
                         {/* Linha para adicionar novo item */}
                         <tr className={styles.addItemRow}>
+                            <td>-</td>
                             <td>
                                 <input
                                     type="text"
@@ -323,6 +486,13 @@ const ListaMaeConsolidada: React.FC = () => {
                         {listaMae.itens && listaMae.itens.length > 0 ? (
                             listaMae.itens.map((item) => (
                                 <tr key={item.id} className={item.pedido && item.pedido > 0 ? styles.warningRow : ''}>
+                                    <td className="text-center">
+                                        <input
+                                            type="checkbox"
+                                            checked={item.id ? itensSelecionados.has(item.id) : false}
+                                            onChange={() => toggleItemSelecionado(item.id)}
+                                        />
+                                    </td>
                                     {editandoId === item.id && itemEditando ? (
                                         <>
                                             <td>
@@ -435,7 +605,7 @@ const ListaMaeConsolidada: React.FC = () => {
                             ))
                         ) : (
                             <tr>
-                                <td colSpan={6} className="text-center text-muted py-5">
+                                <td colSpan={7} className="text-center text-muted py-5">
                                     Nenhum item adicionado ainda
                                 </td>
                             </tr>
@@ -450,6 +620,78 @@ const ListaMaeConsolidada: React.FC = () => {
                     <FontAwesomeIcon icon={faArrowLeft} /> Voltar para Listas
                 </Button>
             </div>
+
+            {/* Modal de Seleção de Fornecedor */}
+            <Modal show={mostrarModalFornecedor} onHide={() => setMostrarModalFornecedor(false)} centered>
+                <Modal.Header closeButton>
+                    <Modal.Title>
+                        <FontAwesomeIcon icon={faTruck} /> Atribuir Fornecedor
+                    </Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <Form>
+                        <Form.Group className="mb-3">
+                            <Form.Label><strong>Fornecedor</strong></Form.Label>
+                            <Form.Select
+                                value={fornecedorSelecionado || ''}
+                                onChange={(e) => setFornecedorSelecionado(e.target.value ? parseInt(e.target.value) : null)}
+                            >
+                                <option value="">-- Selecione um fornecedor --</option>
+                                {fornecedores.map(f => (
+                                    <option key={f.id} value={f.id}>
+                                        {f.nome}
+                                    </option>
+                                ))}
+                            </Form.Select>
+                        </Form.Group>
+
+                        <Form.Group className="mb-3">
+                            <Form.Label><strong>Itens a Pedir ({itensSelecionados.size})</strong></Form.Label>
+                            <div className="bg-light p-3 rounded" style={{ maxHeight: '200px', overflowY: 'auto' }}>
+                                {listaMae?.itens
+                                    .filter(item => item.id && itensSelecionados.has(item.id))
+                                    .map(item => (
+                                        <div key={item.id} className="mb-2 pb-2 border-bottom">
+                                            <div>
+                                                <strong>{item.nome}</strong> - {item.unidade}
+                                            </div>
+                                            <small className="text-muted">
+                                                Pedido: {Math.max(0, item.quantidade_minima - item.quantidade_atual).toFixed(2)} {item.unidade}
+                                            </small>
+                                        </div>
+                                    ))}
+                            </div>
+                        </Form.Group>
+
+                        {fornecedorNome && (
+                            <Alert variant="info">
+                                <strong>Confirmar:</strong> Criar pedido(s) para <strong>{fornecedorNome}</strong>?
+                            </Alert>
+                        )}
+                    </Form>
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="secondary" onClick={() => setMostrarModalFornecedor(false)}>
+                        Cancelar
+                    </Button>
+                    <Button
+                        variant="primary"
+                        onClick={handleAtribuirFornecedor}
+                        disabled={!fornecedorSelecionado || carregandoPedidos}
+                    >
+                        {carregandoPedidos ? (
+                            <>
+                                <Spinner as="span" animation="border" size="sm" className="me-2" />
+                                Criando Pedidos...
+                            </>
+                        ) : (
+                            <>
+                                <FontAwesomeIcon icon={faCheck} /> Confirmar
+                            </>
+                        )}
+                    </Button>
+                </Modal.Footer>
+            </Modal>
         </Container>
     );
 };

@@ -1032,3 +1032,89 @@ def obter_lista_mae(lista_id):
         import traceback
         traceback.print_exc()
         return {"error": str(e)}, 500
+
+
+def atribuir_fornecedor_lista_mae(lista_id, data):
+    """
+    Atribui um fornecedor a múltiplos itens da Lista Mãe e gera Pedidos.
+
+    Recebe:
+        lista_id: ID da Lista Mãe
+        data: {
+            "item_ids": [1, 2, 3],  # IDs dos itens
+            "fornecedor_id": 5      # ID do fornecedor
+        }
+
+    Retorna:
+        Lista de pedidos criados
+    """
+    try:
+        # Validar entrada
+        item_ids = data.get('item_ids', [])
+        fornecedor_id = data.get('fornecedor_id')
+
+        if not item_ids or not fornecedor_id:
+            return {"error": "item_ids e fornecedor_id são obrigatórios"}, 400
+
+        # Validar que lista existe
+        lista = Lista.query.get(lista_id)
+        if not lista:
+            return {"error": "Lista não encontrada"}, 404
+
+        # Validar que fornecedor existe
+        fornecedor = Fornecedor.query.get(fornecedor_id)
+        if not fornecedor:
+            return {"error": "Fornecedor não encontrado"}, 404
+
+        # Validar que itens existem e pertencem a esta lista
+        itens = ListaMaeItem.query.filter(
+            ListaMaeItem.id.in_(item_ids),
+            ListaMaeItem.lista_mae_id == lista_id
+        ).all()
+
+        if len(itens) != len(item_ids):
+            return {"error": "Um ou mais itens não encontrados na lista"}, 404
+
+        # Criar pedidos para cada item
+        pedidos_criados = []
+        usuario_id = get_current_user_id()
+
+        for item in itens:
+            # Calcular quantidade do pedido
+            quantidade_pedido = max(0, item.quantidade_minima - item.quantidade_atual)
+
+            if quantidade_pedido > 0:
+                # Verificar se já existe pedido pendente para este item/fornecedor
+                pedido_existe = Pedido.query.filter_by(
+                    item_id=item.id,
+                    fornecedor_id=fornecedor_id,
+                    status=PedidoStatus.PENDENTE
+                ).first()
+
+                if not pedido_existe:
+                    novo_pedido = Pedido(
+                        item_id=item.id,
+                        fornecedor_id=fornecedor_id,
+                        quantidade_solicitada=quantidade_pedido,
+                        usuario_id=usuario_id,
+                        status=PedidoStatus.PENDENTE,
+                        data_pedido=datetime.utcnow()
+                    )
+                    db.session.add(novo_pedido)
+                    pedidos_criados.append(novo_pedido)
+
+        # Commit de todos os pedidos
+        db.session.commit()
+
+        return {
+            "message": f"{len(pedidos_criados)} pedido(s) criado(s)",
+            "pedidos": [p.to_dict() for p in pedidos_criados],
+            "total_pedidos": len(pedidos_criados)
+        }, 201
+
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"[ATRIBUIR FORNECEDOR] ERRO: {type(e).__name__}: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return {"error": str(e)}, 500
