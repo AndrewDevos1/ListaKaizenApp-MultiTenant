@@ -23,4 +23,12 @@ yarn-error.log
 # Database files
 *.db
 *.sqlite
-*.sqlite3nul 
+*.sqlite3
+
+# System files
+nul
+*.nul
+
+# Build files
+frontend/build/
+frontend/dist/ 
