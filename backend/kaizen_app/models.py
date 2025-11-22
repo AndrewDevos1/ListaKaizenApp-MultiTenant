@@ -82,7 +82,7 @@ class Fornecedor(db.Model, SerializerMixin):
     # Relacionamento many-to-many com Lista através da tabela fornecedor_lista
     listas = db.relationship('Lista', secondary='fornecedor_lista',
                             backref=db.backref('fornecedores', lazy=True),
-                            lazy='subquery')
+                            lazy=True)
 
 class Estoque(db.Model, SerializerMixin):
     __tablename__ = "estoques"
