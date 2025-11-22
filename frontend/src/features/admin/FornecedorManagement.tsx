@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Table, Button, Modal, Form, Spinner, Alert } from 'react-bootstrap';
 import api from '../../services/api';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faArrowLeft } from '@fortawesome/free-solid-svg-icons';
+import styles from './FornecedorDetalhes.module.css';
 
 interface Fornecedor {
     id: number;
@@ -119,14 +120,12 @@ const FornecedorManagement: React.FC = () => {
     };
 
     return (
-        <div>
-            <div style={{ marginBottom: '1.5rem' }}>
-                <Button variant="secondary" onClick={() => navigate(-1)} style={{ marginBottom: '1rem' }}>
-                    <FontAwesomeIcon icon={faArrowLeft} className="me-2" />
-                    Voltar
-                </Button>
-            </div>
-            <h2>Gestão de Fornecedores</h2>
+        <div style={{ padding: '2rem 0' }}>
+            <Link to="/admin" className={styles.backLink} style={{ marginBottom: '1.5rem', display: 'inline-block' }}>
+                <FontAwesomeIcon icon={faArrowLeft} style={{ marginRight: '0.5rem' }} />
+                Voltar
+            </Link>
+            <h2 style={{ marginTop: '1.5rem' }}>Gestão de Fornecedores</h2>
             {error && <Alert variant="danger" onClose={() => setError('')} dismissible>{error}</Alert>}
             <Button variant="primary" onClick={() => handleShowModal()} className="mb-3">
                 <i className="fas fa-plus me-2"></i>Adicionar Fornecedor
