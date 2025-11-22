@@ -432,15 +432,6 @@ const ListasCompras: React.FC = () => {
                                         <FontAwesomeIcon icon={faUsers} style={{marginRight: '0.5rem'}} />
                                         Atribuir
                                     </Button>
-                                    <Link to={`/admin/listas/${lista.id}/gerenciar-itens`}>
-                                        <Button
-                                            variant="warning"
-                                            className={styles.cardButton}
-                                        >
-                                            <FontAwesomeIcon icon={faEdit} style={{marginRight: '0.5rem'}} />
-                                            Gerenciar Itens
-                                        </Button>
-                                    </Link>
                                     <Link to={`/admin/listas/${lista.id}/lista-mae`}>
                                         <Button
                                             variant="info"
