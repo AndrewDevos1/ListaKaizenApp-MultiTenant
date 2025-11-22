@@ -360,7 +360,14 @@ def get_fornecedor_route(fornecedor_id):
     fornecedor, _ = services.get_fornecedor_by_id(fornecedor_id)
     if not fornecedor:
         return jsonify({"error": "Fornecedor não encontrado"}), 404
-    return jsonify(fornecedor.to_dict())
+
+    # Serializa o fornecedor e inclui as listas
+    fornecedor_dict = fornecedor.to_dict()
+    fornecedor_dict['listas'] = [
+        {'id': lista.id, 'nome': lista.nome}
+        for lista in fornecedor.listas
+    ]
+    return jsonify(fornecedor_dict)
 
 @api_bp.route('/fornecedores/<int:fornecedor_id>', methods=['PUT'])
 @admin_required()
