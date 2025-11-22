@@ -24,47 +24,84 @@ const Layout: React.FC = () => {
   const [searchTerm, setSearchTerm] = React.useState('');
   const location = useLocation();
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
   const searchInputRef = React.useRef<HTMLInputElement>(null);
 
-  // Menu structure with groups
-  const menuGroups: MenuGroup[] = [
+  // Admin menu structure
+  const adminMenuGroups: MenuGroup[] = [
     {
       title: 'VISÃO GERAL',
       items: [
-        { path: '/admin', icon: 'fa-tachometer-alt', label: 'Dashboard', ariaLabel: 'Dashboard - Painel de controle' }
+        { path: '/admin', icon: 'fa-tachometer-alt', label: 'Dashboard Admin', ariaLabel: 'Dashboard - Painel de controle' },
+        { path: '/admin/global', icon: 'fa-globe', label: 'Dashboard Global', ariaLabel: 'Dashboard Global' }
       ]
     },
     {
-      title: 'CONTEÚDO',
+      title: 'LISTAS & ESTOQUE',
       items: [
-        { path: '/admin/listas', icon: 'fa-list-alt', label: 'Gestão de Listas', ariaLabel: 'Gestão de Listas' },
-        { path: '/admin/items', icon: 'fa-boxes', label: 'Itens', ariaLabel: 'Itens' }
+        { path: '/admin/listas-compras', icon: 'fa-shopping-cart', label: 'Listas de Compras', ariaLabel: 'Listas de Compras' },
+        { path: '/admin/items', icon: 'fa-boxes', label: 'Itens', ariaLabel: 'Itens' },
+        { path: '/admin/areas', icon: 'fa-map-marker-alt', label: 'Áreas', ariaLabel: 'Áreas' }
+      ]
+    },
+    {
+      title: 'FORNECEDORES & COTAÇÕES',
+      items: [
+        { path: '/admin/fornecedores', icon: 'fa-truck', label: 'Fornecedores', ariaLabel: 'Fornecedores' },
+        { path: '/admin/gerar-cotacao', icon: 'fa-file-invoice-dollar', label: 'Gerar Cotação', ariaLabel: 'Gerar Cotação' },
+        { path: '/admin/cotacoes', icon: 'fa-chart-pie', label: 'Cotações', ariaLabel: 'Cotações' }
       ]
     },
     {
       title: 'GESTÃO',
       items: [
-        { path: '/admin/users', icon: 'fa-users-cog', label: 'Gestão de Usuários', ariaLabel: 'Gestão de Usuários' },
-        { path: '/admin/areas', icon: 'fa-map-marker-alt', label: 'Áreas', ariaLabel: 'Áreas' },
-        { path: '/admin/fornecedores', icon: 'fa-truck', label: 'Fornecedores', ariaLabel: 'Fornecedores' }
+        { path: '/admin/users', icon: 'fa-users-cog', label: 'Usuários', ariaLabel: 'Gestão de Usuários' },
+        { path: '/admin/gerenciar-usuarios', icon: 'fa-user-shield', label: 'Gerenciar Usuários', ariaLabel: 'Gerenciar Usuários' }
       ]
     },
     {
-      title: 'OPERAÇÕES',
+      title: 'PERFIL',
       items: [
-        { path: '/admin/cotacoes', icon: 'fa-chart-pie', label: 'Cotações', ariaLabel: 'Cotações' }
-      ]
-    },
-    {
-      title: 'CONFIGURAÇÕES',
-      items: [
-        { path: '/admin/configuracoes', icon: 'fa-cog', label: 'Configurações', ariaLabel: 'Configurações do sistema' },
+        { path: '/admin/editar-perfil', icon: 'fa-user-edit', label: 'Editar Perfil', ariaLabel: 'Editar Perfil' },
         { path: '/admin/mudar-senha', icon: 'fa-key', label: 'Mudar Senha', ariaLabel: 'Mudar senha' },
         { path: '/logout', icon: 'fa-sign-out-alt', label: 'Sair', ariaLabel: 'Sair do sistema' }
       ]
     }
   ];
+
+  // Collaborator menu structure
+  const collaboratorMenuGroups: MenuGroup[] = [
+    {
+      title: 'DASHBOARD',
+      items: [
+        { path: '/collaborator', icon: 'fa-tachometer-alt', label: 'Meu Dashboard', ariaLabel: 'Dashboard - Painel de controle' }
+      ]
+    },
+    {
+      title: 'MINHAS ÁREAS',
+      items: [
+        { path: '/collaborator/areas', icon: 'fa-map-marker-alt', label: 'Áreas', ariaLabel: 'Áreas' },
+        { path: '/collaborator/submissions', icon: 'fa-clipboard-list', label: 'Submissões', ariaLabel: 'Submissões' }
+      ]
+    },
+    {
+      title: 'LISTAS DE COMPRAS',
+      items: [
+        { path: '/collaborator/listas', icon: 'fa-shopping-cart', label: 'Minhas Listas', ariaLabel: 'Minhas Listas' }
+      ]
+    },
+    {
+      title: 'PERFIL',
+      items: [
+        { path: '/collaborator/perfil', icon: 'fa-user-edit', label: 'Editar Perfil', ariaLabel: 'Editar Perfil' },
+        { path: '/collaborator/mudar-senha', icon: 'fa-key', label: 'Mudar Senha', ariaLabel: 'Mudar senha' },
+        { path: '/logout', icon: 'fa-sign-out-alt', label: 'Sair', ariaLabel: 'Sair do sistema' }
+      ]
+    }
+  ];
+
+  // Select menu based on user role
+  const menuGroups: MenuGroup[] = user?.role === 'ADMIN' ? adminMenuGroups : collaboratorMenuGroups;
 
   // Filter menu items based on search
   const filteredGroups = React.useMemo(() => {
@@ -212,6 +249,23 @@ const Layout: React.FC = () => {
             <i className={`fas ${isCollapsed ? 'fa-chevron-left' : 'fa-chevron-right'}`} aria-hidden="true"></i>
           </button>
         </div>
+
+        {/* User Profile Section */}
+        {user && (
+          <div className={styles.userProfileSection}>
+            <div className={styles.userAvatar}>
+              <i className={`fas ${user.role === 'ADMIN' ? 'fa-user-shield' : 'fa-user'}`} aria-hidden="true"></i>
+            </div>
+            {!isCollapsed && (
+              <div className={styles.userInfo}>
+                <div className={styles.userName}>Usuário ID: {user.id}</div>
+                <div className={styles.userRole}>
+                  {user.role === 'ADMIN' ? 'Administrador' : 'Colaborador'}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Search bar */}
         {!isCollapsed && (
