@@ -42,7 +42,9 @@
       "Bash(git reset:*)",
       "Bash(xargs findstr:*)",
       "Bash(sqlite3:*)",
-      "Bash(nul)"
+      "Bash(nul)",
+      "Bash(git branch:*)",
+      "Bash(git push:*)"
     ],
     "deny": [],
     "ask": []

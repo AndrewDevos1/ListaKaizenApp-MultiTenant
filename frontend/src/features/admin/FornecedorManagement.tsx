@@ -122,14 +122,14 @@ const FornecedorManagement: React.FC = () => {
                             <td>{f.contato}</td>
                             <td>{f.meio_envio}</td>
                             <td>
-                                <Button variant="info" size="sm" onClick={() => navigate(`/admin/fornecedores/${f.id}/detalhes`)} className="me-2">
-                                    <i className="fas fa-eye"></i>
+                                <Button variant="info" onClick={() => navigate(`/admin/fornecedores/${f.id}/detalhes`)} className="me-2">
+                                    <i className="fas fa-eye me-1"></i>Ver Detalhes
                                 </Button>
-                                <Button variant="warning" size="sm" onClick={() => handleShowModal(f)} className="me-2">
-                                    <i className="fas fa-edit"></i>
+                                <Button variant="warning" onClick={() => handleShowModal(f)} className="me-2">
+                                    <i className="fas fa-edit me-1"></i>Editar
                                 </Button>
-                                <Button variant="danger" size="sm" onClick={() => handleShowDeleteModal(f)}>
-                                    <i className="fas fa-trash"></i>
+                                <Button variant="danger" onClick={() => handleShowDeleteModal(f)}>
+                                    <i className="fas fa-trash me-1"></i>Deletar
                                 </Button>
                             </td>
                         </tr>
