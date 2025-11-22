@@ -355,7 +355,7 @@ def create_fornecedor(data):
 
     # Adiciona as listas ao fornecedor se houver
     if lista_ids:
-        from models import Lista
+        from .models import Lista
         for lista_id in lista_ids:
             lista = repositories.get_by_id(Lista, lista_id)
             if lista:
@@ -381,7 +381,7 @@ def update_fornecedor(fornecedor_id, data):
 
     # Atualiza as listas se foi fornecido lista_ids
     if lista_ids is not None:
-        from models import Lista
+        from .models import Lista
         # Remove todas as listas anteriores
         updated_fornecedor.listas.clear()
 
