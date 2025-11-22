@@ -169,6 +169,18 @@ const Layout: React.FC = () => {
     return () => document.removeEventListener('keydown', handleSlashKey);
   }, []);
 
+  // Reset toggle state when resizing to desktop
+  React.useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 768 && isToggled) {
+        setIsToggled(false);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [isToggled]);
+
   // Touch gesture handlers (swipe)
   const [touchStart, setTouchStart] = React.useState<number | null>(null);
   const [touchEnd, setTouchEnd] = React.useState<number | null>(null);

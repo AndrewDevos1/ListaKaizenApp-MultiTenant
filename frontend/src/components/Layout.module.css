@@ -390,6 +390,15 @@
   transition: margin-right 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* ================================
+   WRAPPER (Root Container)
+   ================================ */
+
+.wrapper {
+  min-width: 0;
+  overflow-x: hidden;
+}
+
 /* Wrapper States */
 .wrapper.toggled .sidebarWrapper {
   margin-right: 0;
@@ -477,7 +486,7 @@
   align-items: center;
   cursor: pointer;
   box-shadow: -2px 0 12px rgba(102, 126, 234, 0.4);
-  z-index: 1030;
+  z-index: 1050;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   border: none;
   gap: 8px;
@@ -527,20 +536,14 @@
   .pageContentWrapper {
     min-width: 0;
     width: 100%;
-    margin-right: 18rem;
+    margin-right: 0;
   }
 
   .collapsed .pageContentWrapper {
-    margin-right: 5rem;
-  }
-
-  .wrapper.toggled .sidebarWrapper {
-    margin-right: -18rem;
-  }
-
-  .wrapper.toggled .pageContentWrapper {
     margin-right: 0;
   }
+
+  /* Desktop não usa estado .toggled - apenas mobile com overlay */
 
   .overlay {
     display: none;
@@ -604,6 +607,10 @@
 
   .sidebarFooter {
     padding: 0.75rem;
+  }
+
+  .sidebarTab {
+    display: flex;
   }
 }
 
