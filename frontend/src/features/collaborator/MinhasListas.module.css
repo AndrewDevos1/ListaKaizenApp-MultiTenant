@@ -1,134 +1,108 @@
-.minhasListasCard {
-    border: none;
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(111, 66, 193, 0.15);
-    overflow: hidden;
-    transition: all 0.3s ease;
-    height: 100%;
+.container {
+    padding: 2rem 0;
+    max-width: 1200px;
 }
 
-.minhasListasCard:hover {
-    box-shadow: 0 4px 16px rgba(111, 66, 193, 0.25);
+.header {
+    margin-bottom: 3rem;
 }
 
-.cardHeader {
-    background: linear-gradient(135deg, #6f42c1 0%, #8b5cf6 100%);
-    color: white;
-    border: none;
-    padding: 1.5rem;
+.header h2 {
+    color: #2c3e50;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    margin-top: 0;
+    font-size: 2rem;
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: 0.75rem;
 }
 
-.headerIcon {
-    font-size: 1.5rem;
-    opacity: 0.9;
-}
-
-.cardTitle {
+.header p {
+    color: #6c757d;
+    font-size: 0.95rem;
     margin: 0;
-    font-weight: 600;
-    font-size: 1rem;
-}
-
-.cardBody {
-    padding: 1rem;
-    max-height: 400px;
-    overflow-y: auto;
 }
 
 .loadingContainer {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 0.75rem;
-    padding: 2rem 1rem;
-    color: #6f42c1;
-}
-
-.loadingText {
-    font-size: 0.9rem;
-    color: #6f42c1;
-}
-
-.listaItem {
-    cursor: pointer;
-    padding: 1rem;
-    border: 1px solid #e9ecef;
-    border-radius: 8px;
-    margin-bottom: 0.75rem;
-    transition: all 0.2s ease;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-}
-
-.listaItem:hover {
-    background-color: #f8f5ff;
-    border-color: #6f42c1;
-    transform: translateX(4px);
-}
-
-.listaContent {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    width: 100%;
-    gap: 1rem;
-}
-
-.listaInfo {
-    flex: 1;
-    min-width: 0;
-}
-
-.listaNome {
-    margin: 0;
-    font-weight: 600;
-    color: #2c3e50;
-    font-size: 0.95rem;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.listaDescricao {
-    margin: 0.25rem 0 0 0;
-    font-size: 0.85rem;
+    padding: 6rem 2rem;
     color: #6c757d;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
 }
 
-.listaArrow {
-    color: #6f42c1;
-    opacity: 0.6;
-    transition: all 0.2s ease;
-    flex-shrink: 0;
+.listaCard {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    height: 100%;
+    background-color: white;
 }
 
-.listaItem:hover .listaArrow {
-    opacity: 1;
-    transform: translateX(4px);
+.listaCard:hover {
+    box-shadow: 0 12px 24px rgba(111, 66, 193, 0.15);
+    transform: translateY(-6px);
+    border-color: #6f42c1;
+}
+
+.listaCardContent {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+}
+
+.listaCardTitle {
+    color: #2c3e50;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    margin-top: 0;
+    font-size: 1.1rem;
+}
+
+.listaCardDescricao {
+    color: #6c757d;
+    font-size: 0.9rem;
+    margin-bottom: 0;
+    margin-top: 0.5rem;
 }
 
 /* Responsividade */
+@media (max-width: 992px) {
+    .container {
+        padding: 1.5rem 0;
+    }
+
+    .header h2 {
+        font-size: 1.75rem;
+    }
+}
+
 @media (max-width: 768px) {
-    .cardBody {
-        max-height: 300px;
+    .container {
+        padding: 1rem 0;
     }
 
-    .listaItem {
-        padding: 0.75rem;
+    .header h2 {
+        font-size: 1.5rem;
     }
 
-    .listaNome {
-        font-size: 0.9rem;
+    .header p {
+        font-size: 0.85rem;
     }
 
-    .listaDescricao {
-        display: none;
+    .listaCardContent {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .listaCardTitle {
+        font-size: 1rem;
+    }
+
+    .listaCardDescricao {
+        font-size: 0.85rem;
     }
 }

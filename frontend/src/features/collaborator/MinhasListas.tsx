@@ -1,13 +1,13 @@
 /**
- * Minhas Listas - Card para o dashboard do colaborador
- * Mostra as listas atribuídas e permite gerenciar estoque
+ * Minhas Listas - Página para o colaborador gerenciar suas listas de compras
+ * Mostra todas as listas atribuídas e permite navegar para editar cada uma
  */
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card, ListGroup, Spinner, Alert, Button } from 'react-bootstrap';
+import { Container, Button, Spinner, Alert, Row, Col, Card, ListGroup } from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faClipboardList, faArrowRight } from '@fortawesome/free-solid-svg-icons';
+import { faArrowLeft, faClipboardList, faArrowRight } from '@fortawesome/free-solid-svg-icons';
 import api from '../../services/api';
 import styles from './MinhasListas.module.css';
 
@@ -42,46 +42,76 @@ const MinhasListas: React.FC = () => {
     };
 
     return (
-        <Card className={styles.minhasListasCard}>
-            <Card.Header className={styles.cardHeader}>
-                <FontAwesomeIcon icon={faClipboardList} className={styles.headerIcon} />
-                <h5 className={styles.cardTitle}>Minhas Listas</h5>
-            </Card.Header>
-            <Card.Body className={styles.cardBody}>
-                {loading ? (
-                    <div className={styles.loadingContainer}>
-                        <Spinner animation="border" role="status" size="sm" />
-                        <span className={styles.loadingText}>Carregando listas...</span>
-                    </div>
-                ) : error ? (
-                    <Alert variant="danger" className="mb-0">{error}</Alert>
-                ) : listas.length === 0 ? (
-                    <Alert variant="info" className="mb-0">
-                        Nenhuma lista atribuída no momento
-                    </Alert>
-                ) : (
-                    <ListGroup variant="flush">
-                        {listas.map((lista) => (
-                            <ListGroup.Item
-                                key={lista.id}
-                                className={styles.listaItem}
+        <Container fluid className={styles.container}>
+            <Button
+                variant="outline-secondary"
+                size="sm"
+                onClick={() => navigate('/collaborator')}
+                className="mb-3"
+            >
+                <FontAwesomeIcon icon={faArrowLeft} /> Voltar ao Dashboard
+            </Button>
+
+            <div className={styles.header}>
+                <h2><FontAwesomeIcon icon={faClipboardList} /> Minhas Compras</h2>
+                <p>Gerenciar suas listas de compras atribuídas</p>
+            </div>
+
+            {error && (
+                <Alert variant="danger" onClose={() => setError(null)} dismissible>
+                    {error}
+                </Alert>
+            )}
+
+            {loading ? (
+                <div className={styles.loadingContainer}>
+                    <Spinner animation="border" role="status">
+                        <span className="visually-hidden">Carregando...</span>
+                    </Spinner>
+                </div>
+            ) : listas.length === 0 ? (
+                <Alert variant="info">
+                    Nenhuma lista atribuída no momento
+                </Alert>
+            ) : (
+                <Row className="g-4">
+                    {listas.map((lista) => (
+                        <Col lg={6} key={lista.id} className="mb-3">
+                            <Card
+                                className={styles.listaCard}
                                 onClick={() => navigate(`/collaborator/lista/${lista.id}/estoque`)}
+                                style={{ cursor: 'pointer' }}
                             >
-                                <div className={styles.listaContent}>
-                                    <div className={styles.listaInfo}>
-                                        <h6 className={styles.listaNome}>{lista.nome}</h6>
-                                        {lista.descricao && (
-                                            <p className={styles.listaDescricao}>{lista.descricao}</p>
-                                        )}
+                                <Card.Body>
+                                    <div className={styles.listaCardContent}>
+                                        <div>
+                                            <Card.Title className={styles.listaCardTitle}>
+                                                {lista.nome}
+                                            </Card.Title>
+                                            {lista.descricao && (
+                                                <Card.Text className={styles.listaCardDescricao}>
+                                                    {lista.descricao}
+                                                </Card.Text>
+                                            )}
+                                        </div>
+                                        <Button
+                                            variant="outline-primary"
+                                            size="sm"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                navigate(`/collaborator/lista/${lista.id}/estoque`);
+                                            }}
+                                        >
+                                            <FontAwesomeIcon icon={faArrowRight} /> Editar
+                                        </Button>
                                     </div>
-                                    <FontAwesomeIcon icon={faArrowRight} className={styles.listaArrow} />
-                                </div>
-                            </ListGroup.Item>
-                        ))}
-                    </ListGroup>
-                )}
-            </Card.Body>
-        </Card>
+                                </Card.Body>
+                            </Card>
+                        </Col>
+                    ))}
+                </Row>
+            )}
+        </Container>
     );
 };
 
