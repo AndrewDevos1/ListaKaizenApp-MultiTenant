@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify
 from .config import config_by_name
-from .extensions import db, migrate, jwt
+from .extensions import db, migrate, jwt, cors
 
 
 def create_app(config_name='development'):
@@ -14,6 +14,18 @@ def create_app(config_name='development'):
     db.init_app(app)
     migrate.init_app(app, db)
     jwt.init_app(app)
+
+    # Inicializa CORS com configuração permissiva para desenvolvimento e produção
+    cors.init_app(app, resources={
+        r"/api/*": {
+            "origins": ["*"],
+            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+            "allow_headers": ["Content-Type", "Authorization", "X-Requested-With"],
+            "expose_headers": ["Content-Type", "Authorization"],
+            "supports_credentials": False,
+            "max_age": 3600
+        }
+    })
 
     # CORS manualmente com after_request hook
     @app.after_request
