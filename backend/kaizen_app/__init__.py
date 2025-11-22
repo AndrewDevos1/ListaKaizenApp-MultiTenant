@@ -43,6 +43,11 @@ def create_app(config_name='development'):
         """Responde a requisições OPTIONS (CORS preflight)"""
         if request.method == 'OPTIONS':
             response = app.make_default_options_response()
+            # Adiciona headers CORS explicitamente para OPTIONS
+            response.headers['Access-Control-Allow-Origin'] = '*'
+            response.headers['Access-Control-Allow-Methods'] = 'GET, HEAD, POST, PUT, DELETE, OPTIONS, PATCH'
+            response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With'
+            response.headers['Access-Control-Max-Age'] = '86400'
             return response
 
     # Middleware para log de todas as requisições
