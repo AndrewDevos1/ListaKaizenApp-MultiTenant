@@ -107,7 +107,7 @@ const ListaMaeConsolidada: React.FC = () => {
 
     const fetchFornecedores = async () => {
         try {
-            const response = await api.get<Fornecedor[]>('/admin/fornecedores');
+            const response = await api.get<Fornecedor[]>('/v1/fornecedores');
             setFornecedores(response.data);
         } catch (err: any) {
             console.error('Erro ao carregar fornecedores:', err);
