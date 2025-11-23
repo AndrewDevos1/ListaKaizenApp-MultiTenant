@@ -406,6 +406,9 @@ def update_fornecedor(fornecedor_id, data):
     # Extrai lista_ids do data se existir
     lista_ids = data.pop('lista_ids', None)
 
+    # Remove campo de relacionamento se existir (evita erro ao fazer setattr)
+    data.pop('listas', None)
+
     # Busca o fornecedor
     updated_fornecedor = repositories.get_by_id(Fornecedor, fornecedor_id)
     if not updated_fornecedor:
