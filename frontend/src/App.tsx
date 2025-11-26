@@ -20,6 +20,7 @@ import ListasCompras from './features/admin/ListasCompras';
 import ListaMaeConsolidada from './features/admin/ListaMaeConsolidada';
 import GerenciarItensLista from './features/admin/GerenciarItensLista';
 import GerenciarUsuarios from './features/admin/GerenciarUsuarios';
+import GerenciarPedidos from './features/admin/GerenciarPedidos';
 import Configuracoes from './features/admin/Configuracoes';
 import MudarSenha from './features/admin/MudarSenha';
 import EditarPerfil from './features/admin/EditarPerfil';
@@ -50,6 +51,7 @@ function App() {
             <Route path="/admin" element={<AdminRoute />}>
               <Route index element={<AdminDashboard />} />
               <Route path="gerenciar-usuarios" element={<GerenciarUsuarios />} />
+              <Route path="gerenciar-pedidos" element={<GerenciarPedidos />} />
               <Route path="configuracoes" element={<Configuracoes />} />
               <Route path="mudar-senha" element={<MudarSenha />} />
               <Route path="editar-perfil" element={<EditarPerfil />} />

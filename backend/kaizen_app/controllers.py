@@ -458,6 +458,57 @@ def submit_pedidos_route():
     response, status = services.submit_pedidos(user_id)
     return jsonify(response), status
 
+@admin_bp.route('/pedidos', methods=['GET'])
+@admin_required()
+def get_all_pedidos_route():
+    """Retorna todos os pedidos (com filtro opcional por status via query param)."""
+    status_filter = request.args.get('status')  # PENDENTE, APROVADO ou REJEITADO
+
+    if status_filter:
+        # Converter string para enum
+        try:
+            from .models import PedidoStatus
+            status_enum = PedidoStatus[status_filter.upper()]
+        except KeyError:
+            return jsonify({"error": f"Status inválido: {status_filter}"}), 400
+        pedidos, _ = services.get_all_pedidos(status_filter=status_enum)
+    else:
+        pedidos, _ = services.get_all_pedidos()
+
+    return jsonify([p.to_dict() for p in pedidos])
+
+@admin_bp.route('/pedidos/<int:pedido_id>/aprovar', methods=['POST'])
+@admin_required()
+def aprovar_pedido_route(pedido_id):
+    """Aprova um pedido pendente."""
+    response, status = services.aprovar_pedido(pedido_id)
+    return jsonify(response), status
+
+@admin_bp.route('/pedidos/<int:pedido_id>/rejeitar', methods=['POST'])
+@admin_required()
+def rejeitar_pedido_route(pedido_id):
+    """Rejeita um pedido pendente."""
+    response, status = services.rejeitar_pedido(pedido_id)
+    return jsonify(response), status
+
+@admin_bp.route('/pedidos/aprovar-lote', methods=['POST'])
+@admin_required()
+def aprovar_pedidos_lote_route():
+    """Aprova múltiplos pedidos em lote."""
+    data = request.get_json()
+    pedido_ids = data.get('pedido_ids', [])
+    response, status = services.aprovar_pedidos_lote(pedido_ids)
+    return jsonify(response), status
+
+@admin_bp.route('/pedidos/rejeitar-lote', methods=['POST'])
+@admin_required()
+def rejeitar_pedidos_lote_route():
+    """Rejeita múltiplos pedidos em lote."""
+    data = request.get_json()
+    pedido_ids = data.get('pedido_ids', [])
+    response, status = services.rejeitar_pedidos_lote(pedido_ids)
+    return jsonify(response), status
+
 
 # --- Rotas de Cotações ---
 @api_bp.route('/v1/cotacoes', methods=['POST'])

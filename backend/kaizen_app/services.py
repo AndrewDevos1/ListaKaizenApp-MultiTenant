@@ -633,7 +633,7 @@ def get_pedidos_by_user(user_id):
 def submit_pedidos(user_id):
     """Cria registros de Pedido para todos os itens que estão abaixo do estoque mínimo."""
     itens_a_pedir = db.session.query(Estoque, Item).join(Item).filter(Estoque.quantidade_atual < Estoque.quantidade_minima).all()
-    
+
     if not itens_a_pedir:
         return {"message": "Nenhum item precisa de reposição." }, 200
 
@@ -648,9 +648,119 @@ def submit_pedidos(user_id):
         )
         novos_pedidos.append(novo_pedido)
         db.session.add(novo_pedido)
-    
+
     db.session.commit()
     return {"message": f"{len(novos_pedidos)} pedidos foram gerados com sucesso." }, 201
+
+
+def get_all_pedidos(status_filter=None):
+    """
+    Retorna todos os pedidos do sistema.
+
+    Args:
+        status_filter: Filtra por status (PENDENTE, APROVADO, REJEITADO). Se None, retorna todos.
+    """
+    query = Pedido.query
+
+    if status_filter:
+        query = query.filter_by(status=status_filter)
+
+    pedidos = query.order_by(Pedido.data_pedido.desc()).all()
+    return pedidos, 200
+
+
+def aprovar_pedido(pedido_id):
+    """Aprova um pedido pendente."""
+    pedido = repositories.get_by_id(Pedido, pedido_id)
+
+    if not pedido:
+        return {"error": "Pedido não encontrado."}, 404
+
+    if pedido.status != PedidoStatus.PENDENTE:
+        return {"error": f"Apenas pedidos pendentes podem ser aprovados. Status atual: {pedido.status.value}"}, 400
+
+    pedido.status = PedidoStatus.APROVADO
+    db.session.commit()
+
+    return {"message": "Pedido aprovado com sucesso.", "pedido": pedido.to_dict()}, 200
+
+
+def rejeitar_pedido(pedido_id):
+    """Rejeita um pedido pendente."""
+    pedido = repositories.get_by_id(Pedido, pedido_id)
+
+    if not pedido:
+        return {"error": "Pedido não encontrado."}, 404
+
+    if pedido.status != PedidoStatus.PENDENTE:
+        return {"error": f"Apenas pedidos pendentes podem ser rejeitados. Status atual: {pedido.status.value}"}, 400
+
+    pedido.status = PedidoStatus.REJEITADO
+    db.session.commit()
+
+    return {"message": "Pedido rejeitado com sucesso.", "pedido": pedido.to_dict()}, 200
+
+
+def aprovar_pedidos_lote(pedido_ids):
+    """Aprova múltiplos pedidos em lote."""
+    if not pedido_ids or not isinstance(pedido_ids, list):
+        return {"error": "Lista de IDs inválida."}, 400
+
+    aprovados = 0
+    erros = []
+
+    for pedido_id in pedido_ids:
+        pedido = repositories.get_by_id(Pedido, pedido_id)
+
+        if not pedido:
+            erros.append(f"Pedido {pedido_id} não encontrado")
+            continue
+
+        if pedido.status != PedidoStatus.PENDENTE:
+            erros.append(f"Pedido {pedido_id} não está pendente")
+            continue
+
+        pedido.status = PedidoStatus.APROVADO
+        aprovados += 1
+
+    db.session.commit()
+
+    return {
+        "message": f"{aprovados} pedido(s) aprovado(s) com sucesso.",
+        "aprovados": aprovados,
+        "erros": erros if erros else None
+    }, 200
+
+
+def rejeitar_pedidos_lote(pedido_ids):
+    """Rejeita múltiplos pedidos em lote."""
+    if not pedido_ids or not isinstance(pedido_ids, list):
+        return {"error": "Lista de IDs inválida."}, 400
+
+    rejeitados = 0
+    erros = []
+
+    for pedido_id in pedido_ids:
+        pedido = repositories.get_by_id(Pedido, pedido_id)
+
+        if not pedido:
+            erros.append(f"Pedido {pedido_id} não encontrado")
+            continue
+
+        if pedido.status != PedidoStatus.PENDENTE:
+            erros.append(f"Pedido {pedido_id} não está pendente")
+            continue
+
+        pedido.status = PedidoStatus.REJEITADO
+        rejeitados += 1
+
+    db.session.commit()
+
+    return {
+        "message": f"{rejeitados} pedido(s) rejeitado(s) com sucesso.",
+        "rejeitados": rejeitados,
+        "erros": erros if erros else None
+    }, 200
 
 def atualizar_estoque_e_calcular_pedido(estoque_id, quantidade_atual, usuario_id):
     """
