@@ -4,7 +4,7 @@
  * Esta página permite criar, visualizar, editar e deletar listas de compras
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Container, Card, Button, Modal, Form, Alert } from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
@@ -25,6 +25,8 @@ import {
     faUsersCog,
     faInfoCircle,
     faBoxOpen,
+    faDownload,
+    faUpload,
 } from '@fortawesome/free-solid-svg-icons';
 import { Link } from 'react-router-dom';
 import api from '../../services/api';
@@ -348,6 +350,85 @@ const ListasCompras: React.FC = () => {
         }
     };
 
+    // Funções de exportar/importar CSV
+    const fileInputRefs = useRef<{[key: number]: HTMLInputElement | null}>({});
+
+    const handleExportCSV = async (lista: Lista) => {
+        try {
+            const response = await api.get(`/admin/listas/${lista.id}/export-csv`, {
+                responseType: 'blob'
+            });
+
+            // Criar link de download
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+
+            // Obter nome do arquivo do header ou usar padrão
+            const contentDisposition = response.headers['content-disposition'];
+            let filename = `${lista.nome}_backup.csv`;
+            if (contentDisposition) {
+                const filenameMatch = contentDisposition.match(/filename="?(.+)"?/);
+                if (filenameMatch) {
+                    filename = filenameMatch[1];
+                }
+            }
+
+            link.setAttribute('download', filename);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
+
+            setSuccessMessage('Lista exportada com sucesso!');
+            setTimeout(() => setSuccessMessage(null), 3000);
+        } catch (err: any) {
+            setError(err.response?.data?.error || 'Erro ao exportar lista');
+            setTimeout(() => setError(null), 3000);
+        }
+    };
+
+    const handleImportCSV = (lista: Lista) => {
+        // Trigger file input click
+        const fileInput = fileInputRefs.current[lista.id];
+        if (fileInput) {
+            fileInput.click();
+        }
+    };
+
+    const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>, listaId: number) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        // Validar tipo de arquivo
+        if (!file.name.endsWith('.csv')) {
+            setError('Por favor, selecione um arquivo CSV');
+            setTimeout(() => setError(null), 3000);
+            return;
+        }
+
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+
+            await api.post(`/admin/listas/${listaId}/import-csv`, formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                }
+            });
+
+            setSuccessMessage('Lista importada com sucesso!');
+            fetchListas(); // Recarregar listas
+            setTimeout(() => setSuccessMessage(null), 3000);
+        } catch (err: any) {
+            setError(err.response?.data?.error || 'Erro ao importar lista');
+            setTimeout(() => setError(null), 3000);
+        } finally {
+            // Limpar input file
+            event.target.value = '';
+        }
+    };
+
     return (
         <div className={styles.pageWrapper}>
             <Container fluid>
@@ -448,6 +529,31 @@ const ListasCompras: React.FC = () => {
                                         >
                                             <FontAwesomeIcon icon={faUsersCog} />
                                         </Button>
+                                        <Button
+                                            variant="link"
+                                            size="sm"
+                                            onClick={() => handleExportCSV(lista)}
+                                            className={styles.actionButton}
+                                            title="Exportar Lista (CSV)"
+                                        >
+                                            <FontAwesomeIcon icon={faDownload} />
+                                        </Button>
+                                        <Button
+                                            variant="link"
+                                            size="sm"
+                                            onClick={() => handleImportCSV(lista)}
+                                            className={styles.actionButton}
+                                            title="Importar Lista (CSV)"
+                                        >
+                                            <FontAwesomeIcon icon={faUpload} />
+                                        </Button>
+                                        <input
+                                            type="file"
+                                            ref={(el) => fileInputRefs.current[lista.id] = el}
+                                            accept=".csv"
+                                            style={{ display: 'none' }}
+                                            onChange={(e) => handleFileChange(e, lista.id)}
+                                        />
                                         <Button
                                             variant="link"
                                             size="sm"

@@ -1928,3 +1928,131 @@ def populate_database_with_mock_data():
         db.session.rollback()
         print(f"❌ Erro ao popular banco de dados: {str(e)}")
         return {"error": f"Erro ao popular banco de dados: {str(e)}"}, 500
+
+
+def export_lista_to_csv(lista_id):
+    """
+    Exporta os itens da lista mãe para formato CSV.
+    Retorna o conteúdo CSV como string e o nome do arquivo.
+    """
+    try:
+        # Buscar a lista
+        lista = Lista.query.get(lista_id)
+        if not lista:
+            return {"error": "Lista não encontrada."}, 404
+
+        # Buscar os itens da lista mãe
+        itens = ListaMaeItem.query.filter_by(lista_mae_id=lista_id).all()
+
+        if not itens:
+            return {"error": "Lista não possui itens para exportar."}, 400
+
+        # Gerar nome do arquivo com nome da lista e data
+        from datetime import datetime
+        data_atual = datetime.now().strftime("%Y-%m-%d")
+        # Remover caracteres especiais do nome da lista
+        nome_limpo = "".join(c for c in lista.nome if c.isalnum() or c in (' ', '-', '_')).strip()
+        nome_limpo = nome_limpo.replace(' ', '_')
+        filename = f"{nome_limpo}_{data_atual}.csv"
+
+        # Gerar conteúdo CSV
+        import csv
+        from io import StringIO
+
+        output = StringIO()
+        writer = csv.writer(output)
+
+        # Cabeçalho
+        writer.writerow(['nome', 'unidade', 'quantidade_atual', 'quantidade_minima'])
+
+        # Dados
+        for item in itens:
+            writer.writerow([
+                item.nome,
+                item.unidade,
+                float(item.quantidade_atual) if item.quantidade_atual else 0,
+                float(item.quantidade_minima) if item.quantidade_minima else 0
+            ])
+
+        csv_content = output.getvalue()
+        output.close()
+
+        return {
+            "csv_content": csv_content,
+            "filename": filename
+        }, 200
+
+    except Exception as e:
+        print(f"❌ Erro ao exportar lista para CSV: {str(e)}")
+        return {"error": f"Erro ao exportar lista: {str(e)}"}, 500
+
+
+def import_lista_from_csv(lista_id, csv_file):
+    """
+    Importa itens da lista mãe a partir de um arquivo CSV.
+    Substitui todos os itens existentes da lista pelos itens do CSV.
+    """
+    try:
+        # Buscar a lista
+        lista = Lista.query.get(lista_id)
+        if not lista:
+            return {"error": "Lista não encontrada."}, 404
+
+        # Ler o arquivo CSV
+        import csv
+        from io import StringIO, TextIOWrapper
+
+        # Converter para texto se necessário
+        if hasattr(csv_file, 'read'):
+            content = csv_file.read()
+            if isinstance(content, bytes):
+                content = content.decode('utf-8')
+        else:
+            content = csv_file
+
+        # Parse CSV
+        csv_reader = csv.DictReader(StringIO(content))
+
+        # Validar cabeçalhos
+        required_headers = {'nome', 'unidade', 'quantidade_atual', 'quantidade_minima'}
+        headers = set(csv_reader.fieldnames or [])
+
+        if not required_headers.issubset(headers):
+            return {
+                "error": f"CSV deve conter os cabeçalhos: {', '.join(required_headers)}"
+            }, 400
+
+        # Remover itens existentes da lista
+        ListaMaeItem.query.filter_by(lista_mae_id=lista_id).delete()
+
+        # Importar novos itens
+        itens_importados = 0
+        for row in csv_reader:
+            try:
+                # Criar novo item
+                novo_item = ListaMaeItem(
+                    lista_mae_id=lista_id,
+                    nome=row['nome'].strip(),
+                    unidade=row['unidade'].strip(),
+                    quantidade_atual=float(row['quantidade_atual']) if row['quantidade_atual'] else 0,
+                    quantidade_minima=float(row['quantidade_minima']) if row['quantidade_minima'] else 0
+                )
+                db.session.add(novo_item)
+                itens_importados += 1
+            except (ValueError, KeyError) as e:
+                db.session.rollback()
+                return {
+                    "error": f"Erro ao processar linha do CSV: {str(e)}"
+                }, 400
+
+        db.session.commit()
+
+        return {
+            "message": f"Lista importada com sucesso! {itens_importados} itens importados.",
+            "itens_importados": itens_importados
+        }, 200
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"❌ Erro ao importar lista de CSV: {str(e)}")
+        return {"error": f"Erro ao importar lista: {str(e)}"}, 500

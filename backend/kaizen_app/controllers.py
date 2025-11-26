@@ -716,6 +716,42 @@ def importar_items_em_lote_route(lista_id):
     response, status = services.importar_items_em_lote(lista_id, data)
     return jsonify(response), status
 
+@admin_bp.route('/listas/<int:lista_id>/export-csv', methods=['GET'])
+@admin_required()
+def export_lista_csv_route(lista_id):
+    """Exporta os itens da lista mãe para CSV"""
+    from flask import make_response
+
+    response, status = services.export_lista_to_csv(lista_id)
+
+    if status != 200:
+        return jsonify(response), status
+
+    # Criar resposta com CSV
+    csv_response = make_response(response['csv_content'])
+    csv_response.headers['Content-Type'] = 'text/csv; charset=utf-8'
+    csv_response.headers['Content-Disposition'] = f'attachment; filename="{response["filename"]}"'
+
+    return csv_response
+
+@admin_bp.route('/listas/<int:lista_id>/import-csv', methods=['POST'])
+@admin_required()
+def import_lista_csv_route(lista_id):
+    """Importa itens da lista mãe a partir de arquivo CSV"""
+    if 'file' not in request.files:
+        return jsonify({"error": "Nenhum arquivo enviado"}), 400
+
+    file = request.files['file']
+
+    if file.filename == '':
+        return jsonify({"error": "Nenhum arquivo selecionado"}), 400
+
+    if not file.filename.endswith('.csv'):
+        return jsonify({"error": "Arquivo deve ser CSV"}), 400
+
+    response, status = services.import_lista_from_csv(lista_id, file)
+    return jsonify(response), status
+
 @admin_bp.route('/database/clear', methods=['POST'])
 @admin_required()
 def clear_database_route():
