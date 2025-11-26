@@ -1476,3 +1476,73 @@ def update_estoque_colaborador(user_id, estoque_id, data):
         db.session.rollback()
         current_app.logger.error(f"[UPDATE ESTOQUE COLABORADOR] ERRO: {type(e).__name__}: {str(e)}")
         return {"error": str(e)}, 500
+
+
+# --- CSV Export/Import para Fornecedores ---
+
+def exportar_fornecedores_csv():
+    """Exporta todos os fornecedores em formato CSV."""
+    try:
+        fornecedores = Fornecedor.query.all()
+
+        # Construir CSV
+        csv_lines = ["Nome,Contato,Responsável,Observação"]
+
+        for fornecedor in fornecedores:
+            contato = (fornecedor.contato or "").replace(",", ";").replace("\n", " ")
+            responsavel = (fornecedor.responsavel or "").replace(",", ";").replace("\n", " ")
+            observacao = (fornecedor.observacao or "").replace(",", ";").replace("\n", " ")
+
+            csv_lines.append(f'"{fornecedor.nome}","{contato}","{responsavel}","{observacao}"')
+
+        csv_content = "\n".join(csv_lines)
+        return {"csv": csv_content, "filename": "fornecedores.csv"}, 200
+    except Exception as e:
+        return {"error": str(e)}, 500
+
+
+def importar_fornecedores_csv(csv_content):
+    """Importa fornecedores a partir de conteúdo CSV."""
+    try:
+        import csv
+        import io
+
+        # Parse CSV
+        csv_reader = csv.DictReader(io.StringIO(csv_content))
+
+        fornecedores_criados = 0
+        fornecedores_duplicados = 0
+        erros = []
+
+        for row in csv_reader:
+            nome = row.get('Nome', '').strip()
+            if not nome:
+                continue
+
+            # Verificar se já existe
+            fornecedor_existe = Fornecedor.query.filter_by(nome=nome).first()
+            if fornecedor_existe:
+                fornecedores_duplicados += 1
+                continue
+
+            # Criar novo fornecedor
+            novo_fornecedor = Fornecedor(
+                nome=nome,
+                contato=row.get('Contato', '').strip(),
+                responsavel=row.get('Responsável', '').strip(),
+                observacao=row.get('Observação', '').strip()
+            )
+            db.session.add(novo_fornecedor)
+            fornecedores_criados += 1
+
+        db.session.commit()
+
+        return {
+            "message": f"{fornecedores_criados} fornecedor(es) criado(s)",
+            "fornecedores_criados": fornecedores_criados,
+            "fornecedores_duplicados": fornecedores_duplicados
+        }, 201
+
+    except Exception as e:
+        db.session.rollback()
+        return {"error": str(e)}, 500

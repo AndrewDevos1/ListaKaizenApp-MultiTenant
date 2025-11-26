@@ -408,6 +408,29 @@ def get_pedidos_fornecedor_consolidado_route(fornecedor_id):
     pedidos, status = services.get_pedidos_fornecedor_consolidado(fornecedor_id)
     return jsonify(pedidos), status
 
+@api_bp.route('/fornecedores/export-csv', methods=['GET'])
+@admin_required()
+def exportar_fornecedores_csv_route():
+    """Exporta todos os fornecedores em formato CSV"""
+    response, status = services.exportar_fornecedores_csv()
+    if status == 200:
+        return response['csv'], 200, {
+            'Content-Disposition': 'attachment; filename=fornecedores.csv',
+            'Content-Type': 'text/csv; charset=utf-8'
+        }
+    return jsonify(response), status
+
+@api_bp.route('/fornecedores/import-csv', methods=['POST'])
+@admin_required()
+def importar_fornecedores_csv_route():
+    """Importa fornecedores a partir de arquivo CSV"""
+    try:
+        csv_content = request.data.decode('utf-8')
+        response, status = services.importar_fornecedores_csv(csv_content)
+        return jsonify(response), status
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
 # --- Rotas de Estoque ---
 
 
