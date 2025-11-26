@@ -3,8 +3,10 @@ services:
     name: kaizen-lists-api
     runtime: python
     rootDir: backend
-    buildCommand: pip install -r requirements.txt && flask db upgrade
+    buildCommand: pip install -r requirements.txt && python fix_migration_version.py && flask db upgrade
     startCommand: gunicorn -w 4 -b 0.0.0.0:$PORT run:app
     envVars:
       - key: FLASK_CONFIG
         value: production
+      - key: FLASK_APP
+        value: run.py
