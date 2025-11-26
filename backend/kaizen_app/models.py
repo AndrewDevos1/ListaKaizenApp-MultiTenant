@@ -52,6 +52,8 @@ class Usuario(db.Model, SerializerMixin):
 
 class Item(db.Model, SerializerMixin):
     __tablename__ = "itens"
+    serialize_rules = ('-fornecedor.itens',)  # Evita recursão infinita
+
     id = db.Column(db.Integer, primary_key=True)
     nome = db.Column(db.String(100), unique=True, nullable=False)
     unidade_medida = db.Column(db.String(20), nullable=False)

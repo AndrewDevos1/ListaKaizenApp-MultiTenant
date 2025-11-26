@@ -22,6 +22,9 @@ import {
     faTag,
     faPhone,
     faEye,
+    faUsersCog,
+    faInfoCircle,
+    faBoxOpen,
 } from '@fortawesome/free-solid-svg-icons';
 import { Link } from 'react-router-dom';
 import api from '../../services/api';
@@ -34,6 +37,14 @@ interface Fornecedor {
     contato?: string;
 }
 
+interface ListaItem {
+    id: number;
+    nome: string;
+    unidade: string;
+    quantidade_atual?: number;
+    quantidade_minima?: number;
+}
+
 interface Lista {
     id: number;
     nome: string;
@@ -44,6 +55,7 @@ interface Lista {
     categoria?: string;
     telefone_whatsapp?: string;
     colaboradores?: Array<{id: number; nome: string}>;
+    itens?: ListaItem[]; // Preview dos itens
 }
 
 interface ListaFormData {
@@ -72,9 +84,13 @@ const ListasCompras: React.FC = () => {
     const [showModal, setShowModal] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [showAssignModal, setShowAssignModal] = useState(false);
+    const [showViewModal, setShowViewModal] = useState(false);
     const [editingLista, setEditingLista] = useState<Lista | null>(null);
     const [deletingLista, setDeletingLista] = useState<Lista | null>(null);
     const [assigningLista, setAssigningLista] = useState<Lista | null>(null);
+    const [viewingLista, setViewingLista] = useState<Lista | null>(null);
+    const [viewingItens, setViewingItens] = useState<ListaItem[]>([]);
+    const [loadingViewItens, setLoadingViewItens] = useState(false);
 
     // Estado para form data
     const resetFormData = (): ListaFormData => ({
@@ -217,6 +233,31 @@ const ListasCompras: React.FC = () => {
         }
     };
 
+    // Funções do modal de visualização de itens
+    const handleOpenViewModal = async (lista: Lista) => {
+        setViewingLista(lista);
+        setShowViewModal(true);
+        setLoadingViewItens(true);
+
+        try {
+            const response = await api.get(`/admin/listas/${lista.id}/lista-mae`);
+            setViewingItens(response.data.itens || []);
+        } catch (err: any) {
+            console.error('Erro ao buscar itens:', err);
+            setError('Erro ao carregar itens da lista');
+            setViewingItens([]);
+        } finally {
+            setLoadingViewItens(false);
+        }
+    };
+
+    const handleCloseViewModal = () => {
+        setShowViewModal(false);
+        setViewingLista(null);
+        setViewingItens([]);
+        setError(null);
+    };
+
     // Funções para atribuição de colaboradores
     const fetchAllUsers = async () => {
         try {
@@ -355,6 +396,15 @@ const ListasCompras: React.FC = () => {
                                         <FontAwesomeIcon icon={faListAlt} />
                                     </div>
                                     <div className={styles.cardActions}>
+                                        <Button
+                                            variant="link"
+                                            size="sm"
+                                            onClick={() => handleOpenViewModal(lista)}
+                                            className={styles.actionButton}
+                                            title="Ver Itens"
+                                        >
+                                            <FontAwesomeIcon icon={faEye} />
+                                        </Button>
                                         <Button
                                             variant="link"
                                             size="sm"
@@ -561,6 +611,87 @@ const ListasCompras: React.FC = () => {
                         </Button>
                         <Button variant="danger" onClick={handleConfirmDelete}>
                             Deletar
+                        </Button>
+                    </Modal.Footer>
+                </Modal>
+
+                {/* Modal Visualizar Itens */}
+                <Modal show={showViewModal} onHide={handleCloseViewModal} size="lg">
+                    <Modal.Header closeButton>
+                        <Modal.Title>
+                            <FontAwesomeIcon icon={faEye} style={{marginRight: '0.5rem'}} />
+                            Itens da Lista - {viewingLista?.nome}
+                        </Modal.Title>
+                    </Modal.Header>
+                    <Modal.Body>
+                        {loadingViewItens ? (
+                            <div className="text-center my-4">
+                                <div className="spinner-border text-primary" role="status">
+                                    <span className="visually-hidden">Carregando...</span>
+                                </div>
+                                <p className="mt-2">Carregando itens...</p>
+                            </div>
+                        ) : viewingItens.length === 0 ? (
+                            <Alert variant="info">
+                                <FontAwesomeIcon icon={faBoxOpen} style={{marginRight: '0.5rem'}} />
+                                Esta lista ainda não possui itens cadastrados.
+                            </Alert>
+                        ) : (
+                            <div className="table-responsive">
+                                <table className="table table-striped table-hover">
+                                    <thead style={{
+                                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                                        color: 'white'
+                                    }}>
+                                        <tr>
+                                            <th>#</th>
+                                            <th>Nome do Item</th>
+                                            <th>Unidade</th>
+                                            <th className="text-center">Qtd. Mínima</th>
+                                            <th className="text-center">Qtd. Atual</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {viewingItens.map((item, index) => (
+                                            <tr key={item.id}>
+                                                <td>{index + 1}</td>
+                                                <td>
+                                                    <strong>{item.nome}</strong>
+                                                </td>
+                                                <td>
+                                                    <span className="badge bg-secondary">{item.unidade}</span>
+                                                </td>
+                                                <td className="text-center">
+                                                    {item.quantidade_minima !== undefined ? item.quantidade_minima : '-'}
+                                                </td>
+                                                <td className="text-center">
+                                                    {item.quantidade_atual !== undefined ? (
+                                                        <span className={`badge ${
+                                                            item.quantidade_minima !== undefined &&
+                                                            item.quantidade_atual < item.quantidade_minima
+                                                                ? 'bg-danger'
+                                                                : 'bg-success'
+                                                        }`}>
+                                                            {item.quantidade_atual}
+                                                        </span>
+                                                    ) : '-'}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                                <div className="mt-3 text-muted">
+                                    <small>
+                                        <FontAwesomeIcon icon={faInfoCircle} style={{marginRight: '0.5rem'}} />
+                                        Total: <strong>{viewingItens.length}</strong> {viewingItens.length === 1 ? 'item' : 'itens'}
+                                    </small>
+                                </div>
+                            </div>
+                        )}
+                    </Modal.Body>
+                    <Modal.Footer>
+                        <Button variant="secondary" onClick={handleCloseViewModal}>
+                            Fechar
                         </Button>
                     </Modal.Footer>
                 </Modal>
