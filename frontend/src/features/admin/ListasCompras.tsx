@@ -426,9 +426,27 @@ const ListasCompras: React.FC = () => {
                                             size="sm"
                                             onClick={() => handleOpenViewModal(lista)}
                                             className={styles.actionButton}
-                                            title="Ver Itens"
+                                            title="Ver Todos os Itens"
                                         >
                                             <FontAwesomeIcon icon={faEye} />
+                                        </Button>
+                                        <Link to={`/admin/listas/${lista.id}/lista-mae`} title="Lista Mãe">
+                                            <Button
+                                                variant="link"
+                                                size="sm"
+                                                className={styles.actionButton}
+                                            >
+                                                <FontAwesomeIcon icon={faShoppingCart} />
+                                            </Button>
+                                        </Link>
+                                        <Button
+                                            variant="link"
+                                            size="sm"
+                                            onClick={() => handleOpenAssignModal(lista)}
+                                            className={styles.actionButton}
+                                            title="Atribuir Colaboradores"
+                                        >
+                                            <FontAwesomeIcon icon={faUsersCog} />
                                         </Button>
                                         <Button
                                             variant="link"
@@ -562,43 +580,6 @@ const ListasCompras: React.FC = () => {
                                             Nenhum item cadastrado
                                         </div>
                                     )}
-                                </div>
-                                <div className={styles.cardFooter}>
-                                    <Button
-                                        variant="outline-primary"
-                                        className={styles.cardButton}
-                                        onClick={() => handleOpenEditModal(lista)}
-                                    >
-                                        Ver Detalhes
-                                    </Button>
-                                    <Button
-                                        variant="secondary"
-                                        className={styles.cardButton}
-                                        onClick={() => handleOpenAssignModal(lista)}
-                                        title="Atribuir colaboradores a esta lista"
-                                    >
-                                        <FontAwesomeIcon icon={faUsers} style={{marginRight: '0.5rem'}} />
-                                        Atribuir
-                                    </Button>
-                                    <Link to={`/admin/listas/${lista.id}/lista-mae`}>
-                                        <Button
-                                            variant="warning"
-                                            className={styles.cardButton}
-                                        >
-                                            <FontAwesomeIcon icon={faShoppingCart} style={{marginRight: '0.5rem'}} />
-                                            Lista Mãe
-                                        </Button>
-                                    </Link>
-                                    <Button
-                                        variant="success"
-                                        className={styles.cardButton}
-                                        onClick={() => {
-                                            // TODO: Implementar visualização como colaborador
-                                        }}
-                                    >
-                                        <FontAwesomeIcon icon={faEye} style={{marginRight: '0.5rem'}} />
-                                        Lista do Colaborador
-                                    </Button>
                                 </div>
                             </Card>
                         ))}
