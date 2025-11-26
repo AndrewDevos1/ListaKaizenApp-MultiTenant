@@ -724,3 +724,10 @@ def clear_database_route():
     user_id = get_user_id_from_jwt()
     response, status = services.clear_database_except_users(user_id, data)
     return jsonify(response), status
+
+@admin_bp.route('/database/populate', methods=['POST'])
+@admin_required()
+def populate_database_route():
+    """Popula o banco de dados com dados fictícios para teste."""
+    response, status = services.populate_database_with_mock_data()
+    return jsonify(response), status

@@ -25,6 +25,7 @@ import {
     faTrashAlt,
     faDatabase,
     faExclamationTriangle,
+    faPlus,
 } from '@fortawesome/free-solid-svg-icons';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -40,6 +41,8 @@ const Configuracoes: React.FC = () => {
     const [clearDbPassword, setClearDbPassword] = useState('');
     const [clearDbLoading, setClearDbLoading] = useState(false);
     const [clearDbError, setClearDbError] = useState('');
+    const [populateLoading, setPopulateLoading] = useState(false);
+    const [populateSuccess, setPopulateSuccess] = useState(false);
 
     // Carregar configuração salva ao montar componente
     useEffect(() => {
@@ -135,6 +138,28 @@ const Configuracoes: React.FC = () => {
             setClearDbError(errorMsg);
         } finally {
             setClearDbLoading(false);
+        }
+    };
+
+    const handlePopulateDatabase = async () => {
+        setPopulateLoading(true);
+
+        try {
+            const response = await api.post('/admin/database/populate');
+
+            // Sucesso - mostrar mensagem
+            setPopulateSuccess(true);
+            setShowSuccess(true);
+
+            setTimeout(() => {
+                setPopulateSuccess(false);
+                setShowSuccess(false);
+            }, 5000);
+
+        } catch (error: any) {
+            alert('Erro ao popular banco de dados: ' + (error.response?.data?.error || error.message));
+        } finally {
+            setPopulateLoading(false);
         }
     };
 
@@ -314,22 +339,52 @@ const Configuracoes: React.FC = () => {
                     </div>
 
                     <div style={{ padding: '1.5rem 0' }}>
-                        <Alert variant="warning" style={{ marginBottom: '1rem' }}>
-                            <FontAwesomeIcon icon={faExclamationTriangle} style={{ marginRight: '0.5rem' }} />
-                            <strong>Atenção:</strong> Esta ação é irreversível e apagará todos os dados exceto usuários.
+                        <Alert variant="info" style={{ marginBottom: '1rem' }}>
+                            <FontAwesomeIcon icon={faInfoCircle} style={{ marginRight: '0.5rem' }} />
+                            <strong>Popular com Dados Fictícios:</strong> Adiciona fornecedores, listas, itens e estoques para teste. Colaboradores NÃO são vinculados automaticamente.
                         </Alert>
 
-                        <Button
-                            variant="danger"
-                            onClick={handleOpenClearDbModal}
-                            style={{
-                                background: 'linear-gradient(135deg, #e74c3c 0%, #c0392b 100%)',
-                                border: 'none',
-                            }}
-                        >
-                            <FontAwesomeIcon icon={faTrashAlt} style={{ marginRight: '0.5rem' }} />
-                            Limpar Banco de Dados
-                        </Button>
+                        <Alert variant="warning" style={{ marginBottom: '1rem' }}>
+                            <FontAwesomeIcon icon={faExclamationTriangle} style={{ marginRight: '0.5rem' }} />
+                            <strong>Limpar Banco:</strong> Remove todos os dados exceto usuários. Ação irreversível!
+                        </Alert>
+
+                        <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                            <Button
+                                variant="success"
+                                onClick={handlePopulateDatabase}
+                                disabled={populateLoading}
+                                style={{
+                                    background: 'linear-gradient(135deg, #27ae60 0%, #229954 100%)',
+                                    border: 'none',
+                                }}
+                            >
+                                {populateLoading ? (
+                                    <>
+                                        <span className="spinner-border spinner-border-sm" style={{ marginRight: '0.5rem' }} />
+                                        Populando...
+                                    </>
+                                ) : (
+                                    <>
+                                        <FontAwesomeIcon icon={faPlus} style={{ marginRight: '0.5rem' }} />
+                                        Popular com Dados Fictícios
+                                    </>
+                                )}
+                            </Button>
+
+                            <Button
+                                variant="danger"
+                                onClick={handleOpenClearDbModal}
+                                disabled={populateLoading}
+                                style={{
+                                    background: 'linear-gradient(135deg, #e74c3c 0%, #c0392b 100%)',
+                                    border: 'none',
+                                }}
+                            >
+                                <FontAwesomeIcon icon={faTrashAlt} style={{ marginRight: '0.5rem' }} />
+                                Limpar Banco de Dados
+                            </Button>
+                        </div>
                     </div>
                 </div>
 

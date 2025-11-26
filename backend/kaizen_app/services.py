@@ -1637,3 +1637,294 @@ def clear_database_except_users(user_id, data):
         db.session.rollback()
         print(f"❌ Erro ao limpar banco de dados: {str(e)}")
         return {"error": f"Erro ao limpar banco de dados: {str(e)}"}, 500
+
+def populate_database_with_mock_data():
+    """
+    Popula o banco de dados com dados fictícios para teste.
+    NÃO vincula colaboradores às listas - admin faz isso manualmente.
+    """
+    try:
+        import random
+        from datetime import timedelta
+
+        print("🌱 Iniciando população do banco de dados...")
+
+        # 1. Criar Áreas
+        print("📍 Criando áreas...")
+        areas_nomes = ["Cozinha", "Almoxarifado", "Limpeza", "Manutenção", "Escritório"]
+        areas = []
+        for nome in areas_nomes:
+            if not Area.query.filter_by(nome=nome).first():
+                area = Area(nome=nome)
+                db.session.add(area)
+                areas.append(area)
+        db.session.commit()
+        areas = Area.query.all()
+        print(f"✅ {len(areas)} áreas no banco")
+
+        # 2. Criar Fornecedores
+        print("🏪 Criando fornecedores...")
+        fornecedores_data = [
+            {
+                "nome": "Distribuidora ABC",
+                "contato": "(11) 1234-5678",
+                "meio_envio": "WhatsApp",
+                "responsavel": "João Silva",
+                "observacao": "Fornecedor principal de alimentos"
+            },
+            {
+                "nome": "Produtos Limpeza XYZ",
+                "contato": "(11) 8765-4321",
+                "meio_envio": "Email",
+                "responsavel": "Maria Santos",
+                "observacao": "Produtos de limpeza e higiene"
+            },
+            {
+                "nome": "Papelaria Moderna",
+                "contato": "(11) 5555-9999",
+                "meio_envio": "WhatsApp",
+                "responsavel": "Pedro Costa",
+                "observacao": "Material de escritório"
+            },
+            {
+                "nome": "Ferramentas e Cia",
+                "contato": "(11) 3333-7777",
+                "meio_envio": "Telefone",
+                "responsavel": "Carlos Oliveira",
+                "observacao": "Ferramentas e material de manutenção"
+            }
+        ]
+
+        fornecedores = []
+        for forn_data in fornecedores_data:
+            if not Fornecedor.query.filter_by(nome=forn_data["nome"]).first():
+                fornecedor = Fornecedor(**forn_data)
+                db.session.add(fornecedor)
+                fornecedores.append(fornecedor)
+        db.session.commit()
+        fornecedores = Fornecedor.query.all()
+        print(f"✅ {len(fornecedores)} fornecedores no banco")
+
+        # 3. Criar Itens
+        print("📦 Criando itens...")
+        itens_data = [
+            # Itens da Distribuidora ABC
+            {"nome": "Arroz", "unidade_medida": "Kg", "fornecedor_nome": "Distribuidora ABC"},
+            {"nome": "Feijão", "unidade_medida": "Kg", "fornecedor_nome": "Distribuidora ABC"},
+            {"nome": "Óleo", "unidade_medida": "Litro", "fornecedor_nome": "Distribuidora ABC"},
+            {"nome": "Açúcar", "unidade_medida": "Kg", "fornecedor_nome": "Distribuidora ABC"},
+            {"nome": "Sal", "unidade_medida": "Kg", "fornecedor_nome": "Distribuidora ABC"},
+            # Itens da Produtos Limpeza XYZ
+            {"nome": "Detergente", "unidade_medida": "Unidade", "fornecedor_nome": "Produtos Limpeza XYZ"},
+            {"nome": "Sabão em Pó", "unidade_medida": "Kg", "fornecedor_nome": "Produtos Limpeza XYZ"},
+            {"nome": "Desinfetante", "unidade_medida": "Litro", "fornecedor_nome": "Produtos Limpeza XYZ"},
+            {"nome": "Álcool Gel", "unidade_medida": "Litro", "fornecedor_nome": "Produtos Limpeza XYZ"},
+            # Itens da Papelaria Moderna
+            {"nome": "Papel A4", "unidade_medida": "Resma", "fornecedor_nome": "Papelaria Moderna"},
+            {"nome": "Caneta Azul", "unidade_medida": "Unidade", "fornecedor_nome": "Papelaria Moderna"},
+            {"nome": "Grampeador", "unidade_medida": "Unidade", "fornecedor_nome": "Papelaria Moderna"},
+            # Itens da Ferramentas e Cia
+            {"nome": "Martelo", "unidade_medida": "Unidade", "fornecedor_nome": "Ferramentas e Cia"},
+            {"nome": "Chave de Fenda", "unidade_medida": "Unidade", "fornecedor_nome": "Ferramentas e Cia"},
+            {"nome": "Fita Isolante", "unidade_medida": "Rolo", "fornecedor_nome": "Ferramentas e Cia"},
+        ]
+
+        itens = []
+        for item_data in itens_data:
+            if not Item.query.filter_by(nome=item_data["nome"]).first():
+                fornecedor = Fornecedor.query.filter_by(nome=item_data["fornecedor_nome"]).first()
+                if fornecedor:
+                    item = Item(
+                        nome=item_data["nome"],
+                        unidade_medida=item_data["unidade_medida"],
+                        fornecedor_id=fornecedor.id
+                    )
+                    db.session.add(item)
+                    itens.append(item)
+        db.session.commit()
+        itens = Item.query.all()
+        print(f"✅ {len(itens)} itens no banco")
+
+        # 4. Criar Listas de Compras (SEM vincular colaboradores)
+        print("📋 Criando listas de compras...")
+        listas_data = [
+            {
+                "nome": "Lista Mensal - Alimentos",
+                "descricao": "Lista mensal de compras de alimentos"
+            },
+            {
+                "nome": "Lista Semanal - Limpeza",
+                "descricao": "Lista semanal de produtos de limpeza"
+            },
+            {
+                "nome": "Lista Escritório",
+                "descricao": "Material de escritório trimestral"
+            }
+        ]
+
+        listas = []
+        for lista_data in listas_data:
+            if not Lista.query.filter_by(nome=lista_data["nome"]).first():
+                lista = Lista(**lista_data)
+                db.session.add(lista)
+                listas.append(lista)
+        db.session.commit()
+        listas = Lista.query.all()
+
+        # Associar fornecedores às listas
+        lista_alimentos = Lista.query.filter_by(nome="Lista Mensal - Alimentos").first()
+        lista_limpeza = Lista.query.filter_by(nome="Lista Semanal - Limpeza").first()
+        lista_escritorio = Lista.query.filter_by(nome="Lista Escritório").first()
+
+        forn_abc = Fornecedor.query.filter_by(nome="Distribuidora ABC").first()
+        forn_limpeza = Fornecedor.query.filter_by(nome="Produtos Limpeza XYZ").first()
+        forn_papelaria = Fornecedor.query.filter_by(nome="Papelaria Moderna").first()
+
+        if lista_alimentos and forn_abc and forn_abc not in lista_alimentos.fornecedores:
+            lista_alimentos.fornecedores.append(forn_abc)
+        if lista_limpeza and forn_limpeza and forn_limpeza not in lista_limpeza.fornecedores:
+            lista_limpeza.fornecedores.append(forn_limpeza)
+        if lista_escritorio and forn_papelaria and forn_papelaria not in lista_escritorio.fornecedores:
+            lista_escritorio.fornecedores.append(forn_papelaria)
+
+        db.session.commit()
+        print(f"✅ {len(listas)} listas no banco (colaboradores NÃO vinculados)")
+
+        # 5. Criar itens da Lista Mãe
+        print("📝 Criando itens da lista mãe...")
+        lista_mae_itens_data = [
+            # Lista Mensal - Alimentos
+            {"lista_nome": "Lista Mensal - Alimentos", "nome": "Arroz Tipo 1", "unidade": "Kg", "qtd_atual": 50, "qtd_min": 100},
+            {"lista_nome": "Lista Mensal - Alimentos", "nome": "Feijão Preto", "unidade": "Kg", "qtd_atual": 30, "qtd_min": 80},
+            {"lista_nome": "Lista Mensal - Alimentos", "nome": "Óleo de Soja", "unidade": "Litro", "qtd_atual": 15, "qtd_min": 40},
+            # Lista Semanal - Limpeza
+            {"lista_nome": "Lista Semanal - Limpeza", "nome": "Detergente Neutro", "unidade": "Unidade", "qtd_atual": 5, "qtd_min": 20},
+            {"lista_nome": "Lista Semanal - Limpeza", "nome": "Desinfetante Pinho", "unidade": "Litro", "qtd_atual": 8, "qtd_min": 15},
+            # Lista Escritório
+            {"lista_nome": "Lista Escritório", "nome": "Papel Sulfite A4", "unidade": "Resma", "qtd_atual": 10, "qtd_min": 30},
+        ]
+
+        lista_mae_count = 0
+        for item_data in lista_mae_itens_data:
+            lista = Lista.query.filter_by(nome=item_data["lista_nome"]).first()
+            if lista:
+                # Verifica se já existe
+                existe = ListaMaeItem.query.filter_by(
+                    lista_mae_id=lista.id,
+                    nome=item_data["nome"]
+                ).first()
+
+                if not existe:
+                    item = ListaMaeItem(
+                        lista_mae_id=lista.id,
+                        nome=item_data["nome"],
+                        unidade=item_data["unidade"],
+                        quantidade_atual=item_data["qtd_atual"],
+                        quantidade_minima=item_data["qtd_min"]
+                    )
+                    db.session.add(item)
+                    lista_mae_count += 1
+
+        db.session.commit()
+        total_lista_mae = ListaMaeItem.query.count()
+        print(f"✅ {total_lista_mae} itens da lista mãe no banco")
+
+        # 6. Criar Estoques
+        print("📊 Criando registros de estoque...")
+        estoque_count = 0
+        for area in areas[:3]:  # Primeiras 3 áreas
+            for item in itens[:10]:  # Primeiros 10 itens
+                # Verifica se já existe
+                existe = Estoque.query.filter_by(item_id=item.id, area_id=area.id).first()
+                if not existe:
+                    qtd_atual = random.uniform(5, 50)
+                    qtd_minima = random.uniform(20, 100)
+                    estoque = Estoque(
+                        item_id=item.id,
+                        area_id=area.id,
+                        quantidade_atual=qtd_atual,
+                        quantidade_minima=qtd_minima,
+                        pedido=max(qtd_minima - qtd_atual, 0)
+                    )
+                    db.session.add(estoque)
+                    estoque_count += 1
+
+        db.session.commit()
+        total_estoques = Estoque.query.count()
+        print(f"✅ {total_estoques} registros de estoque no banco")
+
+        # 7. Criar Pedidos
+        print("🛒 Criando pedidos...")
+        admin = Usuario.query.filter_by(role=UserRoles.ADMIN).first()
+        pedido_count = 0
+
+        if admin and len(itens) > 0:
+            for i in range(10):
+                item = random.choice(itens)
+                # Verifica se item tem fornecedor
+                if item.fornecedor_id:
+                    pedido = Pedido(
+                        item_id=item.id,
+                        fornecedor_id=item.fornecedor_id,
+                        quantidade_solicitada=random.uniform(10, 100),
+                        data_pedido=datetime.utcnow() - timedelta(days=random.randint(1, 30)),
+                        usuario_id=admin.id,
+                        status=random.choice([PedidoStatus.PENDENTE, PedidoStatus.APROVADO, PedidoStatus.REJEITADO])
+                    )
+                    db.session.add(pedido)
+                    pedido_count += 1
+
+            db.session.commit()
+
+        total_pedidos = Pedido.query.count()
+        print(f"✅ {total_pedidos} pedidos no banco")
+
+        # 8. Criar Cotações
+        print("💰 Criando cotações...")
+        cotacao_count = 0
+        for fornecedor in fornecedores[:2]:
+            cotacao = Cotacao(
+                fornecedor_id=fornecedor.id,
+                data_cotacao=datetime.utcnow() - timedelta(days=random.randint(1, 15)),
+                status=random.choice([CotacaoStatus.PENDENTE, CotacaoStatus.CONCLUIDA])
+            )
+            db.session.add(cotacao)
+            db.session.commit()
+
+            # Adicionar itens à cotação
+            itens_fornecedor = Item.query.filter_by(fornecedor_id=fornecedor.id).all()
+            for item in itens_fornecedor[:3]:
+                cotacao_item = CotacaoItem(
+                    cotacao_id=cotacao.id,
+                    item_id=item.id,
+                    quantidade=random.uniform(10, 50),
+                    preco_unitario=random.uniform(5, 100)
+                )
+                db.session.add(cotacao_item)
+            cotacao_count += 1
+
+        db.session.commit()
+        total_cotacoes = Cotacao.query.count()
+        print(f"✅ {total_cotacoes} cotações no banco")
+
+        print("\n✨ Banco de dados populado com sucesso!")
+
+        return {
+            "message": "Banco de dados populado com dados fictícios com sucesso!",
+            "data": {
+                "areas": len(areas),
+                "fornecedores": len(fornecedores),
+                "itens": len(itens),
+                "listas": len(listas),
+                "itens_lista_mae": total_lista_mae,
+                "estoques": total_estoques,
+                "pedidos": total_pedidos,
+                "cotacoes": total_cotacoes,
+                "nota": "Colaboradores NÃO foram vinculados às listas - faça isso manualmente"
+            }
+        }, 200
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"❌ Erro ao popular banco de dados: {str(e)}")
+        return {"error": f"Erro ao popular banco de dados: {str(e)}"}, 500
