@@ -1,4 +1,4 @@
-from .models import Usuario, UserRoles, Item, Area, Fornecedor, Estoque, Cotacao, CotacaoStatus, CotacaoItem, Pedido, Lista, ListaMaeItem
+from .models import Usuario, UserRoles, Item, Area, Fornecedor, Estoque, Cotacao, CotacaoStatus, CotacaoItem, Pedido, Lista, ListaMaeItem, ItemSolicitacao
 from .extensions import db
 from . import repositories
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -1150,6 +1150,13 @@ def deletar_item_lista_mae(lista_id, item_id):
         if not item:
             return {"error": "Item não encontrado"}, 404
 
+        # Remover referências do item em solicitações
+        # Isso evita violação de Foreign Key constraint
+        ItemSolicitacao.query.filter_by(created_item_id=item_id).update(
+            {'created_item_id': None},
+            synchronize_session=False
+        )
+
         db.session.delete(item)
         db.session.commit()
         return {"message": "Item removido com sucesso"}, 200
@@ -1486,14 +1493,15 @@ def exportar_fornecedores_csv():
         fornecedores = Fornecedor.query.all()
 
         # Construir CSV
-        csv_lines = ["Nome,Contato,Responsável,Observação"]
+        csv_lines = ["Nome,Contato,Meio de Envio,Responsável,Observação"]
 
         for fornecedor in fornecedores:
             contato = (fornecedor.contato or "").replace(",", ";").replace("\n", " ")
+            meio_envio = (fornecedor.meio_envio or "").replace(",", ";").replace("\n", " ")
             responsavel = (fornecedor.responsavel or "").replace(",", ";").replace("\n", " ")
             observacao = (fornecedor.observacao or "").replace(",", ";").replace("\n", " ")
 
-            csv_lines.append(f'"{fornecedor.nome}","{contato}","{responsavel}","{observacao}"')
+            csv_lines.append(f'"{fornecedor.nome}","{contato}","{meio_envio}","{responsavel}","{observacao}"')
 
         csv_content = "\n".join(csv_lines)
         return {"csv": csv_content, "filename": "fornecedores.csv"}, 200
@@ -1529,6 +1537,7 @@ def importar_fornecedores_csv(csv_content):
             novo_fornecedor = Fornecedor(
                 nome=nome,
                 contato=row.get('Contato', '').strip(),
+                meio_envio=row.get('Meio de Envio', '').strip(),
                 responsavel=row.get('Responsável', '').strip(),
                 observacao=row.get('Observação', '').strip()
             )
