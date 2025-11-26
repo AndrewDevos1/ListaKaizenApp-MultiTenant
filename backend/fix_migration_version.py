@@ -39,6 +39,7 @@ def fix_alembic_version():
                 '7e15fa804c55',  # create_lista_mae_item_status_auxiliary
                 'f3a4b5c6d7e9',  # add_soft_delete_to_listas
                 '2c3d4e5f6a71',  # add_lista_tarefas_table
+                '1ada75de6c22',  # Versão antiga removida no revert
             ]
 
             if current_version in problematic_versions:
