@@ -527,8 +527,8 @@ def create_lista_route():
 @api_bp.route('/listas', methods=['GET'])
 @admin_required()
 def get_listas_route():
-    listas, _ = services.get_all_listas()
-    return jsonify([l.to_dict() for l in listas])
+    listas, status = services.get_all_listas()
+    return jsonify(listas), status
 
 @api_bp.route('/listas/<int:lista_id>/assign', methods=['POST'])
 @admin_required()

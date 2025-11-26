@@ -1,4 +1,4 @@
-from .models import Usuario, UserRoles, Item, Area, Fornecedor, Estoque, Cotacao, CotacaoStatus, CotacaoItem, Pedido, Lista, ListaMaeItem
+from .models import Usuario, UserRoles, Item, Area, Fornecedor, Estoque, Cotacao, CotacaoStatus, CotacaoItem, Pedido, PedidoStatus, Lista, ListaMaeItem
 from .extensions import db
 from . import repositories
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -2227,3 +2227,184 @@ def create_lista_from_csv(nome, descricao, csv_file):
         db.session.rollback()
         print(f"❌ Erro ao criar lista de CSV: {str(e)}")
         return {"error": f"Erro ao criar lista: {str(e)}"}, 500
+
+
+def export_data_bulk(tipos_dados):
+    """
+    Exporta múltiplos tipos de dados em um arquivo ZIP contendo CSVs.
+
+    Args:
+        tipos_dados: Lista de strings indicando quais dados exportar
+                    ['usuarios', 'listas', 'itens', 'fornecedores', 'areas', 'pedidos', 'cotacoes', 'estoque']
+
+    Returns:
+        BytesIO contendo o arquivo ZIP, ou erro
+    """
+    import io
+    import zipfile
+    import csv
+
+    try:
+        # Criar arquivo ZIP em memória
+        zip_buffer = io.BytesIO()
+
+        with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+
+            # Exportar Usuários
+            if 'usuarios' in tipos_dados:
+                usuarios = Usuario.query.all()
+                csv_buffer = io.StringIO()
+                csv_writer = csv.writer(csv_buffer)
+                csv_writer.writerow(['ID', 'Nome', 'Email', 'Username', 'Role', 'Aprovado', 'Ativo', 'Data Criação'])
+
+                for user in usuarios:
+                    csv_writer.writerow([
+                        user.id,
+                        user.nome,
+                        user.email,
+                        user.username or '',
+                        user.role.value,
+                        'Sim' if user.aprovado else 'Não',
+                        'Sim' if user.ativo else 'Não',
+                        user.data_criacao.strftime('%Y-%m-%d %H:%M:%S') if user.data_criacao else ''
+                    ])
+
+                zip_file.writestr('usuarios.csv', csv_buffer.getvalue())
+
+            # Exportar Listas
+            if 'listas' in tipos_dados:
+                listas = Lista.query.filter_by(deletado=False).all()
+                csv_buffer = io.StringIO()
+                csv_writer = csv.writer(csv_buffer)
+                csv_writer.writerow(['ID', 'Nome', 'Descrição', 'Data Criação', 'Colaboradores'])
+
+                for lista in listas:
+                    colaboradores_nomes = ', '.join([c.nome for c in lista.colaboradores])
+                    csv_writer.writerow([
+                        lista.id,
+                        lista.nome,
+                        lista.descricao or '',
+                        lista.data_criacao.strftime('%Y-%m-%d %H:%M:%S'),
+                        colaboradores_nomes
+                    ])
+
+                zip_file.writestr('listas.csv', csv_buffer.getvalue())
+
+            # Exportar Itens
+            if 'itens' in tipos_dados:
+                itens = Item.query.all()
+                csv_buffer = io.StringIO()
+                csv_writer = csv.writer(csv_buffer)
+                csv_writer.writerow(['ID', 'Nome', 'Unidade Medida', 'Fornecedor', 'Data Criação'])
+
+                for item in itens:
+                    csv_writer.writerow([
+                        item.id,
+                        item.nome,
+                        item.unidade_medida,
+                        item.fornecedor.nome if item.fornecedor else '',
+                        item.data_criacao.strftime('%Y-%m-%d %H:%M:%S') if item.data_criacao else ''
+                    ])
+
+                zip_file.writestr('itens.csv', csv_buffer.getvalue())
+
+            # Exportar Fornecedores
+            if 'fornecedores' in tipos_dados:
+                fornecedores = Fornecedor.query.all()
+                csv_buffer = io.StringIO()
+                csv_writer = csv.writer(csv_buffer)
+                csv_writer.writerow(['ID', 'Nome', 'Contato', 'Telefone', 'Email', 'Responsável', 'Observação'])
+
+                for fornecedor in fornecedores:
+                    csv_writer.writerow([
+                        fornecedor.id,
+                        fornecedor.nome,
+                        fornecedor.contato or '',
+                        fornecedor.telefone or '',
+                        fornecedor.email or '',
+                        fornecedor.responsavel or '',
+                        fornecedor.observacao or ''
+                    ])
+
+                zip_file.writestr('fornecedores.csv', csv_buffer.getvalue())
+
+            # Exportar Áreas
+            if 'areas' in tipos_dados:
+                areas = Area.query.all()
+                csv_buffer = io.StringIO()
+                csv_writer = csv.writer(csv_buffer)
+                csv_writer.writerow(['ID', 'Nome', 'Descrição'])
+
+                for area in areas:
+                    csv_writer.writerow([
+                        area.id,
+                        area.nome,
+                        area.descricao or ''
+                    ])
+
+                zip_file.writestr('areas.csv', csv_buffer.getvalue())
+
+            # Exportar Pedidos
+            if 'pedidos' in tipos_dados:
+                pedidos = Pedido.query.all()
+                csv_buffer = io.StringIO()
+                csv_writer = csv.writer(csv_buffer)
+                csv_writer.writerow(['ID', 'Item', 'Fornecedor', 'Quantidade', 'Status', 'Usuário', 'Data Pedido'])
+
+                for pedido in pedidos:
+                    csv_writer.writerow([
+                        pedido.id,
+                        pedido.item.nome if pedido.item else '',
+                        pedido.fornecedor.nome if pedido.fornecedor else '',
+                        pedido.quantidade_solicitada,
+                        pedido.status.value if pedido.status else '',
+                        pedido.usuario.nome if pedido.usuario else '',
+                        pedido.data_pedido.strftime('%Y-%m-%d %H:%M:%S') if pedido.data_pedido else ''
+                    ])
+
+                zip_file.writestr('pedidos.csv', csv_buffer.getvalue())
+
+            # Exportar Cotações
+            if 'cotacoes' in tipos_dados:
+                cotacoes = Cotacao.query.all()
+                csv_buffer = io.StringIO()
+                csv_writer = csv.writer(csv_buffer)
+                csv_writer.writerow(['ID', 'Fornecedor', 'Status', 'Data Criação', 'Total Itens'])
+
+                for cotacao in cotacoes:
+                    csv_writer.writerow([
+                        cotacao.id,
+                        cotacao.fornecedor.nome if cotacao.fornecedor else '',
+                        cotacao.status.value if cotacao.status else '',
+                        cotacao.data_criacao.strftime('%Y-%m-%d %H:%M:%S') if cotacao.data_criacao else '',
+                        len(cotacao.itens) if cotacao.itens else 0
+                    ])
+
+                zip_file.writestr('cotacoes.csv', csv_buffer.getvalue())
+
+            # Exportar Estoque
+            if 'estoque' in tipos_dados:
+                estoques = Estoque.query.all()
+                csv_buffer = io.StringIO()
+                csv_writer = csv.writer(csv_buffer)
+                csv_writer.writerow(['ID', 'Item', 'Área', 'Quantidade Atual', 'Quantidade Mínima'])
+
+                for estoque in estoques:
+                    csv_writer.writerow([
+                        estoque.id,
+                        estoque.item.nome if estoque.item else '',
+                        estoque.area.nome if estoque.area else '',
+                        estoque.quantidade_atual,
+                        estoque.quantidade_minima
+                    ])
+
+                zip_file.writestr('estoque.csv', csv_buffer.getvalue())
+
+        # Resetar posição do buffer para o início
+        zip_buffer.seek(0)
+
+        return zip_buffer, 200
+
+    except Exception as e:
+        print(f"❌ Erro ao exportar dados em lote: {str(e)}")
+        return {"error": f"Erro ao exportar dados: {str(e)}"}, 500
