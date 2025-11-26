@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Table, Button, Modal, Form, Spinner, Alert } from 'react-bootstrap';
 import api from '../../services/api';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faArrowLeft } from '@fortawesome/free-solid-svg-icons';
+import { faArrowLeft, faFileDownload, faFileUpload } from '@fortawesome/free-solid-svg-icons';
 import styles from './FornecedorDetalhes.module.css';
 
 interface Fornecedor {
@@ -34,6 +34,8 @@ const FornecedorManagement: React.FC = () => {
     const [error, setError] = useState('');
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [fornecedorToDelete, setFornecedorToDelete] = useState<Fornecedor | null>(null);
+    const [carregandoCSV, setCarregandoCSV] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const fetchFornecedores = async () => {
         setIsLoading(true);
@@ -135,6 +137,57 @@ const FornecedorManagement: React.FC = () => {
         }
     };
 
+    const handleExportCSV = async () => {
+        setCarregandoCSV(true);
+        try {
+            const response = await api.get('/v1/fornecedores/export-csv', {
+                responseType: 'blob'
+            });
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', 'fornecedores.csv');
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+        } catch (err) {
+            setError('Falha ao exportar CSV.');
+        } finally {
+            setCarregandoCSV(false);
+        }
+    };
+
+    const handleImportCSV = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        setCarregandoCSV(true);
+        const reader = new FileReader();
+
+        reader.onload = async (e) => {
+            try {
+                const csvContent = e.target?.result as string;
+                const response = await api.post('/v1/fornecedores/import-csv', csvContent, {
+                    headers: {
+                        'Content-Type': 'text/csv'
+                    }
+                });
+
+                alert(`${response.data.fornecedores_criados} fornecedor(es) criado(s).\n${response.data.fornecedores_duplicados} fornecedor(es) duplicado(s) ignorado(s).`);
+                fetchFornecedores();
+            } catch (err: any) {
+                setError(err.response?.data?.error || 'Falha ao importar CSV.');
+            } finally {
+                setCarregandoCSV(false);
+                if (fileInputRef.current) {
+                    fileInputRef.current.value = '';
+                }
+            }
+        };
+
+        reader.readAsText(file);
+    };
+
     return (
         <div style={{ padding: '2rem 0' }}>
             <Link to="/admin" className={styles.backLink} style={{ marginBottom: '1.5rem', display: 'inline-block' }}>
@@ -143,9 +196,41 @@ const FornecedorManagement: React.FC = () => {
             </Link>
             <h2 style={{ marginTop: '1.5rem' }}>Gestão de Fornecedores</h2>
             {error && <Alert variant="danger" onClose={() => setError('')} dismissible>{error}</Alert>}
-            <Button variant="primary" onClick={() => handleShowModal()} className="mb-3">
-                <i className="fas fa-plus me-2"></i>Adicionar Fornecedor
-            </Button>
+
+            <div className="mb-3 d-flex gap-2 flex-wrap">
+                <Button variant="primary" onClick={() => handleShowModal()}>
+                    <i className="fas fa-plus me-2"></i>Adicionar Fornecedor
+                </Button>
+                <Button
+                    variant="success"
+                    onClick={handleExportCSV}
+                    disabled={carregandoCSV || fornecedores.length === 0}
+                >
+                    {carregandoCSV ? (
+                        <><Spinner animation="border" size="sm" className="me-2" />Exportando...</>
+                    ) : (
+                        <><FontAwesomeIcon icon={faFileDownload} className="me-2" />Exportar CSV</>
+                    )}
+                </Button>
+                <Button
+                    variant="info"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={carregandoCSV}
+                >
+                    {carregandoCSV ? (
+                        <><Spinner animation="border" size="sm" className="me-2" />Importando...</>
+                    ) : (
+                        <><FontAwesomeIcon icon={faFileUpload} className="me-2" />Importar CSV</>
+                    )}
+                </Button>
+                <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleImportCSV}
+                    accept=".csv"
+                    style={{ display: 'none' }}
+                />
+            </div>
 
             <Table striped bordered hover responsive>
                 <thead className="table-dark">
