@@ -715,3 +715,12 @@ def importar_items_em_lote_route(lista_id):
     data = request.get_json()
     response, status = services.importar_items_em_lote(lista_id, data)
     return jsonify(response), status
+
+@admin_bp.route('/database/clear', methods=['POST'])
+@admin_required()
+def clear_database_route():
+    """Limpa todas as tabelas do banco de dados exceto usuários. Requer senha do admin."""
+    data = request.get_json()
+    user_id = get_user_id_from_jwt()
+    response, status = services.clear_database_except_users(user_id, data)
+    return jsonify(response), status

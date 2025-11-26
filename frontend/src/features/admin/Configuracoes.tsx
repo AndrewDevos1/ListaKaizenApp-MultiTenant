@@ -9,7 +9,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Container, Form, Button, Alert } from 'react-bootstrap';
+import { Container, Form, Button, Alert, Modal } from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faCog,
@@ -22,9 +22,13 @@ import {
     faUser,
     faSignOutAlt,
     faKey,
+    faTrashAlt,
+    faDatabase,
+    faExclamationTriangle,
 } from '@fortawesome/free-solid-svg-icons';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import api from '../../services/api';
 import styles from './Configuracoes.module.css';
 
 const Configuracoes: React.FC = () => {
@@ -32,6 +36,10 @@ const Configuracoes: React.FC = () => {
     const { logout } = useAuth();
     const [sessionTimeout, setSessionTimeout] = useState(30); // Padrão: 30 minutos
     const [showSuccess, setShowSuccess] = useState(false);
+    const [showClearDbModal, setShowClearDbModal] = useState(false);
+    const [clearDbPassword, setClearDbPassword] = useState('');
+    const [clearDbLoading, setClearDbLoading] = useState(false);
+    const [clearDbError, setClearDbError] = useState('');
 
     // Carregar configuração salva ao montar componente
     useEffect(() => {
@@ -85,6 +93,49 @@ const Configuracoes: React.FC = () => {
     const handleChangePassword = () => {
         // Navegar para página de mudar senha
         navigate('/admin/mudar-senha');
+    };
+
+    const handleOpenClearDbModal = () => {
+        setShowClearDbModal(true);
+        setClearDbPassword('');
+        setClearDbError('');
+    };
+
+    const handleCloseClearDbModal = () => {
+        setShowClearDbModal(false);
+        setClearDbPassword('');
+        setClearDbError('');
+    };
+
+    const handleClearDatabase = async () => {
+        if (!clearDbPassword) {
+            setClearDbError('Por favor, digite sua senha para confirmar');
+            return;
+        }
+
+        setClearDbLoading(true);
+        setClearDbError('');
+
+        try {
+            const response = await api.post('/admin/database/clear', {
+                senha: clearDbPassword
+            });
+
+            // Sucesso - mostrar mensagem e fechar modal
+            setShowClearDbModal(false);
+            setShowSuccess(true);
+            setClearDbPassword('');
+
+            setTimeout(() => {
+                setShowSuccess(false);
+            }, 5000);
+
+        } catch (error: any) {
+            const errorMsg = error.response?.data?.error || 'Erro ao limpar banco de dados';
+            setClearDbError(errorMsg);
+        } finally {
+            setClearDbLoading(false);
+        }
     };
 
     return (
@@ -248,6 +299,40 @@ const Configuracoes: React.FC = () => {
                     </Form>
                 </div>
 
+                {/* Card de Banco de Dados */}
+                <div className={styles.configCard}>
+                    <div className={styles.cardHeader}>
+                        <div className={styles.cardIcon} style={{ backgroundColor: '#e74c3c' }}>
+                            <FontAwesomeIcon icon={faDatabase} />
+                        </div>
+                        <div>
+                            <h3 className={styles.cardTitle}>Gerenciamento de Banco de Dados</h3>
+                            <p className={styles.cardDescription}>
+                                Ferramentas avançadas para manutenção do banco de dados
+                            </p>
+                        </div>
+                    </div>
+
+                    <div style={{ padding: '1.5rem 0' }}>
+                        <Alert variant="warning" style={{ marginBottom: '1rem' }}>
+                            <FontAwesomeIcon icon={faExclamationTriangle} style={{ marginRight: '0.5rem' }} />
+                            <strong>Atenção:</strong> Esta ação é irreversível e apagará todos os dados exceto usuários.
+                        </Alert>
+
+                        <Button
+                            variant="danger"
+                            onClick={handleOpenClearDbModal}
+                            style={{
+                                background: 'linear-gradient(135deg, #e74c3c 0%, #c0392b 100%)',
+                                border: 'none',
+                            }}
+                        >
+                            <FontAwesomeIcon icon={faTrashAlt} style={{ marginRight: '0.5rem' }} />
+                            Limpar Banco de Dados
+                        </Button>
+                    </div>
+                </div>
+
                 {/* Card de informações adicionais */}
                 <div className={styles.configCard}>
                     <div className={styles.cardHeader}>
@@ -283,6 +368,74 @@ const Configuracoes: React.FC = () => {
                         </ul>
                     </div>
                 </div>
+
+                {/* Modal de Confirmação para Limpar Banco de Dados */}
+                <Modal show={showClearDbModal} onHide={handleCloseClearDbModal} centered>
+                    <Modal.Header closeButton style={{ borderBottom: '2px solid #e74c3c' }}>
+                        <Modal.Title>
+                            <FontAwesomeIcon icon={faExclamationTriangle} style={{ color: '#e74c3c', marginRight: '0.5rem' }} />
+                            Confirmar Limpeza do Banco de Dados
+                        </Modal.Title>
+                    </Modal.Header>
+                    <Modal.Body>
+                        <Alert variant="danger">
+                            <h5><strong>⚠️ ATENÇÃO: Esta ação é IRREVERSÍVEL!</strong></h5>
+                            <p>Todos os dados serão permanentemente removidos, exceto:</p>
+                            <ul>
+                                <li>✅ Usuários e suas credenciais</li>
+                            </ul>
+                            <p style={{ marginTop: '1rem' }}><strong>Dados que serão APAGADOS:</strong></p>
+                            <ul>
+                                <li>❌ Todas as listas de compras</li>
+                                <li>❌ Todos os itens e estoques</li>
+                                <li>❌ Todos os fornecedores</li>
+                                <li>❌ Todas as áreas</li>
+                                <li>❌ Todos os pedidos e cotações</li>
+                            </ul>
+                        </Alert>
+
+                        <Form.Group>
+                            <Form.Label><strong>Digite sua senha para confirmar:</strong></Form.Label>
+                            <Form.Control
+                                type="password"
+                                placeholder="Digite sua senha"
+                                value={clearDbPassword}
+                                onChange={(e) => setClearDbPassword(e.target.value)}
+                                isInvalid={!!clearDbError}
+                                disabled={clearDbLoading}
+                            />
+                            <Form.Control.Feedback type="invalid">
+                                {clearDbError}
+                            </Form.Control.Feedback>
+                        </Form.Group>
+                    </Modal.Body>
+                    <Modal.Footer>
+                        <Button
+                            variant="secondary"
+                            onClick={handleCloseClearDbModal}
+                            disabled={clearDbLoading}
+                        >
+                            Cancelar
+                        </Button>
+                        <Button
+                            variant="danger"
+                            onClick={handleClearDatabase}
+                            disabled={clearDbLoading || !clearDbPassword}
+                        >
+                            {clearDbLoading ? (
+                                <>
+                                    <span className="spinner-border spinner-border-sm" style={{ marginRight: '0.5rem' }} />
+                                    Limpando...
+                                </>
+                            ) : (
+                                <>
+                                    <FontAwesomeIcon icon={faTrashAlt} style={{ marginRight: '0.5rem' }} />
+                                    Confirmar Limpeza
+                                </>
+                            )}
+                        </Button>
+                    </Modal.Footer>
+                </Modal>
             </Container>
         </div>
     );

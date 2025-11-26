@@ -1548,3 +1548,92 @@ def importar_fornecedores_csv(csv_content):
     except Exception as e:
         db.session.rollback()
         return {"error": str(e)}, 500
+
+def clear_database_except_users(user_id, data):
+    """
+    Limpa todas as tabelas do banco de dados exceto a tabela de usuários.
+    Requer que o usuário forneça sua senha para confirmação.
+    """
+    try:
+        # Validação de entrada
+        senha = data.get('senha')
+        if not senha:
+            return {"error": "Senha é obrigatória para confirmar a operação"}, 400
+
+        # Busca o usuário e verifica a senha
+        usuario = Usuario.query.get(user_id)
+        if not usuario:
+            return {"error": "Usuário não encontrado"}, 404
+
+        if not check_password_hash(usuario.senha_hash, senha):
+            return {"error": "Senha incorreta"}, 401
+
+        # Verifica se é admin
+        if usuario.role != UserRoles.ADMIN:
+            return {"error": "Apenas administradores podem limpar o banco de dados"}, 403
+
+        # Começa a limpeza das tabelas na ordem correta (respeitando foreign keys)
+        print("🗑️ Iniciando limpeza do banco de dados...")
+
+        # 1. Limpar tabelas de associação (many-to-many)
+        db.session.execute(db.text('DELETE FROM fornecedor_lista'))
+        db.session.execute(db.text('DELETE FROM lista_colaborador'))
+        print("✅ Tabelas de associação limpas")
+
+        # 2. Limpar tabelas dependentes
+        CotacaoItem.query.delete()
+        print("✅ Itens de cotação removidos")
+
+        Cotacao.query.delete()
+        print("✅ Cotações removidas")
+
+        Pedido.query.delete()
+        print("✅ Pedidos removidos")
+
+        Estoque.query.delete()
+        print("✅ Estoques removidos")
+
+        ListaMaeItem.query.delete()
+        print("✅ Itens da lista mãe removidos")
+
+        # 3. Limpar listas
+        Lista.query.delete()
+        print("✅ Listas removidas")
+
+        # 4. Limpar itens
+        Item.query.delete()
+        print("✅ Itens removidos")
+
+        # 5. Limpar fornecedores
+        Fornecedor.query.delete()
+        print("✅ Fornecedores removidos")
+
+        # 6. Limpar áreas
+        Area.query.delete()
+        print("✅ Áreas removidas")
+
+        # Commit das alterações
+        db.session.commit()
+        print("✨ Banco de dados limpo com sucesso!")
+
+        return {
+            "message": "Banco de dados limpo com sucesso! Apenas usuários foram mantidos.",
+            "cleared_tables": [
+                "fornecedor_lista",
+                "lista_colaborador",
+                "cotacao_itens",
+                "cotacoes",
+                "pedidos",
+                "estoques",
+                "lista_mae_itens",
+                "listas",
+                "itens",
+                "fornecedores",
+                "areas"
+            ]
+        }, 200
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"❌ Erro ao limpar banco de dados: {str(e)}")
+        return {"error": f"Erro ao limpar banco de dados: {str(e)}"}, 500
