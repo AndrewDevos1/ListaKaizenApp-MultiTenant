@@ -113,13 +113,38 @@ const ListasCompras: React.FC = () => {
     const [fornecedores, setFornecedores] = useState<Fornecedor[]>([]);
     const [loadingFornecedores, setLoadingFornecedores] = useState(false);
 
+    // Buscar prévia dos itens de uma lista (primeiros 3)
+    const fetchListaPreview = async (listaId: number): Promise<ListaItem[]> => {
+        try {
+            const response = await api.get(`/admin/listas/${listaId}/lista-mae`);
+            const itens = response.data.itens || [];
+            return itens.slice(0, 3); // Retorna apenas os primeiros 3
+        } catch (err) {
+            console.error(`Erro ao buscar prévia da lista ${listaId}:`, err);
+            return [];
+        }
+    };
+
     // Buscar listas do backend
     const fetchListas = async () => {
         try {
             setLoading(true);
             setError(null);
             const response = await api.get('/v1/listas');
-            setListas(response.data);
+            const listasData: Lista[] = response.data;
+
+            // Buscar prévia dos itens de cada lista (em paralelo)
+            const listasComPreviews = await Promise.all(
+                listasData.map(async (lista) => {
+                    const itensPreview = await fetchListaPreview(lista.id);
+                    return {
+                        ...lista,
+                        itens: itensPreview
+                    };
+                })
+            );
+
+            setListas(listasComPreviews);
         } catch (err: any) {
             setError(err.response?.data?.error || 'Erro ao carregar listas');
             console.error('Erro ao buscar listas:', err);
@@ -465,6 +490,78 @@ const ListasCompras: React.FC = () => {
                                             {new Date(lista.data_criacao).toLocaleDateString('pt-BR')}
                                         </span>
                                     </div>
+
+                                    {/* Prévia dos Itens */}
+                                    {lista.itens && lista.itens.length > 0 && (
+                                        <div style={{
+                                            marginTop: '1rem',
+                                            padding: '0.75rem',
+                                            backgroundColor: '#f8f9fa',
+                                            borderRadius: '8px',
+                                            border: '1px solid #e9ecef'
+                                        }}>
+                                            <div style={{
+                                                fontSize: '0.85rem',
+                                                fontWeight: 600,
+                                                marginBottom: '0.5rem',
+                                                color: '#495057',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '0.5rem'
+                                            }}>
+                                                <FontAwesomeIcon icon={faBoxOpen} style={{color: '#667eea'}} />
+                                                Primeiros itens:
+                                            </div>
+                                            {lista.itens.map((item, idx) => (
+                                                <div key={item.id} style={{
+                                                    fontSize: '0.8rem',
+                                                    padding: '0.25rem 0',
+                                                    color: '#6c757d',
+                                                    borderBottom: idx < lista.itens!.length - 1 ? '1px dotted #dee2e6' : 'none'
+                                                }}>
+                                                    <strong>{item.nome}</strong>
+                                                    <span style={{marginLeft: '0.5rem', fontSize: '0.75rem'}}>
+                                                        ({item.unidade})
+                                                    </span>
+                                                    {item.quantidade_minima !== undefined && item.quantidade_atual !== undefined && (
+                                                        <span style={{
+                                                            marginLeft: '0.5rem',
+                                                            fontSize: '0.75rem',
+                                                            color: item.quantidade_atual < item.quantidade_minima ? '#dc3545' : '#28a745'
+                                                        }}>
+                                                            {item.quantidade_atual}/{item.quantidade_minima}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            ))}
+                                            {/* Indicador se há mais itens */}
+                                            <div style={{
+                                                marginTop: '0.5rem',
+                                                fontSize: '0.75rem',
+                                                color: '#6c757d',
+                                                fontStyle: 'italic',
+                                                textAlign: 'center'
+                                            }}>
+                                                <FontAwesomeIcon icon={faEye} style={{marginRight: '0.3rem'}} />
+                                                Clique no olho para ver todos os itens
+                                            </div>
+                                        </div>
+                                    )}
+                                    {lista.itens && lista.itens.length === 0 && (
+                                        <div style={{
+                                            marginTop: '1rem',
+                                            padding: '0.75rem',
+                                            backgroundColor: '#fff3cd',
+                                            borderRadius: '8px',
+                                            border: '1px solid #ffc107',
+                                            fontSize: '0.85rem',
+                                            color: '#856404',
+                                            textAlign: 'center'
+                                        }}>
+                                            <FontAwesomeIcon icon={faInfoCircle} style={{marginRight: '0.5rem'}} />
+                                            Nenhum item cadastrado
+                                        </div>
+                                    )}
                                 </div>
                                 <div className={styles.cardFooter}>
                                     <Button
