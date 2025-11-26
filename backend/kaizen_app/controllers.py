@@ -555,8 +555,38 @@ def update_lista_route(lista_id):
 @api_bp.route('/listas/<int:lista_id>', methods=['DELETE'])
 @admin_required()
 def delete_lista_route(lista_id):
-    """Deleta uma lista permanentemente."""
+    """Move uma lista para a lixeira (soft delete)."""
     response, status = services.delete_lista(lista_id)
+    return jsonify(response), status
+
+@admin_bp.route('/listas/deleted', methods=['GET'])
+@admin_required()
+def get_deleted_listas_route():
+    """Retorna todas as listas deletadas (na lixeira)."""
+    response, status = services.get_deleted_listas()
+    return jsonify(response), status
+
+@admin_bp.route('/listas/<int:lista_id>/restore', methods=['POST'])
+@admin_required()
+def restore_lista_route(lista_id):
+    """Restaura uma lista da lixeira."""
+    response, status = services.restore_lista(lista_id)
+    return jsonify(response), status
+
+@admin_bp.route('/listas/<int:lista_id>/permanent-delete', methods=['DELETE'])
+@admin_required()
+def permanent_delete_lista_route(lista_id):
+    """Deleta permanentemente uma lista da lixeira."""
+    response, status = services.permanent_delete_lista(lista_id)
+    return jsonify(response), status
+
+@admin_bp.route('/listas/permanent-delete-batch', methods=['POST'])
+@admin_required()
+def permanent_delete_listas_batch_route():
+    """Deleta permanentemente múltiplas listas em lote."""
+    data = request.get_json()
+    lista_ids = data.get('lista_ids', [])
+    response, status = services.permanent_delete_listas_batch(lista_ids)
     return jsonify(response), status
 
 # ============================================

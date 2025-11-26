@@ -754,8 +754,9 @@ def create_lista(data):
     return nova_lista.to_dict(), 201
 
 def get_all_listas():
-    """Retorna todas as listas de compras."""
-    return repositories.get_all(Lista), 200
+    """Retorna todas as listas de compras não deletadas."""
+    listas = Lista.query.filter_by(deletado=False).all()
+    return [lista.to_dict() for lista in listas], 200
 
 def get_lista_by_id(lista_id):
     """Retorna uma lista específica."""
@@ -832,16 +833,89 @@ def update_lista(lista_id, data):
     return lista.to_dict(), 200
 
 def delete_lista(lista_id):
-    """Deleta uma lista e suas associações com colaboradores."""
+    """Faz soft delete de uma lista (move para lixeira)."""
     lista = repositories.get_by_id(Lista, lista_id)
     if not lista:
         return {"error": "Lista não encontrada."}, 404
 
-    # O relacionamento many-to-many será limpo automaticamente
+    # Soft delete
+    lista.deletado = True
+    lista.data_delecao = datetime.utcnow()
+    db.session.commit()
+
+    return {"message": "Lista movida para lixeira."}, 200
+
+
+def get_deleted_listas():
+    """Retorna todas as listas deletadas (na lixeira)."""
+    listas = Lista.query.filter_by(deletado=True).order_by(Lista.data_delecao.desc()).all()
+    return [lista.to_dict() for lista in listas], 200
+
+
+def restore_lista(lista_id):
+    """Restaura uma lista da lixeira."""
+    lista = repositories.get_by_id(Lista, lista_id)
+    if not lista:
+        return {"error": "Lista não encontrada."}, 404
+
+    if not lista.deletado:
+        return {"error": "Esta lista não está na lixeira."}, 400
+
+    # Restaurar
+    lista.deletado = False
+    lista.data_delecao = None
+    db.session.commit()
+
+    return {"message": "Lista restaurada com sucesso.", "lista": lista.to_dict()}, 200
+
+
+def permanent_delete_lista(lista_id):
+    """Deleta permanentemente uma lista da lixeira."""
+    lista = repositories.get_by_id(Lista, lista_id)
+    if not lista:
+        return {"error": "Lista não encontrada."}, 404
+
+    if not lista.deletado:
+        return {"error": "Apenas listas na lixeira podem ser deletadas permanentemente."}, 400
+
+    # Deletar permanentemente
     db.session.delete(lista)
     db.session.commit()
 
-    return {"message": "Lista deletada com sucesso."}, 200
+    return {"message": "Lista deletada permanentemente."}, 200
+
+
+def permanent_delete_listas_batch(lista_ids):
+    """Deleta permanentemente múltiplas listas em lote."""
+    if not lista_ids or not isinstance(lista_ids, list):
+        return {"error": "Lista de IDs inválida."}, 400
+
+    deleted_count = 0
+    errors = []
+
+    for lista_id in lista_ids:
+        lista = repositories.get_by_id(Lista, lista_id)
+        if not lista:
+            errors.append(f"Lista {lista_id} não encontrada")
+            continue
+
+        if not lista.deletado:
+            errors.append(f"Lista {lista_id} não está na lixeira")
+            continue
+
+        try:
+            db.session.delete(lista)
+            deleted_count += 1
+        except Exception as e:
+            errors.append(f"Erro ao deletar lista {lista_id}: {str(e)}")
+
+    db.session.commit()
+
+    return {
+        "message": f"{deleted_count} lista(s) deletada(s) permanentemente.",
+        "deleted_count": deleted_count,
+        "errors": errors if errors else None
+    }, 200
 
 
 # --- Serviços de Dashboard ---

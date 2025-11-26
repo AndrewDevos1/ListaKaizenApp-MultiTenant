@@ -27,6 +27,8 @@ import {
     faBoxOpen,
     faDownload,
     faUpload,
+    faTrashAlt,
+    faUndo,
 } from '@fortawesome/free-solid-svg-icons';
 import { Link } from 'react-router-dom';
 import api from '../../services/api';
@@ -100,6 +102,12 @@ const ListasCompras: React.FC = () => {
     const [importDescricao, setImportDescricao] = useState('');
     const [importFile, setImportFile] = useState<File | null>(null);
     const [importLoading, setImportLoading] = useState(false);
+
+    // Estado para lixeira
+    const [showTrashModal, setShowTrashModal] = useState(false);
+    const [deletedListas, setDeletedListas] = useState<Lista[]>([]);
+    const [selectedTrashIds, setSelectedTrashIds] = useState<number[]>([]);
+    const [loadingTrash, setLoadingTrash] = useState(false);
 
     // Estado para form data
     const resetFormData = (): ListaFormData => ({
@@ -425,6 +433,97 @@ const ListasCompras: React.FC = () => {
         }
     };
 
+    // Funções da lixeira
+    const fetchDeletedListas = async () => {
+        try {
+            setLoadingTrash(true);
+            const response = await api.get('/admin/listas/deleted');
+            setDeletedListas(response.data);
+        } catch (err: any) {
+            setError(err.response?.data?.error || 'Erro ao buscar listas deletadas');
+            setTimeout(() => setError(null), 3000);
+        } finally {
+            setLoadingTrash(false);
+        }
+    };
+
+    const handleToggleTrashSelection = (listaId: number) => {
+        setSelectedTrashIds(prev => {
+            if (prev.includes(listaId)) {
+                return prev.filter(id => id !== listaId);
+            } else {
+                return [...prev, listaId];
+            }
+        });
+    };
+
+    const handleSelectAllTrash = () => {
+        if (selectedTrashIds.length === deletedListas.length) {
+            setSelectedTrashIds([]);
+        } else {
+            setSelectedTrashIds(deletedListas.map(l => l.id));
+        }
+    };
+
+    const handleRestoreLista = async (listaId: number) => {
+        try {
+            await api.post(`/admin/listas/${listaId}/restore`);
+            setSuccessMessage('Lista restaurada com sucesso!');
+            fetchDeletedListas();
+            fetchListas();
+            setTimeout(() => setSuccessMessage(null), 3000);
+        } catch (err: any) {
+            setError(err.response?.data?.error || 'Erro ao restaurar lista');
+            setTimeout(() => setError(null), 3000);
+        }
+    };
+
+    const handlePermanentDelete = async (listaId: number) => {
+        if (!window.confirm('Tem certeza que deseja deletar PERMANENTEMENTE esta lista? Esta ação não pode ser desfeita!')) {
+            return;
+        }
+
+        try {
+            await api.delete(`/admin/listas/${listaId}/permanent-delete`);
+            setSuccessMessage('Lista deletada permanentemente!');
+            fetchDeletedListas();
+            setTimeout(() => setSuccessMessage(null), 3000);
+        } catch (err: any) {
+            setError(err.response?.data?.error || 'Erro ao deletar lista');
+            setTimeout(() => setError(null), 3000);
+        }
+    };
+
+    const handlePermanentDeleteBatch = async () => {
+        if (selectedTrashIds.length === 0) {
+            setError('Selecione ao menos uma lista para deletar');
+            setTimeout(() => setError(null), 3000);
+            return;
+        }
+
+        if (!window.confirm(`Tem certeza que deseja deletar PERMANENTEMENTE ${selectedTrashIds.length} lista(s)? Esta ação não pode ser desfeita!`)) {
+            return;
+        }
+
+        try {
+            await api.post('/admin/listas/permanent-delete-batch', {
+                lista_ids: selectedTrashIds
+            });
+            setSuccessMessage(`${selectedTrashIds.length} lista(s) deletada(s) permanentemente!`);
+            setSelectedTrashIds([]);
+            fetchDeletedListas();
+            setTimeout(() => setSuccessMessage(null), 3000);
+        } catch (err: any) {
+            setError(err.response?.data?.error || 'Erro ao deletar listas');
+            setTimeout(() => setError(null), 3000);
+        }
+    };
+
+    const handleCloseTrashModal = () => {
+        setShowTrashModal(false);
+        setSelectedTrashIds([]);
+    };
+
     return (
         <div className={styles.pageWrapper}>
             <Container fluid>
@@ -461,6 +560,18 @@ const ListasCompras: React.FC = () => {
                             title="Importar Nova Lista (CSV)"
                         >
                             <FontAwesomeIcon icon={faDownload} />
+                        </Button>
+                        <Button
+                            variant="secondary"
+                            size="lg"
+                            onClick={() => {
+                                setShowTrashModal(true);
+                                fetchDeletedListas();
+                            }}
+                            className={styles.iconButton}
+                            title="Ver Lixeira"
+                        >
+                            <FontAwesomeIcon icon={faTrashAlt} />
                         </Button>
                     </div>
                 </div>
@@ -957,6 +1068,105 @@ const ListasCompras: React.FC = () => {
                             disabled={importLoading || !importNome.trim() || !importFile}
                         >
                             {importLoading ? 'Importando...' : 'Importar Lista'}
+                        </Button>
+                    </Modal.Footer>
+                </Modal>
+
+                {/* Modal Lixeira */}
+                <Modal show={showTrashModal} onHide={handleCloseTrashModal} size="lg">
+                    <Modal.Header closeButton>
+                        <Modal.Title>
+                            <FontAwesomeIcon icon={faTrashAlt} style={{marginRight: '0.5rem'}} />
+                            Lixeira - Listas Excluídas
+                        </Modal.Title>
+                    </Modal.Header>
+                    <Modal.Body>
+                        {loadingTrash ? (
+                            <div className="text-center my-4">
+                                <div className="spinner-border text-primary" role="status">
+                                    <span className="visually-hidden">Carregando...</span>
+                                </div>
+                                <p className="mt-2">Carregando listas...</p>
+                            </div>
+                        ) : deletedListas.length === 0 ? (
+                            <Alert variant="info">
+                                <FontAwesomeIcon icon={faCheckCircle} style={{marginRight: '0.5rem'}} />
+                                A lixeira está vazia.
+                            </Alert>
+                        ) : (
+                            <>
+                                <div className="mb-3 d-flex justify-content-between align-items-center">
+                                    <Form.Check
+                                        type="checkbox"
+                                        label={`Selecionar todas (${deletedListas.length})`}
+                                        checked={selectedTrashIds.length === deletedListas.length && deletedListas.length > 0}
+                                        onChange={handleSelectAllTrash}
+                                    />
+                                    {selectedTrashIds.length > 0 && (
+                                        <Button
+                                            variant="danger"
+                                            size="sm"
+                                            onClick={handlePermanentDeleteBatch}
+                                        >
+                                            <FontAwesomeIcon icon={faTrash} style={{marginRight: '0.5rem'}} />
+                                            Deletar {selectedTrashIds.length} selecionada(s) permanentemente
+                                        </Button>
+                                    )}
+                                </div>
+                                <div className="table-responsive">
+                                    <table className="table table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th style={{width: '50px'}}></th>
+                                                <th>Nome da Lista</th>
+                                                <th>Data de Exclusão</th>
+                                                <th className="text-center">Ações</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {deletedListas.map((lista) => (
+                                                <tr key={lista.id}>
+                                                    <td>
+                                                        <Form.Check
+                                                            type="checkbox"
+                                                            checked={selectedTrashIds.includes(lista.id)}
+                                                            onChange={() => handleToggleTrashSelection(lista.id)}
+                                                        />
+                                                    </td>
+                                                    <td><strong>{lista.nome}</strong></td>
+                                                    <td>
+                                                        {lista.data_delecao ? new Date(lista.data_delecao).toLocaleString('pt-BR') : '-'}
+                                                    </td>
+                                                    <td className="text-center">
+                                                        <Button
+                                                            variant="success"
+                                                            size="sm"
+                                                            onClick={() => handleRestoreLista(lista.id)}
+                                                            className="me-2"
+                                                            title="Restaurar lista"
+                                                        >
+                                                            <FontAwesomeIcon icon={faUndo} />
+                                                        </Button>
+                                                        <Button
+                                                            variant="danger"
+                                                            size="sm"
+                                                            onClick={() => handlePermanentDelete(lista.id)}
+                                                            title="Deletar permanentemente"
+                                                        >
+                                                            <FontAwesomeIcon icon={faTrash} />
+                                                        </Button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </>
+                        )}
+                    </Modal.Body>
+                    <Modal.Footer>
+                        <Button variant="secondary" onClick={handleCloseTrashModal}>
+                            Fechar
                         </Button>
                     </Modal.Footer>
                 </Modal>

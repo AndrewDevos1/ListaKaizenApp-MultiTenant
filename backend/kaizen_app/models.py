@@ -183,6 +183,8 @@ class Lista(db.Model, SerializerMixin):
     nome = db.Column(db.String(100), nullable=False, unique=True)
     descricao = db.Column(db.String(255), nullable=True)
     data_criacao = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    deletado = db.Column(db.Boolean, nullable=False, default=False)
+    data_delecao = db.Column(db.DateTime, nullable=True)
     # Relacionamento muitos-para-muitos com os usuários (colaboradores)
     colaboradores = db.relationship('Usuario', secondary=lista_colaborador,
                                     lazy=True, backref=db.backref('listas_atribuidas', lazy=True))
