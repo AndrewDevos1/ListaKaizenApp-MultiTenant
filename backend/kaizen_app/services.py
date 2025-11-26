@@ -762,6 +762,33 @@ def rejeitar_pedidos_lote(pedido_ids):
         "erros": erros if erros else None
     }, 200
 
+
+def editar_pedido(pedido_id, data):
+    """
+    Edita um pedido (permite alterar quantidade solicitada).
+    Apenas pedidos pendentes podem ser editados.
+    """
+    pedido = repositories.get_by_id(Pedido, pedido_id)
+
+    if not pedido:
+        return {"error": "Pedido não encontrado."}, 404
+
+    if pedido.status != PedidoStatus.PENDENTE:
+        return {"error": f"Apenas pedidos pendentes podem ser editados. Status atual: {pedido.status.value}"}, 400
+
+    # Atualizar quantidade
+    if 'quantidade_solicitada' in data:
+        quantidade = data['quantidade_solicitada']
+
+        if not isinstance(quantidade, (int, float)) or quantidade <= 0:
+            return {"error": "Quantidade deve ser um número positivo."}, 400
+
+        pedido.quantidade_solicitada = quantidade
+
+    db.session.commit()
+
+    return {"message": "Pedido editado com sucesso.", "pedido": pedido.to_dict()}, 200
+
 def atualizar_estoque_e_calcular_pedido(estoque_id, quantidade_atual, usuario_id):
     """
     Atualiza a quantidade atual de um estoque e calcula o pedido automaticamente.

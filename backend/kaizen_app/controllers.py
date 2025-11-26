@@ -509,6 +509,14 @@ def rejeitar_pedidos_lote_route():
     response, status = services.rejeitar_pedidos_lote(pedido_ids)
     return jsonify(response), status
 
+@admin_bp.route('/pedidos/<int:pedido_id>/editar', methods=['PUT'])
+@admin_required()
+def editar_pedido_route(pedido_id):
+    """Edita um pedido (permite alterar quantidade)."""
+    data = request.get_json()
+    response, status = services.editar_pedido(pedido_id, data)
+    return jsonify(response), status
+
 
 # --- Rotas de Cotações ---
 @api_bp.route('/v1/cotacoes', methods=['POST'])

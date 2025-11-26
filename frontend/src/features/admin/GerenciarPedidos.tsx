@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Button, Table, Alert, Badge, Form, ButtonGroup } from 'react-bootstrap';
+import { Container, Button, Table, Alert, Badge, Form, ButtonGroup, Modal } from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faCheck,
@@ -9,6 +9,8 @@ import {
     faCheckCircle,
     faTimesCircle,
     faClock,
+    faEye,
+    faEdit,
 } from '@fortawesome/free-solid-svg-icons';
 import { Link } from 'react-router-dom';
 import api from '../../services/api';
@@ -44,6 +46,12 @@ const GerenciarPedidos: React.FC = () => {
     const [statusFilter, setStatusFilter] = useState<StatusFilter>('PENDENTE');
     const [selectedIds, setSelectedIds] = useState<number[]>([]);
     const [actionLoading, setActionLoading] = useState(false);
+
+    // Estados para modais
+    const [showViewModal, setShowViewModal] = useState(false);
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [selectedPedido, setSelectedPedido] = useState<Pedido | null>(null);
+    const [editQuantidade, setEditQuantidade] = useState(0);
 
     useEffect(() => {
         fetchPedidos();
@@ -162,6 +170,53 @@ const GerenciarPedidos: React.FC = () => {
             setSelectedIds([]);
         } else {
             setSelectedIds(pedidos.map(p => p.id));
+        }
+    };
+
+    const handleViewPedido = (pedido: Pedido) => {
+        setSelectedPedido(pedido);
+        setShowViewModal(true);
+    };
+
+    const handleOpenEditModal = (pedido: Pedido) => {
+        setSelectedPedido(pedido);
+        setEditQuantidade(pedido.quantidade_solicitada);
+        setShowEditModal(true);
+    };
+
+    const handleCloseViewModal = () => {
+        setShowViewModal(false);
+        setSelectedPedido(null);
+    };
+
+    const handleCloseEditModal = () => {
+        setShowEditModal(false);
+        setSelectedPedido(null);
+        setEditQuantidade(0);
+    };
+
+    const handleSaveEdit = async () => {
+        if (!selectedPedido) return;
+
+        if (editQuantidade <= 0) {
+            setError('Quantidade deve ser maior que zero');
+            return;
+        }
+
+        try {
+            setActionLoading(true);
+            await api.put(`/admin/pedidos/${selectedPedido.id}/editar`, {
+                quantidade_solicitada: editQuantidade
+            });
+
+            setSuccessMessage('Pedido editado com sucesso!');
+            handleCloseEditModal();
+            fetchPedidos();
+            setTimeout(() => setSuccessMessage(''), 3000);
+        } catch (err: any) {
+            setError(err.response?.data?.error || 'Erro ao editar pedido');
+        } finally {
+            setActionLoading(false);
         }
     };
 
@@ -303,7 +358,7 @@ const GerenciarPedidos: React.FC = () => {
                                     <th>Solicitante</th>
                                     <th>Data do Pedido</th>
                                     <th>Status</th>
-                                    {statusFilter === 'PENDENTE' && <th className="text-center">Ações</th>}
+                                    <th className="text-center" style={{ width: '150px' }}>Ações</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -324,33 +379,140 @@ const GerenciarPedidos: React.FC = () => {
                                         <td>{pedido.usuario?.nome || 'N/A'}</td>
                                         <td>{new Date(pedido.data_pedido).toLocaleString('pt-BR')}</td>
                                         <td>{getStatusBadge(pedido.status)}</td>
-                                        {statusFilter === 'PENDENTE' && (
-                                            <td className="text-center">
-                                                <Button
-                                                    variant="success"
-                                                    size="sm"
-                                                    onClick={() => handleAprovar(pedido.id)}
-                                                    disabled={actionLoading}
-                                                    style={{ marginRight: '0.5rem' }}
-                                                >
-                                                    <FontAwesomeIcon icon={faCheck} />
-                                                </Button>
-                                                <Button
-                                                    variant="danger"
-                                                    size="sm"
-                                                    onClick={() => handleRejeitar(pedido.id)}
-                                                    disabled={actionLoading}
-                                                >
-                                                    <FontAwesomeIcon icon={faTimes} />
-                                                </Button>
-                                            </td>
-                                        )}
+                                        <td className="text-center">
+                                            <Button
+                                                variant="info"
+                                                size="sm"
+                                                onClick={() => handleViewPedido(pedido)}
+                                                style={{ marginRight: '0.5rem' }}
+                                                title="Visualizar detalhes"
+                                            >
+                                                <FontAwesomeIcon icon={faEye} />
+                                            </Button>
+                                            {pedido.status === 'PENDENTE' && (
+                                                <>
+                                                    <Button
+                                                        variant="warning"
+                                                        size="sm"
+                                                        onClick={() => handleOpenEditModal(pedido)}
+                                                        disabled={actionLoading}
+                                                        style={{ marginRight: '0.5rem' }}
+                                                        title="Editar quantidade"
+                                                    >
+                                                        <FontAwesomeIcon icon={faEdit} />
+                                                    </Button>
+                                                    <Button
+                                                        variant="success"
+                                                        size="sm"
+                                                        onClick={() => handleAprovar(pedido.id)}
+                                                        disabled={actionLoading}
+                                                        style={{ marginRight: '0.5rem' }}
+                                                        title="Aprovar pedido"
+                                                    >
+                                                        <FontAwesomeIcon icon={faCheck} />
+                                                    </Button>
+                                                    <Button
+                                                        variant="danger"
+                                                        size="sm"
+                                                        onClick={() => handleRejeitar(pedido.id)}
+                                                        disabled={actionLoading}
+                                                        title="Rejeitar pedido"
+                                                    >
+                                                        <FontAwesomeIcon icon={faTimes} />
+                                                    </Button>
+                                                </>
+                                            )}
+                                        </td>
                                     </tr>
                                 ))}
                             </tbody>
                         </Table>
                     )}
                 </div>
+
+                {/* Modal de Visualização */}
+                <Modal show={showViewModal} onHide={handleCloseViewModal} centered>
+                    <Modal.Header closeButton>
+                        <Modal.Title>
+                            <FontAwesomeIcon icon={faEye} style={{ marginRight: '0.5rem', color: '#17a2b8' }} />
+                            Detalhes do Pedido
+                        </Modal.Title>
+                    </Modal.Header>
+                    <Modal.Body>
+                        {selectedPedido && (
+                            <div>
+                                <p><strong>Item:</strong> {selectedPedido.item?.nome || 'N/A'}</p>
+                                <p><strong>Fornecedor:</strong> {selectedPedido.fornecedor?.nome || 'N/A'}</p>
+                                <p><strong>Quantidade Solicitada:</strong> {selectedPedido.quantidade_solicitada} {selectedPedido.item?.unidade_medida || ''}</p>
+                                <p><strong>Solicitado por:</strong> {selectedPedido.usuario?.nome || 'N/A'}</p>
+                                <p><strong>Data do Pedido:</strong> {new Date(selectedPedido.data_pedido).toLocaleString('pt-BR')}</p>
+                                <p><strong>Status:</strong> {getStatusBadge(selectedPedido.status)}</p>
+                            </div>
+                        )}
+                    </Modal.Body>
+                    <Modal.Footer>
+                        <Button variant="secondary" onClick={handleCloseViewModal}>
+                            Fechar
+                        </Button>
+                    </Modal.Footer>
+                </Modal>
+
+                {/* Modal de Edição */}
+                <Modal show={showEditModal} onHide={handleCloseEditModal} centered>
+                    <Modal.Header closeButton>
+                        <Modal.Title>
+                            <FontAwesomeIcon icon={faEdit} style={{ marginRight: '0.5rem', color: '#ffc107' }} />
+                            Editar Pedido
+                        </Modal.Title>
+                    </Modal.Header>
+                    <Modal.Body>
+                        {selectedPedido && (
+                            <div>
+                                <Alert variant="info">
+                                    <strong>Item:</strong> {selectedPedido.item?.nome || 'N/A'}<br />
+                                    <strong>Fornecedor:</strong> {selectedPedido.fornecedor?.nome || 'N/A'}
+                                </Alert>
+
+                                <Form.Group>
+                                    <Form.Label><strong>Quantidade Solicitada ({selectedPedido.item?.unidade_medida || ''})</strong></Form.Label>
+                                    <Form.Control
+                                        type="number"
+                                        min="0.01"
+                                        step="0.01"
+                                        value={editQuantidade}
+                                        onChange={(e) => setEditQuantidade(parseFloat(e.target.value))}
+                                        autoFocus
+                                    />
+                                    <Form.Text className="text-muted">
+                                        Quantidade original: {selectedPedido.quantidade_solicitada}
+                                    </Form.Text>
+                                </Form.Group>
+                            </div>
+                        )}
+                    </Modal.Body>
+                    <Modal.Footer>
+                        <Button variant="secondary" onClick={handleCloseEditModal} disabled={actionLoading}>
+                            Cancelar
+                        </Button>
+                        <Button
+                            variant="primary"
+                            onClick={handleSaveEdit}
+                            disabled={actionLoading}
+                        >
+                            {actionLoading ? (
+                                <>
+                                    <span className="spinner-border spinner-border-sm" style={{ marginRight: '0.5rem' }} />
+                                    Salvando...
+                                </>
+                            ) : (
+                                <>
+                                    <FontAwesomeIcon icon={faCheck} style={{ marginRight: '0.5rem' }} />
+                                    Salvar Alterações
+                                </>
+                            )}
+                        </Button>
+                    </Modal.Footer>
+                </Modal>
             </Container>
         </div>
     );
