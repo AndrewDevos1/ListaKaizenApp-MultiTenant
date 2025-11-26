@@ -1,4 +1,4 @@
-from .models import Usuario, UserRoles, Item, Area, Fornecedor, Estoque, Cotacao, CotacaoStatus, CotacaoItem, Pedido, Lista, ListaMaeItem, ItemSolicitacao
+from .models import Usuario, UserRoles, Item, Area, Fornecedor, Estoque, Cotacao, CotacaoStatus, CotacaoItem, Pedido, Lista, ListaMaeItem
 from .extensions import db
 from . import repositories
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -1149,13 +1149,6 @@ def deletar_item_lista_mae(lista_id, item_id):
 
         if not item:
             return {"error": "Item não encontrado"}, 404
-
-        # Remover referências do item em solicitações
-        # Isso evita violação de Foreign Key constraint
-        ItemSolicitacao.query.filter_by(created_item_id=item_id).update(
-            {'created_item_id': None},
-            synchronize_session=False
-        )
 
         db.session.delete(item)
         db.session.commit()
