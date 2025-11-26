@@ -10,12 +10,3 @@ services:
         value: production
       - key: FLASK_APP
         value: run.py
-      - key: DATABASE_URL
-        fromDatabase:
-          name: kaizen-lists-db
-          property: connectionString
-
-databases:
-  - name: kaizen-lists-db
-    databaseName: kaizen_lists
-    user: kaizen_user
