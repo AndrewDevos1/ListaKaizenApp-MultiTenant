@@ -738,10 +738,19 @@ def create_lista(data):
     """Cria uma nova lista de compras."""
     if not data or not data.get('nome'):
         return {"error": "O nome da lista é obrigatório."}, 400
-    
-    nova_lista = Lista(nome=data['nome'])
+
+    # Validar se já existe uma lista com esse nome
+    nome = data['nome'].strip()
+    lista_existente = Lista.query.filter(func.lower(Lista.nome) == func.lower(nome)).first()
+    if lista_existente:
+        return {"error": f"Já existe uma lista com o nome '{nome}'."}, 409
+
+    nova_lista = Lista(
+        nome=nome,
+        descricao=data.get('descricao', '').strip() if data.get('descricao') else None
+    )
     repositories.add_instance(nova_lista)
-    
+
     return nova_lista.to_dict(), 201
 
 def get_all_listas():
@@ -802,16 +811,22 @@ def update_lista(lista_id, data):
         return {"error": "Lista não encontrada."}, 404
 
     # Validar se nome já existe (se estiver sendo alterado)
-    if 'nome' in data and data['nome'] != lista.nome:
-        existing = Lista.query.filter_by(nome=data['nome']).first()
-        if existing:
-            return {"error": "Já existe uma lista com esse nome."}, 400
+    if 'nome' in data and data['nome']:
+        novo_nome = data['nome'].strip()
+        # Verificar se o nome mudou (case-insensitive)
+        if novo_nome.lower() != lista.nome.lower():
+            existing = Lista.query.filter(
+                func.lower(Lista.nome) == func.lower(novo_nome),
+                Lista.id != lista_id
+            ).first()
+            if existing:
+                return {"error": f"Já existe uma lista com o nome '{novo_nome}'."}, 409
 
     # Atualizar campos
-    if 'nome' in data:
-        lista.nome = data['nome']
+    if 'nome' in data and data['nome']:
+        lista.nome = data['nome'].strip()
     if 'descricao' in data:
-        lista.descricao = data['descricao']
+        lista.descricao = data['descricao'].strip() if data['descricao'] else None
 
     db.session.commit()
     return lista.to_dict(), 200
@@ -2067,9 +2082,15 @@ def create_lista_from_csv(nome, descricao, csv_file):
         if not nome or not nome.strip():
             return {"error": "Nome da lista é obrigatório."}, 400
 
+        # Validar se já existe uma lista com esse nome
+        nome_limpo = nome.strip()
+        lista_existente = Lista.query.filter(func.lower(Lista.nome) == func.lower(nome_limpo)).first()
+        if lista_existente:
+            return {"error": f"Já existe uma lista com o nome '{nome_limpo}'."}, 409
+
         # Criar nova lista
         nova_lista = Lista(
-            nome=nome.strip(),
+            nome=nome_limpo,
             descricao=descricao.strip() if descricao else None
         )
         db.session.add(nova_lista)

@@ -215,11 +215,6 @@ const ListasCompras: React.FC = () => {
                 return;
             }
 
-            if (!formData.categoria.trim()) {
-                setError('A categoria é obrigatória');
-                return;
-            }
-
             if (editingLista) {
                 // UPDATE
                 await api.put(`/v1/listas/${editingLista.id}`, formData);
@@ -809,14 +804,16 @@ const ListasCompras: React.FC = () => {
                             </Form.Group>
 
                             <Form.Group className="mb-3">
-                                <Form.Label>Categoria *</Form.Label>
+                                <Form.Label>Categoria</Form.Label>
                                 <Form.Control
                                     type="text"
                                     placeholder="Ex: Alimentos, Limpeza, Material de Escritório..."
                                     value={formData.categoria}
                                     onChange={(e) => setFormData({...formData, categoria: e.target.value})}
-                                    required
                                 />
+                                <Form.Text className="text-muted">
+                                    Opcional - Para organização e filtros
+                                </Form.Text>
                             </Form.Group>
 
                             <Form.Group className="mb-3">
