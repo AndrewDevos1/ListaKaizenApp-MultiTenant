@@ -34,7 +34,9 @@ class TestingConfig(Config):
 
 class ProductionConfig(Config):
     """Configurações para o ambiente de produção."""
-    database_url = os.environ.get('DATABASE_URL') or 'sqlite:///kaizen_prod.db'
+    # Caminho absoluto para SQLite em produção
+    sqlite_path = os.path.join(basedir, '..', 'kaizen_prod.db')
+    database_url = os.environ.get('DATABASE_URL') or f'sqlite:///{sqlite_path}'
 
     # Fix para Render: converte postgres:// para postgresql://
     if database_url.startswith('postgres://'):
