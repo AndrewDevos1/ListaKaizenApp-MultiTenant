@@ -4,7 +4,7 @@
  * Esta página permite criar, visualizar, editar e deletar listas de compras
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Container, Card, Button, Modal, Form, Alert } from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
@@ -118,10 +118,6 @@ const ListasCompras: React.FC = () => {
     const [loadingUsers, setLoadingUsers] = useState(false);
     const [assigningLoading, setAssigningLoading] = useState(false);
 
-    // Estados para fornecedores
-    const [fornecedores, setFornecedores] = useState<Fornecedor[]>([]);
-    const [loadingFornecedores, setLoadingFornecedores] = useState(false);
-
     // Buscar prévia dos itens de uma lista (primeiros 3)
     const fetchListaPreview = async (listaId: number): Promise<ListaItem[]> => {
         try {
@@ -162,24 +158,9 @@ const ListasCompras: React.FC = () => {
         }
     };
 
-    // Buscar fornecedores do backend
-    const fetchFornecedores = async () => {
-        try {
-            setLoadingFornecedores(true);
-            const response = await api.get('/v1/fornecedores');
-            setFornecedores(response.data);
-        } catch (err: any) {
-            console.error('Erro ao buscar fornecedores:', err);
-            // Não mostrar erro, apenas log
-        } finally {
-            setLoadingFornecedores(false);
-        }
-    };
-
-    // useEffect para carregar listas e fornecedores na montagem
+    // useEffect para carregar listas na montagem
     useEffect(() => {
         fetchListas();
-        fetchFornecedores();
     }, []);
 
     // Funções do modal de criar/editar
@@ -408,9 +389,7 @@ const ListasCompras: React.FC = () => {
         }
     };
 
-    // Funções de exportar/importar CSV
-    const fileInputRefs = useRef<{[key: number]: HTMLInputElement | null}>({});
-
+    // Função de exportar CSV
     const handleExportCSV = async (lista: Lista) => {
         try {
             const response = await api.get(`/admin/listas/${lista.id}/export-csv`, {
@@ -443,47 +422,6 @@ const ListasCompras: React.FC = () => {
         } catch (err: any) {
             setError(err.response?.data?.error || 'Erro ao exportar lista');
             setTimeout(() => setError(null), 3000);
-        }
-    };
-
-    const handleImportCSV = (lista: Lista) => {
-        // Trigger file input click
-        const fileInput = fileInputRefs.current[lista.id];
-        if (fileInput) {
-            fileInput.click();
-        }
-    };
-
-    const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>, listaId: number) => {
-        const file = event.target.files?.[0];
-        if (!file) return;
-
-        // Validar tipo de arquivo
-        if (!file.name.endsWith('.csv')) {
-            setError('Por favor, selecione um arquivo CSV');
-            setTimeout(() => setError(null), 3000);
-            return;
-        }
-
-        try {
-            const formData = new FormData();
-            formData.append('file', file);
-
-            await api.post(`/admin/listas/${listaId}/import-csv`, formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data'
-                }
-            });
-
-            setSuccessMessage('Lista importada com sucesso!');
-            fetchListas(); // Recarregar listas
-            setTimeout(() => setSuccessMessage(null), 3000);
-        } catch (err: any) {
-            setError(err.response?.data?.error || 'Erro ao importar lista');
-            setTimeout(() => setError(null), 3000);
-        } finally {
-            // Limpar input file
-            event.target.value = '';
         }
     };
 
@@ -607,22 +545,6 @@ const ListasCompras: React.FC = () => {
                                         >
                                             <FontAwesomeIcon icon={faUpload} />
                                         </Button>
-                                        <Button
-                                            variant="link"
-                                            size="sm"
-                                            onClick={() => handleImportCSV(lista)}
-                                            className={styles.actionButton}
-                                            title="Importar Lista (CSV)"
-                                        >
-                                            <FontAwesomeIcon icon={faDownload} />
-                                        </Button>
-                                        <input
-                                            type="file"
-                                            ref={(el) => fileInputRefs.current[lista.id] = el}
-                                            accept=".csv"
-                                            style={{ display: 'none' }}
-                                            onChange={(e) => handleFileChange(e, lista.id)}
-                                        />
                                         <Button
                                             variant="link"
                                             size="sm"
@@ -783,60 +705,6 @@ const ListasCompras: React.FC = () => {
                                     value={formData.nome}
                                     onChange={(e) => setFormData({...formData, nome: e.target.value})}
                                     required
-                                />
-                            </Form.Group>
-
-                            <Form.Group className="mb-3">
-                                <Form.Label>Fornecedor</Form.Label>
-                                <Form.Select
-                                    value={formData.fornecedor_id}
-                                    onChange={(e) => setFormData({...formData, fornecedor_id: e.target.value})}
-                                    disabled={loadingFornecedores}
-                                >
-                                    <option value="">Sem fornecedor (adicionar depois)</option>
-                                    {fornecedores.map(f => (
-                                        <option key={f.id} value={f.id}>{f.nome}</option>
-                                    ))}
-                                </Form.Select>
-                                <Form.Text className="text-muted">
-                                    Opcional - Pode ser adicionado depois
-                                </Form.Text>
-                            </Form.Group>
-
-                            <Form.Group className="mb-3">
-                                <Form.Label>Categoria</Form.Label>
-                                <Form.Control
-                                    type="text"
-                                    placeholder="Ex: Alimentos, Limpeza, Material de Escritório..."
-                                    value={formData.categoria}
-                                    onChange={(e) => setFormData({...formData, categoria: e.target.value})}
-                                />
-                                <Form.Text className="text-muted">
-                                    Opcional - Para organização e filtros
-                                </Form.Text>
-                            </Form.Group>
-
-                            <Form.Group className="mb-3">
-                                <Form.Label>Telefone WhatsApp</Form.Label>
-                                <Form.Control
-                                    type="text"
-                                    placeholder="(00) 00000-0000"
-                                    value={formData.telefone_whatsapp}
-                                    onChange={(e) => setFormData({...formData, telefone_whatsapp: e.target.value})}
-                                />
-                                <Form.Text className="text-muted">
-                                    Opcional - Para contato direto via WhatsApp
-                                </Form.Text>
-                            </Form.Group>
-
-                            <Form.Group className="mb-3">
-                                <Form.Label>Descrição</Form.Label>
-                                <Form.Control
-                                    as="textarea"
-                                    rows={3}
-                                    placeholder="Descreva o propósito desta lista..."
-                                    value={formData.descricao}
-                                    onChange={(e) => setFormData({...formData, descricao: e.target.value})}
                                 />
                             </Form.Group>
                         </Form>
