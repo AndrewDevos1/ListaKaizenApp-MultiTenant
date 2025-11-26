@@ -752,6 +752,31 @@ def import_lista_csv_route(lista_id):
     response, status = services.import_lista_from_csv(lista_id, file)
     return jsonify(response), status
 
+@admin_bp.route('/listas/create-from-csv', methods=['POST'])
+@admin_required()
+def create_lista_from_csv_route():
+    """Cria uma nova lista e importa itens a partir de arquivo CSV"""
+    if 'file' not in request.files:
+        return jsonify({"error": "Nenhum arquivo enviado"}), 400
+
+    file = request.files['file']
+
+    if file.filename == '':
+        return jsonify({"error": "Nenhum arquivo selecionado"}), 400
+
+    if not file.filename.endswith('.csv'):
+        return jsonify({"error": "Arquivo deve ser CSV"}), 400
+
+    # Obter nome e descrição do form data
+    nome = request.form.get('nome', '').strip()
+    descricao = request.form.get('descricao', '').strip()
+
+    if not nome:
+        return jsonify({"error": "Nome da lista é obrigatório"}), 400
+
+    response, status = services.create_lista_from_csv(nome, descricao, file)
+    return jsonify(response), status
+
 @admin_bp.route('/database/clear', methods=['POST'])
 @admin_required()
 def clear_database_route():

@@ -2056,3 +2056,79 @@ def import_lista_from_csv(lista_id, csv_file):
         db.session.rollback()
         print(f"❌ Erro ao importar lista de CSV: {str(e)}")
         return {"error": f"Erro ao importar lista: {str(e)}"}, 500
+
+
+def create_lista_from_csv(nome, descricao, csv_file):
+    """
+    Cria uma nova lista e importa itens da lista mãe a partir de um arquivo CSV.
+    """
+    try:
+        # Validar nome
+        if not nome or not nome.strip():
+            return {"error": "Nome da lista é obrigatório."}, 400
+
+        # Criar nova lista
+        nova_lista = Lista(
+            nome=nome.strip(),
+            descricao=descricao.strip() if descricao else None
+        )
+        db.session.add(nova_lista)
+        db.session.flush()  # Para obter o ID
+
+        # Ler o arquivo CSV
+        import csv
+        from io import StringIO
+
+        # Converter para texto se necessário
+        if hasattr(csv_file, 'read'):
+            content = csv_file.read()
+            if isinstance(content, bytes):
+                content = content.decode('utf-8')
+        else:
+            content = csv_file
+
+        # Parse CSV
+        csv_reader = csv.DictReader(StringIO(content))
+
+        # Validar cabeçalhos
+        required_headers = {'nome', 'unidade', 'quantidade_atual', 'quantidade_minima'}
+        headers = set(csv_reader.fieldnames or [])
+
+        if not required_headers.issubset(headers):
+            db.session.rollback()
+            return {
+                "error": f"CSV deve conter os cabeçalhos: {', '.join(required_headers)}"
+            }, 400
+
+        # Importar itens
+        itens_importados = 0
+        for row in csv_reader:
+            try:
+                # Criar novo item
+                novo_item = ListaMaeItem(
+                    lista_mae_id=nova_lista.id,
+                    nome=row['nome'].strip(),
+                    unidade=row['unidade'].strip(),
+                    quantidade_atual=float(row['quantidade_atual']) if row['quantidade_atual'] else 0,
+                    quantidade_minima=float(row['quantidade_minima']) if row['quantidade_minima'] else 0
+                )
+                db.session.add(novo_item)
+                itens_importados += 1
+            except (ValueError, KeyError) as e:
+                db.session.rollback()
+                return {
+                    "error": f"Erro ao processar linha do CSV: {str(e)}"
+                }, 400
+
+        db.session.commit()
+
+        return {
+            "message": f"Lista '{nome}' criada com sucesso! {itens_importados} itens importados.",
+            "lista_id": nova_lista.id,
+            "itens_importados": itens_importados
+        }, 201
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"❌ Erro ao criar lista de CSV: {str(e)}")
+        return {"error": f"Erro ao criar lista: {str(e)}"}, 500

@@ -87,12 +87,19 @@ const ListasCompras: React.FC = () => {
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [showAssignModal, setShowAssignModal] = useState(false);
     const [showViewModal, setShowViewModal] = useState(false);
+    const [showImportModal, setShowImportModal] = useState(false);
     const [editingLista, setEditingLista] = useState<Lista | null>(null);
     const [deletingLista, setDeletingLista] = useState<Lista | null>(null);
     const [assigningLista, setAssigningLista] = useState<Lista | null>(null);
     const [viewingLista, setViewingLista] = useState<Lista | null>(null);
     const [viewingItens, setViewingItens] = useState<ListaItem[]>([]);
     const [loadingViewItens, setLoadingViewItens] = useState(false);
+
+    // Estado para importar nova lista
+    const [importNome, setImportNome] = useState('');
+    const [importDescricao, setImportDescricao] = useState('');
+    const [importFile, setImportFile] = useState<File | null>(null);
+    const [importLoading, setImportLoading] = useState(false);
 
     // Estado para form data
     const resetFormData = (): ListaFormData => ({
@@ -350,6 +357,62 @@ const ListasCompras: React.FC = () => {
         }
     };
 
+    // Funções do modal de importar nova lista
+    const handleCloseImportModal = () => {
+        setShowImportModal(false);
+        setImportNome('');
+        setImportDescricao('');
+        setImportFile(null);
+        setError(null);
+    };
+
+    const handleImportFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (file) {
+            if (!file.name.endsWith('.csv')) {
+                setError('Por favor, selecione um arquivo CSV');
+                setTimeout(() => setError(null), 3000);
+                return;
+            }
+            setImportFile(file);
+        }
+    };
+
+    const handleConfirmImport = async () => {
+        if (!importNome.trim()) {
+            setError('Nome da lista é obrigatório');
+            return;
+        }
+
+        if (!importFile) {
+            setError('Selecione um arquivo CSV');
+            return;
+        }
+
+        try {
+            setImportLoading(true);
+            const formData = new FormData();
+            formData.append('nome', importNome);
+            formData.append('descricao', importDescricao);
+            formData.append('file', importFile);
+
+            await api.post('/admin/listas/create-from-csv', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                }
+            });
+
+            setSuccessMessage('Lista importada e criada com sucesso!');
+            handleCloseImportModal();
+            fetchListas(); // Recarregar listas
+            setTimeout(() => setSuccessMessage(null), 3000);
+        } catch (err: any) {
+            setError(err.response?.data?.error || 'Erro ao importar lista');
+        } finally {
+            setImportLoading(false);
+        }
+    };
+
     // Funções de exportar/importar CSV
     const fileInputRefs = useRef<{[key: number]: HTMLInputElement | null}>({});
 
@@ -447,15 +510,26 @@ const ListasCompras: React.FC = () => {
                             Gerencie suas listas de compras
                         </p>
                     </div>
-                    <Button
-                        variant="success"
-                        size="lg"
-                        onClick={handleOpenCreateModal}
-                        className={styles.addButton}
-                    >
-                        <FontAwesomeIcon icon={faPlus} style={{ marginRight: '0.5rem' }} />
-                        Adicionar Lista
-                    </Button>
+                    <div className={styles.headerActions}>
+                        <Button
+                            variant="success"
+                            size="lg"
+                            onClick={handleOpenCreateModal}
+                            className={styles.iconButton}
+                            title="Adicionar Nova Lista"
+                        >
+                            <FontAwesomeIcon icon={faPlus} />
+                        </Button>
+                        <Button
+                            variant="primary"
+                            size="lg"
+                            onClick={() => setShowImportModal(true)}
+                            className={styles.iconButton}
+                            title="Importar Nova Lista (CSV)"
+                        >
+                            <FontAwesomeIcon icon={faDownload} />
+                        </Button>
+                    </div>
                 </div>
 
                 {/* Alertas de sucesso e erro */}
@@ -536,7 +610,7 @@ const ListasCompras: React.FC = () => {
                                             className={styles.actionButton}
                                             title="Exportar Lista (CSV)"
                                         >
-                                            <FontAwesomeIcon icon={faDownload} />
+                                            <FontAwesomeIcon icon={faUpload} />
                                         </Button>
                                         <Button
                                             variant="link"
@@ -545,7 +619,7 @@ const ListasCompras: React.FC = () => {
                                             className={styles.actionButton}
                                             title="Importar Lista (CSV)"
                                         >
-                                            <FontAwesomeIcon icon={faUpload} />
+                                            <FontAwesomeIcon icon={faDownload} />
                                         </Button>
                                         <input
                                             type="file"
@@ -942,6 +1016,82 @@ const ListasCompras: React.FC = () => {
                             disabled={assigningLoading || loadingUsers}
                         >
                             {assigningLoading ? 'Salvando...' : 'Salvar Atribuições'}
+                        </Button>
+                    </Modal.Footer>
+                </Modal>
+
+                {/* Modal Importar Nova Lista */}
+                <Modal show={showImportModal} onHide={handleCloseImportModal}>
+                    <Modal.Header closeButton>
+                        <Modal.Title>
+                            <FontAwesomeIcon icon={faDownload} style={{marginRight: '0.5rem'}} />
+                            Importar Nova Lista (CSV)
+                        </Modal.Title>
+                    </Modal.Header>
+                    <Modal.Body>
+                        {error && (
+                            <Alert variant="danger" dismissible onClose={() => setError(null)}>
+                                {error}
+                            </Alert>
+                        )}
+                        <Form>
+                            <Form.Group className="mb-3">
+                                <Form.Label>Nome da Lista *</Form.Label>
+                                <Form.Control
+                                    type="text"
+                                    placeholder="Digite o nome da lista"
+                                    value={importNome}
+                                    onChange={(e) => setImportNome(e.target.value)}
+                                    required
+                                />
+                            </Form.Group>
+
+                            <Form.Group className="mb-3">
+                                <Form.Label>Descrição (Opcional)</Form.Label>
+                                <Form.Control
+                                    as="textarea"
+                                    rows={3}
+                                    placeholder="Descreva o propósito desta lista"
+                                    value={importDescricao}
+                                    onChange={(e) => setImportDescricao(e.target.value)}
+                                />
+                            </Form.Group>
+
+                            <Form.Group className="mb-3">
+                                <Form.Label>Arquivo CSV *</Form.Label>
+                                <Form.Control
+                                    type="file"
+                                    accept=".csv"
+                                    onChange={handleImportFileSelect}
+                                    required
+                                />
+                                <Form.Text className="text-muted">
+                                    O arquivo deve conter as colunas: nome, unidade, quantidade_atual, quantidade_minima
+                                </Form.Text>
+                            </Form.Group>
+
+                            {importFile && (
+                                <Alert variant="info">
+                                    <FontAwesomeIcon icon={faCheckCircle} style={{marginRight: '0.5rem'}} />
+                                    Arquivo selecionado: <strong>{importFile.name}</strong>
+                                </Alert>
+                            )}
+                        </Form>
+                    </Modal.Body>
+                    <Modal.Footer>
+                        <Button
+                            variant="secondary"
+                            onClick={handleCloseImportModal}
+                            disabled={importLoading}
+                        >
+                            Cancelar
+                        </Button>
+                        <Button
+                            variant="primary"
+                            onClick={handleConfirmImport}
+                            disabled={importLoading || !importNome.trim() || !importFile}
+                        >
+                            {importLoading ? 'Importando...' : 'Importar Lista'}
                         </Button>
                     </Modal.Footer>
                 </Modal>
