@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, send_file
 from . import services
 from .models import Item, Area, Fornecedor, Estoque
 from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
@@ -822,3 +822,31 @@ def populate_database_route():
     """Popula o banco de dados com dados fictícios para teste."""
     response, status = services.populate_database_with_mock_data()
     return jsonify(response), status
+
+@admin_bp.route('/database/export-bulk', methods=['POST'])
+@admin_required()
+def export_bulk_data_route():
+    """Exporta múltiplos tipos de dados em um arquivo ZIP."""
+    from datetime import datetime
+
+    data = request.get_json()
+    tipos_dados = data.get('tipos_dados', [])
+
+    if not tipos_dados:
+        return jsonify({"error": "Nenhum tipo de dado selecionado para exportação."}), 400
+
+    result, status = services.export_data_bulk(tipos_dados)
+
+    if status != 200:
+        return jsonify(result), status
+
+    # result é um BytesIO contendo o ZIP
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    filename = f'kaizen_export_{timestamp}.zip'
+
+    return send_file(
+        result,
+        mimetype='application/zip',
+        as_attachment=True,
+        download_name=filename
+    )

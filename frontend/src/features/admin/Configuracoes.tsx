@@ -26,6 +26,8 @@ import {
     faDatabase,
     faExclamationTriangle,
     faPlus,
+    faDownload,
+    faFileArchive,
 } from '@fortawesome/free-solid-svg-icons';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -43,6 +45,20 @@ const Configuracoes: React.FC = () => {
     const [clearDbError, setClearDbError] = useState('');
     const [populateLoading, setPopulateLoading] = useState(false);
     const [populateSuccess, setPopulateSuccess] = useState(false);
+
+    // Estados para exportação em lote
+    const [showExportModal, setShowExportModal] = useState(false);
+    const [exportLoading, setExportLoading] = useState(false);
+    const [exportSelection, setExportSelection] = useState({
+        usuarios: true,
+        listas: true,
+        itens: true,
+        fornecedores: true,
+        areas: true,
+        pedidos: true,
+        cotacoes: true,
+        estoque: true,
+    });
 
     // Carregar configuração salva ao montar componente
     useEffect(() => {
@@ -160,6 +176,83 @@ const Configuracoes: React.FC = () => {
             alert('Erro ao popular banco de dados: ' + (error.response?.data?.error || error.message));
         } finally {
             setPopulateLoading(false);
+        }
+    };
+
+    const handleOpenExportModal = () => {
+        setShowExportModal(true);
+    };
+
+    const handleCloseExportModal = () => {
+        setShowExportModal(false);
+    };
+
+    const handleToggleExportItem = (key: keyof typeof exportSelection) => {
+        setExportSelection(prev => ({
+            ...prev,
+            [key]: !prev[key]
+        }));
+    };
+
+    const handleSelectAllExport = () => {
+        const allSelected = Object.values(exportSelection).every(v => v);
+        const newValue = !allSelected;
+
+        setExportSelection({
+            usuarios: newValue,
+            listas: newValue,
+            itens: newValue,
+            fornecedores: newValue,
+            areas: newValue,
+            pedidos: newValue,
+            cotacoes: newValue,
+            estoque: newValue,
+        });
+    };
+
+    const handleExportData = async () => {
+        const selectedTypes = Object.entries(exportSelection)
+            .filter(([_, selected]) => selected)
+            .map(([type, _]) => type);
+
+        if (selectedTypes.length === 0) {
+            alert('Selecione pelo menos um tipo de dado para exportar');
+            return;
+        }
+
+        setExportLoading(true);
+
+        try {
+            const response = await api.post('/admin/database/export-bulk', {
+                tipos_dados: selectedTypes
+            }, {
+                responseType: 'blob' // Importante para download de arquivos
+            });
+
+            // Criar URL do blob e fazer download
+            const blob = new Blob([response.data], { type: 'application/zip' });
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+
+            // Nome do arquivo com timestamp
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+            link.download = `kaizen_export_${timestamp}.zip`;
+
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+
+            // Fechar modal e mostrar sucesso
+            setShowExportModal(false);
+            setShowSuccess(true);
+            setTimeout(() => setShowSuccess(false), 3000);
+
+        } catch (error: any) {
+            alert('Erro ao exportar dados: ' + (error.response?.data?.error || error.message));
+        } finally {
+            setExportLoading(false);
         }
     };
 
@@ -373,6 +466,19 @@ const Configuracoes: React.FC = () => {
                             </Button>
 
                             <Button
+                                variant="primary"
+                                onClick={handleOpenExportModal}
+                                disabled={exportLoading}
+                                style={{
+                                    background: 'linear-gradient(135deg, #3498db 0%, #2980b9 100%)',
+                                    border: 'none',
+                                }}
+                            >
+                                <FontAwesomeIcon icon={faDownload} style={{ marginRight: '0.5rem' }} />
+                                Exportar Dados
+                            </Button>
+
+                            <Button
                                 variant="danger"
                                 onClick={handleOpenClearDbModal}
                                 disabled={populateLoading}
@@ -486,6 +592,134 @@ const Configuracoes: React.FC = () => {
                                 <>
                                     <FontAwesomeIcon icon={faTrashAlt} style={{ marginRight: '0.5rem' }} />
                                     Confirmar Limpeza
+                                </>
+                            )}
+                        </Button>
+                    </Modal.Footer>
+                </Modal>
+
+                {/* Modal de Exportação de Dados */}
+                <Modal show={showExportModal} onHide={handleCloseExportModal} centered size="lg">
+                    <Modal.Header closeButton style={{ borderBottom: '2px solid #3498db' }}>
+                        <Modal.Title>
+                            <FontAwesomeIcon icon={faFileArchive} style={{ color: '#3498db', marginRight: '0.5rem' }} />
+                            Exportar Dados do Sistema
+                        </Modal.Title>
+                    </Modal.Header>
+                    <Modal.Body>
+                        <Alert variant="info">
+                            <FontAwesomeIcon icon={faInfoCircle} style={{ marginRight: '0.5rem' }} />
+                            <strong>Selecione os dados que deseja exportar:</strong>
+                            <p style={{ marginTop: '0.5rem', marginBottom: 0 }}>
+                                Os dados selecionados serão exportados em formato CSV dentro de um arquivo ZIP.
+                            </p>
+                        </Alert>
+
+                        <Form>
+                            <div style={{ marginBottom: '1rem', paddingBottom: '1rem', borderBottom: '1px solid #ecf0f1' }}>
+                                <Form.Check
+                                    type="checkbox"
+                                    id="select-all-export"
+                                    label={<strong>Selecionar Todos</strong>}
+                                    checked={Object.values(exportSelection).every(v => v)}
+                                    onChange={handleSelectAllExport}
+                                    style={{ fontSize: '1.1rem' }}
+                                />
+                            </div>
+
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                <Form.Check
+                                    type="checkbox"
+                                    id="export-usuarios"
+                                    label="👥 Usuários"
+                                    checked={exportSelection.usuarios}
+                                    onChange={() => handleToggleExportItem('usuarios')}
+                                />
+                                <Form.Check
+                                    type="checkbox"
+                                    id="export-listas"
+                                    label="📋 Listas de Compras"
+                                    checked={exportSelection.listas}
+                                    onChange={() => handleToggleExportItem('listas')}
+                                />
+                                <Form.Check
+                                    type="checkbox"
+                                    id="export-itens"
+                                    label="📦 Itens"
+                                    checked={exportSelection.itens}
+                                    onChange={() => handleToggleExportItem('itens')}
+                                />
+                                <Form.Check
+                                    type="checkbox"
+                                    id="export-fornecedores"
+                                    label="🏢 Fornecedores"
+                                    checked={exportSelection.fornecedores}
+                                    onChange={() => handleToggleExportItem('fornecedores')}
+                                />
+                                <Form.Check
+                                    type="checkbox"
+                                    id="export-areas"
+                                    label="🏭 Áreas"
+                                    checked={exportSelection.areas}
+                                    onChange={() => handleToggleExportItem('areas')}
+                                />
+                                <Form.Check
+                                    type="checkbox"
+                                    id="export-pedidos"
+                                    label="📝 Pedidos"
+                                    checked={exportSelection.pedidos}
+                                    onChange={() => handleToggleExportItem('pedidos')}
+                                />
+                                <Form.Check
+                                    type="checkbox"
+                                    id="export-cotacoes"
+                                    label="💰 Cotações"
+                                    checked={exportSelection.cotacoes}
+                                    onChange={() => handleToggleExportItem('cotacoes')}
+                                />
+                                <Form.Check
+                                    type="checkbox"
+                                    id="export-estoque"
+                                    label="📊 Estoque"
+                                    checked={exportSelection.estoque}
+                                    onChange={() => handleToggleExportItem('estoque')}
+                                />
+                            </div>
+                        </Form>
+
+                        <Alert variant="success" style={{ marginTop: '1.5rem', marginBottom: 0 }}>
+                            <FontAwesomeIcon icon={faCheckCircle} style={{ marginRight: '0.5rem' }} />
+                            <strong>
+                                {Object.values(exportSelection).filter(v => v).length} tipo(s) de dados selecionado(s)
+                            </strong>
+                        </Alert>
+                    </Modal.Body>
+                    <Modal.Footer>
+                        <Button
+                            variant="secondary"
+                            onClick={handleCloseExportModal}
+                            disabled={exportLoading}
+                        >
+                            Cancelar
+                        </Button>
+                        <Button
+                            variant="primary"
+                            onClick={handleExportData}
+                            disabled={exportLoading || Object.values(exportSelection).every(v => !v)}
+                            style={{
+                                background: 'linear-gradient(135deg, #3498db 0%, #2980b9 100%)',
+                                border: 'none',
+                            }}
+                        >
+                            {exportLoading ? (
+                                <>
+                                    <span className="spinner-border spinner-border-sm" style={{ marginRight: '0.5rem' }} />
+                                    Exportando...
+                                </>
+                            ) : (
+                                <>
+                                    <FontAwesomeIcon icon={faDownload} style={{ marginRight: '0.5rem' }} />
+                                    Baixar ZIP
                                 </>
                             )}
                         </Button>
