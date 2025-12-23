@@ -1327,7 +1327,7 @@ def adicionar_item_lista_mae(lista_id, data):
         novo_item = ListaMaeItem(
             lista_mae_id=lista_id,
             nome=data.get('nome'),
-            unidade=data.get('unidade'),
+            unidade=data.get('unidade', 'un'),  # Fallback para 'un'
             quantidade_atual=data.get('quantidade_atual', 0),
             quantidade_minima=data.get('quantidade_minima', 0)
         )
@@ -1337,8 +1337,17 @@ def adicionar_item_lista_mae(lista_id, data):
 
         return novo_item.to_dict(), 201
     except Exception as e:
+        import traceback
+        from flask import current_app
+
+        # Log detalhado do erro
+        current_app.logger.error(f"[adicionar_item_lista_mae] Erro ao criar item:")
+        current_app.logger.error(f"  Tipo: {type(e).__name__}")
+        current_app.logger.error(f"  Mensagem: {str(e)}")
+        current_app.logger.error(f"  Traceback: {traceback.format_exc()}")
+
         db.session.rollback()
-        return {"error": str(e)}, 500
+        return {"error": f"{type(e).__name__}: {str(e)}"}, 500
 
 
 def editar_item_lista_mae(lista_id, item_id, data):
@@ -1353,7 +1362,7 @@ def editar_item_lista_mae(lista_id, item_id, data):
             return {"error": "Item não encontrado"}, 404
 
         item.nome = data.get('nome', item.nome)
-        item.unidade = data.get('unidade', item.unidade)
+        item.unidade = data.get('unidade', item.unidade) if data.get('unidade') else item.unidade
         item.quantidade_atual = data.get('quantidade_atual', item.quantidade_atual)
         item.quantidade_minima = data.get('quantidade_minima', item.quantidade_minima)
         item.atualizado_em = datetime.utcnow()
@@ -1361,8 +1370,16 @@ def editar_item_lista_mae(lista_id, item_id, data):
         db.session.commit()
         return item.to_dict(), 200
     except Exception as e:
+        import traceback
+        from flask import current_app
+
+        current_app.logger.error(f"[editar_item_lista_mae] Erro ao editar item {item_id}:")
+        current_app.logger.error(f"  Tipo: {type(e).__name__}")
+        current_app.logger.error(f"  Mensagem: {str(e)}")
+        current_app.logger.error(f"  Traceback: {traceback.format_exc()}")
+
         db.session.rollback()
-        return {"error": str(e)}, 500
+        return {"error": f"{type(e).__name__}: {str(e)}"}, 500
 
 
 def deletar_item_lista_mae(lista_id, item_id):
