@@ -49,7 +49,12 @@
       "Bash(.venvScriptspython.exe -m flask db migrate -m \"Add responsavel and observacao fields to Fornecedor\")",
       "Bash(FLASK_APP=run.py ../.venv/bin/python -m flask:*)",
       "Bash(.venv/bin/python -m flask:*)",
-      "Bash(./run-backend.sh:*)"
+      "Bash(./run-backend.sh:*)",
+      "Bash(git checkout:*)",
+      "Bash(FLASK_APP=kaizen_app:create_app ../.venv/bin/python -m flask:*)",
+      "Bash(flask db:*)",
+      "Bash(cat:*)",
+      "Bash(ls:*)"
     ],
     "deny": [],
     "ask": []
