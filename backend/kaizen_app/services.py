@@ -2322,8 +2322,15 @@ def create_lista_from_csv(nome, descricao, csv_file):
         # Detectar formato: simples (um nome por linha) ou CSV (com delimitadores)
         lines = content.strip().split('\n')
 
-        # Verificar se é formato CSV (contém vírgulas) ou simples (apenas nomes)
-        is_csv_format = any(',' in line for line in lines if line.strip())
+        # Verificar se é formato CSV: a primeira linha deve ter 'nome' como campo
+        # Isso evita confusão com nomes que contêm vírgulas (ex: "3,6 kg")
+        is_csv_format = False
+        if lines and ',' in lines[0]:
+            # Primeira linha tem vírgula - pode ser CSV
+            # Verificar se contém 'nome' como header
+            first_line_lower = lines[0].lower().strip()
+            if 'nome' in first_line_lower.split(','):
+                is_csv_format = True
 
         itens_importados = 0
 
