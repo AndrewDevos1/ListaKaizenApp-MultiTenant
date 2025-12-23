@@ -2319,66 +2319,103 @@ def create_lista_from_csv(nome, descricao, csv_file):
         else:
             content = csv_file
 
-        # Parse CSV
-        csv_reader = csv.DictReader(StringIO(content))
+        # Detectar formato: simples (um nome por linha) ou CSV (com delimitadores)
+        lines = content.strip().split('\n')
 
-        # Validar cabeçalhos - apenas 'nome' é obrigatório
-        required_headers = {'nome'}
-        headers = set(csv_reader.fieldnames or [])
+        # Verificar se é formato CSV (contém vírgulas) ou simples (apenas nomes)
+        is_csv_format = any(',' in line for line in lines if line.strip())
 
-        if not required_headers.issubset(headers):
-            db.session.rollback()
-            return {
-                "error": "CSV deve conter no mínimo a coluna 'nome'. Opcionais: unidade, quantidade_atual, quantidade_minima"
-            }, 400
-
-        # Importar itens
         itens_importados = 0
-        for row in csv_reader:
-            try:
-                # Validar que o nome foi fornecido
-                nome_item = row.get('nome', '').strip()
-                if not nome_item:
-                    db.session.rollback()
-                    return {
-                        "error": "Encontrada linha vazia. Todas as linhas devem conter no mínimo o nome do item."
-                    }, 400
 
-                # Criar novo item com valores padrão para campos opcionais
-                unidade = row.get('unidade', 'un').strip() if row.get('unidade') else 'un'
-                quantidade_atual = 0
-                quantidade_minima = 0
+        if is_csv_format:
+            # Processar como CSV com DictReader
+            csv_reader = csv.DictReader(StringIO(content))
 
-                # Tentar extrair quantidades se fornecidas
-                if row.get('quantidade_atual'):
-                    try:
-                        quantidade_atual = float(row['quantidade_atual'])
-                    except ValueError:
-                        # Ignorar se não for número válido, usar 0
-                        pass
+            # Validar cabeçalhos - apenas 'nome' é obrigatório
+            required_headers = {'nome'}
+            headers = set(csv_reader.fieldnames or [])
 
-                if row.get('quantidade_minima'):
-                    try:
-                        quantidade_minima = float(row['quantidade_minima'])
-                    except ValueError:
-                        # Ignorar se não for número válido, usar 0
-                        pass
-
-                # Criar novo item
-                novo_item = ListaMaeItem(
-                    lista_mae_id=nova_lista.id,
-                    nome=nome_item,
-                    unidade=unidade,
-                    quantidade_atual=quantidade_atual,
-                    quantidade_minima=quantidade_minima
-                )
-                db.session.add(novo_item)
-                itens_importados += 1
-            except Exception as e:
+            if not required_headers.issubset(headers):
                 db.session.rollback()
                 return {
-                    "error": f"Erro ao processar linha do CSV: {str(e)}"
+                    "error": "CSV deve conter no mínimo a coluna 'nome'. Opcionais: unidade, quantidade_atual, quantidade_minima"
                 }, 400
+
+            # Importar itens do CSV
+            for row in csv_reader:
+                try:
+                    # Validar que o nome foi fornecido
+                    nome_item = row.get('nome', '').strip()
+                    if not nome_item:
+                        db.session.rollback()
+                        return {
+                            "error": "Encontrada linha vazia. Todas as linhas devem conter no mínimo o nome do item."
+                        }, 400
+
+                    # Criar novo item com valores padrão para campos opcionais
+                    unidade = row.get('unidade', 'un').strip() if row.get('unidade') else 'un'
+                    quantidade_atual = 0
+                    quantidade_minima = 0
+
+                    # Tentar extrair quantidades se fornecidas
+                    if row.get('quantidade_atual'):
+                        try:
+                            quantidade_atual = float(row['quantidade_atual'])
+                        except ValueError:
+                            # Ignorar se não for número válido, usar 0
+                            pass
+
+                    if row.get('quantidade_minima'):
+                        try:
+                            quantidade_minima = float(row['quantidade_minima'])
+                        except ValueError:
+                            # Ignorar se não for número válido, usar 0
+                            pass
+
+                    # Criar novo item
+                    novo_item = ListaMaeItem(
+                        lista_mae_id=nova_lista.id,
+                        nome=nome_item,
+                        unidade=unidade,
+                        quantidade_atual=quantidade_atual,
+                        quantidade_minima=quantidade_minima
+                    )
+                    db.session.add(novo_item)
+                    itens_importados += 1
+                except Exception as e:
+                    db.session.rollback()
+                    return {
+                        "error": f"Erro ao processar linha do CSV: {str(e)}"
+                    }, 400
+        else:
+            # Processar como lista simples (um nome por linha)
+            for line in lines:
+                line = line.strip()
+                if not line:  # Ignorar linhas vazias
+                    continue
+
+                try:
+                    # Cada linha é apenas o nome do item
+                    nome_item = line.strip()
+
+                    if not nome_item:
+                        continue  # Ignorar linhas vazias
+
+                    # Criar novo item com valores padrão
+                    novo_item = ListaMaeItem(
+                        lista_mae_id=nova_lista.id,
+                        nome=nome_item,
+                        unidade='un',  # Padrão
+                        quantidade_atual=0,
+                        quantidade_minima=0
+                    )
+                    db.session.add(novo_item)
+                    itens_importados += 1
+                except Exception as e:
+                    db.session.rollback()
+                    return {
+                        "error": f"Erro ao processar linha: {str(e)}"
+                    }, 400
 
         db.session.commit()
 
