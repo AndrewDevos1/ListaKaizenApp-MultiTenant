@@ -43,8 +43,8 @@ def fix_alembic_version():
             ]
 
             if current_version in problematic_versions:
-                # Atualizar para o head correto
-                correct_head = '74dbf5436c25'  # merge_migration_heads
+                # Atualizar para o head correto (versão mais recente)
+                correct_head = 'add_default_unidade'  # Última migração aplicada
                 db.session.execute(
                     db.text("UPDATE alembic_version SET version_num = :version"),
                     {"version": correct_head}
