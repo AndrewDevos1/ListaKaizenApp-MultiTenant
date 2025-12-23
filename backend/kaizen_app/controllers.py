@@ -844,18 +844,7 @@ def import_lista_csv_route(lista_id):
 @admin_bp.route('/listas/create-from-csv', methods=['POST'])
 @admin_required()
 def create_lista_from_csv_route():
-    """Cria uma nova lista e importa itens a partir de arquivo CSV"""
-    if 'file' not in request.files:
-        return jsonify({"error": "Nenhum arquivo enviado"}), 400
-
-    file = request.files['file']
-
-    if file.filename == '':
-        return jsonify({"error": "Nenhum arquivo selecionado"}), 400
-
-    if not file.filename.endswith('.csv'):
-        return jsonify({"error": "Arquivo deve ser CSV"}), 400
-
+    """Cria uma nova lista e importa itens a partir de arquivo CSV ou texto direto"""
     # Obter nome e descrição do form data
     nome = request.form.get('nome', '').strip()
     descricao = request.form.get('descricao', '').strip()
@@ -863,7 +852,23 @@ def create_lista_from_csv_route():
     if not nome:
         return jsonify({"error": "Nome da lista é obrigatório"}), 400
 
-    response, status = services.create_lista_from_csv(nome, descricao, file)
+    # Validar que arquivo OU texto foi fornecido (mas não ambos vazios)
+    file = request.files.get('file')
+    texto = request.form.get('texto', '').strip()
+
+    if file and file.filename:
+        # Usar arquivo CSV
+        if not file.filename.endswith('.csv'):
+            return jsonify({"error": "Arquivo deve ser CSV"}), 400
+        conteudo = file
+    elif texto:
+        # Usar texto direto
+        conteudo = texto
+    else:
+        # Nenhum foi fornecido
+        return jsonify({"error": "Selecione um arquivo CSV ou cole o conteúdo de texto direto"}), 400
+
+    response, status = services.create_lista_from_csv(nome, descricao, conteudo)
     return jsonify(response), status
 
 @admin_bp.route('/database/clear', methods=['POST'])

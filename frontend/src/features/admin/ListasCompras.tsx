@@ -101,6 +101,7 @@ const ListasCompras: React.FC = () => {
     const [importNome, setImportNome] = useState('');
     const [importDescricao, setImportDescricao] = useState('');
     const [importFile, setImportFile] = useState<File | null>(null);
+    const [importTexto, setImportTexto] = useState('');
     const [importLoading, setImportLoading] = useState(false);
 
     // Estado para lixeira
@@ -347,6 +348,7 @@ const ListasCompras: React.FC = () => {
         setImportNome('');
         setImportDescricao('');
         setImportFile(null);
+        setImportTexto('');
         setError(null);
     };
 
@@ -368,8 +370,9 @@ const ListasCompras: React.FC = () => {
             return;
         }
 
-        if (!importFile) {
-            setError('Selecione um arquivo CSV');
+        // Validar que OU arquivo OU texto foi fornecido (mas não ambos vazios)
+        if (!importFile && !importTexto.trim()) {
+            setError('Selecione um arquivo CSV ou cole o conteúdo de texto direto');
             return;
         }
 
@@ -378,7 +381,13 @@ const ListasCompras: React.FC = () => {
             const formData = new FormData();
             formData.append('nome', importNome);
             formData.append('descricao', importDescricao);
-            formData.append('file', importFile);
+
+            // Adicionar arquivo OU texto (prioridade: arquivo se ambos forem preenchidos)
+            if (importFile) {
+                formData.append('file', importFile);
+            } else if (importTexto.trim()) {
+                formData.append('texto', importTexto);
+            }
 
             await api.post('/admin/listas/create-from-csv', formData, {
                 headers: {
@@ -1034,12 +1043,11 @@ const ListasCompras: React.FC = () => {
                             </Form.Group>
 
                             <Form.Group className="mb-3">
-                                <Form.Label>Arquivo CSV *</Form.Label>
+                                <Form.Label>Arquivo CSV (Opcional)</Form.Label>
                                 <Form.Control
                                     type="file"
                                     accept=".csv"
                                     onChange={handleImportFileSelect}
-                                    required
                                 />
                                 <Form.Text className="text-muted">
                                     O arquivo deve conter as colunas: nome, unidade, quantidade_atual, quantidade_minima
@@ -1047,9 +1055,36 @@ const ListasCompras: React.FC = () => {
                             </Form.Group>
 
                             {importFile && (
-                                <Alert variant="info">
+                                <Alert variant="success" className="mb-3">
                                     <FontAwesomeIcon icon={faCheckCircle} style={{marginRight: '0.5rem'}} />
                                     Arquivo selecionado: <strong>{importFile.name}</strong>
+                                </Alert>
+                            )}
+
+                            <div className="text-center mb-3">
+                                <small className="text-muted" style={{display: 'block', padding: '0.5rem 0'}}>
+                                    <strong>OU</strong>
+                                </small>
+                            </div>
+
+                            <Form.Group className="mb-3">
+                                <Form.Label>Cole o Conteúdo da Lista (Opcional)</Form.Label>
+                                <Form.Control
+                                    as="textarea"
+                                    rows={6}
+                                    placeholder="Cole aqui o conteúdo da lista. Deve conter as colunas: nome, unidade, quantidade_atual, quantidade_minima"
+                                    value={importTexto}
+                                    onChange={(e) => setImportTexto(e.target.value)}
+                                />
+                                <Form.Text className="text-muted">
+                                    Formato: Uma linha por coluna ou separado por quebras de linha
+                                </Form.Text>
+                            </Form.Group>
+
+                            {importTexto.trim() && (
+                                <Alert variant="success" className="mb-3">
+                                    <FontAwesomeIcon icon={faCheckCircle} style={{marginRight: '0.5rem'}} />
+                                    Texto carregado: <strong>{importTexto.trim().split('\n').length} linha(s)</strong>
                                 </Alert>
                             )}
                         </Form>
@@ -1065,7 +1100,7 @@ const ListasCompras: React.FC = () => {
                         <Button
                             variant="primary"
                             onClick={handleConfirmImport}
-                            disabled={importLoading || !importNome.trim() || !importFile}
+                            disabled={importLoading || !importNome.trim() || (!importFile && !importTexto.trim())}
                         >
                             {importLoading ? 'Importando...' : 'Importar Lista'}
                         </Button>
