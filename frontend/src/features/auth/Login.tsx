@@ -25,6 +25,7 @@ import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEye, faEyeSlash } from '@fortawesome/free-solid-svg-icons';
+import { startBackendHeartbeat, openBackendInNewTab } from '../../services/backendHeartbeat';
 import styles from './Login.module.css';
 
 interface TestUser {
@@ -54,6 +55,12 @@ const Login: React.FC = () => {
             setEmail(savedEmail);
             setRememberMe(true);
         }
+
+        // Abrir backend em nova aba para "acordar" o dyno no Render
+        openBackendInNewTab();
+
+        // Iniciar heartbeat para manter backend ativo
+        startBackendHeartbeat();
 
         // Carregar usuários de teste
         fetchTestUsers();
