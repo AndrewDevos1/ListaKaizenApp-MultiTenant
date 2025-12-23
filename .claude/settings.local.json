@@ -46,7 +46,10 @@
       "Bash(git branch:*)",
       "Bash(git push:*)",
       "Bash(set:*)",
-      "Bash(.venvScriptspython.exe -m flask db migrate -m \"Add responsavel and observacao fields to Fornecedor\")"
+      "Bash(.venvScriptspython.exe -m flask db migrate -m \"Add responsavel and observacao fields to Fornecedor\")",
+      "Bash(FLASK_APP=run.py ../.venv/bin/python -m flask:*)",
+      "Bash(.venv/bin/python -m flask:*)",
+      "Bash(./run-backend.sh:*)"
     ],
     "deny": [],
     "ask": []

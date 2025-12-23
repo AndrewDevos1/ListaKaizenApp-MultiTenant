@@ -1,4 +1,4 @@
-from .models import Usuario, UserRoles, Item, Area, Fornecedor, Estoque, Cotacao, CotacaoStatus, CotacaoItem, Pedido, Lista, ListaMaeItem
+from .models import Usuario, UserRoles, Item, Area, Fornecedor, Estoque, Cotacao, CotacaoStatus, CotacaoItem, Pedido, PedidoStatus, Lista, ListaMaeItem
 from .extensions import db
 from . import repositories
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -633,7 +633,7 @@ def get_pedidos_by_user(user_id):
 def submit_pedidos(user_id):
     """Cria registros de Pedido para todos os itens que estão abaixo do estoque mínimo."""
     itens_a_pedir = db.session.query(Estoque, Item).join(Item).filter(Estoque.quantidade_atual < Estoque.quantidade_minima).all()
-    
+
     if not itens_a_pedir:
         return {"message": "Nenhum item precisa de reposição." }, 200
 
@@ -648,9 +648,146 @@ def submit_pedidos(user_id):
         )
         novos_pedidos.append(novo_pedido)
         db.session.add(novo_pedido)
-    
+
     db.session.commit()
     return {"message": f"{len(novos_pedidos)} pedidos foram gerados com sucesso." }, 201
+
+
+def get_all_pedidos(status_filter=None):
+    """
+    Retorna todos os pedidos do sistema.
+
+    Args:
+        status_filter: Filtra por status (PENDENTE, APROVADO, REJEITADO). Se None, retorna todos.
+    """
+    query = Pedido.query
+
+    if status_filter:
+        query = query.filter_by(status=status_filter)
+
+    pedidos = query.order_by(Pedido.data_pedido.desc()).all()
+    return pedidos, 200
+
+
+def aprovar_pedido(pedido_id):
+    """Aprova um pedido pendente."""
+    pedido = repositories.get_by_id(Pedido, pedido_id)
+
+    if not pedido:
+        return {"error": "Pedido não encontrado."}, 404
+
+    if pedido.status != PedidoStatus.PENDENTE:
+        return {"error": f"Apenas pedidos pendentes podem ser aprovados. Status atual: {pedido.status.value}"}, 400
+
+    pedido.status = PedidoStatus.APROVADO
+    db.session.commit()
+
+    return {"message": "Pedido aprovado com sucesso.", "pedido": pedido.to_dict()}, 200
+
+
+def rejeitar_pedido(pedido_id):
+    """Rejeita um pedido pendente."""
+    pedido = repositories.get_by_id(Pedido, pedido_id)
+
+    if not pedido:
+        return {"error": "Pedido não encontrado."}, 404
+
+    if pedido.status != PedidoStatus.PENDENTE:
+        return {"error": f"Apenas pedidos pendentes podem ser rejeitados. Status atual: {pedido.status.value}"}, 400
+
+    pedido.status = PedidoStatus.REJEITADO
+    db.session.commit()
+
+    return {"message": "Pedido rejeitado com sucesso.", "pedido": pedido.to_dict()}, 200
+
+
+def aprovar_pedidos_lote(pedido_ids):
+    """Aprova múltiplos pedidos em lote."""
+    if not pedido_ids or not isinstance(pedido_ids, list):
+        return {"error": "Lista de IDs inválida."}, 400
+
+    aprovados = 0
+    erros = []
+
+    for pedido_id in pedido_ids:
+        pedido = repositories.get_by_id(Pedido, pedido_id)
+
+        if not pedido:
+            erros.append(f"Pedido {pedido_id} não encontrado")
+            continue
+
+        if pedido.status != PedidoStatus.PENDENTE:
+            erros.append(f"Pedido {pedido_id} não está pendente")
+            continue
+
+        pedido.status = PedidoStatus.APROVADO
+        aprovados += 1
+
+    db.session.commit()
+
+    return {
+        "message": f"{aprovados} pedido(s) aprovado(s) com sucesso.",
+        "aprovados": aprovados,
+        "erros": erros if erros else None
+    }, 200
+
+
+def rejeitar_pedidos_lote(pedido_ids):
+    """Rejeita múltiplos pedidos em lote."""
+    if not pedido_ids or not isinstance(pedido_ids, list):
+        return {"error": "Lista de IDs inválida."}, 400
+
+    rejeitados = 0
+    erros = []
+
+    for pedido_id in pedido_ids:
+        pedido = repositories.get_by_id(Pedido, pedido_id)
+
+        if not pedido:
+            erros.append(f"Pedido {pedido_id} não encontrado")
+            continue
+
+        if pedido.status != PedidoStatus.PENDENTE:
+            erros.append(f"Pedido {pedido_id} não está pendente")
+            continue
+
+        pedido.status = PedidoStatus.REJEITADO
+        rejeitados += 1
+
+    db.session.commit()
+
+    return {
+        "message": f"{rejeitados} pedido(s) rejeitado(s) com sucesso.",
+        "rejeitados": rejeitados,
+        "erros": erros if erros else None
+    }, 200
+
+
+def editar_pedido(pedido_id, data):
+    """
+    Edita um pedido (permite alterar quantidade solicitada).
+    Apenas pedidos pendentes podem ser editados.
+    """
+    pedido = repositories.get_by_id(Pedido, pedido_id)
+
+    if not pedido:
+        return {"error": "Pedido não encontrado."}, 404
+
+    if pedido.status != PedidoStatus.PENDENTE:
+        return {"error": f"Apenas pedidos pendentes podem ser editados. Status atual: {pedido.status.value}"}, 400
+
+    # Atualizar quantidade
+    if 'quantidade_solicitada' in data:
+        quantidade = data['quantidade_solicitada']
+
+        if not isinstance(quantidade, (int, float)) or quantidade <= 0:
+            return {"error": "Quantidade deve ser um número positivo."}, 400
+
+        pedido.quantidade_solicitada = quantidade
+
+    db.session.commit()
+
+    return {"message": "Pedido editado com sucesso.", "pedido": pedido.to_dict()}, 200
 
 def atualizar_estoque_e_calcular_pedido(estoque_id, quantidade_atual, usuario_id):
     """
@@ -738,15 +875,25 @@ def create_lista(data):
     """Cria uma nova lista de compras."""
     if not data or not data.get('nome'):
         return {"error": "O nome da lista é obrigatório."}, 400
-    
-    nova_lista = Lista(nome=data['nome'])
+
+    # Validar se já existe uma lista com esse nome
+    nome = data['nome'].strip()
+    lista_existente = Lista.query.filter(func.lower(Lista.nome) == func.lower(nome)).first()
+    if lista_existente:
+        return {"error": f"Já existe uma lista com o nome '{nome}'."}, 409
+
+    nova_lista = Lista(
+        nome=nome,
+        descricao=data.get('descricao', '').strip() if data.get('descricao') else None
+    )
     repositories.add_instance(nova_lista)
-    
+
     return nova_lista.to_dict(), 201
 
 def get_all_listas():
-    """Retorna todas as listas de compras."""
-    return repositories.get_all(Lista), 200
+    """Retorna todas as listas de compras não deletadas."""
+    listas = Lista.query.filter_by(deletado=False).all()
+    return [lista.to_dict() for lista in listas], 200
 
 def get_lista_by_id(lista_id):
     """Retorna uma lista específica."""
@@ -802,31 +949,110 @@ def update_lista(lista_id, data):
         return {"error": "Lista não encontrada."}, 404
 
     # Validar se nome já existe (se estiver sendo alterado)
-    if 'nome' in data and data['nome'] != lista.nome:
-        existing = Lista.query.filter_by(nome=data['nome']).first()
-        if existing:
-            return {"error": "Já existe uma lista com esse nome."}, 400
+    if 'nome' in data and data['nome']:
+        novo_nome = data['nome'].strip()
+        # Verificar se o nome mudou (case-insensitive)
+        if novo_nome.lower() != lista.nome.lower():
+            existing = Lista.query.filter(
+                func.lower(Lista.nome) == func.lower(novo_nome),
+                Lista.id != lista_id
+            ).first()
+            if existing:
+                return {"error": f"Já existe uma lista com o nome '{novo_nome}'."}, 409
 
     # Atualizar campos
-    if 'nome' in data:
-        lista.nome = data['nome']
+    if 'nome' in data and data['nome']:
+        lista.nome = data['nome'].strip()
     if 'descricao' in data:
-        lista.descricao = data['descricao']
+        lista.descricao = data['descricao'].strip() if data['descricao'] else None
 
     db.session.commit()
     return lista.to_dict(), 200
 
 def delete_lista(lista_id):
-    """Deleta uma lista e suas associações com colaboradores."""
+    """Faz soft delete de uma lista (move para lixeira)."""
     lista = repositories.get_by_id(Lista, lista_id)
     if not lista:
         return {"error": "Lista não encontrada."}, 404
 
-    # O relacionamento many-to-many será limpo automaticamente
+    # Soft delete
+    lista.deletado = True
+    lista.data_delecao = datetime.utcnow()
+    db.session.commit()
+
+    return {"message": "Lista movida para lixeira."}, 200
+
+
+def get_deleted_listas():
+    """Retorna todas as listas deletadas (na lixeira)."""
+    listas = Lista.query.filter_by(deletado=True).order_by(Lista.data_delecao.desc()).all()
+    return [lista.to_dict() for lista in listas], 200
+
+
+def restore_lista(lista_id):
+    """Restaura uma lista da lixeira."""
+    lista = repositories.get_by_id(Lista, lista_id)
+    if not lista:
+        return {"error": "Lista não encontrada."}, 404
+
+    if not lista.deletado:
+        return {"error": "Esta lista não está na lixeira."}, 400
+
+    # Restaurar
+    lista.deletado = False
+    lista.data_delecao = None
+    db.session.commit()
+
+    return {"message": "Lista restaurada com sucesso.", "lista": lista.to_dict()}, 200
+
+
+def permanent_delete_lista(lista_id):
+    """Deleta permanentemente uma lista da lixeira."""
+    lista = repositories.get_by_id(Lista, lista_id)
+    if not lista:
+        return {"error": "Lista não encontrada."}, 404
+
+    if not lista.deletado:
+        return {"error": "Apenas listas na lixeira podem ser deletadas permanentemente."}, 400
+
+    # Deletar permanentemente
     db.session.delete(lista)
     db.session.commit()
 
-    return {"message": "Lista deletada com sucesso."}, 200
+    return {"message": "Lista deletada permanentemente."}, 200
+
+
+def permanent_delete_listas_batch(lista_ids):
+    """Deleta permanentemente múltiplas listas em lote."""
+    if not lista_ids or not isinstance(lista_ids, list):
+        return {"error": "Lista de IDs inválida."}, 400
+
+    deleted_count = 0
+    errors = []
+
+    for lista_id in lista_ids:
+        lista = repositories.get_by_id(Lista, lista_id)
+        if not lista:
+            errors.append(f"Lista {lista_id} não encontrada")
+            continue
+
+        if not lista.deletado:
+            errors.append(f"Lista {lista_id} não está na lixeira")
+            continue
+
+        try:
+            db.session.delete(lista)
+            deleted_count += 1
+        except Exception as e:
+            errors.append(f"Erro ao deletar lista {lista_id}: {str(e)}")
+
+    db.session.commit()
+
+    return {
+        "message": f"{deleted_count} lista(s) deletada(s) permanentemente.",
+        "deleted_count": deleted_count,
+        "errors": errors if errors else None
+    }, 200
 
 
 # --- Serviços de Dashboard ---
@@ -1548,3 +1774,774 @@ def importar_fornecedores_csv(csv_content):
     except Exception as e:
         db.session.rollback()
         return {"error": str(e)}, 500
+
+def clear_database_except_users(user_id, data):
+    """
+    Limpa todas as tabelas do banco de dados exceto a tabela de usuários.
+    Requer que o usuário forneça sua senha para confirmação.
+    """
+    try:
+        # Validação de entrada
+        senha = data.get('senha')
+        if not senha:
+            return {"error": "Senha é obrigatória para confirmar a operação"}, 400
+
+        # Busca o usuário e verifica a senha
+        usuario = Usuario.query.get(user_id)
+        if not usuario:
+            return {"error": "Usuário não encontrado"}, 404
+
+        if not check_password_hash(usuario.senha_hash, senha):
+            return {"error": "Senha incorreta"}, 401
+
+        # Verifica se é admin
+        if usuario.role != UserRoles.ADMIN:
+            return {"error": "Apenas administradores podem limpar o banco de dados"}, 403
+
+        # Começa a limpeza das tabelas na ordem correta (respeitando foreign keys)
+        print("🗑️ Iniciando limpeza do banco de dados...")
+
+        # 1. Limpar tabelas de associação (many-to-many)
+        db.session.execute(db.text('DELETE FROM fornecedor_lista'))
+        db.session.execute(db.text('DELETE FROM lista_colaborador'))
+        print("✅ Tabelas de associação limpas")
+
+        # 2. Limpar tabelas dependentes
+        CotacaoItem.query.delete()
+        print("✅ Itens de cotação removidos")
+
+        Cotacao.query.delete()
+        print("✅ Cotações removidas")
+
+        Pedido.query.delete()
+        print("✅ Pedidos removidos")
+
+        Estoque.query.delete()
+        print("✅ Estoques removidos")
+
+        ListaMaeItem.query.delete()
+        print("✅ Itens da lista mãe removidos")
+
+        # 3. Limpar listas
+        Lista.query.delete()
+        print("✅ Listas removidas")
+
+        # 4. Limpar itens
+        Item.query.delete()
+        print("✅ Itens removidos")
+
+        # 5. Limpar fornecedores
+        Fornecedor.query.delete()
+        print("✅ Fornecedores removidos")
+
+        # 6. Limpar áreas
+        Area.query.delete()
+        print("✅ Áreas removidas")
+
+        # Commit das alterações
+        db.session.commit()
+        print("✨ Banco de dados limpo com sucesso!")
+
+        return {
+            "message": "Banco de dados limpo com sucesso! Apenas usuários foram mantidos.",
+            "cleared_tables": [
+                "fornecedor_lista",
+                "lista_colaborador",
+                "cotacao_itens",
+                "cotacoes",
+                "pedidos",
+                "estoques",
+                "lista_mae_itens",
+                "listas",
+                "itens",
+                "fornecedores",
+                "areas"
+            ]
+        }, 200
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"❌ Erro ao limpar banco de dados: {str(e)}")
+        return {"error": f"Erro ao limpar banco de dados: {str(e)}"}, 500
+
+def populate_database_with_mock_data():
+    """
+    Popula o banco de dados com dados fictícios para teste.
+    NÃO vincula colaboradores às listas - admin faz isso manualmente.
+    """
+    try:
+        import random
+        from datetime import timedelta
+
+        print("🌱 Iniciando população do banco de dados...")
+
+        # 1. Criar Áreas
+        print("📍 Criando áreas...")
+        areas_nomes = ["Cozinha", "Almoxarifado", "Limpeza", "Manutenção", "Escritório"]
+        areas = []
+        for nome in areas_nomes:
+            if not Area.query.filter_by(nome=nome).first():
+                area = Area(nome=nome)
+                db.session.add(area)
+                areas.append(area)
+        db.session.commit()
+        areas = Area.query.all()
+        print(f"✅ {len(areas)} áreas no banco")
+
+        # 2. Criar Fornecedores
+        print("🏪 Criando fornecedores...")
+        fornecedores_data = [
+            {
+                "nome": "Distribuidora ABC",
+                "contato": "(11) 1234-5678",
+                "meio_envio": "WhatsApp",
+                "responsavel": "João Silva",
+                "observacao": "Fornecedor principal de alimentos"
+            },
+            {
+                "nome": "Produtos Limpeza XYZ",
+                "contato": "(11) 8765-4321",
+                "meio_envio": "Email",
+                "responsavel": "Maria Santos",
+                "observacao": "Produtos de limpeza e higiene"
+            },
+            {
+                "nome": "Papelaria Moderna",
+                "contato": "(11) 5555-9999",
+                "meio_envio": "WhatsApp",
+                "responsavel": "Pedro Costa",
+                "observacao": "Material de escritório"
+            },
+            {
+                "nome": "Ferramentas e Cia",
+                "contato": "(11) 3333-7777",
+                "meio_envio": "Telefone",
+                "responsavel": "Carlos Oliveira",
+                "observacao": "Ferramentas e material de manutenção"
+            }
+        ]
+
+        fornecedores = []
+        for forn_data in fornecedores_data:
+            if not Fornecedor.query.filter_by(nome=forn_data["nome"]).first():
+                fornecedor = Fornecedor(**forn_data)
+                db.session.add(fornecedor)
+                fornecedores.append(fornecedor)
+        db.session.commit()
+        fornecedores = Fornecedor.query.all()
+        print(f"✅ {len(fornecedores)} fornecedores no banco")
+
+        # 3. Criar Itens
+        print("📦 Criando itens...")
+        itens_data = [
+            # Itens da Distribuidora ABC
+            {"nome": "Arroz", "unidade_medida": "Kg", "fornecedor_nome": "Distribuidora ABC"},
+            {"nome": "Feijão", "unidade_medida": "Kg", "fornecedor_nome": "Distribuidora ABC"},
+            {"nome": "Óleo", "unidade_medida": "Litro", "fornecedor_nome": "Distribuidora ABC"},
+            {"nome": "Açúcar", "unidade_medida": "Kg", "fornecedor_nome": "Distribuidora ABC"},
+            {"nome": "Sal", "unidade_medida": "Kg", "fornecedor_nome": "Distribuidora ABC"},
+            # Itens da Produtos Limpeza XYZ
+            {"nome": "Detergente", "unidade_medida": "Unidade", "fornecedor_nome": "Produtos Limpeza XYZ"},
+            {"nome": "Sabão em Pó", "unidade_medida": "Kg", "fornecedor_nome": "Produtos Limpeza XYZ"},
+            {"nome": "Desinfetante", "unidade_medida": "Litro", "fornecedor_nome": "Produtos Limpeza XYZ"},
+            {"nome": "Álcool Gel", "unidade_medida": "Litro", "fornecedor_nome": "Produtos Limpeza XYZ"},
+            # Itens da Papelaria Moderna
+            {"nome": "Papel A4", "unidade_medida": "Resma", "fornecedor_nome": "Papelaria Moderna"},
+            {"nome": "Caneta Azul", "unidade_medida": "Unidade", "fornecedor_nome": "Papelaria Moderna"},
+            {"nome": "Grampeador", "unidade_medida": "Unidade", "fornecedor_nome": "Papelaria Moderna"},
+            # Itens da Ferramentas e Cia
+            {"nome": "Martelo", "unidade_medida": "Unidade", "fornecedor_nome": "Ferramentas e Cia"},
+            {"nome": "Chave de Fenda", "unidade_medida": "Unidade", "fornecedor_nome": "Ferramentas e Cia"},
+            {"nome": "Fita Isolante", "unidade_medida": "Rolo", "fornecedor_nome": "Ferramentas e Cia"},
+        ]
+
+        itens = []
+        for item_data in itens_data:
+            if not Item.query.filter_by(nome=item_data["nome"]).first():
+                fornecedor = Fornecedor.query.filter_by(nome=item_data["fornecedor_nome"]).first()
+                if fornecedor:
+                    item = Item(
+                        nome=item_data["nome"],
+                        unidade_medida=item_data["unidade_medida"],
+                        fornecedor_id=fornecedor.id
+                    )
+                    db.session.add(item)
+                    itens.append(item)
+        db.session.commit()
+        itens = Item.query.all()
+        print(f"✅ {len(itens)} itens no banco")
+
+        # 4. Criar Listas de Compras (SEM vincular colaboradores)
+        print("📋 Criando listas de compras...")
+        listas_data = [
+            {
+                "nome": "Lista Mensal - Alimentos",
+                "descricao": "Lista mensal de compras de alimentos"
+            },
+            {
+                "nome": "Lista Semanal - Limpeza",
+                "descricao": "Lista semanal de produtos de limpeza"
+            },
+            {
+                "nome": "Lista Escritório",
+                "descricao": "Material de escritório trimestral"
+            }
+        ]
+
+        listas = []
+        for lista_data in listas_data:
+            if not Lista.query.filter_by(nome=lista_data["nome"]).first():
+                lista = Lista(**lista_data)
+                db.session.add(lista)
+                listas.append(lista)
+        db.session.commit()
+        listas = Lista.query.all()
+
+        # Associar fornecedores às listas
+        lista_alimentos = Lista.query.filter_by(nome="Lista Mensal - Alimentos").first()
+        lista_limpeza = Lista.query.filter_by(nome="Lista Semanal - Limpeza").first()
+        lista_escritorio = Lista.query.filter_by(nome="Lista Escritório").first()
+
+        forn_abc = Fornecedor.query.filter_by(nome="Distribuidora ABC").first()
+        forn_limpeza = Fornecedor.query.filter_by(nome="Produtos Limpeza XYZ").first()
+        forn_papelaria = Fornecedor.query.filter_by(nome="Papelaria Moderna").first()
+
+        if lista_alimentos and forn_abc and forn_abc not in lista_alimentos.fornecedores:
+            lista_alimentos.fornecedores.append(forn_abc)
+        if lista_limpeza and forn_limpeza and forn_limpeza not in lista_limpeza.fornecedores:
+            lista_limpeza.fornecedores.append(forn_limpeza)
+        if lista_escritorio and forn_papelaria and forn_papelaria not in lista_escritorio.fornecedores:
+            lista_escritorio.fornecedores.append(forn_papelaria)
+
+        db.session.commit()
+        print(f"✅ {len(listas)} listas no banco (colaboradores NÃO vinculados)")
+
+        # 5. Criar itens da Lista Mãe
+        print("📝 Criando itens da lista mãe...")
+        lista_mae_itens_data = [
+            # Lista Mensal - Alimentos
+            {"lista_nome": "Lista Mensal - Alimentos", "nome": "Arroz Tipo 1", "unidade": "Kg", "qtd_atual": 50, "qtd_min": 100},
+            {"lista_nome": "Lista Mensal - Alimentos", "nome": "Feijão Preto", "unidade": "Kg", "qtd_atual": 30, "qtd_min": 80},
+            {"lista_nome": "Lista Mensal - Alimentos", "nome": "Óleo de Soja", "unidade": "Litro", "qtd_atual": 15, "qtd_min": 40},
+            # Lista Semanal - Limpeza
+            {"lista_nome": "Lista Semanal - Limpeza", "nome": "Detergente Neutro", "unidade": "Unidade", "qtd_atual": 5, "qtd_min": 20},
+            {"lista_nome": "Lista Semanal - Limpeza", "nome": "Desinfetante Pinho", "unidade": "Litro", "qtd_atual": 8, "qtd_min": 15},
+            # Lista Escritório
+            {"lista_nome": "Lista Escritório", "nome": "Papel Sulfite A4", "unidade": "Resma", "qtd_atual": 10, "qtd_min": 30},
+        ]
+
+        lista_mae_count = 0
+        for item_data in lista_mae_itens_data:
+            lista = Lista.query.filter_by(nome=item_data["lista_nome"]).first()
+            if lista:
+                # Verifica se já existe
+                existe = ListaMaeItem.query.filter_by(
+                    lista_mae_id=lista.id,
+                    nome=item_data["nome"]
+                ).first()
+
+                if not existe:
+                    item = ListaMaeItem(
+                        lista_mae_id=lista.id,
+                        nome=item_data["nome"],
+                        unidade=item_data["unidade"],
+                        quantidade_atual=item_data["qtd_atual"],
+                        quantidade_minima=item_data["qtd_min"]
+                    )
+                    db.session.add(item)
+                    lista_mae_count += 1
+
+        db.session.commit()
+        total_lista_mae = ListaMaeItem.query.count()
+        print(f"✅ {total_lista_mae} itens da lista mãe no banco")
+
+        # 6. Criar Estoques
+        print("📊 Criando registros de estoque...")
+        estoque_count = 0
+        for area in areas[:3]:  # Primeiras 3 áreas
+            for item in itens[:10]:  # Primeiros 10 itens
+                # Verifica se já existe
+                existe = Estoque.query.filter_by(item_id=item.id, area_id=area.id).first()
+                if not existe:
+                    qtd_atual = random.uniform(5, 50)
+                    qtd_minima = random.uniform(20, 100)
+                    estoque = Estoque(
+                        item_id=item.id,
+                        area_id=area.id,
+                        quantidade_atual=qtd_atual,
+                        quantidade_minima=qtd_minima,
+                        pedido=max(qtd_minima - qtd_atual, 0)
+                    )
+                    db.session.add(estoque)
+                    estoque_count += 1
+
+        db.session.commit()
+        total_estoques = Estoque.query.count()
+        print(f"✅ {total_estoques} registros de estoque no banco")
+
+        # 7. Criar Pedidos
+        print("🛒 Criando pedidos...")
+        admin = Usuario.query.filter_by(role=UserRoles.ADMIN).first()
+        pedido_count = 0
+
+        if admin and len(itens) > 0:
+            for i in range(10):
+                item = random.choice(itens)
+                # Verifica se item tem fornecedor
+                if item.fornecedor_id:
+                    pedido = Pedido(
+                        item_id=item.id,
+                        fornecedor_id=item.fornecedor_id,
+                        quantidade_solicitada=random.uniform(10, 100),
+                        data_pedido=datetime.utcnow() - timedelta(days=random.randint(1, 30)),
+                        usuario_id=admin.id,
+                        status=random.choice([PedidoStatus.PENDENTE, PedidoStatus.APROVADO, PedidoStatus.REJEITADO])
+                    )
+                    db.session.add(pedido)
+                    pedido_count += 1
+
+            db.session.commit()
+
+        total_pedidos = Pedido.query.count()
+        print(f"✅ {total_pedidos} pedidos no banco")
+
+        # 8. Criar Cotações
+        print("💰 Criando cotações...")
+        cotacao_count = 0
+        for fornecedor in fornecedores[:2]:
+            cotacao = Cotacao(
+                fornecedor_id=fornecedor.id,
+                data_cotacao=datetime.utcnow() - timedelta(days=random.randint(1, 15)),
+                status=random.choice([CotacaoStatus.PENDENTE, CotacaoStatus.CONCLUIDA])
+            )
+            db.session.add(cotacao)
+            db.session.commit()
+
+            # Adicionar itens à cotação
+            itens_fornecedor = Item.query.filter_by(fornecedor_id=fornecedor.id).all()
+            for item in itens_fornecedor[:3]:
+                cotacao_item = CotacaoItem(
+                    cotacao_id=cotacao.id,
+                    item_id=item.id,
+                    quantidade=random.uniform(10, 50),
+                    preco_unitario=random.uniform(5, 100)
+                )
+                db.session.add(cotacao_item)
+            cotacao_count += 1
+
+        db.session.commit()
+        total_cotacoes = Cotacao.query.count()
+        print(f"✅ {total_cotacoes} cotações no banco")
+
+        print("\n✨ Banco de dados populado com sucesso!")
+
+        return {
+            "message": "Banco de dados populado com dados fictícios com sucesso!",
+            "data": {
+                "areas": len(areas),
+                "fornecedores": len(fornecedores),
+                "itens": len(itens),
+                "listas": len(listas),
+                "itens_lista_mae": total_lista_mae,
+                "estoques": total_estoques,
+                "pedidos": total_pedidos,
+                "cotacoes": total_cotacoes,
+                "nota": "Colaboradores NÃO foram vinculados às listas - faça isso manualmente"
+            }
+        }, 200
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"❌ Erro ao popular banco de dados: {str(e)}")
+        return {"error": f"Erro ao popular banco de dados: {str(e)}"}, 500
+
+
+def export_lista_to_csv(lista_id):
+    """
+    Exporta os itens da lista mãe para formato CSV.
+    Retorna o conteúdo CSV como string e o nome do arquivo.
+    """
+    try:
+        # Buscar a lista
+        lista = Lista.query.get(lista_id)
+        if not lista:
+            return {"error": "Lista não encontrada."}, 404
+
+        # Buscar os itens da lista mãe
+        itens = ListaMaeItem.query.filter_by(lista_mae_id=lista_id).all()
+
+        if not itens:
+            return {"error": "Lista não possui itens para exportar."}, 400
+
+        # Gerar nome do arquivo com nome da lista e data
+        from datetime import datetime
+        data_atual = datetime.now().strftime("%Y-%m-%d")
+        # Remover caracteres especiais do nome da lista
+        nome_limpo = "".join(c for c in lista.nome if c.isalnum() or c in (' ', '-', '_')).strip()
+        nome_limpo = nome_limpo.replace(' ', '_')
+        filename = f"{nome_limpo}_{data_atual}.csv"
+
+        # Gerar conteúdo CSV
+        import csv
+        from io import StringIO
+
+        output = StringIO()
+        writer = csv.writer(output)
+
+        # Cabeçalho
+        writer.writerow(['nome', 'unidade', 'quantidade_atual', 'quantidade_minima'])
+
+        # Dados
+        for item in itens:
+            writer.writerow([
+                item.nome,
+                item.unidade,
+                float(item.quantidade_atual) if item.quantidade_atual else 0,
+                float(item.quantidade_minima) if item.quantidade_minima else 0
+            ])
+
+        csv_content = output.getvalue()
+        output.close()
+
+        return {
+            "csv_content": csv_content,
+            "filename": filename
+        }, 200
+
+    except Exception as e:
+        print(f"❌ Erro ao exportar lista para CSV: {str(e)}")
+        return {"error": f"Erro ao exportar lista: {str(e)}"}, 500
+
+
+def import_lista_from_csv(lista_id, csv_file):
+    """
+    Importa itens da lista mãe a partir de um arquivo CSV.
+    Substitui todos os itens existentes da lista pelos itens do CSV.
+    """
+    try:
+        # Buscar a lista
+        lista = Lista.query.get(lista_id)
+        if not lista:
+            return {"error": "Lista não encontrada."}, 404
+
+        # Ler o arquivo CSV
+        import csv
+        from io import StringIO, TextIOWrapper
+
+        # Converter para texto se necessário
+        if hasattr(csv_file, 'read'):
+            content = csv_file.read()
+            if isinstance(content, bytes):
+                content = content.decode('utf-8')
+        else:
+            content = csv_file
+
+        # Parse CSV
+        csv_reader = csv.DictReader(StringIO(content))
+
+        # Validar cabeçalhos
+        required_headers = {'nome', 'unidade', 'quantidade_atual', 'quantidade_minima'}
+        headers = set(csv_reader.fieldnames or [])
+
+        if not required_headers.issubset(headers):
+            return {
+                "error": f"CSV deve conter os cabeçalhos: {', '.join(required_headers)}"
+            }, 400
+
+        # Remover itens existentes da lista
+        ListaMaeItem.query.filter_by(lista_mae_id=lista_id).delete()
+
+        # Importar novos itens
+        itens_importados = 0
+        for row in csv_reader:
+            try:
+                # Criar novo item
+                novo_item = ListaMaeItem(
+                    lista_mae_id=lista_id,
+                    nome=row['nome'].strip(),
+                    unidade=row['unidade'].strip(),
+                    quantidade_atual=float(row['quantidade_atual']) if row['quantidade_atual'] else 0,
+                    quantidade_minima=float(row['quantidade_minima']) if row['quantidade_minima'] else 0
+                )
+                db.session.add(novo_item)
+                itens_importados += 1
+            except (ValueError, KeyError) as e:
+                db.session.rollback()
+                return {
+                    "error": f"Erro ao processar linha do CSV: {str(e)}"
+                }, 400
+
+        db.session.commit()
+
+        return {
+            "message": f"Lista importada com sucesso! {itens_importados} itens importados.",
+            "itens_importados": itens_importados
+        }, 200
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"❌ Erro ao importar lista de CSV: {str(e)}")
+        return {"error": f"Erro ao importar lista: {str(e)}"}, 500
+
+
+def create_lista_from_csv(nome, descricao, csv_file):
+    """
+    Cria uma nova lista e importa itens da lista mãe a partir de um arquivo CSV.
+    """
+    try:
+        # Validar nome
+        if not nome or not nome.strip():
+            return {"error": "Nome da lista é obrigatório."}, 400
+
+        # Validar se já existe uma lista com esse nome
+        nome_limpo = nome.strip()
+        lista_existente = Lista.query.filter(func.lower(Lista.nome) == func.lower(nome_limpo)).first()
+        if lista_existente:
+            return {"error": f"Já existe uma lista com o nome '{nome_limpo}'."}, 409
+
+        # Criar nova lista
+        nova_lista = Lista(
+            nome=nome_limpo,
+            descricao=descricao.strip() if descricao else None
+        )
+        db.session.add(nova_lista)
+        db.session.flush()  # Para obter o ID
+
+        # Ler o arquivo CSV
+        import csv
+        from io import StringIO
+
+        # Converter para texto se necessário
+        if hasattr(csv_file, 'read'):
+            content = csv_file.read()
+            if isinstance(content, bytes):
+                content = content.decode('utf-8')
+        else:
+            content = csv_file
+
+        # Parse CSV
+        csv_reader = csv.DictReader(StringIO(content))
+
+        # Validar cabeçalhos
+        required_headers = {'nome', 'unidade', 'quantidade_atual', 'quantidade_minima'}
+        headers = set(csv_reader.fieldnames or [])
+
+        if not required_headers.issubset(headers):
+            db.session.rollback()
+            return {
+                "error": f"CSV deve conter os cabeçalhos: {', '.join(required_headers)}"
+            }, 400
+
+        # Importar itens
+        itens_importados = 0
+        for row in csv_reader:
+            try:
+                # Criar novo item
+                novo_item = ListaMaeItem(
+                    lista_mae_id=nova_lista.id,
+                    nome=row['nome'].strip(),
+                    unidade=row['unidade'].strip(),
+                    quantidade_atual=float(row['quantidade_atual']) if row['quantidade_atual'] else 0,
+                    quantidade_minima=float(row['quantidade_minima']) if row['quantidade_minima'] else 0
+                )
+                db.session.add(novo_item)
+                itens_importados += 1
+            except (ValueError, KeyError) as e:
+                db.session.rollback()
+                return {
+                    "error": f"Erro ao processar linha do CSV: {str(e)}"
+                }, 400
+
+        db.session.commit()
+
+        return {
+            "message": f"Lista '{nome}' criada com sucesso! {itens_importados} itens importados.",
+            "lista_id": nova_lista.id,
+            "itens_importados": itens_importados
+        }, 201
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"❌ Erro ao criar lista de CSV: {str(e)}")
+        return {"error": f"Erro ao criar lista: {str(e)}"}, 500
+
+
+def export_data_bulk(tipos_dados):
+    """
+    Exporta múltiplos tipos de dados em um arquivo ZIP contendo CSVs.
+
+    Args:
+        tipos_dados: Lista de strings indicando quais dados exportar
+                    ['usuarios', 'listas', 'itens', 'fornecedores', 'areas', 'pedidos', 'cotacoes', 'estoque']
+
+    Returns:
+        BytesIO contendo o arquivo ZIP, ou erro
+    """
+    import io
+    import zipfile
+    import csv
+
+    try:
+        # Criar arquivo ZIP em memória
+        zip_buffer = io.BytesIO()
+
+        with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+
+            # Exportar Usuários
+            if 'usuarios' in tipos_dados:
+                usuarios = Usuario.query.all()
+                csv_buffer = io.StringIO()
+                csv_writer = csv.writer(csv_buffer)
+                csv_writer.writerow(['ID', 'Nome', 'Email', 'Username', 'Role', 'Aprovado', 'Ativo', 'Data Criação'])
+
+                for user in usuarios:
+                    csv_writer.writerow([
+                        user.id,
+                        user.nome,
+                        user.email,
+                        user.username or '',
+                        user.role.value,
+                        'Sim' if user.aprovado else 'Não',
+                        'Sim' if user.ativo else 'Não',
+                        user.data_criacao.strftime('%Y-%m-%d %H:%M:%S') if user.data_criacao else ''
+                    ])
+
+                zip_file.writestr('usuarios.csv', csv_buffer.getvalue())
+
+            # Exportar Listas
+            if 'listas' in tipos_dados:
+                listas = Lista.query.filter_by(deletado=False).all()
+                csv_buffer = io.StringIO()
+                csv_writer = csv.writer(csv_buffer)
+                csv_writer.writerow(['ID', 'Nome', 'Descrição', 'Data Criação', 'Colaboradores'])
+
+                for lista in listas:
+                    colaboradores_nomes = ', '.join([c.nome for c in lista.colaboradores])
+                    csv_writer.writerow([
+                        lista.id,
+                        lista.nome,
+                        lista.descricao or '',
+                        lista.data_criacao.strftime('%Y-%m-%d %H:%M:%S'),
+                        colaboradores_nomes
+                    ])
+
+                zip_file.writestr('listas.csv', csv_buffer.getvalue())
+
+            # Exportar Itens
+            if 'itens' in tipos_dados:
+                itens = Item.query.all()
+                csv_buffer = io.StringIO()
+                csv_writer = csv.writer(csv_buffer)
+                csv_writer.writerow(['ID', 'Nome', 'Unidade Medida', 'Fornecedor', 'Data Criação'])
+
+                for item in itens:
+                    csv_writer.writerow([
+                        item.id,
+                        item.nome,
+                        item.unidade_medida,
+                        item.fornecedor.nome if item.fornecedor else '',
+                        item.data_criacao.strftime('%Y-%m-%d %H:%M:%S') if item.data_criacao else ''
+                    ])
+
+                zip_file.writestr('itens.csv', csv_buffer.getvalue())
+
+            # Exportar Fornecedores
+            if 'fornecedores' in tipos_dados:
+                fornecedores = Fornecedor.query.all()
+                csv_buffer = io.StringIO()
+                csv_writer = csv.writer(csv_buffer)
+                csv_writer.writerow(['ID', 'Nome', 'Contato', 'Telefone', 'Email', 'Responsável', 'Observação'])
+
+                for fornecedor in fornecedores:
+                    csv_writer.writerow([
+                        fornecedor.id,
+                        fornecedor.nome,
+                        fornecedor.contato or '',
+                        fornecedor.telefone or '',
+                        fornecedor.email or '',
+                        fornecedor.responsavel or '',
+                        fornecedor.observacao or ''
+                    ])
+
+                zip_file.writestr('fornecedores.csv', csv_buffer.getvalue())
+
+            # Exportar Áreas
+            if 'areas' in tipos_dados:
+                areas = Area.query.all()
+                csv_buffer = io.StringIO()
+                csv_writer = csv.writer(csv_buffer)
+                csv_writer.writerow(['ID', 'Nome', 'Descrição'])
+
+                for area in areas:
+                    csv_writer.writerow([
+                        area.id,
+                        area.nome,
+                        area.descricao or ''
+                    ])
+
+                zip_file.writestr('areas.csv', csv_buffer.getvalue())
+
+            # Exportar Pedidos
+            if 'pedidos' in tipos_dados:
+                pedidos = Pedido.query.all()
+                csv_buffer = io.StringIO()
+                csv_writer = csv.writer(csv_buffer)
+                csv_writer.writerow(['ID', 'Item', 'Fornecedor', 'Quantidade', 'Status', 'Usuário', 'Data Pedido'])
+
+                for pedido in pedidos:
+                    csv_writer.writerow([
+                        pedido.id,
+                        pedido.item.nome if pedido.item else '',
+                        pedido.fornecedor.nome if pedido.fornecedor else '',
+                        pedido.quantidade_solicitada,
+                        pedido.status.value if pedido.status else '',
+                        pedido.usuario.nome if pedido.usuario else '',
+                        pedido.data_pedido.strftime('%Y-%m-%d %H:%M:%S') if pedido.data_pedido else ''
+                    ])
+
+                zip_file.writestr('pedidos.csv', csv_buffer.getvalue())
+
+            # Exportar Cotações
+            if 'cotacoes' in tipos_dados:
+                cotacoes = Cotacao.query.all()
+                csv_buffer = io.StringIO()
+                csv_writer = csv.writer(csv_buffer)
+                csv_writer.writerow(['ID', 'Fornecedor', 'Status', 'Data Criação', 'Total Itens'])
+
+                for cotacao in cotacoes:
+                    csv_writer.writerow([
+                        cotacao.id,
+                        cotacao.fornecedor.nome if cotacao.fornecedor else '',
+                        cotacao.status.value if cotacao.status else '',
+                        cotacao.data_criacao.strftime('%Y-%m-%d %H:%M:%S') if cotacao.data_criacao else '',
+                        len(cotacao.itens) if cotacao.itens else 0
+                    ])
+
+                zip_file.writestr('cotacoes.csv', csv_buffer.getvalue())
+
+            # Exportar Estoque
+            if 'estoque' in tipos_dados:
+                estoques = Estoque.query.all()
+                csv_buffer = io.StringIO()
+                csv_writer = csv.writer(csv_buffer)
+                csv_writer.writerow(['ID', 'Item', 'Área', 'Quantidade Atual', 'Quantidade Mínima'])
+
+                for estoque in estoques:
+                    csv_writer.writerow([
+                        estoque.id,
+                        estoque.item.nome if estoque.item else '',
+                        estoque.area.nome if estoque.area else '',
+                        estoque.quantidade_atual,
+                        estoque.quantidade_minima
+                    ])
+
+                zip_file.writestr('estoque.csv', csv_buffer.getvalue())
+
+        # Resetar posição do buffer para o início
+        zip_buffer.seek(0)
+
+        return zip_buffer, 200
+
+    except Exception as e:
+        print(f"❌ Erro ao exportar dados em lote: {str(e)}")
+        return {"error": f"Erro ao exportar dados: {str(e)}"}, 500

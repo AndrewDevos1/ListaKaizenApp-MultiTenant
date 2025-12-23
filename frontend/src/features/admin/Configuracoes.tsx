@@ -9,7 +9,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Container, Form, Button, Alert } from 'react-bootstrap';
+import { Container, Form, Button, Alert, Modal } from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faCog,
@@ -22,9 +22,16 @@ import {
     faUser,
     faSignOutAlt,
     faKey,
+    faTrashAlt,
+    faDatabase,
+    faExclamationTriangle,
+    faPlus,
+    faDownload,
+    faFileArchive,
 } from '@fortawesome/free-solid-svg-icons';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import api from '../../services/api';
 import styles from './Configuracoes.module.css';
 
 const Configuracoes: React.FC = () => {
@@ -32,6 +39,26 @@ const Configuracoes: React.FC = () => {
     const { logout } = useAuth();
     const [sessionTimeout, setSessionTimeout] = useState(30); // Padrão: 30 minutos
     const [showSuccess, setShowSuccess] = useState(false);
+    const [showClearDbModal, setShowClearDbModal] = useState(false);
+    const [clearDbPassword, setClearDbPassword] = useState('');
+    const [clearDbLoading, setClearDbLoading] = useState(false);
+    const [clearDbError, setClearDbError] = useState('');
+    const [populateLoading, setPopulateLoading] = useState(false);
+    const [populateSuccess, setPopulateSuccess] = useState(false);
+
+    // Estados para exportação em lote
+    const [showExportModal, setShowExportModal] = useState(false);
+    const [exportLoading, setExportLoading] = useState(false);
+    const [exportSelection, setExportSelection] = useState({
+        usuarios: true,
+        listas: true,
+        itens: true,
+        fornecedores: true,
+        areas: true,
+        pedidos: true,
+        cotacoes: true,
+        estoque: true,
+    });
 
     // Carregar configuração salva ao montar componente
     useEffect(() => {
@@ -85,6 +112,148 @@ const Configuracoes: React.FC = () => {
     const handleChangePassword = () => {
         // Navegar para página de mudar senha
         navigate('/admin/mudar-senha');
+    };
+
+    const handleOpenClearDbModal = () => {
+        setShowClearDbModal(true);
+        setClearDbPassword('');
+        setClearDbError('');
+    };
+
+    const handleCloseClearDbModal = () => {
+        setShowClearDbModal(false);
+        setClearDbPassword('');
+        setClearDbError('');
+    };
+
+    const handleClearDatabase = async () => {
+        if (!clearDbPassword) {
+            setClearDbError('Por favor, digite sua senha para confirmar');
+            return;
+        }
+
+        setClearDbLoading(true);
+        setClearDbError('');
+
+        try {
+            const response = await api.post('/admin/database/clear', {
+                senha: clearDbPassword
+            });
+
+            // Sucesso - mostrar mensagem e fechar modal
+            setShowClearDbModal(false);
+            setShowSuccess(true);
+            setClearDbPassword('');
+
+            setTimeout(() => {
+                setShowSuccess(false);
+            }, 5000);
+
+        } catch (error: any) {
+            const errorMsg = error.response?.data?.error || 'Erro ao limpar banco de dados';
+            setClearDbError(errorMsg);
+        } finally {
+            setClearDbLoading(false);
+        }
+    };
+
+    const handlePopulateDatabase = async () => {
+        setPopulateLoading(true);
+
+        try {
+            const response = await api.post('/admin/database/populate');
+
+            // Sucesso - mostrar mensagem
+            setPopulateSuccess(true);
+            setShowSuccess(true);
+
+            setTimeout(() => {
+                setPopulateSuccess(false);
+                setShowSuccess(false);
+            }, 5000);
+
+        } catch (error: any) {
+            alert('Erro ao popular banco de dados: ' + (error.response?.data?.error || error.message));
+        } finally {
+            setPopulateLoading(false);
+        }
+    };
+
+    const handleOpenExportModal = () => {
+        setShowExportModal(true);
+    };
+
+    const handleCloseExportModal = () => {
+        setShowExportModal(false);
+    };
+
+    const handleToggleExportItem = (key: keyof typeof exportSelection) => {
+        setExportSelection(prev => ({
+            ...prev,
+            [key]: !prev[key]
+        }));
+    };
+
+    const handleSelectAllExport = () => {
+        const allSelected = Object.values(exportSelection).every(v => v);
+        const newValue = !allSelected;
+
+        setExportSelection({
+            usuarios: newValue,
+            listas: newValue,
+            itens: newValue,
+            fornecedores: newValue,
+            areas: newValue,
+            pedidos: newValue,
+            cotacoes: newValue,
+            estoque: newValue,
+        });
+    };
+
+    const handleExportData = async () => {
+        const selectedTypes = Object.entries(exportSelection)
+            .filter(([_, selected]) => selected)
+            .map(([type, _]) => type);
+
+        if (selectedTypes.length === 0) {
+            alert('Selecione pelo menos um tipo de dado para exportar');
+            return;
+        }
+
+        setExportLoading(true);
+
+        try {
+            const response = await api.post('/admin/database/export-bulk', {
+                tipos_dados: selectedTypes
+            }, {
+                responseType: 'blob' // Importante para download de arquivos
+            });
+
+            // Criar URL do blob e fazer download
+            const blob = new Blob([response.data], { type: 'application/zip' });
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+
+            // Nome do arquivo com timestamp
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+            link.download = `kaizen_export_${timestamp}.zip`;
+
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+
+            // Fechar modal e mostrar sucesso
+            setShowExportModal(false);
+            setShowSuccess(true);
+            setTimeout(() => setShowSuccess(false), 3000);
+
+        } catch (error: any) {
+            alert('Erro ao exportar dados: ' + (error.response?.data?.error || error.message));
+        } finally {
+            setExportLoading(false);
+        }
     };
 
     return (
@@ -248,6 +417,83 @@ const Configuracoes: React.FC = () => {
                     </Form>
                 </div>
 
+                {/* Card de Banco de Dados */}
+                <div className={styles.configCard}>
+                    <div className={styles.cardHeader}>
+                        <div className={styles.cardIcon} style={{ backgroundColor: '#e74c3c' }}>
+                            <FontAwesomeIcon icon={faDatabase} />
+                        </div>
+                        <div>
+                            <h3 className={styles.cardTitle}>Gerenciamento de Banco de Dados</h3>
+                            <p className={styles.cardDescription}>
+                                Ferramentas avançadas para manutenção do banco de dados
+                            </p>
+                        </div>
+                    </div>
+
+                    <div style={{ padding: '1.5rem 0' }}>
+                        <Alert variant="info" style={{ marginBottom: '1rem' }}>
+                            <FontAwesomeIcon icon={faInfoCircle} style={{ marginRight: '0.5rem' }} />
+                            <strong>Popular com Dados Fictícios:</strong> Adiciona fornecedores, listas, itens e estoques para teste. Colaboradores NÃO são vinculados automaticamente.
+                        </Alert>
+
+                        <Alert variant="warning" style={{ marginBottom: '1rem' }}>
+                            <FontAwesomeIcon icon={faExclamationTriangle} style={{ marginRight: '0.5rem' }} />
+                            <strong>Limpar Banco:</strong> Remove todos os dados exceto usuários. Ação irreversível!
+                        </Alert>
+
+                        <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                            <Button
+                                variant="success"
+                                onClick={handlePopulateDatabase}
+                                disabled={populateLoading}
+                                style={{
+                                    background: 'linear-gradient(135deg, #27ae60 0%, #229954 100%)',
+                                    border: 'none',
+                                }}
+                            >
+                                {populateLoading ? (
+                                    <>
+                                        <span className="spinner-border spinner-border-sm" style={{ marginRight: '0.5rem' }} />
+                                        Populando...
+                                    </>
+                                ) : (
+                                    <>
+                                        <FontAwesomeIcon icon={faPlus} style={{ marginRight: '0.5rem' }} />
+                                        Popular com Dados Fictícios
+                                    </>
+                                )}
+                            </Button>
+
+                            <Button
+                                variant="primary"
+                                onClick={handleOpenExportModal}
+                                disabled={exportLoading}
+                                style={{
+                                    background: 'linear-gradient(135deg, #3498db 0%, #2980b9 100%)',
+                                    border: 'none',
+                                }}
+                            >
+                                <FontAwesomeIcon icon={faDownload} style={{ marginRight: '0.5rem' }} />
+                                Exportar Dados
+                            </Button>
+
+                            <Button
+                                variant="danger"
+                                onClick={handleOpenClearDbModal}
+                                disabled={populateLoading}
+                                style={{
+                                    background: 'linear-gradient(135deg, #e74c3c 0%, #c0392b 100%)',
+                                    border: 'none',
+                                }}
+                            >
+                                <FontAwesomeIcon icon={faTrashAlt} style={{ marginRight: '0.5rem' }} />
+                                Limpar Banco de Dados
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+
                 {/* Card de informações adicionais */}
                 <div className={styles.configCard}>
                     <div className={styles.cardHeader}>
@@ -283,6 +529,202 @@ const Configuracoes: React.FC = () => {
                         </ul>
                     </div>
                 </div>
+
+                {/* Modal de Confirmação para Limpar Banco de Dados */}
+                <Modal show={showClearDbModal} onHide={handleCloseClearDbModal} centered>
+                    <Modal.Header closeButton style={{ borderBottom: '2px solid #e74c3c' }}>
+                        <Modal.Title>
+                            <FontAwesomeIcon icon={faExclamationTriangle} style={{ color: '#e74c3c', marginRight: '0.5rem' }} />
+                            Confirmar Limpeza do Banco de Dados
+                        </Modal.Title>
+                    </Modal.Header>
+                    <Modal.Body>
+                        <Alert variant="danger">
+                            <h5><strong>⚠️ ATENÇÃO: Esta ação é IRREVERSÍVEL!</strong></h5>
+                            <p>Todos os dados serão permanentemente removidos, exceto:</p>
+                            <ul>
+                                <li>✅ Usuários e suas credenciais</li>
+                            </ul>
+                            <p style={{ marginTop: '1rem' }}><strong>Dados que serão APAGADOS:</strong></p>
+                            <ul>
+                                <li>❌ Todas as listas de compras</li>
+                                <li>❌ Todos os itens e estoques</li>
+                                <li>❌ Todos os fornecedores</li>
+                                <li>❌ Todas as áreas</li>
+                                <li>❌ Todos os pedidos e cotações</li>
+                            </ul>
+                        </Alert>
+
+                        <Form.Group>
+                            <Form.Label><strong>Digite sua senha para confirmar:</strong></Form.Label>
+                            <Form.Control
+                                type="password"
+                                placeholder="Digite sua senha"
+                                value={clearDbPassword}
+                                onChange={(e) => setClearDbPassword(e.target.value)}
+                                isInvalid={!!clearDbError}
+                                disabled={clearDbLoading}
+                            />
+                            <Form.Control.Feedback type="invalid">
+                                {clearDbError}
+                            </Form.Control.Feedback>
+                        </Form.Group>
+                    </Modal.Body>
+                    <Modal.Footer>
+                        <Button
+                            variant="secondary"
+                            onClick={handleCloseClearDbModal}
+                            disabled={clearDbLoading}
+                        >
+                            Cancelar
+                        </Button>
+                        <Button
+                            variant="danger"
+                            onClick={handleClearDatabase}
+                            disabled={clearDbLoading || !clearDbPassword}
+                        >
+                            {clearDbLoading ? (
+                                <>
+                                    <span className="spinner-border spinner-border-sm" style={{ marginRight: '0.5rem' }} />
+                                    Limpando...
+                                </>
+                            ) : (
+                                <>
+                                    <FontAwesomeIcon icon={faTrashAlt} style={{ marginRight: '0.5rem' }} />
+                                    Confirmar Limpeza
+                                </>
+                            )}
+                        </Button>
+                    </Modal.Footer>
+                </Modal>
+
+                {/* Modal de Exportação de Dados */}
+                <Modal show={showExportModal} onHide={handleCloseExportModal} centered size="lg">
+                    <Modal.Header closeButton style={{ borderBottom: '2px solid #3498db' }}>
+                        <Modal.Title>
+                            <FontAwesomeIcon icon={faFileArchive} style={{ color: '#3498db', marginRight: '0.5rem' }} />
+                            Exportar Dados do Sistema
+                        </Modal.Title>
+                    </Modal.Header>
+                    <Modal.Body>
+                        <Alert variant="info">
+                            <FontAwesomeIcon icon={faInfoCircle} style={{ marginRight: '0.5rem' }} />
+                            <strong>Selecione os dados que deseja exportar:</strong>
+                            <p style={{ marginTop: '0.5rem', marginBottom: 0 }}>
+                                Os dados selecionados serão exportados em formato CSV dentro de um arquivo ZIP.
+                            </p>
+                        </Alert>
+
+                        <Form>
+                            <div style={{ marginBottom: '1rem', paddingBottom: '1rem', borderBottom: '1px solid #ecf0f1' }}>
+                                <Form.Check
+                                    type="checkbox"
+                                    id="select-all-export"
+                                    label={<strong>Selecionar Todos</strong>}
+                                    checked={Object.values(exportSelection).every(v => v)}
+                                    onChange={handleSelectAllExport}
+                                    style={{ fontSize: '1.1rem' }}
+                                />
+                            </div>
+
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                <Form.Check
+                                    type="checkbox"
+                                    id="export-usuarios"
+                                    label="👥 Usuários"
+                                    checked={exportSelection.usuarios}
+                                    onChange={() => handleToggleExportItem('usuarios')}
+                                />
+                                <Form.Check
+                                    type="checkbox"
+                                    id="export-listas"
+                                    label="📋 Listas de Compras"
+                                    checked={exportSelection.listas}
+                                    onChange={() => handleToggleExportItem('listas')}
+                                />
+                                <Form.Check
+                                    type="checkbox"
+                                    id="export-itens"
+                                    label="📦 Itens"
+                                    checked={exportSelection.itens}
+                                    onChange={() => handleToggleExportItem('itens')}
+                                />
+                                <Form.Check
+                                    type="checkbox"
+                                    id="export-fornecedores"
+                                    label="🏢 Fornecedores"
+                                    checked={exportSelection.fornecedores}
+                                    onChange={() => handleToggleExportItem('fornecedores')}
+                                />
+                                <Form.Check
+                                    type="checkbox"
+                                    id="export-areas"
+                                    label="🏭 Áreas"
+                                    checked={exportSelection.areas}
+                                    onChange={() => handleToggleExportItem('areas')}
+                                />
+                                <Form.Check
+                                    type="checkbox"
+                                    id="export-pedidos"
+                                    label="📝 Pedidos"
+                                    checked={exportSelection.pedidos}
+                                    onChange={() => handleToggleExportItem('pedidos')}
+                                />
+                                <Form.Check
+                                    type="checkbox"
+                                    id="export-cotacoes"
+                                    label="💰 Cotações"
+                                    checked={exportSelection.cotacoes}
+                                    onChange={() => handleToggleExportItem('cotacoes')}
+                                />
+                                <Form.Check
+                                    type="checkbox"
+                                    id="export-estoque"
+                                    label="📊 Estoque"
+                                    checked={exportSelection.estoque}
+                                    onChange={() => handleToggleExportItem('estoque')}
+                                />
+                            </div>
+                        </Form>
+
+                        <Alert variant="success" style={{ marginTop: '1.5rem', marginBottom: 0 }}>
+                            <FontAwesomeIcon icon={faCheckCircle} style={{ marginRight: '0.5rem' }} />
+                            <strong>
+                                {Object.values(exportSelection).filter(v => v).length} tipo(s) de dados selecionado(s)
+                            </strong>
+                        </Alert>
+                    </Modal.Body>
+                    <Modal.Footer>
+                        <Button
+                            variant="secondary"
+                            onClick={handleCloseExportModal}
+                            disabled={exportLoading}
+                        >
+                            Cancelar
+                        </Button>
+                        <Button
+                            variant="primary"
+                            onClick={handleExportData}
+                            disabled={exportLoading || Object.values(exportSelection).every(v => !v)}
+                            style={{
+                                background: 'linear-gradient(135deg, #3498db 0%, #2980b9 100%)',
+                                border: 'none',
+                            }}
+                        >
+                            {exportLoading ? (
+                                <>
+                                    <span className="spinner-border spinner-border-sm" style={{ marginRight: '0.5rem' }} />
+                                    Exportando...
+                                </>
+                            ) : (
+                                <>
+                                    <FontAwesomeIcon icon={faDownload} style={{ marginRight: '0.5rem' }} />
+                                    Baixar ZIP
+                                </>
+                            )}
+                        </Button>
+                    </Modal.Footer>
+                </Modal>
             </Container>
         </div>
     );

@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, send_file
 from . import services
 from .models import Item, Area, Fornecedor, Estoque
 from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
@@ -458,6 +458,65 @@ def submit_pedidos_route():
     response, status = services.submit_pedidos(user_id)
     return jsonify(response), status
 
+@admin_bp.route('/pedidos', methods=['GET'])
+@admin_required()
+def get_all_pedidos_route():
+    """Retorna todos os pedidos (com filtro opcional por status via query param)."""
+    status_filter = request.args.get('status')  # PENDENTE, APROVADO ou REJEITADO
+
+    if status_filter:
+        # Converter string para enum
+        try:
+            from .models import PedidoStatus
+            status_enum = PedidoStatus[status_filter.upper()]
+        except KeyError:
+            return jsonify({"error": f"Status inválido: {status_filter}"}), 400
+        pedidos, _ = services.get_all_pedidos(status_filter=status_enum)
+    else:
+        pedidos, _ = services.get_all_pedidos()
+
+    return jsonify([p.to_dict() for p in pedidos])
+
+@admin_bp.route('/pedidos/<int:pedido_id>/aprovar', methods=['POST'])
+@admin_required()
+def aprovar_pedido_route(pedido_id):
+    """Aprova um pedido pendente."""
+    response, status = services.aprovar_pedido(pedido_id)
+    return jsonify(response), status
+
+@admin_bp.route('/pedidos/<int:pedido_id>/rejeitar', methods=['POST'])
+@admin_required()
+def rejeitar_pedido_route(pedido_id):
+    """Rejeita um pedido pendente."""
+    response, status = services.rejeitar_pedido(pedido_id)
+    return jsonify(response), status
+
+@admin_bp.route('/pedidos/aprovar-lote', methods=['POST'])
+@admin_required()
+def aprovar_pedidos_lote_route():
+    """Aprova múltiplos pedidos em lote."""
+    data = request.get_json()
+    pedido_ids = data.get('pedido_ids', [])
+    response, status = services.aprovar_pedidos_lote(pedido_ids)
+    return jsonify(response), status
+
+@admin_bp.route('/pedidos/rejeitar-lote', methods=['POST'])
+@admin_required()
+def rejeitar_pedidos_lote_route():
+    """Rejeita múltiplos pedidos em lote."""
+    data = request.get_json()
+    pedido_ids = data.get('pedido_ids', [])
+    response, status = services.rejeitar_pedidos_lote(pedido_ids)
+    return jsonify(response), status
+
+@admin_bp.route('/pedidos/<int:pedido_id>/editar', methods=['PUT'])
+@admin_required()
+def editar_pedido_route(pedido_id):
+    """Edita um pedido (permite alterar quantidade)."""
+    data = request.get_json()
+    response, status = services.editar_pedido(pedido_id, data)
+    return jsonify(response), status
+
 
 # --- Rotas de Cotações ---
 @api_bp.route('/v1/cotacoes', methods=['POST'])
@@ -527,8 +586,8 @@ def create_lista_route():
 @api_bp.route('/listas', methods=['GET'])
 @admin_required()
 def get_listas_route():
-    listas, _ = services.get_all_listas()
-    return jsonify([l.to_dict() for l in listas])
+    listas, status = services.get_all_listas()
+    return jsonify(listas), status
 
 @api_bp.route('/listas/<int:lista_id>/assign', methods=['POST'])
 @admin_required()
@@ -555,8 +614,38 @@ def update_lista_route(lista_id):
 @api_bp.route('/listas/<int:lista_id>', methods=['DELETE'])
 @admin_required()
 def delete_lista_route(lista_id):
-    """Deleta uma lista permanentemente."""
+    """Move uma lista para a lixeira (soft delete)."""
     response, status = services.delete_lista(lista_id)
+    return jsonify(response), status
+
+@admin_bp.route('/listas/deleted', methods=['GET'])
+@admin_required()
+def get_deleted_listas_route():
+    """Retorna todas as listas deletadas (na lixeira)."""
+    response, status = services.get_deleted_listas()
+    return jsonify(response), status
+
+@admin_bp.route('/listas/<int:lista_id>/restore', methods=['POST'])
+@admin_required()
+def restore_lista_route(lista_id):
+    """Restaura uma lista da lixeira."""
+    response, status = services.restore_lista(lista_id)
+    return jsonify(response), status
+
+@admin_bp.route('/listas/<int:lista_id>/permanent-delete', methods=['DELETE'])
+@admin_required()
+def permanent_delete_lista_route(lista_id):
+    """Deleta permanentemente uma lista da lixeira."""
+    response, status = services.permanent_delete_lista(lista_id)
+    return jsonify(response), status
+
+@admin_bp.route('/listas/permanent-delete-batch', methods=['POST'])
+@admin_required()
+def permanent_delete_listas_batch_route():
+    """Deleta permanentemente múltiplas listas em lote."""
+    data = request.get_json()
+    lista_ids = data.get('lista_ids', [])
+    response, status = services.permanent_delete_listas_batch(lista_ids)
     return jsonify(response), status
 
 # ============================================
@@ -715,3 +804,108 @@ def importar_items_em_lote_route(lista_id):
     data = request.get_json()
     response, status = services.importar_items_em_lote(lista_id, data)
     return jsonify(response), status
+
+@admin_bp.route('/listas/<int:lista_id>/export-csv', methods=['GET'])
+@admin_required()
+def export_lista_csv_route(lista_id):
+    """Exporta os itens da lista mãe para CSV"""
+    from flask import make_response
+
+    response, status = services.export_lista_to_csv(lista_id)
+
+    if status != 200:
+        return jsonify(response), status
+
+    # Criar resposta com CSV
+    csv_response = make_response(response['csv_content'])
+    csv_response.headers['Content-Type'] = 'text/csv; charset=utf-8'
+    csv_response.headers['Content-Disposition'] = f'attachment; filename="{response["filename"]}"'
+
+    return csv_response
+
+@admin_bp.route('/listas/<int:lista_id>/import-csv', methods=['POST'])
+@admin_required()
+def import_lista_csv_route(lista_id):
+    """Importa itens da lista mãe a partir de arquivo CSV"""
+    if 'file' not in request.files:
+        return jsonify({"error": "Nenhum arquivo enviado"}), 400
+
+    file = request.files['file']
+
+    if file.filename == '':
+        return jsonify({"error": "Nenhum arquivo selecionado"}), 400
+
+    if not file.filename.endswith('.csv'):
+        return jsonify({"error": "Arquivo deve ser CSV"}), 400
+
+    response, status = services.import_lista_from_csv(lista_id, file)
+    return jsonify(response), status
+
+@admin_bp.route('/listas/create-from-csv', methods=['POST'])
+@admin_required()
+def create_lista_from_csv_route():
+    """Cria uma nova lista e importa itens a partir de arquivo CSV"""
+    if 'file' not in request.files:
+        return jsonify({"error": "Nenhum arquivo enviado"}), 400
+
+    file = request.files['file']
+
+    if file.filename == '':
+        return jsonify({"error": "Nenhum arquivo selecionado"}), 400
+
+    if not file.filename.endswith('.csv'):
+        return jsonify({"error": "Arquivo deve ser CSV"}), 400
+
+    # Obter nome e descrição do form data
+    nome = request.form.get('nome', '').strip()
+    descricao = request.form.get('descricao', '').strip()
+
+    if not nome:
+        return jsonify({"error": "Nome da lista é obrigatório"}), 400
+
+    response, status = services.create_lista_from_csv(nome, descricao, file)
+    return jsonify(response), status
+
+@admin_bp.route('/database/clear', methods=['POST'])
+@admin_required()
+def clear_database_route():
+    """Limpa todas as tabelas do banco de dados exceto usuários. Requer senha do admin."""
+    data = request.get_json()
+    user_id = get_user_id_from_jwt()
+    response, status = services.clear_database_except_users(user_id, data)
+    return jsonify(response), status
+
+@admin_bp.route('/database/populate', methods=['POST'])
+@admin_required()
+def populate_database_route():
+    """Popula o banco de dados com dados fictícios para teste."""
+    response, status = services.populate_database_with_mock_data()
+    return jsonify(response), status
+
+@admin_bp.route('/database/export-bulk', methods=['POST'])
+@admin_required()
+def export_bulk_data_route():
+    """Exporta múltiplos tipos de dados em um arquivo ZIP."""
+    from datetime import datetime
+
+    data = request.get_json()
+    tipos_dados = data.get('tipos_dados', [])
+
+    if not tipos_dados:
+        return jsonify({"error": "Nenhum tipo de dado selecionado para exportação."}), 400
+
+    result, status = services.export_data_bulk(tipos_dados)
+
+    if status != 200:
+        return jsonify(result), status
+
+    # result é um BytesIO contendo o ZIP
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    filename = f'kaizen_export_{timestamp}.zip'
+
+    return send_file(
+        result,
+        mimetype='application/zip',
+        as_attachment=True,
+        download_name=filename
+    )

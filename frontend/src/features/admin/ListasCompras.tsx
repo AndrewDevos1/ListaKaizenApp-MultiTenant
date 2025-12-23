@@ -25,6 +25,10 @@ import {
     faUsersCog,
     faInfoCircle,
     faBoxOpen,
+    faDownload,
+    faUpload,
+    faTrashAlt,
+    faUndo,
 } from '@fortawesome/free-solid-svg-icons';
 import { Link } from 'react-router-dom';
 import api from '../../services/api';
@@ -85,12 +89,25 @@ const ListasCompras: React.FC = () => {
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [showAssignModal, setShowAssignModal] = useState(false);
     const [showViewModal, setShowViewModal] = useState(false);
+    const [showImportModal, setShowImportModal] = useState(false);
     const [editingLista, setEditingLista] = useState<Lista | null>(null);
     const [deletingLista, setDeletingLista] = useState<Lista | null>(null);
     const [assigningLista, setAssigningLista] = useState<Lista | null>(null);
     const [viewingLista, setViewingLista] = useState<Lista | null>(null);
     const [viewingItens, setViewingItens] = useState<ListaItem[]>([]);
     const [loadingViewItens, setLoadingViewItens] = useState(false);
+
+    // Estado para importar nova lista
+    const [importNome, setImportNome] = useState('');
+    const [importDescricao, setImportDescricao] = useState('');
+    const [importFile, setImportFile] = useState<File | null>(null);
+    const [importLoading, setImportLoading] = useState(false);
+
+    // Estado para lixeira
+    const [showTrashModal, setShowTrashModal] = useState(false);
+    const [deletedListas, setDeletedListas] = useState<Lista[]>([]);
+    const [selectedTrashIds, setSelectedTrashIds] = useState<number[]>([]);
+    const [loadingTrash, setLoadingTrash] = useState(false);
 
     // Estado para form data
     const resetFormData = (): ListaFormData => ({
@@ -109,9 +126,17 @@ const ListasCompras: React.FC = () => {
     const [loadingUsers, setLoadingUsers] = useState(false);
     const [assigningLoading, setAssigningLoading] = useState(false);
 
-    // Estados para fornecedores
-    const [fornecedores, setFornecedores] = useState<Fornecedor[]>([]);
-    const [loadingFornecedores, setLoadingFornecedores] = useState(false);
+    // Buscar prévia dos itens de uma lista (primeiros 3)
+    const fetchListaPreview = async (listaId: number): Promise<ListaItem[]> => {
+        try {
+            const response = await api.get(`/admin/listas/${listaId}/lista-mae`);
+            const itens = response.data.itens || [];
+            return itens.slice(0, 3); // Retorna apenas os primeiros 3
+        } catch (err) {
+            console.error(`Erro ao buscar prévia da lista ${listaId}:`, err);
+            return [];
+        }
+    };
 
     // Buscar listas do backend
     const fetchListas = async () => {
@@ -119,7 +144,20 @@ const ListasCompras: React.FC = () => {
             setLoading(true);
             setError(null);
             const response = await api.get('/v1/listas');
-            setListas(response.data);
+            const listasData: Lista[] = response.data;
+
+            // Buscar prévia dos itens de cada lista (em paralelo)
+            const listasComPreviews = await Promise.all(
+                listasData.map(async (lista) => {
+                    const itensPreview = await fetchListaPreview(lista.id);
+                    return {
+                        ...lista,
+                        itens: itensPreview
+                    };
+                })
+            );
+
+            setListas(listasComPreviews);
         } catch (err: any) {
             setError(err.response?.data?.error || 'Erro ao carregar listas');
             console.error('Erro ao buscar listas:', err);
@@ -128,24 +166,9 @@ const ListasCompras: React.FC = () => {
         }
     };
 
-    // Buscar fornecedores do backend
-    const fetchFornecedores = async () => {
-        try {
-            setLoadingFornecedores(true);
-            const response = await api.get('/v1/fornecedores');
-            setFornecedores(response.data);
-        } catch (err: any) {
-            console.error('Erro ao buscar fornecedores:', err);
-            // Não mostrar erro, apenas log
-        } finally {
-            setLoadingFornecedores(false);
-        }
-    };
-
-    // useEffect para carregar listas e fornecedores na montagem
+    // useEffect para carregar listas na montagem
     useEffect(() => {
         fetchListas();
-        fetchFornecedores();
     }, []);
 
     // Funções do modal de criar/editar
@@ -178,11 +201,6 @@ const ListasCompras: React.FC = () => {
         try {
             if (!formData.nome.trim()) {
                 setError('O nome da lista é obrigatório');
-                return;
-            }
-
-            if (!formData.categoria.trim()) {
-                setError('A categoria é obrigatória');
                 return;
             }
 
@@ -323,6 +341,189 @@ const ListasCompras: React.FC = () => {
         }
     };
 
+    // Funções do modal de importar nova lista
+    const handleCloseImportModal = () => {
+        setShowImportModal(false);
+        setImportNome('');
+        setImportDescricao('');
+        setImportFile(null);
+        setError(null);
+    };
+
+    const handleImportFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (file) {
+            if (!file.name.endsWith('.csv')) {
+                setError('Por favor, selecione um arquivo CSV');
+                setTimeout(() => setError(null), 3000);
+                return;
+            }
+            setImportFile(file);
+        }
+    };
+
+    const handleConfirmImport = async () => {
+        if (!importNome.trim()) {
+            setError('Nome da lista é obrigatório');
+            return;
+        }
+
+        if (!importFile) {
+            setError('Selecione um arquivo CSV');
+            return;
+        }
+
+        try {
+            setImportLoading(true);
+            const formData = new FormData();
+            formData.append('nome', importNome);
+            formData.append('descricao', importDescricao);
+            formData.append('file', importFile);
+
+            await api.post('/admin/listas/create-from-csv', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                }
+            });
+
+            setSuccessMessage('Lista importada e criada com sucesso!');
+            handleCloseImportModal();
+            fetchListas(); // Recarregar listas
+            setTimeout(() => setSuccessMessage(null), 3000);
+        } catch (err: any) {
+            setError(err.response?.data?.error || 'Erro ao importar lista');
+        } finally {
+            setImportLoading(false);
+        }
+    };
+
+    // Função de exportar CSV
+    const handleExportCSV = async (lista: Lista) => {
+        try {
+            const response = await api.get(`/admin/listas/${lista.id}/export-csv`, {
+                responseType: 'blob'
+            });
+
+            // Criar link de download
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+
+            // Obter nome do arquivo do header ou usar padrão
+            const contentDisposition = response.headers['content-disposition'];
+            let filename = `${lista.nome}_backup.csv`;
+            if (contentDisposition) {
+                const filenameMatch = contentDisposition.match(/filename="?(.+)"?/);
+                if (filenameMatch) {
+                    filename = filenameMatch[1];
+                }
+            }
+
+            link.setAttribute('download', filename);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
+
+            setSuccessMessage('Lista exportada com sucesso!');
+            setTimeout(() => setSuccessMessage(null), 3000);
+        } catch (err: any) {
+            setError(err.response?.data?.error || 'Erro ao exportar lista');
+            setTimeout(() => setError(null), 3000);
+        }
+    };
+
+    // Funções da lixeira
+    const fetchDeletedListas = async () => {
+        try {
+            setLoadingTrash(true);
+            const response = await api.get('/admin/listas/deleted');
+            setDeletedListas(response.data);
+        } catch (err: any) {
+            setError(err.response?.data?.error || 'Erro ao buscar listas deletadas');
+            setTimeout(() => setError(null), 3000);
+        } finally {
+            setLoadingTrash(false);
+        }
+    };
+
+    const handleToggleTrashSelection = (listaId: number) => {
+        setSelectedTrashIds(prev => {
+            if (prev.includes(listaId)) {
+                return prev.filter(id => id !== listaId);
+            } else {
+                return [...prev, listaId];
+            }
+        });
+    };
+
+    const handleSelectAllTrash = () => {
+        if (selectedTrashIds.length === deletedListas.length) {
+            setSelectedTrashIds([]);
+        } else {
+            setSelectedTrashIds(deletedListas.map(l => l.id));
+        }
+    };
+
+    const handleRestoreLista = async (listaId: number) => {
+        try {
+            await api.post(`/admin/listas/${listaId}/restore`);
+            setSuccessMessage('Lista restaurada com sucesso!');
+            fetchDeletedListas();
+            fetchListas();
+            setTimeout(() => setSuccessMessage(null), 3000);
+        } catch (err: any) {
+            setError(err.response?.data?.error || 'Erro ao restaurar lista');
+            setTimeout(() => setError(null), 3000);
+        }
+    };
+
+    const handlePermanentDelete = async (listaId: number) => {
+        if (!window.confirm('Tem certeza que deseja deletar PERMANENTEMENTE esta lista? Esta ação não pode ser desfeita!')) {
+            return;
+        }
+
+        try {
+            await api.delete(`/admin/listas/${listaId}/permanent-delete`);
+            setSuccessMessage('Lista deletada permanentemente!');
+            fetchDeletedListas();
+            setTimeout(() => setSuccessMessage(null), 3000);
+        } catch (err: any) {
+            setError(err.response?.data?.error || 'Erro ao deletar lista');
+            setTimeout(() => setError(null), 3000);
+        }
+    };
+
+    const handlePermanentDeleteBatch = async () => {
+        if (selectedTrashIds.length === 0) {
+            setError('Selecione ao menos uma lista para deletar');
+            setTimeout(() => setError(null), 3000);
+            return;
+        }
+
+        if (!window.confirm(`Tem certeza que deseja deletar PERMANENTEMENTE ${selectedTrashIds.length} lista(s)? Esta ação não pode ser desfeita!`)) {
+            return;
+        }
+
+        try {
+            await api.post('/admin/listas/permanent-delete-batch', {
+                lista_ids: selectedTrashIds
+            });
+            setSuccessMessage(`${selectedTrashIds.length} lista(s) deletada(s) permanentemente!`);
+            setSelectedTrashIds([]);
+            fetchDeletedListas();
+            setTimeout(() => setSuccessMessage(null), 3000);
+        } catch (err: any) {
+            setError(err.response?.data?.error || 'Erro ao deletar listas');
+            setTimeout(() => setError(null), 3000);
+        }
+    };
+
+    const handleCloseTrashModal = () => {
+        setShowTrashModal(false);
+        setSelectedTrashIds([]);
+    };
+
     return (
         <div className={styles.pageWrapper}>
             <Container fluid>
@@ -341,15 +542,38 @@ const ListasCompras: React.FC = () => {
                             Gerencie suas listas de compras
                         </p>
                     </div>
-                    <Button
-                        variant="success"
-                        size="lg"
-                        onClick={handleOpenCreateModal}
-                        className={styles.addButton}
-                    >
-                        <FontAwesomeIcon icon={faPlus} style={{ marginRight: '0.5rem' }} />
-                        Adicionar Lista
-                    </Button>
+                    <div className={styles.headerActions}>
+                        <Button
+                            variant="success"
+                            size="lg"
+                            onClick={handleOpenCreateModal}
+                            className={styles.iconButton}
+                            title="Adicionar Nova Lista"
+                        >
+                            <FontAwesomeIcon icon={faPlus} />
+                        </Button>
+                        <Button
+                            variant="primary"
+                            size="lg"
+                            onClick={() => setShowImportModal(true)}
+                            className={styles.iconButton}
+                            title="Importar Nova Lista (CSV)"
+                        >
+                            <FontAwesomeIcon icon={faDownload} />
+                        </Button>
+                        <Button
+                            variant="secondary"
+                            size="lg"
+                            onClick={() => {
+                                setShowTrashModal(true);
+                                fetchDeletedListas();
+                            }}
+                            className={styles.iconButton}
+                            title="Ver Lixeira"
+                        >
+                            <FontAwesomeIcon icon={faTrashAlt} />
+                        </Button>
+                    </div>
                 </div>
 
                 {/* Alertas de sucesso e erro */}
@@ -401,9 +625,36 @@ const ListasCompras: React.FC = () => {
                                             size="sm"
                                             onClick={() => handleOpenViewModal(lista)}
                                             className={styles.actionButton}
-                                            title="Ver Itens"
+                                            title="Ver Todos os Itens"
                                         >
                                             <FontAwesomeIcon icon={faEye} />
+                                        </Button>
+                                        <Link to={`/admin/listas/${lista.id}/lista-mae`} title="Lista Mãe">
+                                            <Button
+                                                variant="link"
+                                                size="sm"
+                                                className={styles.actionButton}
+                                            >
+                                                <FontAwesomeIcon icon={faShoppingCart} />
+                                            </Button>
+                                        </Link>
+                                        <Button
+                                            variant="link"
+                                            size="sm"
+                                            onClick={() => handleOpenAssignModal(lista)}
+                                            className={styles.actionButton}
+                                            title="Atribuir Colaboradores"
+                                        >
+                                            <FontAwesomeIcon icon={faUsersCog} />
+                                        </Button>
+                                        <Button
+                                            variant="link"
+                                            size="sm"
+                                            onClick={() => handleExportCSV(lista)}
+                                            className={styles.actionButton}
+                                            title="Exportar Lista (CSV)"
+                                        >
+                                            <FontAwesomeIcon icon={faUpload} />
                                         </Button>
                                         <Button
                                             variant="link"
@@ -465,43 +716,78 @@ const ListasCompras: React.FC = () => {
                                             {new Date(lista.data_criacao).toLocaleDateString('pt-BR')}
                                         </span>
                                     </div>
-                                </div>
-                                <div className={styles.cardFooter}>
-                                    <Button
-                                        variant="outline-primary"
-                                        className={styles.cardButton}
-                                        onClick={() => handleOpenEditModal(lista)}
-                                    >
-                                        Ver Detalhes
-                                    </Button>
-                                    <Button
-                                        variant="secondary"
-                                        className={styles.cardButton}
-                                        onClick={() => handleOpenAssignModal(lista)}
-                                        title="Atribuir colaboradores a esta lista"
-                                    >
-                                        <FontAwesomeIcon icon={faUsers} style={{marginRight: '0.5rem'}} />
-                                        Atribuir
-                                    </Button>
-                                    <Link to={`/admin/listas/${lista.id}/lista-mae`}>
-                                        <Button
-                                            variant="warning"
-                                            className={styles.cardButton}
-                                        >
-                                            <FontAwesomeIcon icon={faShoppingCart} style={{marginRight: '0.5rem'}} />
-                                            Lista Mãe
-                                        </Button>
-                                    </Link>
-                                    <Button
-                                        variant="success"
-                                        className={styles.cardButton}
-                                        onClick={() => {
-                                            // TODO: Implementar visualização como colaborador
-                                        }}
-                                    >
-                                        <FontAwesomeIcon icon={faEye} style={{marginRight: '0.5rem'}} />
-                                        Lista do Colaborador
-                                    </Button>
+
+                                    {/* Prévia dos Itens */}
+                                    {lista.itens && lista.itens.length > 0 && (
+                                        <div style={{
+                                            marginTop: '1rem',
+                                            padding: '0.75rem',
+                                            backgroundColor: '#f8f9fa',
+                                            borderRadius: '8px',
+                                            border: '1px solid #e9ecef'
+                                        }}>
+                                            <div style={{
+                                                fontSize: '0.85rem',
+                                                fontWeight: 600,
+                                                marginBottom: '0.5rem',
+                                                color: '#495057',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '0.5rem'
+                                            }}>
+                                                <FontAwesomeIcon icon={faBoxOpen} style={{color: '#667eea'}} />
+                                                Primeiros itens:
+                                            </div>
+                                            {lista.itens.map((item, idx) => (
+                                                <div key={item.id} style={{
+                                                    fontSize: '0.8rem',
+                                                    padding: '0.25rem 0',
+                                                    color: '#6c757d',
+                                                    borderBottom: idx < lista.itens!.length - 1 ? '1px dotted #dee2e6' : 'none'
+                                                }}>
+                                                    <strong>{item.nome}</strong>
+                                                    <span style={{marginLeft: '0.5rem', fontSize: '0.75rem'}}>
+                                                        ({item.unidade})
+                                                    </span>
+                                                    {item.quantidade_minima !== undefined && item.quantidade_atual !== undefined && (
+                                                        <span style={{
+                                                            marginLeft: '0.5rem',
+                                                            fontSize: '0.75rem',
+                                                            color: item.quantidade_atual < item.quantidade_minima ? '#dc3545' : '#28a745'
+                                                        }}>
+                                                            {item.quantidade_atual}/{item.quantidade_minima}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            ))}
+                                            {/* Indicador se há mais itens */}
+                                            <div style={{
+                                                marginTop: '0.5rem',
+                                                fontSize: '0.75rem',
+                                                color: '#6c757d',
+                                                fontStyle: 'italic',
+                                                textAlign: 'center'
+                                            }}>
+                                                <FontAwesomeIcon icon={faEye} style={{marginRight: '0.3rem'}} />
+                                                Clique no olho para ver todos os itens
+                                            </div>
+                                        </div>
+                                    )}
+                                    {lista.itens && lista.itens.length === 0 && (
+                                        <div style={{
+                                            marginTop: '1rem',
+                                            padding: '0.75rem',
+                                            backgroundColor: '#fff3cd',
+                                            borderRadius: '8px',
+                                            border: '1px solid #ffc107',
+                                            fontSize: '0.85rem',
+                                            color: '#856404',
+                                            textAlign: 'center'
+                                        }}>
+                                            <FontAwesomeIcon icon={faInfoCircle} style={{marginRight: '0.5rem'}} />
+                                            Nenhum item cadastrado
+                                        </div>
+                                    )}
                                 </div>
                             </Card>
                         ))}
@@ -530,58 +816,6 @@ const ListasCompras: React.FC = () => {
                                     value={formData.nome}
                                     onChange={(e) => setFormData({...formData, nome: e.target.value})}
                                     required
-                                />
-                            </Form.Group>
-
-                            <Form.Group className="mb-3">
-                                <Form.Label>Fornecedor</Form.Label>
-                                <Form.Select
-                                    value={formData.fornecedor_id}
-                                    onChange={(e) => setFormData({...formData, fornecedor_id: e.target.value})}
-                                    disabled={loadingFornecedores}
-                                >
-                                    <option value="">Sem fornecedor (adicionar depois)</option>
-                                    {fornecedores.map(f => (
-                                        <option key={f.id} value={f.id}>{f.nome}</option>
-                                    ))}
-                                </Form.Select>
-                                <Form.Text className="text-muted">
-                                    Opcional - Pode ser adicionado depois
-                                </Form.Text>
-                            </Form.Group>
-
-                            <Form.Group className="mb-3">
-                                <Form.Label>Categoria *</Form.Label>
-                                <Form.Control
-                                    type="text"
-                                    placeholder="Ex: Alimentos, Limpeza, Material de Escritório..."
-                                    value={formData.categoria}
-                                    onChange={(e) => setFormData({...formData, categoria: e.target.value})}
-                                    required
-                                />
-                            </Form.Group>
-
-                            <Form.Group className="mb-3">
-                                <Form.Label>Telefone WhatsApp</Form.Label>
-                                <Form.Control
-                                    type="text"
-                                    placeholder="(00) 00000-0000"
-                                    value={formData.telefone_whatsapp}
-                                    onChange={(e) => setFormData({...formData, telefone_whatsapp: e.target.value})}
-                                />
-                                <Form.Text className="text-muted">
-                                    Opcional - Para contato direto via WhatsApp
-                                </Form.Text>
-                            </Form.Group>
-
-                            <Form.Group className="mb-3">
-                                <Form.Label>Descrição</Form.Label>
-                                <Form.Control
-                                    as="textarea"
-                                    rows={3}
-                                    placeholder="Descreva o propósito desta lista..."
-                                    value={formData.descricao}
-                                    onChange={(e) => setFormData({...formData, descricao: e.target.value})}
                                 />
                             </Form.Group>
                         </Form>
@@ -758,6 +992,181 @@ const ListasCompras: React.FC = () => {
                             disabled={assigningLoading || loadingUsers}
                         >
                             {assigningLoading ? 'Salvando...' : 'Salvar Atribuições'}
+                        </Button>
+                    </Modal.Footer>
+                </Modal>
+
+                {/* Modal Importar Nova Lista */}
+                <Modal show={showImportModal} onHide={handleCloseImportModal}>
+                    <Modal.Header closeButton>
+                        <Modal.Title>
+                            <FontAwesomeIcon icon={faDownload} style={{marginRight: '0.5rem'}} />
+                            Importar Nova Lista (CSV)
+                        </Modal.Title>
+                    </Modal.Header>
+                    <Modal.Body>
+                        {error && (
+                            <Alert variant="danger" dismissible onClose={() => setError(null)}>
+                                {error}
+                            </Alert>
+                        )}
+                        <Form>
+                            <Form.Group className="mb-3">
+                                <Form.Label>Nome da Lista *</Form.Label>
+                                <Form.Control
+                                    type="text"
+                                    placeholder="Digite o nome da lista"
+                                    value={importNome}
+                                    onChange={(e) => setImportNome(e.target.value)}
+                                    required
+                                />
+                            </Form.Group>
+
+                            <Form.Group className="mb-3">
+                                <Form.Label>Descrição (Opcional)</Form.Label>
+                                <Form.Control
+                                    as="textarea"
+                                    rows={3}
+                                    placeholder="Descreva o propósito desta lista"
+                                    value={importDescricao}
+                                    onChange={(e) => setImportDescricao(e.target.value)}
+                                />
+                            </Form.Group>
+
+                            <Form.Group className="mb-3">
+                                <Form.Label>Arquivo CSV *</Form.Label>
+                                <Form.Control
+                                    type="file"
+                                    accept=".csv"
+                                    onChange={handleImportFileSelect}
+                                    required
+                                />
+                                <Form.Text className="text-muted">
+                                    O arquivo deve conter as colunas: nome, unidade, quantidade_atual, quantidade_minima
+                                </Form.Text>
+                            </Form.Group>
+
+                            {importFile && (
+                                <Alert variant="info">
+                                    <FontAwesomeIcon icon={faCheckCircle} style={{marginRight: '0.5rem'}} />
+                                    Arquivo selecionado: <strong>{importFile.name}</strong>
+                                </Alert>
+                            )}
+                        </Form>
+                    </Modal.Body>
+                    <Modal.Footer>
+                        <Button
+                            variant="secondary"
+                            onClick={handleCloseImportModal}
+                            disabled={importLoading}
+                        >
+                            Cancelar
+                        </Button>
+                        <Button
+                            variant="primary"
+                            onClick={handleConfirmImport}
+                            disabled={importLoading || !importNome.trim() || !importFile}
+                        >
+                            {importLoading ? 'Importando...' : 'Importar Lista'}
+                        </Button>
+                    </Modal.Footer>
+                </Modal>
+
+                {/* Modal Lixeira */}
+                <Modal show={showTrashModal} onHide={handleCloseTrashModal} size="lg">
+                    <Modal.Header closeButton>
+                        <Modal.Title>
+                            <FontAwesomeIcon icon={faTrashAlt} style={{marginRight: '0.5rem'}} />
+                            Lixeira - Listas Excluídas
+                        </Modal.Title>
+                    </Modal.Header>
+                    <Modal.Body>
+                        {loadingTrash ? (
+                            <div className="text-center my-4">
+                                <div className="spinner-border text-primary" role="status">
+                                    <span className="visually-hidden">Carregando...</span>
+                                </div>
+                                <p className="mt-2">Carregando listas...</p>
+                            </div>
+                        ) : deletedListas.length === 0 ? (
+                            <Alert variant="info">
+                                <FontAwesomeIcon icon={faCheckCircle} style={{marginRight: '0.5rem'}} />
+                                A lixeira está vazia.
+                            </Alert>
+                        ) : (
+                            <>
+                                <div className="mb-3 d-flex justify-content-between align-items-center">
+                                    <Form.Check
+                                        type="checkbox"
+                                        label={`Selecionar todas (${deletedListas.length})`}
+                                        checked={selectedTrashIds.length === deletedListas.length && deletedListas.length > 0}
+                                        onChange={handleSelectAllTrash}
+                                    />
+                                    {selectedTrashIds.length > 0 && (
+                                        <Button
+                                            variant="danger"
+                                            size="sm"
+                                            onClick={handlePermanentDeleteBatch}
+                                        >
+                                            <FontAwesomeIcon icon={faTrash} style={{marginRight: '0.5rem'}} />
+                                            Deletar {selectedTrashIds.length} selecionada(s) permanentemente
+                                        </Button>
+                                    )}
+                                </div>
+                                <div className="table-responsive">
+                                    <table className="table table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th style={{width: '50px'}}></th>
+                                                <th>Nome da Lista</th>
+                                                <th>Data de Exclusão</th>
+                                                <th className="text-center">Ações</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {deletedListas.map((lista) => (
+                                                <tr key={lista.id}>
+                                                    <td>
+                                                        <Form.Check
+                                                            type="checkbox"
+                                                            checked={selectedTrashIds.includes(lista.id)}
+                                                            onChange={() => handleToggleTrashSelection(lista.id)}
+                                                        />
+                                                    </td>
+                                                    <td><strong>{lista.nome}</strong></td>
+                                                    <td>
+                                                        {lista.data_delecao ? new Date(lista.data_delecao).toLocaleString('pt-BR') : '-'}
+                                                    </td>
+                                                    <td className="text-center">
+                                                        <Button
+                                                            variant="success"
+                                                            size="sm"
+                                                            onClick={() => handleRestoreLista(lista.id)}
+                                                            className="me-2"
+                                                            title="Restaurar lista"
+                                                        >
+                                                            <FontAwesomeIcon icon={faUndo} />
+                                                        </Button>
+                                                        <Button
+                                                            variant="danger"
+                                                            size="sm"
+                                                            onClick={() => handlePermanentDelete(lista.id)}
+                                                            title="Deletar permanentemente"
+                                                        >
+                                                            <FontAwesomeIcon icon={faTrash} />
+                                                        </Button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </>
+                        )}
+                    </Modal.Body>
+                    <Modal.Footer>
+                        <Button variant="secondary" onClick={handleCloseTrashModal}>
+                            Fechar
                         </Button>
                     </Modal.Footer>
                 </Modal>

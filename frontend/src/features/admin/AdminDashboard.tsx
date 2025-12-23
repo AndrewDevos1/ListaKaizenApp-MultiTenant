@@ -314,6 +314,11 @@ const AdminDashboard: React.FC = () => {
             link: '/admin/fornecedores',
         },
         {
+            title: 'Gerenciar Pedidos',
+            icon: faBox,
+            link: '/admin/gerenciar-pedidos',
+        },
+        {
             title: 'Cotações',
             icon: faFileInvoiceDollar,
             link: '/admin/cotacoes',
