@@ -202,7 +202,7 @@ class ListaMaeItem(db.Model, SerializerMixin):
     id = db.Column(db.Integer, primary_key=True)
     lista_mae_id = db.Column(db.Integer, db.ForeignKey('listas.id'), nullable=False)
     nome = db.Column(db.String(255), nullable=False)
-    unidade = db.Column(db.String(50), nullable=False)  # Kg, Litro, Unidade
+    unidade = db.Column(db.String(50), nullable=False, default='un')  # Kg, Litro, Unidade (padrão: un)
     quantidade_atual = db.Column(db.Float, default=0, nullable=False)
     quantidade_minima = db.Column(db.Float, default=0, nullable=False)
     criado_em = db.Column(db.DateTime, default=datetime.utcnow)

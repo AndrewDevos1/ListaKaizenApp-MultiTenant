@@ -2322,31 +2322,59 @@ def create_lista_from_csv(nome, descricao, csv_file):
         # Parse CSV
         csv_reader = csv.DictReader(StringIO(content))
 
-        # Validar cabeçalhos
-        required_headers = {'nome', 'unidade', 'quantidade_atual', 'quantidade_minima'}
+        # Validar cabeçalhos - apenas 'nome' é obrigatório
+        required_headers = {'nome'}
         headers = set(csv_reader.fieldnames or [])
 
         if not required_headers.issubset(headers):
             db.session.rollback()
             return {
-                "error": f"CSV deve conter os cabeçalhos: {', '.join(required_headers)}"
+                "error": "CSV deve conter no mínimo a coluna 'nome'. Opcionais: unidade, quantidade_atual, quantidade_minima"
             }, 400
 
         # Importar itens
         itens_importados = 0
         for row in csv_reader:
             try:
+                # Validar que o nome foi fornecido
+                nome_item = row.get('nome', '').strip()
+                if not nome_item:
+                    db.session.rollback()
+                    return {
+                        "error": "Encontrada linha vazia. Todas as linhas devem conter no mínimo o nome do item."
+                    }, 400
+
+                # Criar novo item com valores padrão para campos opcionais
+                unidade = row.get('unidade', 'un').strip() if row.get('unidade') else 'un'
+                quantidade_atual = 0
+                quantidade_minima = 0
+
+                # Tentar extrair quantidades se fornecidas
+                if row.get('quantidade_atual'):
+                    try:
+                        quantidade_atual = float(row['quantidade_atual'])
+                    except ValueError:
+                        # Ignorar se não for número válido, usar 0
+                        pass
+
+                if row.get('quantidade_minima'):
+                    try:
+                        quantidade_minima = float(row['quantidade_minima'])
+                    except ValueError:
+                        # Ignorar se não for número válido, usar 0
+                        pass
+
                 # Criar novo item
                 novo_item = ListaMaeItem(
                     lista_mae_id=nova_lista.id,
-                    nome=row['nome'].strip(),
-                    unidade=row['unidade'].strip(),
-                    quantidade_atual=float(row['quantidade_atual']) if row['quantidade_atual'] else 0,
-                    quantidade_minima=float(row['quantidade_minima']) if row['quantidade_minima'] else 0
+                    nome=nome_item,
+                    unidade=unidade,
+                    quantidade_atual=quantidade_atual,
+                    quantidade_minima=quantidade_minima
                 )
                 db.session.add(novo_item)
                 itens_importados += 1
-            except (ValueError, KeyError) as e:
+            except Exception as e:
                 db.session.rollback()
                 return {
                     "error": f"Erro ao processar linha do CSV: {str(e)}"

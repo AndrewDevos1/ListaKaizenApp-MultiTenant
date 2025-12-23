@@ -1050,7 +1050,8 @@ const ListasCompras: React.FC = () => {
                                     onChange={handleImportFileSelect}
                                 />
                                 <Form.Text className="text-muted">
-                                    O arquivo deve conter as colunas: nome, unidade, quantidade_atual, quantidade_minima
+                                    <strong>Obrigatório:</strong> coluna 'nome'<br/>
+                                    <strong>Opcionais:</strong> unidade, quantidade_atual, quantidade_minima
                                 </Form.Text>
                             </Form.Group>
 
@@ -1072,12 +1073,13 @@ const ListasCompras: React.FC = () => {
                                 <Form.Control
                                     as="textarea"
                                     rows={6}
-                                    placeholder="Cole aqui o conteúdo da lista. Deve conter as colunas: nome, unidade, quantidade_atual, quantidade_minima"
+                                    placeholder="Cole aqui os nomes dos itens (um por linha) ou conteúdo em formato CSV"
                                     value={importTexto}
                                     onChange={(e) => setImportTexto(e.target.value)}
                                 />
                                 <Form.Text className="text-muted">
-                                    Formato: Uma linha por coluna ou separado por quebras de linha
+                                    <strong>Simples:</strong> um item por linha (nome apenas)<br/>
+                                    <strong>CSV:</strong> nome,unidade,quantidade_atual,quantidade_minima (apenas nome é obrigatório)
                                 </Form.Text>
                             </Form.Group>
 
