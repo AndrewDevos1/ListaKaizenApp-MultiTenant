@@ -3,7 +3,7 @@ from .extensions import db
 from . import repositories
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_jwt_extended import create_access_token
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from sqlalchemy import func
 from flask import current_app
 
@@ -108,17 +108,17 @@ def get_test_users():
 
 def approve_user(user_id):
     """Aprova o cadastro de um usuário."""
-    user = Usuario.query.get(user_id)
+    user = db.session.get(Usuario, user_id)
     if not user:
         return {"error": "Usuário não encontrado."}, 404
 
     user.aprovado = True
     db.session.commit()
-    return {"message": f"Usuário {user.nome} aprovado com sucesso."}
+    return {"message": f"Usuário {user.nome} aprovado com sucesso."}, 200
 
 def update_user_by_admin(user_id, data):
     """Atualiza os dados de um usuário a pedido de um admin."""
-    user = Usuario.query.get(user_id)
+    user = db.session.get(Usuario, user_id)
     if not user:
         return {"error": "Usuário não encontrado."}, 404
 
@@ -204,7 +204,7 @@ def get_all_users():
 
 def change_password(user_id, data):
     """Altera a senha de um usuário."""
-    user = Usuario.query.get(user_id)
+    user = db.session.get(Usuario, user_id)
     if not user:
         return {"error": "Usuário não encontrado."}, 404
 
@@ -224,7 +224,7 @@ def change_password(user_id, data):
 
 def update_user_profile(user_id, data):
     """Atualiza o perfil de um usuário."""
-    user = Usuario.query.get(user_id)
+    user = db.session.get(Usuario, user_id)
     if not user:
         return {"error": "Usuário não encontrado."}, 404
 
@@ -254,7 +254,7 @@ def update_user_profile(user_id, data):
 
 def get_user_profile(user_id):
     """Retorna o perfil de um usuário."""
-    user = Usuario.query.get(user_id)
+    user = db.session.get(Usuario, user_id)
     if not user:
         return {"error": "Usuário não encontrado."}, 404
 
@@ -262,7 +262,7 @@ def get_user_profile(user_id):
 
 def delete_user(user_id):
     """Deleta um usuário e todos os registros relacionados."""
-    user = Usuario.query.get(user_id)
+    user = db.session.get(Usuario, user_id)
     if not user:
         return {"error": "Usuário não encontrado."}, 404
 
@@ -278,7 +278,7 @@ def delete_user(user_id):
 
 def deactivate_user(user_id):
     """Desativa um usuário (não conseguirá fazer login)."""
-    user = Usuario.query.get(user_id)
+    user = db.session.get(Usuario, user_id)
     if not user:
         return {"error": "Usuário não encontrado."}, 404
 
@@ -292,7 +292,7 @@ def deactivate_user(user_id):
 
 def reactivate_user(user_id):
     """Reativa um usuário desativado."""
-    user = Usuario.query.get(user_id)
+    user = db.session.get(Usuario, user_id)
     if not user:
         return {"error": "Usuário não encontrado."}, 404
 
@@ -805,7 +805,7 @@ def atualizar_estoque_e_calcular_pedido(estoque_id, quantidade_atual, usuario_id
     estoque.pedido = estoque.calcular_pedido()
 
     # Registra auditoria
-    estoque.data_ultima_submissao = datetime.utcnow()
+    estoque.data_ultima_submissao = datetime.now(timezone.utc)
     estoque.usuario_ultima_submissao_id = usuario_id
 
     db.session.commit()
@@ -843,7 +843,7 @@ def submit_estoque_lista(lista_id, usuario_id, items_data):
         # Atualiza quantidade e calcula pedido
         estoque.quantidade_atual = quantidade_atual
         estoque.pedido = estoque.calcular_pedido()
-        estoque.data_ultima_submissao = datetime.utcnow()
+        estoque.data_ultima_submissao = datetime.now(timezone.utc)
         estoque.usuario_ultima_submissao_id = usuario_id
 
         db.session.add(estoque)
@@ -918,8 +918,10 @@ def assign_colaboradores_to_lista(lista_id, data):
                 lista.colaboradores.append(user)
     
     db.session.commit()
-    
-    return lista.to_dict(), 200
+
+    lista_dict = lista.to_dict()
+    lista_dict["colaboradores"] = [colaborador.to_dict() for colaborador in lista.colaboradores]
+    return lista_dict, 200
 
 def unassign_colaborador_from_lista(lista_id, data):
     """Desatribui um colaborador de uma lista."""
@@ -977,7 +979,7 @@ def delete_lista(lista_id):
 
     # Soft delete
     lista.deletado = True
-    lista.data_delecao = datetime.utcnow()
+    lista.data_delecao = datetime.now(timezone.utc)
     db.session.commit()
 
     return {"message": "Lista movida para lixeira."}, 200
@@ -1089,7 +1091,7 @@ def get_dashboard_summary():
 
 def get_activity_summary():
     """Retorna o número de pedidos por dia nos últimos 7 dias."""
-    today = datetime.utcnow().date()
+    today = datetime.now(timezone.utc).date()
     dates = [today - timedelta(days=i) for i in range(6, -1, -1)] # Últimos 7 dias
     
     activity_data = []
@@ -1107,7 +1109,7 @@ def get_collaborator_dashboard_summary(user_id):
     from .extensions import db
 
     # Buscar o usuário
-    usuario = Usuario.query.get(user_id)
+    usuario = db.session.get(Usuario, user_id)
     if not usuario:
         return {"error": "Usuário não encontrado"}, 404
 
@@ -1320,7 +1322,7 @@ def remover_item_da_lista(lista_id, item_id):
 def adicionar_item_lista_mae(lista_id, data):
     """Adiciona um novo item à Lista Mãe."""
     try:
-        lista = Lista.query.get(lista_id)
+        lista = db.session.get(Lista, lista_id)
         if not lista:
             return {"error": "Lista não encontrada"}, 404
 
@@ -1365,7 +1367,7 @@ def editar_item_lista_mae(lista_id, item_id, data):
         item.unidade = data.get('unidade', item.unidade) if data.get('unidade') else item.unidade
         item.quantidade_atual = data.get('quantidade_atual', item.quantidade_atual)
         item.quantidade_minima = data.get('quantidade_minima', item.quantidade_minima)
-        item.atualizado_em = datetime.utcnow()
+        item.atualizado_em = datetime.now(timezone.utc)
 
         db.session.commit()
         return item.to_dict(), 200
@@ -1478,12 +1480,12 @@ def atribuir_fornecedor_lista_mae(lista_id, data):
             return {"error": "item_ids e fornecedor_id são obrigatórios"}, 400
 
         # Validar que lista existe
-        lista = Lista.query.get(lista_id)
+        lista = db.session.get(Lista, lista_id)
         if not lista:
             return {"error": "Lista não encontrada"}, 404
 
         # Validar que fornecedor existe
-        fornecedor = Fornecedor.query.get(fornecedor_id)
+        fornecedor = db.session.get(Fornecedor, fornecedor_id)
         if not fornecedor:
             return {"error": "Fornecedor não encontrado"}, 404
 
@@ -1519,7 +1521,7 @@ def atribuir_fornecedor_lista_mae(lista_id, data):
                         quantidade_solicitada=quantidade_pedido,
                         usuario_id=usuario_id,
                         status=PedidoStatus.PENDENTE,
-                        data_pedido=datetime.utcnow()
+                        data_pedido=datetime.now(timezone.utc)
                     )
                     db.session.add(novo_pedido)
                     pedidos_criados.append(novo_pedido)
@@ -1560,7 +1562,7 @@ def importar_items_em_lote(lista_id, data):
             return {"error": "nomes deve ser um array de strings"}, 400
 
         # Validar que lista existe
-        lista = Lista.query.get(lista_id)
+        lista = db.session.get(Lista, lista_id)
         if not lista:
             return {"error": "Lista não encontrada"}, 404
 
@@ -1701,7 +1703,7 @@ def update_estoque_colaborador(user_id, estoque_id, data):
     try:
         # Atualizar apenas quantidade_atual
         estoque.quantidade_atual = quantidade_atual
-        estoque.data_ultima_submissao = datetime.utcnow()
+        estoque.data_ultima_submissao = datetime.now(timezone.utc)
         estoque.usuario_ultima_submissao_id = user_id
 
         db.session.commit()
@@ -1804,7 +1806,7 @@ def clear_database_except_users(user_id, data):
             return {"error": "Senha é obrigatória para confirmar a operação"}, 400
 
         # Busca o usuário e verifica a senha
-        usuario = Usuario.query.get(user_id)
+        usuario = db.session.get(Usuario, user_id)
         if not usuario:
             return {"error": "Usuário não encontrado"}, 404
 
@@ -2110,7 +2112,7 @@ def populate_database_with_mock_data():
                         item_id=item.id,
                         fornecedor_id=item.fornecedor_id,
                         quantidade_solicitada=random.uniform(10, 100),
-                        data_pedido=datetime.utcnow() - timedelta(days=random.randint(1, 30)),
+                        data_pedido=datetime.now(timezone.utc) - timedelta(days=random.randint(1, 30)),
                         usuario_id=admin.id,
                         status=random.choice([PedidoStatus.PENDENTE, PedidoStatus.APROVADO, PedidoStatus.REJEITADO])
                     )
@@ -2128,7 +2130,7 @@ def populate_database_with_mock_data():
         for fornecedor in fornecedores[:2]:
             cotacao = Cotacao(
                 fornecedor_id=fornecedor.id,
-                data_cotacao=datetime.utcnow() - timedelta(days=random.randint(1, 15)),
+                data_cotacao=datetime.now(timezone.utc) - timedelta(days=random.randint(1, 15)),
                 status=random.choice([CotacaoStatus.PENDENTE, CotacaoStatus.CONCLUIDA])
             )
             db.session.add(cotacao)
@@ -2180,7 +2182,7 @@ def export_lista_to_csv(lista_id):
     """
     try:
         # Buscar a lista
-        lista = Lista.query.get(lista_id)
+        lista = db.session.get(Lista, lista_id)
         if not lista:
             return {"error": "Lista não encontrada."}, 404
 
@@ -2237,7 +2239,7 @@ def import_lista_from_csv(lista_id, csv_file):
     """
     try:
         # Buscar a lista
-        lista = Lista.query.get(lista_id)
+        lista = db.session.get(Lista, lista_id)
         if not lista:
             return {"error": "Lista não encontrada."}, 404
 

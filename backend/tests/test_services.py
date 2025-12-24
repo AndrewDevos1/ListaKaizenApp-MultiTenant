@@ -4,6 +4,7 @@ Testa as funções de negócio sem dependência de rotas.
 """
 import pytest
 from decimal import Decimal
+from datetime import datetime, timezone
 from kaizen_app import services, db
 from kaizen_app.models import Usuario, UserRoles, Item, Area, Fornecedor, Estoque, Lista, ListaMaeItem
 from werkzeug.security import check_password_hash
@@ -240,10 +241,10 @@ class TestGetTestUsers:
                 'senha': 'senha'
             })
             
-            users = services.get_test_users()
+            response, status = services.get_test_users()
             
             # Apenas o aprovado deve aparecer
-            emails = [u['email'] for u in users]
+            emails = [u['email'] for u in response['usuarios']]
             assert 'aprovado@example.com' in emails
             assert 'pendente@example.com' not in emails
 
@@ -263,8 +264,8 @@ class TestGetTestUsers:
             user.ativo = False
             db.session.commit()
             
-            users = services.get_test_users()
-            emails = [u['email'] for u in users]
+            response, status = services.get_test_users()
+            emails = [u['email'] for u in response['usuarios']]
             
             assert 'user@example.com' not in emails
 
@@ -331,7 +332,7 @@ class TestListaServices:
             db.session.commit()
             
             # Verifica
-            lista_db = Lista.query.get(lista.id)
+            lista_db = db.session.get(Lista, lista.id)
             assert len(lista_db.itens) == 2
             assert lista_db.itens[0].nome in ["Feijão", "Arroz"]
 
@@ -346,10 +347,10 @@ class TestListaServices:
             
             # Marca como deletada
             lista.deletado = True
-            lista.data_delecao = datetime.utcnow()
+            lista.data_delecao = datetime.now(timezone.utc)
             db.session.commit()
             
             # Verifica
-            lista_db = Lista.query.get(lista.id)
+            lista_db = db.session.get(Lista, lista.id)
             assert lista_db.deletado is True
             assert lista_db.data_delecao is not None

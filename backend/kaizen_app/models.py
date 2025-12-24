@@ -1,7 +1,11 @@
 from .extensions import db
-from datetime import datetime
+from datetime import datetime, timezone
 import enum
 import decimal
+
+# Helper para datas UTC timezone-aware
+def utc_now():
+    return datetime.now(timezone.utc)
 
 # Helper para serialização
 class SerializerMixin:
@@ -35,7 +39,18 @@ class Usuario(db.Model, SerializerMixin):
     role = db.Column(db.Enum(UserRoles), nullable=False, default=UserRoles.COLLABORATOR)
     aprovado = db.Column(db.Boolean, default=False, nullable=False)
     ativo = db.Column(db.Boolean, default=True, nullable=False)
-    criado_em = db.Column(db.DateTime, default=datetime.utcnow)
+    criado_em = db.Column(db.DateTime, default=utc_now)
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        if self.role is None:
+            self.role = UserRoles.COLLABORATOR
+        if self.aprovado is None:
+            self.aprovado = False
+        if self.ativo is None:
+            self.ativo = True
+        if self.criado_em is None:
+            self.criado_em = utc_now()
 
     def to_dict(self):
         """Sobrescreve para não expor a senha."""
@@ -47,7 +62,7 @@ class Usuario(db.Model, SerializerMixin):
             "role": self.role.value,
             "aprovado": self.aprovado,
             "ativo": self.ativo,
-            "criado_em": self.criado_em.isoformat()
+            "criado_em": self.criado_em.isoformat() if self.criado_em else None
         }
 
 class Item(db.Model, SerializerMixin):
@@ -69,7 +84,7 @@ class Area(db.Model, SerializerMixin):
 fornecedor_lista = db.Table('fornecedor_lista',
     db.Column('fornecedor_id', db.Integer, db.ForeignKey('fornecedores.id'), primary_key=True),
     db.Column('lista_id', db.Integer, db.ForeignKey('listas.id'), primary_key=True),
-    db.Column('criado_em', db.DateTime, default=datetime.utcnow)
+    db.Column('criado_em', db.DateTime, default=utc_now)
 )
 
 class Fornecedor(db.Model, SerializerMixin):
@@ -128,12 +143,19 @@ class Pedido(db.Model, SerializerMixin):
     item_id = db.Column(db.Integer, db.ForeignKey('itens.id'), nullable=False)
     fornecedor_id = db.Column(db.Integer, db.ForeignKey('fornecedores.id'), nullable=False)
     quantidade_solicitada = db.Column(db.Numeric(10, 2), nullable=False)
-    data_pedido = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    data_pedido = db.Column(db.DateTime, nullable=False, default=utc_now)
     usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False)
     status = db.Column(db.Enum(PedidoStatus), nullable=False, default=PedidoStatus.PENDENTE)
     item = db.relationship('Item', backref=db.backref('pedidos', lazy=True))
     fornecedor = db.relationship('Fornecedor', backref=db.backref('pedidos', lazy=True))
     usuario = db.relationship('Usuario', backref=db.backref('pedidos', lazy=True))
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        if self.status is None:
+            self.status = PedidoStatus.PENDENTE
+        if self.data_pedido is None:
+            self.data_pedido = utc_now()
 
 class CotacaoStatus(enum.Enum):
     PENDENTE = "PENDENTE"
@@ -143,9 +165,16 @@ class Cotacao(db.Model, SerializerMixin):
     __tablename__ = "cotacoes"
     id = db.Column(db.Integer, primary_key=True)
     fornecedor_id = db.Column(db.Integer, db.ForeignKey('fornecedores.id'), nullable=False)
-    data_cotacao = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    data_cotacao = db.Column(db.DateTime, nullable=False, default=utc_now)
     status = db.Column(db.Enum(CotacaoStatus), nullable=False, default=CotacaoStatus.PENDENTE)
     fornecedor = db.relationship('Fornecedor', backref=db.backref('cotacoes', lazy=True))
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        if self.status is None:
+            self.status = CotacaoStatus.PENDENTE
+        if self.data_cotacao is None:
+            self.data_cotacao = utc_now()
 
     def to_dict(self):
         d = super(Cotacao, self).to_dict()
@@ -182,7 +211,7 @@ class Lista(db.Model, SerializerMixin):
     id = db.Column(db.Integer, primary_key=True)
     nome = db.Column(db.String(100), nullable=False, unique=True)
     descricao = db.Column(db.String(255), nullable=True)
-    data_criacao = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    data_criacao = db.Column(db.DateTime, nullable=False, default=utc_now)
     deletado = db.Column(db.Boolean, nullable=False, default=False)
     data_delecao = db.Column(db.DateTime, nullable=True)
     # Relacionamento muitos-para-muitos com os usuários (colaboradores)
@@ -190,6 +219,13 @@ class Lista(db.Model, SerializerMixin):
                                     lazy=True, backref=db.backref('listas_atribuidas', lazy=True))
     # Relacionamento um-para-muitos com ListaMaeItem
     itens = db.relationship('ListaMaeItem', backref='lista', lazy='subquery', cascade='all, delete-orphan')
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        if self.data_criacao is None:
+            self.data_criacao = utc_now()
+        if self.deletado is None:
+            self.deletado = False
 
 
 class ListaMaeItem(db.Model, SerializerMixin):
@@ -205,8 +241,8 @@ class ListaMaeItem(db.Model, SerializerMixin):
     unidade = db.Column(db.String(50), nullable=False, default='un', server_default='un')  # Kg, Litro, Unidade (padrão: un)
     quantidade_atual = db.Column(db.Float, default=0, nullable=False)
     quantidade_minima = db.Column(db.Float, default=0, nullable=False)
-    criado_em = db.Column(db.DateTime, default=datetime.utcnow)
-    atualizado_em = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    criado_em = db.Column(db.DateTime, default=utc_now)
+    atualizado_em = db.Column(db.DateTime, default=utc_now, onupdate=utc_now)
 
     def to_dict(self):
         """Serializa o item com o cálculo de pedido."""
@@ -217,4 +253,3 @@ class ListaMaeItem(db.Model, SerializerMixin):
     def get_pedido(self):
         """Calcula o pedido: max(0, qtd_minima - qtd_atual)"""
         return max(0, self.quantidade_minima - self.quantidade_atual)
-

@@ -157,7 +157,7 @@ class TestFornecedorRepository:
                 contato="11 88888-8888"
             )
             
-            updated = Fornecedor.query.get(fornecedor.id)
+            updated = db.session.get(Fornecedor, fornecedor.id)
             assert updated.nome == "Fornecedor Atualizado"
             assert updated.contato == "11 88888-8888"
 
@@ -247,7 +247,7 @@ class TestEstoqueRepository:
             repositories.atualizar_quantidade_estoque(estoque_id, Decimal('15.0'))
             
             # Verifica
-            updated = Estoque.query.get(estoque_id)
+            updated = db.session.get(Estoque, estoque_id)
             assert float(updated.quantidade_atual) == 15.0
 
 
@@ -271,10 +271,10 @@ class TestListaRepository:
             lista_ativa = repositories.criar_lista("Lista Ativa")
             
             # Lista deletada
-            from datetime import datetime
+            from datetime import datetime, timezone
             lista_deletada = Lista(nome="Lista Deletada")
             lista_deletada.deletado = True
-            lista_deletada.data_delecao = datetime.utcnow()
+            lista_deletada.data_delecao = datetime.now(timezone.utc)
             db.session.add(lista_deletada)
             db.session.commit()
             
@@ -294,7 +294,7 @@ class TestListaRepository:
             repositories.soft_delete_lista(lista_id)
             
             # Verifica
-            lista = Lista.query.get(lista_id)
+            lista = db.session.get(Lista, lista_id)
             assert lista.deletado is True
             assert lista.data_delecao is not None
 
@@ -309,5 +309,5 @@ class TestListaRepository:
             repositories.adicionar_colaborador_lista(lista.id, user.id)
             
             # Verifica
-            lista_updated = Lista.query.get(lista.id)
+            lista_updated = db.session.get(Lista, lista.id)
             assert user in lista_updated.colaboradores

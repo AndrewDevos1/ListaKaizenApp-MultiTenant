@@ -15,7 +15,7 @@ from kaizen_app.models import (
     Lista, ListaMaeItem, fornecedor_lista, lista_colaborador
 )
 from werkzeug.security import generate_password_hash
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import random
 
 def seed_database():
@@ -234,7 +234,7 @@ def seed_database():
                     item_id=item.id,
                     fornecedor_id=item.fornecedor_id,
                     quantidade_solicitada=random.uniform(10, 100),
-                    data_pedido=datetime.utcnow() - timedelta(days=random.randint(1, 30)),
+                    data_pedido=datetime.now(timezone.utc) - timedelta(days=random.randint(1, 30)),
                     usuario_id=admin.id,
                     status=random.choice([PedidoStatus.PENDENTE, PedidoStatus.APROVADO, PedidoStatus.REJEITADO])
                 )
@@ -249,7 +249,7 @@ def seed_database():
         for fornecedor in fornecedores[:2]:
             cotacao = Cotacao(
                 fornecedor_id=fornecedor.id,
-                data_cotacao=datetime.utcnow() - timedelta(days=random.randint(1, 15)),
+                data_cotacao=datetime.now(timezone.utc) - timedelta(days=random.randint(1, 15)),
                 status=random.choice([CotacaoStatus.PENDENTE, CotacaoStatus.CONCLUIDA])
             )
             db.session.add(cotacao)

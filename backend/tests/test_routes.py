@@ -116,7 +116,7 @@ class TestAdminRoutes:
         
         # Verifica se foi aprovado no banco
         with app.app_context():
-            user = Usuario.query.get(pendente_id)
+            user = db.session.get(Usuario, pendente_id)
             assert user.aprovado is True
 
     def test_desativar_usuario(self, client, app):
@@ -133,7 +133,7 @@ class TestAdminRoutes:
         assert response.status_code == 200
         
         with app.app_context():
-            user = Usuario.query.get(user_id)
+            user = db.session.get(Usuario, user_id)
             assert user.ativo is False
 
 
@@ -150,7 +150,7 @@ class TestItemRoutes:
             fornecedor_id = fornecedor.id
             token = get_auth_token(client, 'admin@example.com', 'senha')
         
-        response = client.post('/api/admin/items',
+        response = client.post('/api/v1/items',
             data=json.dumps({
                 'nome': 'Arroz Tipo 1',
                 'unidade_medida': 'kg',
@@ -193,7 +193,7 @@ class TestAreaRoutes:
             create_user('Admin', 'admin@example.com', 'senha', UserRoles.ADMIN, aprovado=True)
             token = get_auth_token(client, 'admin@example.com', 'senha')
         
-        response = client.post('/api/admin/areas',
+        response = client.post('/api/v1/areas',
             data=json.dumps({'nome': 'Cozinha Industrial'}),
             headers={'Authorization': f'Bearer {token}'},
             content_type='application/json')
@@ -226,7 +226,7 @@ class TestFornecedorRoutes:
             create_user('Admin', 'admin@example.com', 'senha', UserRoles.ADMIN, aprovado=True)
             token = get_auth_token(client, 'admin@example.com', 'senha')
         
-        response = client.post('/api/admin/fornecedores',
+        response = client.post('/api/v1/fornecedores',
             data=json.dumps({
                 'nome': 'Fornecedor ABC',
                 'contato': '11 99999-9999',
@@ -264,7 +264,7 @@ class TestListaRoutes:
             create_user('Admin', 'admin@example.com', 'senha', UserRoles.ADMIN, aprovado=True)
             token = get_auth_token(client, 'admin@example.com', 'senha')
         
-        response = client.post('/api/admin/listas',
+        response = client.post('/api/v1/listas',
             data=json.dumps({
                 'nome': 'Lista Semanal',
                 'descricao': 'Compras da semana'
@@ -300,14 +300,14 @@ class TestListaRoutes:
             lista_id = lista.id
             token = get_auth_token(client, 'admin@example.com', 'senha')
         
-        response = client.delete(f'/api/admin/listas/{lista_id}',
+        response = client.delete(f'/api/v1/listas/{lista_id}',
             headers={'Authorization': f'Bearer {token}'})
         
         assert response.status_code == 200
         
         # Verifica soft delete
         with app.app_context():
-            lista = Lista.query.get(lista_id)
+            lista = db.session.get(Lista, lista_id)
             assert lista.deletado is True
 
 

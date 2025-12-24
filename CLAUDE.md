@@ -199,6 +199,9 @@ frontend/src/
 
 ## Important Notes
 
+**Branch Policy:**
+- Nao fazer push/merge na branch main sem autorizacao explicita do usuario; usar develop por padrao.
+
 **Configuration:**
 - Backend uses environment-based config in config.py (development/testing/production)
 - Set `FLASK_CONFIG` environment variable to change config (defaults to 'development')
