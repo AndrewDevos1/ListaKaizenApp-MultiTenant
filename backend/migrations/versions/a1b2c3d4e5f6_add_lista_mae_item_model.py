@@ -1,7 +1,7 @@
 """Add ListaMaeItem model for master list items
 
 Revision ID: a1b2c3d4e5f6
-Revises: 173f5518beb9
+Revises: c568f5f72228
 Create Date: 2025-11-06 00:00:00.000000
 
 """
@@ -11,7 +11,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision = 'a1b2c3d4e5f6'
-down_revision = '173f5518beb9'
+down_revision = 'c568f5f72228'
 branch_labels = None
 depends_on = None
 
