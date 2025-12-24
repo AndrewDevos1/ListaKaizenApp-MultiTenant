@@ -871,6 +871,65 @@ def create_lista_from_csv_route():
     response, status = services.create_lista_from_csv(nome, descricao, conteudo)
     return jsonify(response), status
 
+
+# ===== IMPORTAÇÃO COM ESTOQUE (NOVA FUNCIONALIDADE) =====
+
+@admin_bp.route('/import/preview', methods=['POST'])
+@admin_required()
+def preview_importacao_route():
+    """
+    Faz preview da importação de itens com estoque antes de confirmar
+    
+    Body JSON:
+    {
+        "texto": "Nome Item\\t\\tQtd Atual\\tQtd Mínima\\n...",
+        "area_id": 1,
+        "fornecedor_id": 2
+    }
+    
+    Returns:
+    {
+        "formato": "simples" | "completo",
+        "total_itens": 10,
+        "itens": [...],
+        "erros": [...]
+    }
+    """
+    data = request.get_json()
+    response, status = services.preview_importacao_estoque(data)
+    return jsonify(response), status
+
+
+@admin_bp.route('/import/execute', methods=['POST'])
+@admin_required()
+def executar_importacao_route():
+    """
+    Executa a importação de itens com estoque
+    
+    Body JSON:
+    {
+        "texto": "Nome Item\\t\\tQtd Atual\\tQtd Mínima\\n...",
+        "area_id": 1,
+        "fornecedor_id": 2,
+        "atualizar_existentes": true
+    }
+    
+    Returns:
+    {
+        "sucesso": true,
+        "total_criados": 5,
+        "total_atualizados": 3,
+        "total_erros": 0,
+        "itens_criados": [...],
+        "itens_atualizados": [...],
+        "erros": [...]
+    }
+    """
+    data = request.get_json()
+    response, status = services.executar_importacao_estoque(data)
+    return jsonify(response), status
+
+
 @admin_bp.route('/database/clear', methods=['POST'])
 @admin_required()
 def clear_database_route():

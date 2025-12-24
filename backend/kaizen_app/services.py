@@ -2636,3 +2636,191 @@ def export_data_bulk(tipos_dados):
     except Exception as e:
         print(f"❌ Erro ao exportar dados em lote: {str(e)}")
         return {"error": f"Erro ao exportar dados: {str(e)}"}, 500
+
+
+# ===== IMPORTAÇÃO COM ESTOQUE (NOVA FUNCIONALIDADE) =====
+
+def preview_importacao_estoque(data):
+    """
+    Faz preview da importação antes de executar
+    
+    Args:
+        data: {
+            'texto': str - Texto com dados para importar,
+            'area_id': int - ID da área (opcional para preview),
+            'fornecedor_id': int - ID do fornecedor (opcional para preview)
+        }
+    
+    Returns:
+        Tuple (response_dict, status_code)
+    """
+    from .import_parser import parse_texto_importacao
+    
+    try:
+        texto = data.get('texto', '').strip()
+        
+        if not texto:
+            return {"error": "Texto para importação é obrigatório"}, 400
+        
+        # Parse do texto
+        resultado = parse_texto_importacao(texto)
+        
+        if not resultado['sucesso']:
+            return {
+                "error": "Nenhum item válido encontrado",
+                "erros": resultado['erros']
+            }, 400
+        
+        # Retorna preview
+        return {
+            "formato": resultado['formato'],
+            "total_itens": resultado['total_itens'],
+            "total_erros": resultado['total_erros'],
+            "itens": resultado['itens'],
+            "erros": resultado['erros']
+        }, 200
+        
+    except Exception as e:
+        print(f"❌ Erro ao fazer preview: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return {"error": f"Erro ao processar preview: {str(e)}"}, 500
+
+
+def executar_importacao_estoque(data):
+    """
+    Executa a importação de itens com estoque
+    
+    Args:
+        data: {
+            'texto': str - Texto com dados para importar,
+            'area_id': int - ID da área,
+            'fornecedor_id': int - ID do fornecedor,
+            'atualizar_existentes': bool - Se deve atualizar itens existentes (default: True)
+        }
+    
+    Returns:
+        Tuple (response_dict, status_code)
+    """
+    from .import_parser import parse_texto_importacao
+    
+    try:
+        texto = data.get('texto', '').strip()
+        area_id = data.get('area_id')
+        fornecedor_id = data.get('fornecedor_id')
+        atualizar_existentes = data.get('atualizar_existentes', True)
+        
+        # Validações
+        if not texto:
+            return {"error": "Texto para importação é obrigatório"}, 400
+        
+        if not area_id:
+            return {"error": "Área é obrigatória"}, 400
+        
+        if not fornecedor_id:
+            return {"error": "Fornecedor é obrigatório"}, 400
+        
+        # Valida se área existe
+        area = Area.query.get(area_id)
+        if not area:
+            return {"error": f"Área com ID {area_id} não encontrada"}, 404
+        
+        # Valida se fornecedor existe
+        fornecedor = Fornecedor.query.get(fornecedor_id)
+        if not fornecedor:
+            return {"error": f"Fornecedor com ID {fornecedor_id} não encontrado"}, 404
+        
+        # Parse do texto
+        resultado = parse_texto_importacao(texto)
+        
+        if not resultado['sucesso']:
+            return {
+                "error": "Nenhum item válido encontrado",
+                "erros": resultado['erros']
+            }, 400
+        
+        itens_criados = []
+        itens_atualizados = []
+        erros_processamento = []
+        
+        # Processa cada item
+        for item_data in resultado['itens']:
+            try:
+                nome_item = item_data['nome']
+                qtd_atual = item_data.get('quantidade_atual')
+                qtd_minima = item_data.get('quantidade_minima')
+                
+                # Busca item existente no estoque
+                estoque_existente = Estoque.query.filter_by(
+                    nome_item=nome_item,
+                    area_id=area_id
+                ).first()
+                
+                if estoque_existente:
+                    # Atualiza item existente
+                    if atualizar_existentes:
+                        if qtd_atual is not None:
+                            estoque_existente.quantidade_atual = qtd_atual
+                        if qtd_minima is not None:
+                            estoque_existente.quantidade_minima = qtd_minima
+                        
+                        db.session.commit()
+                        itens_atualizados.append({
+                            'id': estoque_existente.id,
+                            'nome': nome_item,
+                            'quantidade_atual': estoque_existente.quantidade_atual,
+                            'quantidade_minima': estoque_existente.quantidade_minima
+                        })
+                    else:
+                        # Pula se não deve atualizar
+                        erros_processamento.append(f"Item '{nome_item}' já existe e não foi atualizado")
+                else:
+                    # Cria novo item no estoque
+                    novo_estoque = Estoque(
+                        nome_item=nome_item,
+                        area_id=area_id,
+                        fornecedor_id=fornecedor_id,
+                        quantidade_atual=qtd_atual if qtd_atual is not None else 0,
+                        quantidade_minima=qtd_minima if qtd_minima is not None else 0,
+                        unidade_medida='UN'  # Padrão, usuário configura depois
+                    )
+                    db.session.add(novo_estoque)
+                    db.session.flush()  # Para obter o ID
+                    
+                    itens_criados.append({
+                        'id': novo_estoque.id,
+                        'nome': nome_item,
+                        'quantidade_atual': novo_estoque.quantidade_atual,
+                        'quantidade_minima': novo_estoque.quantidade_minima
+                    })
+                
+            except Exception as e:
+                db.session.rollback()
+                erros_processamento.append(f"Erro ao processar '{item_data['nome']}': {str(e)}")
+                continue
+        
+        # Commit final
+        try:
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            return {"error": f"Erro ao salvar no banco: {str(e)}"}, 500
+        
+        return {
+            "sucesso": True,
+            "formato": resultado['formato'],
+            "total_criados": len(itens_criados),
+            "total_atualizados": len(itens_atualizados),
+            "total_erros": len(erros_processamento),
+            "itens_criados": itens_criados,
+            "itens_atualizados": itens_atualizados,
+            "erros": erros_processamento + resultado['erros']
+        }, 200
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"❌ Erro ao executar importação: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return {"error": f"Erro ao executar importação: {str(e)}"}, 500
+
