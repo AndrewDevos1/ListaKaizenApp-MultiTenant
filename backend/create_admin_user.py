@@ -13,6 +13,10 @@ DOCUMENTAÇÃO:
 
 import os
 import sys
+from dotenv import load_dotenv
+
+# Carregar variáveis de ambiente do .env
+load_dotenv()
 
 # Adiciona o diretório do backend ao path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
