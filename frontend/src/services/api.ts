@@ -1,7 +1,14 @@
 import axios from 'axios';
 
-// Aceitar ambas as variáveis de ambiente para flexibilidade
+// URL da API em produção (Railway)
+const PRODUCTION_API_URL = 'https://kaizen-lists-api-production.up.railway.app/api';
+
+// Determina a URL base da API
 const getApiBaseUrl = () => {
+  // Em produção (hostname do Railway), usar URL hardcoded
+  if (typeof window !== 'undefined' && window.location.hostname.includes('railway.app')) {
+    return PRODUCTION_API_URL;
+  }
   // REACT_APP_API_URL já inclui /api
   if (process.env.REACT_APP_API_URL) {
     return process.env.REACT_APP_API_URL;
