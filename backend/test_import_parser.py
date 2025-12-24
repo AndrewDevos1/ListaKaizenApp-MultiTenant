@@ -63,6 +63,27 @@ ARROZ GRAO CURTO HEISEI FARDO (6X5KG)      7    6"""
     print("✅ Teste formato completo com espaços PASSOU")
 
 
+def test_formato_completo_espaco_simples():
+    """Testa parse de formato completo com espaço simples (1 espaço)"""
+    texto = """Alga Nori 2 6
+ARROZ GRAO CURTO HEISEI FARDO (6X5KG) 7 6
+BAO com vegetais 1 1
+Cogumelo 🍄 kg 3 3"""
+    
+    itens, formato, erros = ImportParser.parse(texto)
+    
+    assert formato == 'completo'
+    assert len(itens) == 4
+    assert itens[0]['nome'] == 'Alga Nori'
+    assert itens[0]['quantidade_atual'] == 2
+    assert itens[0]['quantidade_minima'] == 6
+    assert itens[1]['nome'] == 'ARROZ GRAO CURTO HEISEI FARDO (6X5KG)'
+    assert itens[2]['nome'] == 'BAO com vegetais'
+    assert itens[3]['nome'] == 'Cogumelo 🍄 kg'
+    assert len(erros) == 0
+    print("✅ Teste formato completo com espaço simples PASSOU")
+
+
 def test_linhas_vazias():
     """Testa se linhas vazias são ignoradas"""
     texto = """Alga Nori
@@ -148,6 +169,7 @@ if __name__ == '__main__':
         test_formato_simples()
         test_formato_completo_tab()
         test_formato_completo_espacos()
+        test_formato_completo_espaco_simples()
         test_linhas_vazias()
         test_formato_completo_com_erros()
         test_parse_texto_importacao()

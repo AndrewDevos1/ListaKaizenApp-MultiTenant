@@ -33,7 +33,7 @@ class ImportParser:
             if not linha:
                 continue
                 
-            # Separa por TAB ou múltiplos espaços
+            # Primeiro tenta com TAB ou múltiplos espaços
             partes = re.split(r'\t+|\s{2,}', linha.strip())
             partes = [p.strip() for p in partes if p.strip()]
             
@@ -45,6 +45,12 @@ class ImportParser:
                     return 'completo'
                 except ValueError:
                     pass
+            
+            # Se não funcionou, tenta detectar padrão com espaço simples
+            # Busca: texto + número + número no final
+            match = re.match(r'^.+\s+(\d+\.?\d*)\s+(\d+\.?\d*)$', linha)
+            if match:
+                return 'completo'
             
         return 'simples'
     
@@ -79,7 +85,7 @@ class ImportParser:
         Parse formato completo: nome + qtd_atual + qtd_minima
         
         Args:
-            texto: String com dados tabulados (separados por TAB ou espaços múltiplos)
+            texto: String com dados tabulados (separados por TAB ou espaços)
             
         Returns:
             Tuple (itens_validos, erros)
@@ -96,9 +102,25 @@ class ImportParser:
             if not linha:  # Ignora linhas vazias
                 continue
             
-            # Separa por TAB ou múltiplos espaços (2 ou mais)
+            # Tenta primeiro com TAB ou múltiplos espaços
             partes = re.split(r'\t+|\s{2,}', linha)
             partes = [p.strip() for p in partes if p.strip()]
+            
+            # Se não encontrou 3 partes, tenta pegar os últimos 2 números
+            # separados por espaço simples (mais flexível)
+            if len(partes) < 3:
+                # Busca os últimos 2 números no final da linha
+                # Padrão: qualquer coisa + número + espaço(s) + número no final
+                match = re.match(r'^(.+?)\s+(\d+\.?\d*)\s+(\d+\.?\d*)$', linha)
+                
+                if match:
+                    nome = match.group(1).strip()
+                    qtd_atual_str = match.group(2)
+                    qtd_minima_str = match.group(3)
+                    partes = [nome, qtd_atual_str, qtd_minima_str]
+                else:
+                    erros.append(f"Linha {num_linha}: Formato inválido. Esperado: Nome Qtd_Atual Qtd_Mínima")
+                    continue
             
             if len(partes) < 3:
                 erros.append(f"Linha {num_linha}: Formato inválido. Esperado: Nome [TAB] Qtd Atual [TAB] Qtd Mínima")
