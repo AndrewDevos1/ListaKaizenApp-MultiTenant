@@ -79,10 +79,8 @@ export const openBackendInNewTab = () => {
     }
 };
 
-const backendHeartbeat = {
+export default {
     startBackendHeartbeat,
     stopBackendHeartbeat,
     openBackendInNewTab,
 };
-
-export default backendHeartbeat;

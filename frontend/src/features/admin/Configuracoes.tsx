@@ -135,9 +135,10 @@ const Configuracoes: React.FC = () => {
         setClearDbError('');
 
         try {
-            await api.post('/admin/database/clear', {
+            const clearResponse = await api.post('/admin/database/clear', {
                 senha: clearDbPassword
             });
+            console.log('[Clear DB] Sucesso:', clearResponse.data);
 
             // Sucesso - mostrar mensagem e fechar modal
             setShowClearDbModal(false);
@@ -160,7 +161,8 @@ const Configuracoes: React.FC = () => {
         setPopulateLoading(true);
 
         try {
-            await api.post('/admin/database/populate');
+            const populateResponse = await api.post('/admin/database/populate');
+            console.log('[Populate DB] Sucesso:', populateResponse.data);
 
             // Sucesso - mostrar mensagem
             setShowSuccess(true);
