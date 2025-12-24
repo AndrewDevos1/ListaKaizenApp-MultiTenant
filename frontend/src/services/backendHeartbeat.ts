@@ -1,10 +1,13 @@
 /**
  * Backend Heartbeat Service
  * Mantém o backend ativo fazendo ping periódico
- * Útil para serverless deployments (ex: Render.com)
+ * Útil para serverless deployments (ex: Railway)
  */
 
-const BACKEND_URL = 'https://kaizen-lists-api.onrender.com';
+// Usar variável de ambiente ou fallback para Railway
+const BACKEND_URL = process.env.REACT_APP_API_URL?.replace('/api', '')
+    || process.env.REACT_APP_API_BASE_URL
+    || 'https://kaizen-lists-api-production.up.railway.app';
 const PING_INTERVAL = 5 * 60 * 1000; // 5 minutos em milissegundos
 
 let heartbeatIntervalId: NodeJS.Timeout | null = null;

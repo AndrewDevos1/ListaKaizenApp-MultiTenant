@@ -1,7 +1,21 @@
 import axios from 'axios';
 
+// Aceitar ambas as variáveis de ambiente para flexibilidade
+const getApiBaseUrl = () => {
+  // REACT_APP_API_URL já inclui /api
+  if (process.env.REACT_APP_API_URL) {
+    return process.env.REACT_APP_API_URL;
+  }
+  // REACT_APP_API_BASE_URL precisa adicionar /api
+  if (process.env.REACT_APP_API_BASE_URL) {
+    return `${process.env.REACT_APP_API_BASE_URL}/api`;
+  }
+  // Fallback para desenvolvimento local
+  return 'http://127.0.0.1:5000/api';
+};
+
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || 'http://127.0.0.1:5000/api',
+  baseURL: getApiBaseUrl(),
   headers: {
     'Content-Type': 'application/json',
   },
