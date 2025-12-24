@@ -1,0 +1,1001 @@
+2025-12-24T01:39:46.741866141Z [err]      f(*args, **kwargs)
+2025-12-24T01:39:46.741870671Z [err]    File "/opt/venv/lib/python3.12/site-packages/flask_migrate/__init__.py", line 200, in upgrade
+2025-12-24T01:39:46.741874373Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:39:46.741874844Z [err]      command.upgrade(config, revision, sql=sql, tag=tag)
+2025-12-24T01:39:46.741879266Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/command.py", line 483, in upgrade
+2025-12-24T01:39:46.741883882Z [err]      script.run_env()
+2025-12-24T01:39:46.741888161Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1986, in _exec_single_context
+2025-12-24T01:39:46.741888360Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/script/base.py", line 545, in run_env
+2025-12-24T01:39:46.741893135Z [err]      util.load_python_file(self.dir, "env.py")
+2025-12-24T01:39:46.741897874Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/util/pyfiles.py", line 116, in load_python_file
+2025-12-24T01:39:46.741900419Z [err]      self._handle_dbapi_exception(
+2025-12-24T01:39:46.741902797Z [err]      module = load_module_py(module_id, path)
+2025-12-24T01:39:46.741907910Z [err]               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:39:46.741911043Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 2363, in _handle_dbapi_exception
+2025-12-24T01:39:46.741912784Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/util/pyfiles.py", line 136, in load_module_py
+2025-12-24T01:39:46.741916529Z [err]      spec.loader.exec_module(module)  # type: ignore
+2025-12-24T01:39:46.741921086Z [err]      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:39:46.741924981Z [err]    File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+2025-12-24T01:39:46.741928571Z [err]    File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+2025-12-24T01:39:46.741932245Z [err]    File "/app/migrations/env.py", line 114, in <module>
+2025-12-24T01:39:46.741935963Z [err]      run_migrations_online()
+2025-12-24T01:39:46.741939436Z [err]    File "/app/migrations/env.py", line 108, in run_migrations_online
+2025-12-24T01:39:46.741943068Z [err]      context.run_migrations()
+2025-12-24T01:39:46.741947352Z [err]    File "<string>", line 8, in run_migrations
+2025-12-24T01:39:46.741951618Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/runtime/environment.py", line 946, in run_migrations
+2025-12-24T01:39:46.741956002Z [err]      self.get_context().run_migrations(**kw)
+2025-12-24T01:39:46.741959801Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/runtime/migration.py", line 627, in run_migrations
+2025-12-24T01:39:46.741963313Z [err]      step.migration_fn(**kw)
+2025-12-24T01:39:46.741967321Z [err]    File "/app/migrations/versions/7d59f933ff26_adiciona_status_ao_modelo_cotacao.py", line 21, in upgrade
+2025-12-24T01:39:46.741971179Z [err]      with op.batch_alter_table('cotacoes', schema=None) as batch_op:
+2025-12-24T01:39:46.741974721Z [err]           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:39:46.741978668Z [err]  
+2025-12-24T01:39:46.741982161Z [err]    File "/root/.nix-profile/lib/python3.12/contextlib.py", line 144, in __exit__
+2025-12-24T01:39:46.741985634Z [err]      next(self.gen)
+2025-12-24T01:39:46.741989982Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/operations/base.py", line 410, in batch_alter_table
+2025-12-24T01:39:46.741993571Z [err]      impl.flush()
+2025-12-24T01:39:46.741998192Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/operations/batch.py", line 115, in flush
+2025-12-24T01:39:46.742003491Z [err]      fn(*arg, **kw)
+2025-12-24T01:39:46.742009489Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/ddl/impl.py", line 378, in add_column
+2025-12-24T01:39:46.742015203Z [err]      self._exec(
+2025-12-24T01:39:46.742021254Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/ddl/impl.py", line 246, in _exec
+2025-12-24T01:39:46.742027461Z [err]      return conn.execute(construct, params)
+2025-12-24T01:39:46.742033451Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:39:46.742039776Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1419, in execute
+2025-12-24T01:39:46.742045461Z [err]      return meth(
+2025-12-24T01:39:46.742049444Z [err]             ^^^^^
+2025-12-24T01:39:46.742053779Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/sql/ddl.py", line 187, in _execute_on_connection
+2025-12-24T01:39:46.742057392Z [err]      return connection._execute_ddl(
+2025-12-24T01:39:46.742061661Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:39:47.462275924Z [inf]  ✅ Usando PostgreSQL em produção
+2025-12-24T01:39:47.983443679Z [err]  INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+2025-12-24T01:39:47.983449576Z [err]  INFO  [alembic.runtime.migration] Will assume transactional DDL.
+2025-12-24T01:39:48.002038842Z [err]  INFO  [alembic.runtime.migration] Running upgrade  -> 173f5518beb9, Initial database migration.
+2025-12-24T01:39:48.267669070Z [err]  INFO  [alembic.runtime.migration] Running upgrade 173f5518beb9 -> c877254787d7, Add fornecedor_id to Item model
+2025-12-24T01:39:48.271080242Z [err]  INFO  [alembic.runtime.migration] Running upgrade c877254787d7 -> c568f5f72228, Adiciona status ao modelo Pedido
+2025-12-24T01:39:48.405055412Z [err]  INFO  [alembic.runtime.migration] Running upgrade c568f5f72228 -> a1b2c3d4e5f6, Add ListaMaeItem model for master list items
+2025-12-24T01:39:48.439541277Z [err]  INFO  [alembic.runtime.migration] Running upgrade c568f5f72228 -> 7d59f933ff26, Adiciona status ao modelo Cotacao
+2025-12-24T01:39:48.478016378Z [err]  Traceback (most recent call last):
+2025-12-24T01:39:48.478026949Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+2025-12-24T01:39:48.478028511Z [err]           ^^^^^^^^^^^^^^^^
+2025-12-24T01:39:48.478035538Z [err]      self.dialect.do_execute(
+2025-12-24T01:39:48.478039037Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/core.py", line 1873, in invoke
+2025-12-24T01:39:48.478045023Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 952, in do_execute
+2025-12-24T01:39:48.478046954Z [err]      return _process_result(sub_ctx.command.invoke(sub_ctx))
+2025-12-24T01:39:48.478054276Z [err]                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:39:48.478054434Z [err]      cursor.execute(statement, parameters)
+2025-12-24T01:39:48.478061511Z [err]  ^^^^
+2025-12-24T01:39:48.478062828Z [err]  psycopg2.errors.UndefinedObject: type "cotacaostatus" does not exist
+2025-12-24T01:39:48.478068609Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/core.py", line 1873, in invoke
+2025-12-24T01:39:48.478070423Z [err]  LINE 1: ALTER TABLE cotacoes ADD COLUMN status cotacaostatus NOT NUL...
+2025-12-24T01:39:48.478074661Z [err]                                                 ^
+2025-12-24T01:39:48.478078554Z [err]  
+2025-12-24T01:39:48.478082549Z [err]  
+2025-12-24T01:39:48.478086349Z [err]  The above exception was the direct cause of the following exception:
+2025-12-24T01:39:48.478091834Z [err]  
+2025-12-24T01:39:48.478095807Z [err]  Traceback (most recent call last):
+2025-12-24T01:39:48.478099520Z [err]    File "/opt/venv/bin/flask", line 8, in <module>
+2025-12-24T01:39:48.478103207Z [err]      sys.exit(main())
+2025-12-24T01:39:48.478106687Z [err]               ^^^^^^
+2025-12-24T01:39:48.478110459Z [err]    File "/opt/venv/lib/python3.12/site-packages/flask/cli.py", line 1131, in main
+2025-12-24T01:39:48.478114289Z [err]      cli.main()
+2025-12-24T01:39:48.478118006Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/core.py", line 1406, in main
+2025-12-24T01:39:48.478121531Z [err]      rv = self.invoke(ctx)
+2025-12-24T01:39:48.478382155Z [err]      return _process_result(sub_ctx.command.invoke(sub_ctx))
+2025-12-24T01:39:48.478393437Z [err]                             ^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:39:48.478400655Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:39:48.478400838Z [err]  ^^^^^^^^^^
+2025-12-24T01:39:48.478409216Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/core.py", line 824, in invoke
+2025-12-24T01:39:48.478415050Z [err]      return callback(*args, **kwargs)
+2025-12-24T01:39:48.478415330Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/core.py", line 1269, in invoke
+2025-12-24T01:39:48.478427698Z [err]      return ctx.invoke(self.callback, **ctx.params)
+2025-12-24T01:39:48.478428509Z [err]    File "/opt/venv/lib/python3.12/site-packages/flask/cli.py", line 400, in decorator
+2025-12-24T01:39:48.478430629Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/script/base.py", line 545, in run_env
+2025-12-24T01:39:48.478437331Z [err]      util.load_python_file(self.dir, "env.py")
+2025-12-24T01:39:48.478439457Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:39:48.478440199Z [err]      return ctx.invoke(f, *args, **kwargs)
+2025-12-24T01:39:48.478446451Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:39:48.478449627Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/core.py", line 824, in invoke
+2025-12-24T01:39:48.478451740Z [err]    File "/opt/venv/lib/python3.12/site-packages/flask_migrate/cli.py", line 157, in upgrade
+2025-12-24T01:39:48.478457230Z [err]      _upgrade(directory or g.directory, revision, sql, tag, x_arg or g.x_arg)
+2025-12-24T01:39:48.478458002Z [err]      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:39:48.478460589Z [err]      return callback(*args, **kwargs)
+2025-12-24T01:39:48.478466396Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/command.py", line 483, in upgrade
+2025-12-24T01:39:48.478467126Z [err]    File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+2025-12-24T01:39:48.478471667Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:39:48.478475367Z [err]      script.run_env()
+2025-12-24T01:39:48.478475608Z [err]    File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+2025-12-24T01:39:48.478480356Z [err]    File "/opt/venv/lib/python3.12/site-packages/flask_migrate/__init__.py", line 200, in upgrade
+2025-12-24T01:39:48.478481461Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/decorators.py", line 34, in new_func
+2025-12-24T01:39:48.478485495Z [err]      context.run_migrations()
+2025-12-24T01:39:48.478489776Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/util/pyfiles.py", line 116, in load_python_file
+2025-12-24T01:39:48.478492022Z [err]    File "<string>", line 8, in run_migrations
+2025-12-24T01:39:48.478492025Z [err]      return f(get_current_context(), *args, **kwargs)
+2025-12-24T01:39:48.478494469Z [err]      command.upgrade(config, revision, sql=sql, tag=tag)
+2025-12-24T01:39:48.478499820Z [err]      module = load_module_py(module_id, path)
+2025-12-24T01:39:48.478502570Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:39:48.478504089Z [err]    File "/app/migrations/env.py", line 114, in <module>
+2025-12-24T01:39:48.478506914Z [err]    File "/opt/venv/lib/python3.12/site-packages/flask_migrate/__init__.py", line 111, in wrapped
+2025-12-24T01:39:48.478508451Z [err]               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:39:48.478510826Z [err]      run_migrations_online()
+2025-12-24T01:39:48.478515564Z [err]      self.get_context().run_migrations(**kw)
+2025-12-24T01:39:48.478516480Z [err]    File "/app/migrations/env.py", line 108, in run_migrations_online
+2025-12-24T01:39:48.478519386Z [err]      f(*args, **kwargs)
+2025-12-24T01:39:48.478520425Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/runtime/environment.py", line 946, in run_migrations
+2025-12-24T01:39:48.478522059Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/ddl/impl.py", line 246, in _exec
+2025-12-24T01:39:48.478526618Z [err]             ^^^^^
+2025-12-24T01:39:48.478527577Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/runtime/migration.py", line 627, in run_migrations
+2025-12-24T01:39:48.478528896Z [err]      return conn.execute(construct, params)
+2025-12-24T01:39:48.478533177Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/sql/ddl.py", line 187, in _execute_on_connection
+2025-12-24T01:39:48.478535305Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:39:48.478535316Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/util/pyfiles.py", line 136, in load_module_py
+2025-12-24T01:39:48.478539805Z [err]      return connection._execute_ddl(
+2025-12-24T01:39:48.478540252Z [err]      impl.flush()
+2025-12-24T01:39:48.478540517Z [err]      step.migration_fn(**kw)
+2025-12-24T01:39:48.478542662Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1419, in execute
+2025-12-24T01:39:48.478546604Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:39:48.478550020Z [err]      return meth(
+2025-12-24T01:39:48.478551044Z [err]      spec.loader.exec_module(module)  # type: ignore
+2025-12-24T01:39:48.478552865Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1530, in _execute_ddl
+2025-12-24T01:39:48.478553437Z [err]    File "/app/migrations/versions/7d59f933ff26_adiciona_status_ao_modelo_cotacao.py", line 21, in upgrade
+2025-12-24T01:39:48.478555124Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/operations/batch.py", line 115, in flush
+2025-12-24T01:39:48.478558400Z [err]      ret = self._execute_context(
+2025-12-24T01:39:48.478563752Z [err]      with op.batch_alter_table('cotacoes', schema=None) as batch_op:
+2025-12-24T01:39:48.478566658Z [err]      fn(*arg, **kw)
+2025-12-24T01:39:48.478576354Z [err]           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:39:48.478577637Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/ddl/impl.py", line 378, in add_column
+2025-12-24T01:39:48.478586237Z [err]  ^^^
+2025-12-24T01:39:48.478587764Z [err]      self._exec(
+2025-12-24T01:39:48.478595108Z [err]    File "/root/.nix-profile/lib/python3.12/contextlib.py", line 144, in __exit__
+2025-12-24T01:39:48.478603539Z [err]      next(self.gen)
+2025-12-24T01:39:48.478609716Z [err]            ^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:39:48.478613735Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/operations/base.py", line 410, in batch_alter_table
+2025-12-24T01:39:48.478618243Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1846, in _execute_context
+2025-12-24T01:39:48.478624562Z [err]      return self._exec_single_context(
+2025-12-24T01:39:48.478630560Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:39:48.478636622Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1986, in _exec_single_context
+2025-12-24T01:39:48.479219235Z [err]      self._handle_dbapi_exception(
+2025-12-24T01:39:48.479227991Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 2363, in _handle_dbapi_exception
+2025-12-24T01:39:48.479233985Z [err]      raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+2025-12-24T01:39:48.479239713Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+2025-12-24T01:39:48.479245267Z [err]      self.dialect.do_execute(
+2025-12-24T01:39:48.479253577Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 952, in do_execute
+2025-12-24T01:39:48.479258898Z [err]      cursor.execute(statement, parameters)
+2025-12-24T01:39:48.479264322Z [err]  sqlalchemy.exc.ProgrammingError: (psycopg2.errors.UndefinedObject) type "cotacaostatus" does not exist
+2025-12-24T01:39:48.479269733Z [err]  LINE 1: ALTER TABLE cotacoes ADD COLUMN status cotacaostatus NOT NUL...
+2025-12-24T01:39:48.479275399Z [err]                                                 ^
+2025-12-24T01:39:48.479281342Z [err]  
+2025-12-24T01:39:48.479287026Z [err]  [SQL: ALTER TABLE cotacoes ADD COLUMN status cotacaostatus NOT NULL]
+2025-12-24T01:39:48.479292464Z [err]  (Background on this error at: https://sqlalche.me/e/20/f405)
+2025-12-24T01:39:49.512371711Z [inf]  ✅ Usando PostgreSQL em produção
+2025-12-24T01:39:50.031333637Z [err]  INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+2025-12-24T01:39:50.031337856Z [err]  INFO  [alembic.runtime.migration] Will assume transactional DDL.
+2025-12-24T01:39:50.031341974Z [err]  INFO  [alembic.runtime.migration] Running upgrade  -> 173f5518beb9, Initial database migration.
+2025-12-24T01:39:50.234087676Z [err]  INFO  [alembic.runtime.migration] Running upgrade 173f5518beb9 -> c877254787d7, Add fornecedor_id to Item model
+2025-12-24T01:39:50.269043510Z [err]  INFO  [alembic.runtime.migration] Running upgrade c877254787d7 -> c568f5f72228, Adiciona status ao modelo Pedido
+2025-12-24T01:39:50.389683460Z [err]  INFO  [alembic.runtime.migration] Running upgrade c568f5f72228 -> a1b2c3d4e5f6, Add ListaMaeItem model for master list items
+2025-12-24T01:39:50.457700267Z [err]  INFO  [alembic.runtime.migration] Running upgrade c568f5f72228 -> 7d59f933ff26, Adiciona status ao modelo Cotacao
+2025-12-24T01:39:50.478534511Z [err]  Traceback (most recent call last):
+2025-12-24T01:39:50.478544413Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+2025-12-24T01:39:50.478548540Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/core.py", line 1269, in invoke
+2025-12-24T01:39:50.478549949Z [err]      self.dialect.do_execute(
+2025-12-24T01:39:50.478556424Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 952, in do_execute
+2025-12-24T01:39:50.478558967Z [err]    File "/opt/venv/lib/python3.12/site-packages/flask_migrate/__init__.py", line 200, in upgrade
+2025-12-24T01:39:50.478560463Z [err]      return ctx.invoke(self.callback, **ctx.params)
+2025-12-24T01:39:50.478562693Z [err]      cursor.execute(statement, parameters)
+2025-12-24T01:39:50.478569933Z [err]  psycopg2.errors.UndefinedObject: type "cotacaostatus" does not exist
+2025-12-24T01:39:50.478570351Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:39:50.478571131Z [err]      command.upgrade(config, revision, sql=sql, tag=tag)
+2025-12-24T01:39:50.478575827Z [err]  LINE 1: ALTER TABLE cotacoes ADD COLUMN status cotacaostatus NOT NUL...
+2025-12-24T01:39:50.478579421Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/core.py", line 824, in invoke
+2025-12-24T01:39:50.478580351Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/command.py", line 483, in upgrade
+2025-12-24T01:39:50.478582032Z [err]                                                 ^
+2025-12-24T01:39:50.478588497Z [err]      return callback(*args, **kwargs)
+2025-12-24T01:39:50.478589367Z [err]      script.run_env()
+2025-12-24T01:39:50.478589502Z [err]  
+2025-12-24T01:39:50.478591244Z [err]      context.run_migrations()
+2025-12-24T01:39:50.478597945Z [err]  
+2025-12-24T01:39:50.478598009Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:39:50.478598946Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/script/base.py", line 545, in run_env
+2025-12-24T01:39:50.478601825Z [err]    File "<string>", line 8, in run_migrations
+2025-12-24T01:39:50.478604934Z [err]  The above exception was the direct cause of the following exception:
+2025-12-24T01:39:50.478606835Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/decorators.py", line 34, in new_func
+2025-12-24T01:39:50.478608509Z [err]      util.load_python_file(self.dir, "env.py")
+2025-12-24T01:39:50.478611037Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/runtime/environment.py", line 946, in run_migrations
+2025-12-24T01:39:50.478611253Z [err]  
+2025-12-24T01:39:50.478616240Z [err]      return f(get_current_context(), *args, **kwargs)
+2025-12-24T01:39:50.478618723Z [err]  Traceback (most recent call last):
+2025-12-24T01:39:50.478619381Z [err]      self.get_context().run_migrations(**kw)
+2025-12-24T01:39:50.478621315Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/util/pyfiles.py", line 116, in load_python_file
+2025-12-24T01:39:50.478625166Z [err]    File "/opt/venv/bin/flask", line 8, in <module>
+2025-12-24T01:39:50.478626331Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:39:50.478626847Z [err]      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:39:50.478628977Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/runtime/migration.py", line 627, in run_migrations
+2025-12-24T01:39:50.478631760Z [err]      sys.exit(main())
+2025-12-24T01:39:50.478632057Z [err]      module = load_module_py(module_id, path)
+2025-12-24T01:39:50.478632283Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/operations/batch.py", line 115, in flush
+2025-12-24T01:39:50.478637062Z [err]    File "/opt/venv/lib/python3.12/site-packages/flask/cli.py", line 400, in decorator
+2025-12-24T01:39:50.478637268Z [err]      step.migration_fn(**kw)
+2025-12-24T01:39:50.478639337Z [err]               ^^^^^^
+2025-12-24T01:39:50.478640502Z [err]  LINE 1: ALTER TABLE cotacoes ADD COLUMN status cotacaostatus NOT NUL...
+2025-12-24T01:39:50.478641110Z [err]    File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+2025-12-24T01:39:50.478642427Z [err]               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:39:50.478644087Z [err]      fn(*arg, **kw)
+2025-12-24T01:39:50.478646433Z [err]    File "/opt/venv/lib/python3.12/site-packages/flask/cli.py", line 1131, in main
+2025-12-24T01:39:50.478646604Z [err]    File "/app/migrations/versions/7d59f933ff26_adiciona_status_ao_modelo_cotacao.py", line 21, in upgrade
+2025-12-24T01:39:50.478647906Z [err]      return ctx.invoke(f, *args, **kwargs)
+2025-12-24T01:39:50.478650284Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:39:50.478653155Z [err]                                                 ^
+2025-12-24T01:39:50.478653959Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/util/pyfiles.py", line 136, in load_module_py
+2025-12-24T01:39:50.478653983Z [err]    File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+2025-12-24T01:39:50.478654134Z [err]      cli.main()
+2025-12-24T01:39:50.478655932Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/ddl/impl.py", line 378, in add_column
+2025-12-24T01:39:50.478658983Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:39:50.478662438Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/core.py", line 1406, in main
+2025-12-24T01:39:50.478663343Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1986, in _exec_single_context
+2025-12-24T01:39:50.478663905Z [err]      with op.batch_alter_table('cotacoes', schema=None) as batch_op:
+2025-12-24T01:39:50.478665958Z [err]    File "/app/migrations/env.py", line 114, in <module>
+2025-12-24T01:39:50.478666720Z [err]  
+2025-12-24T01:39:50.478667142Z [err]      self._exec(
+2025-12-24T01:39:50.478668950Z [err]      spec.loader.exec_module(module)  # type: ignore
+2025-12-24T01:39:50.478670601Z [err]      rv = self.invoke(ctx)
+2025-12-24T01:39:50.478671114Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/core.py", line 824, in invoke
+2025-12-24T01:39:50.478671670Z [err]      return conn.execute(construct, params)
+2025-12-24T01:39:50.478674327Z [err]      self._handle_dbapi_exception(
+2025-12-24T01:39:50.478675677Z [err]           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:39:50.478677048Z [err]  [SQL: ALTER TABLE cotacoes ADD COLUMN status cotacaostatus NOT NULL]
+2025-12-24T01:39:50.478677833Z [err]      run_migrations_online()
+2025-12-24T01:39:50.478678013Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/ddl/impl.py", line 246, in _exec
+2025-12-24T01:39:50.478679241Z [err]           ^^^^^^^^^^^^^^^^
+2025-12-24T01:39:50.478680885Z [err]      return callback(*args, **kwargs)
+2025-12-24T01:39:50.478683928Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 2363, in _handle_dbapi_exception
+2025-12-24T01:39:50.478684793Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:39:50.478687896Z [err]  (Background on this error at: https://sqlalche.me/e/20/f405)
+2025-12-24T01:39:50.478688037Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/core.py", line 1873, in invoke
+2025-12-24T01:39:50.478689475Z [err]    File "/app/migrations/env.py", line 108, in run_migrations_online
+2025-12-24T01:39:50.478691944Z [err]      self.dialect.do_execute(
+2025-12-24T01:39:50.478692253Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:39:50.478693581Z [err]      raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+2025-12-24T01:39:50.478695142Z [err]    File "/root/.nix-profile/lib/python3.12/contextlib.py", line 144, in __exit__
+2025-12-24T01:39:50.478695957Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1419, in execute
+2025-12-24T01:39:50.478696170Z [err]      return _process_result(sub_ctx.command.invoke(sub_ctx))
+2025-12-24T01:39:50.478698168Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1530, in _execute_ddl
+2025-12-24T01:39:50.478703212Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+2025-12-24T01:39:50.478703231Z [err]    File "/opt/venv/lib/python3.12/site-packages/flask_migrate/cli.py", line 157, in upgrade
+2025-12-24T01:39:50.478703621Z [err]                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:39:50.478703684Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 952, in do_execute
+2025-12-24T01:39:50.478705854Z [err]      next(self.gen)
+2025-12-24T01:39:50.478706172Z [err]      return meth(
+2025-12-24T01:39:50.478709747Z [err]      ret = self._execute_context(
+2025-12-24T01:39:50.478712105Z [err]  
+2025-12-24T01:39:50.478713433Z [err]      cursor.execute(statement, parameters)
+2025-12-24T01:39:50.478714226Z [err]      _upgrade(directory or g.directory, revision, sql, tag, x_arg or g.x_arg)
+2025-12-24T01:39:50.478715513Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/operations/base.py", line 410, in batch_alter_table
+2025-12-24T01:39:50.478715893Z [err]             ^^^^^
+2025-12-24T01:39:50.478721945Z [err]            ^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:39:50.478722173Z [err]  sqlalchemy.exc.ProgrammingError: (psycopg2.errors.UndefinedObject) type "cotacaostatus" does not exist
+2025-12-24T01:39:50.478722971Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/core.py", line 1873, in invoke
+2025-12-24T01:39:50.478724529Z [err]    File "/opt/venv/lib/python3.12/site-packages/flask_migrate/__init__.py", line 111, in wrapped
+2025-12-24T01:39:50.478725022Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/sql/ddl.py", line 187, in _execute_on_connection
+2025-12-24T01:39:50.478726032Z [err]      impl.flush()
+2025-12-24T01:39:50.478730097Z [err]      return _process_result(sub_ctx.command.invoke(sub_ctx))
+2025-12-24T01:39:50.478731953Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1846, in _execute_context
+2025-12-24T01:39:50.478732853Z [err]      return connection._execute_ddl(
+2025-12-24T01:39:50.478733603Z [err]      f(*args, **kwargs)
+2025-12-24T01:39:50.478736024Z [err]                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:39:50.478740897Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:39:50.478741694Z [err]      return self._exec_single_context(
+2025-12-24T01:39:51.558372261Z [inf]  ✅ Usando PostgreSQL em produção
+2025-12-24T01:39:52.157561879Z [err]  INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+2025-12-24T01:39:52.157567908Z [err]  INFO  [alembic.runtime.migration] Will assume transactional DDL.
+2025-12-24T01:39:52.157572042Z [err]  INFO  [alembic.runtime.migration] Running upgrade  -> 173f5518beb9, Initial database migration.
+2025-12-24T01:39:52.226467121Z [err]  INFO  [alembic.runtime.migration] Running upgrade 173f5518beb9 -> c877254787d7, Add fornecedor_id to Item model
+2025-12-24T01:39:52.295129792Z [err]  INFO  [alembic.runtime.migration] Running upgrade c877254787d7 -> c568f5f72228, Adiciona status ao modelo Pedido
+2025-12-24T01:39:52.427818166Z [err]  INFO  [alembic.runtime.migration] Running upgrade c568f5f72228 -> a1b2c3d4e5f6, Add ListaMaeItem model for master list items
+2025-12-24T01:39:52.431440493Z [err]  INFO  [alembic.runtime.migration] Running upgrade c568f5f72228 -> 7d59f933ff26, Adiciona status ao modelo Cotacao
+2025-12-24T01:39:52.476165247Z [err]  Traceback (most recent call last):
+2025-12-24T01:39:52.476173805Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+2025-12-24T01:39:52.476178175Z [err]           ^^^^^^^^^^^^^^^^
+2025-12-24T01:39:52.476182894Z [err]      self.dialect.do_execute(
+2025-12-24T01:39:52.476188606Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/core.py", line 1873, in invoke
+2025-12-24T01:39:52.476190270Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 952, in do_execute
+2025-12-24T01:39:52.476192387Z [err]      sys.exit(main())
+2025-12-24T01:39:52.476197292Z [err]      cursor.execute(statement, parameters)
+2025-12-24T01:39:52.476197556Z [err]      return f(get_current_context(), *args, **kwargs)
+2025-12-24T01:39:52.476198584Z [err]      return _process_result(sub_ctx.command.invoke(sub_ctx))
+2025-12-24T01:39:52.476200586Z [err]               ^^^^^^
+2025-12-24T01:39:52.476201798Z [err]      return _process_result(sub_ctx.command.invoke(sub_ctx))
+2025-12-24T01:39:52.476204694Z [err]  psycopg2.errors.UndefinedObject: type "cotacaostatus" does not exist
+2025-12-24T01:39:52.476206628Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:39:52.476208586Z [err]    File "/opt/venv/lib/python3.12/site-packages/flask/cli.py", line 1131, in main
+2025-12-24T01:39:52.476209657Z [err]                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:39:52.476212283Z [err]  LINE 1: ALTER TABLE cotacoes ADD COLUMN status cotacaostatus NOT NUL...
+2025-12-24T01:39:52.476212914Z [err]                             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:39:52.476213721Z [err]    File "/opt/venv/lib/python3.12/site-packages/flask/cli.py", line 400, in decorator
+2025-12-24T01:39:52.476217904Z [err]      cli.main()
+2025-12-24T01:39:52.476219531Z [err]                                                 ^
+2025-12-24T01:39:52.476220274Z [err]      return ctx.invoke(f, *args, **kwargs)
+2025-12-24T01:39:52.476223083Z [err]  ^^^^^
+2025-12-24T01:39:52.476223283Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/core.py", line 1873, in invoke
+2025-12-24T01:39:52.476225137Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/core.py", line 824, in invoke
+2025-12-24T01:39:52.476226831Z [err]  
+2025-12-24T01:39:52.476227700Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/core.py", line 1406, in main
+2025-12-24T01:39:52.476232971Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/core.py", line 1269, in invoke
+2025-12-24T01:39:52.476234938Z [err]  
+2025-12-24T01:39:52.476236361Z [err]      rv = self.invoke(ctx)
+2025-12-24T01:39:52.476237514Z [err]      return callback(*args, **kwargs)
+2025-12-24T01:39:52.476239563Z [err]      return ctx.invoke(self.callback, **ctx.params)
+2025-12-24T01:39:52.476241474Z [err]  The above exception was the direct cause of the following exception:
+2025-12-24T01:39:52.476246070Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:39:52.476247814Z [err]  
+2025-12-24T01:39:52.476248553Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:39:52.476253154Z [err]  Traceback (most recent call last):
+2025-12-24T01:39:52.476257486Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/decorators.py", line 34, in new_func
+2025-12-24T01:39:52.476259570Z [err]    File "/opt/venv/bin/flask", line 8, in <module>
+2025-12-24T01:39:52.476853598Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:39:52.476859662Z [err]      step.migration_fn(**kw)
+2025-12-24T01:39:52.476859886Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/core.py", line 824, in invoke
+2025-12-24T01:39:52.476865291Z [err]      return callback(*args, **kwargs)
+2025-12-24T01:39:52.476868473Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/ddl/impl.py", line 246, in _exec
+2025-12-24T01:39:52.476870381Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1846, in _execute_context
+2025-12-24T01:39:52.476870703Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:39:52.476871192Z [err]    File "/app/migrations/versions/7d59f933ff26_adiciona_status_ao_modelo_cotacao.py", line 21, in upgrade
+2025-12-24T01:39:52.476876008Z [err]    File "/opt/venv/lib/python3.12/site-packages/flask_migrate/cli.py", line 157, in upgrade
+2025-12-24T01:39:52.476878798Z [err]      return conn.execute(construct, params)
+2025-12-24T01:39:52.476880538Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:39:52.476880894Z [err]      with op.batch_alter_table('cotacoes', schema=None) as batch_op:
+2025-12-24T01:39:52.476881902Z [err]      _upgrade(directory or g.directory, revision, sql, tag, x_arg or g.x_arg)
+2025-12-24T01:39:52.476886489Z [err]             ^^^^^
+2025-12-24T01:39:52.476887508Z [err]    File "/opt/venv/lib/python3.12/site-packages/flask_migrate/__init__.py", line 111, in wrapped
+2025-12-24T01:39:52.476889561Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:39:52.476889757Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1530, in _execute_ddl
+2025-12-24T01:39:52.476892294Z [err]           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:39:52.476894109Z [err]      f(*args, **kwargs)
+2025-12-24T01:39:52.476895344Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/sql/ddl.py", line 187, in _execute_on_connection
+2025-12-24T01:39:52.476896649Z [err]      ret = self._execute_context(
+2025-12-24T01:39:52.476900498Z [err]    File "/opt/venv/lib/python3.12/site-packages/flask_migrate/__init__.py", line 200, in upgrade
+2025-12-24T01:39:52.476901006Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1419, in execute
+2025-12-24T01:39:52.476902802Z [err]    File "/root/.nix-profile/lib/python3.12/contextlib.py", line 144, in __exit__
+2025-12-24T01:39:52.476903400Z [err]            ^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:39:52.476906348Z [err]      command.upgrade(config, revision, sql=sql, tag=tag)
+2025-12-24T01:39:52.476908011Z [err]      return meth(
+2025-12-24T01:39:52.476911496Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/command.py", line 483, in upgrade
+2025-12-24T01:39:52.476912768Z [err]      next(self.gen)
+2025-12-24T01:39:52.476921794Z [err]      script.run_env()
+2025-12-24T01:39:52.476924656Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/operations/base.py", line 410, in batch_alter_table
+2025-12-24T01:39:52.476927072Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/script/base.py", line 545, in run_env
+2025-12-24T01:39:52.476931826Z [err]      util.load_python_file(self.dir, "env.py")
+2025-12-24T01:39:52.476934144Z [err]      impl.flush()
+2025-12-24T01:39:52.476937188Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/util/pyfiles.py", line 116, in load_python_file
+2025-12-24T01:39:52.476938554Z [err]      return connection._execute_ddl(
+2025-12-24T01:39:52.476942639Z [err]      module = load_module_py(module_id, path)
+2025-12-24T01:39:52.476943433Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/operations/batch.py", line 115, in flush
+2025-12-24T01:39:52.476948159Z [err]               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:39:52.476949191Z [err]      fn(*arg, **kw)
+2025-12-24T01:39:52.476954089Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/util/pyfiles.py", line 136, in load_module_py
+2025-12-24T01:39:52.476955361Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/ddl/impl.py", line 378, in add_column
+2025-12-24T01:39:52.476959578Z [err]      spec.loader.exec_module(module)  # type: ignore
+2025-12-24T01:39:52.476962623Z [err]      self._exec(
+2025-12-24T01:39:52.476964594Z [err]      return self._exec_single_context(
+2025-12-24T01:39:52.476965451Z [err]      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:39:52.476971264Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:39:52.476971536Z [err]    File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+2025-12-24T01:39:52.476971750Z [err]  sqlalchemy.exc.ProgrammingError: (psycopg2.errors.UndefinedObject) type "cotacaostatus" does not exist
+2025-12-24T01:39:52.476977449Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1986, in _exec_single_context
+2025-12-24T01:39:52.476977679Z [err]    File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+2025-12-24T01:39:52.476982024Z [err]  LINE 1: ALTER TABLE cotacoes ADD COLUMN status cotacaostatus NOT NUL...
+2025-12-24T01:39:52.476983644Z [err]      self._handle_dbapi_exception(
+2025-12-24T01:39:52.476983732Z [err]    File "/app/migrations/env.py", line 114, in <module>
+2025-12-24T01:39:52.476990158Z [err]      run_migrations_online()
+2025-12-24T01:39:52.476990174Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 2363, in _handle_dbapi_exception
+2025-12-24T01:39:52.476992310Z [err]                                                 ^
+2025-12-24T01:39:52.476996477Z [err]      raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+2025-12-24T01:39:52.476996635Z [err]    File "/app/migrations/env.py", line 108, in run_migrations_online
+2025-12-24T01:39:52.476999394Z [err]  
+2025-12-24T01:39:52.477002227Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+2025-12-24T01:39:52.477005291Z [err]      context.run_migrations()
+2025-12-24T01:39:52.477007954Z [err]  [SQL: ALTER TABLE cotacoes ADD COLUMN status cotacaostatus NOT NULL]
+2025-12-24T01:39:52.477008726Z [err]      self.dialect.do_execute(
+2025-12-24T01:39:52.477011357Z [err]    File "<string>", line 8, in run_migrations
+2025-12-24T01:39:52.477015142Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 952, in do_execute
+2025-12-24T01:39:52.477015367Z [err]  (Background on this error at: https://sqlalche.me/e/20/f405)
+2025-12-24T01:39:52.477016835Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/runtime/environment.py", line 946, in run_migrations
+2025-12-24T01:39:52.477020615Z [err]      cursor.execute(statement, parameters)
+2025-12-24T01:39:52.477022344Z [err]      self.get_context().run_migrations(**kw)
+2025-12-24T01:39:52.477026370Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/runtime/migration.py", line 627, in run_migrations
+2025-12-24T01:39:53.514527146Z [inf]  ✅ Usando PostgreSQL em produção
+2025-12-24T01:39:53.999667395Z [err]  INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+2025-12-24T01:39:53.999672775Z [err]  INFO  [alembic.runtime.migration] Will assume transactional DDL.
+2025-12-24T01:39:53.999677960Z [err]  INFO  [alembic.runtime.migration] Running upgrade  -> 173f5518beb9, Initial database migration.
+2025-12-24T01:39:54.264048254Z [err]  INFO  [alembic.runtime.migration] Running upgrade 173f5518beb9 -> c877254787d7, Add fornecedor_id to Item model
+2025-12-24T01:39:54.264054093Z [err]  INFO  [alembic.runtime.migration] Running upgrade c877254787d7 -> c568f5f72228, Adiciona status ao modelo Pedido
+2025-12-24T01:39:54.397266910Z [err]  INFO  [alembic.runtime.migration] Running upgrade c568f5f72228 -> a1b2c3d4e5f6, Add ListaMaeItem model for master list items
+2025-12-24T01:39:54.400951712Z [err]  INFO  [alembic.runtime.migration] Running upgrade c568f5f72228 -> 7d59f933ff26, Adiciona status ao modelo Cotacao
+2025-12-24T01:39:54.470107910Z [err]  Traceback (most recent call last):
+2025-12-24T01:39:54.470108730Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/core.py", line 1873, in invoke
+2025-12-24T01:39:54.470115844Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+2025-12-24T01:39:54.470120289Z [err]      return _process_result(sub_ctx.command.invoke(sub_ctx))
+2025-12-24T01:39:54.470121655Z [err]      self.dialect.do_execute(
+2025-12-24T01:39:54.470130525Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 952, in do_execute
+2025-12-24T01:39:54.470134551Z [err]                             ^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:39:54.470143779Z [err]      cursor.execute(statement, parameters)
+2025-12-24T01:39:54.470144385Z [err]  ^^^^^^^^^^
+2025-12-24T01:39:54.470149430Z [err]  psycopg2.errors.UndefinedObject: type "cotacaostatus" does not exist
+2025-12-24T01:39:54.470153603Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/core.py", line 1269, in invoke
+2025-12-24T01:39:54.470155063Z [err]  LINE 1: ALTER TABLE cotacoes ADD COLUMN status cotacaostatus NOT NUL...
+2025-12-24T01:39:54.470159857Z [err]                                                 ^
+2025-12-24T01:39:54.470165183Z [err]  
+2025-12-24T01:39:54.470169237Z [err]  
+2025-12-24T01:39:54.470171510Z [err]      return ctx.invoke(self.callback, **ctx.params)
+2025-12-24T01:39:54.470173955Z [err]  The above exception was the direct cause of the following exception:
+2025-12-24T01:39:54.470177851Z [err]  
+2025-12-24T01:39:54.470181497Z [err]  Traceback (most recent call last):
+2025-12-24T01:39:54.470185272Z [err]    File "/opt/venv/bin/flask", line 8, in <module>
+2025-12-24T01:39:54.470188964Z [err]      sys.exit(main())
+2025-12-24T01:39:54.470192734Z [err]               ^^^^^^
+2025-12-24T01:39:54.470196274Z [err]    File "/opt/venv/lib/python3.12/site-packages/flask/cli.py", line 1131, in main
+2025-12-24T01:39:54.470200126Z [err]      cli.main()
+2025-12-24T01:39:54.470203780Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/core.py", line 1406, in main
+2025-12-24T01:39:54.470207417Z [err]      rv = self.invoke(ctx)
+2025-12-24T01:39:54.470211089Z [err]           ^^^^^^^^^^^^^^^^
+2025-12-24T01:39:54.470216779Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/core.py", line 1873, in invoke
+2025-12-24T01:39:54.470222822Z [err]      return _process_result(sub_ctx.command.invoke(sub_ctx))
+2025-12-24T01:39:54.470228694Z [err]                             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:39:54.470235420Z [err]  ^^^^^
+2025-12-24T01:39:54.470962041Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:39:54.470970670Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:39:54.470973250Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/core.py", line 824, in invoke
+2025-12-24T01:39:54.470977831Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/core.py", line 824, in invoke
+2025-12-24T01:39:54.470982104Z [err]      return callback(*args, **kwargs)
+2025-12-24T01:39:54.470983668Z [err]      return callback(*args, **kwargs)
+2025-12-24T01:39:54.470988859Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:39:54.470991634Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:39:54.470994114Z [err]    File "/opt/venv/lib/python3.12/site-packages/flask_migrate/cli.py", line 157, in upgrade
+2025-12-24T01:39:54.470995181Z [err]      util.load_python_file(self.dir, "env.py")
+2025-12-24T01:39:54.470998174Z [err]      command.upgrade(config, revision, sql=sql, tag=tag)
+2025-12-24T01:39:54.470999804Z [err]      _upgrade(directory or g.directory, revision, sql, tag, x_arg or g.x_arg)
+2025-12-24T01:39:54.471002565Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/decorators.py", line 34, in new_func
+2025-12-24T01:39:54.471005621Z [err]    File "/opt/venv/lib/python3.12/site-packages/flask_migrate/__init__.py", line 111, in wrapped
+2025-12-24T01:39:54.471006015Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/command.py", line 483, in upgrade
+2025-12-24T01:39:54.471006523Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/util/pyfiles.py", line 116, in load_python_file
+2025-12-24T01:39:54.471011902Z [err]      f(*args, **kwargs)
+2025-12-24T01:39:54.471012667Z [err]      script.run_env()
+2025-12-24T01:39:54.471013763Z [err]      return f(get_current_context(), *args, **kwargs)
+2025-12-24T01:39:54.471018100Z [err]    File "/opt/venv/lib/python3.12/site-packages/flask_migrate/__init__.py", line 200, in upgrade
+2025-12-24T01:39:54.471019112Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/script/base.py", line 545, in run_env
+2025-12-24T01:39:54.471020707Z [err]      module = load_module_py(module_id, path)
+2025-12-24T01:39:54.471023158Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:39:54.471029420Z [err]               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:39:54.471031470Z [err]    File "/opt/venv/lib/python3.12/site-packages/flask/cli.py", line 400, in decorator
+2025-12-24T01:39:54.471038346Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/util/pyfiles.py", line 136, in load_module_py
+2025-12-24T01:39:54.471040621Z [err]      return ctx.invoke(f, *args, **kwargs)
+2025-12-24T01:39:54.471046414Z [err]      spec.loader.exec_module(module)  # type: ignore
+2025-12-24T01:39:54.471051947Z [err]      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:39:54.471056281Z [err]    File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+2025-12-24T01:39:54.471060706Z [err]    File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+2025-12-24T01:39:54.471064689Z [err]    File "/app/migrations/env.py", line 114, in <module>
+2025-12-24T01:39:54.471069269Z [err]      run_migrations_online()
+2025-12-24T01:39:54.471090229Z [err]    File "/app/migrations/env.py", line 108, in run_migrations_online
+2025-12-24T01:39:54.471094822Z [err]      context.run_migrations()
+2025-12-24T01:39:54.471099391Z [err]    File "<string>", line 8, in run_migrations
+2025-12-24T01:39:54.471104041Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/runtime/environment.py", line 946, in run_migrations
+2025-12-24T01:39:54.471109529Z [err]      self.get_context().run_migrations(**kw)
+2025-12-24T01:39:54.471114164Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/runtime/migration.py", line 627, in run_migrations
+2025-12-24T01:39:54.471615416Z [err]      step.migration_fn(**kw)
+2025-12-24T01:39:54.471619528Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/ddl/impl.py", line 378, in add_column
+2025-12-24T01:39:54.471621401Z [err]    File "/app/migrations/versions/7d59f933ff26_adiciona_status_ao_modelo_cotacao.py", line 21, in upgrade
+2025-12-24T01:39:54.471626611Z [err]      with op.batch_alter_table('cotacoes', schema=None) as batch_op:
+2025-12-24T01:39:54.471631181Z [err]      self._exec(
+2025-12-24T01:39:54.471632047Z [err]           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:39:54.471638951Z [err]  ^
+2025-12-24T01:39:54.471641137Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/ddl/impl.py", line 246, in _exec
+2025-12-24T01:39:54.471645001Z [err]    File "/root/.nix-profile/lib/python3.12/contextlib.py", line 144, in __exit__
+2025-12-24T01:39:54.471645117Z [err]      return meth(
+2025-12-24T01:39:54.471646842Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:39:54.471650633Z [err]      return conn.execute(construct, params)
+2025-12-24T01:39:54.471651449Z [err]      next(self.gen)
+2025-12-24T01:39:54.471654456Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1530, in _execute_ddl
+2025-12-24T01:39:54.471657737Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/operations/base.py", line 410, in batch_alter_table
+2025-12-24T01:39:54.471657824Z [err]             ^^^^^
+2025-12-24T01:39:54.471660107Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:39:54.471663312Z [err]      impl.flush()
+2025-12-24T01:39:54.471669430Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/operations/batch.py", line 115, in flush
+2025-12-24T01:39:54.471669441Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1419, in execute
+2025-12-24T01:39:54.471669841Z [err]      return self._exec_single_context(
+2025-12-24T01:39:54.471674444Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/sql/ddl.py", line 187, in _execute_on_connection
+2025-12-24T01:39:54.471674937Z [err]      self._handle_dbapi_exception(
+2025-12-24T01:39:54.471675901Z [err]      fn(*arg, **kw)
+2025-12-24T01:39:54.471679751Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:39:54.471683288Z [err]      ret = self._execute_context(
+2025-12-24T01:39:54.471686036Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 2363, in _handle_dbapi_exception
+2025-12-24T01:39:54.471686623Z [err]      return connection._execute_ddl(
+2025-12-24T01:39:54.471687713Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 952, in do_execute
+2025-12-24T01:39:54.471687971Z [err]                                                 ^
+2025-12-24T01:39:54.471690521Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1986, in _exec_single_context
+2025-12-24T01:39:54.471690977Z [err]  (Background on this error at: https://sqlalche.me/e/20/f405)
+2025-12-24T01:39:54.471695054Z [err]            ^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:39:54.471695957Z [err]  
+2025-12-24T01:39:54.471697585Z [err]      cursor.execute(statement, parameters)
+2025-12-24T01:39:54.471698634Z [err]      raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+2025-12-24T01:39:54.471702245Z [err]  [SQL: ALTER TABLE cotacoes ADD COLUMN status cotacaostatus NOT NULL]
+2025-12-24T01:39:54.471704312Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1846, in _execute_context
+2025-12-24T01:39:54.471706742Z [err]  sqlalchemy.exc.ProgrammingError: (psycopg2.errors.UndefinedObject) type "cotacaostatus" does not exist
+2025-12-24T01:39:54.471709875Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+2025-12-24T01:39:54.471715614Z [err]  LINE 1: ALTER TABLE cotacoes ADD COLUMN status cotacaostatus NOT NUL...
+2025-12-24T01:39:54.471716704Z [err]      self.dialect.do_execute(
+2025-12-24T01:39:55.577637409Z [inf]  ✅ Usando PostgreSQL em produção
+2025-12-24T01:39:56.104571365Z [err]  INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+2025-12-24T01:39:56.104579125Z [err]  INFO  [alembic.runtime.migration] Will assume transactional DDL.
+2025-12-24T01:39:56.104583444Z [err]  INFO  [alembic.runtime.migration] Running upgrade  -> 173f5518beb9, Initial database migration.
+2025-12-24T01:39:56.173496438Z [err]  INFO  [alembic.runtime.migration] Running upgrade 173f5518beb9 -> c877254787d7, Add fornecedor_id to Item model
+2025-12-24T01:39:56.242414715Z [err]  INFO  [alembic.runtime.migration] Running upgrade c877254787d7 -> c568f5f72228, Adiciona status ao modelo Pedido
+2025-12-24T01:39:56.376817619Z [err]  INFO  [alembic.runtime.migration] Running upgrade c568f5f72228 -> a1b2c3d4e5f6, Add ListaMaeItem model for master list items
+2025-12-24T01:39:56.380543757Z [err]  INFO  [alembic.runtime.migration] Running upgrade c568f5f72228 -> 7d59f933ff26, Adiciona status ao modelo Cotacao
+2025-12-24T01:39:56.450385181Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/core.py", line 1873, in invoke
+2025-12-24T01:39:56.450393332Z [err]      return _process_result(sub_ctx.command.invoke(sub_ctx))
+2025-12-24T01:39:56.450400026Z [err]  Traceback (most recent call last):
+2025-12-24T01:39:56.450403616Z [err]                             ^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:39:56.450406422Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+2025-12-24T01:39:56.450411177Z [err]      self.dialect.do_execute(
+2025-12-24T01:39:56.450412274Z [err]  ^^^^^^^^^^
+2025-12-24T01:39:56.450415387Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 952, in do_execute
+2025-12-24T01:39:56.450419215Z [err]      cursor.execute(statement, parameters)
+2025-12-24T01:39:56.450423687Z [err]  psycopg2.errors.UndefinedObject: type "cotacaostatus" does not exist
+2025-12-24T01:39:56.450428662Z [err]  LINE 1: ALTER TABLE cotacoes ADD COLUMN status cotacaostatus NOT NUL...
+2025-12-24T01:39:56.450429774Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/core.py", line 1269, in invoke
+2025-12-24T01:39:56.450433042Z [err]                                                 ^
+2025-12-24T01:39:56.450438814Z [err]  
+2025-12-24T01:39:56.450439560Z [err]      return ctx.invoke(self.callback, **ctx.params)
+2025-12-24T01:39:56.450443360Z [err]  
+2025-12-24T01:39:56.450447116Z [err]  The above exception was the direct cause of the following exception:
+2025-12-24T01:39:56.450450894Z [err]  
+2025-12-24T01:39:56.450454846Z [err]  Traceback (most recent call last):
+2025-12-24T01:39:56.450458714Z [err]    File "/opt/venv/bin/flask", line 8, in <module>
+2025-12-24T01:39:56.450462309Z [err]      sys.exit(main())
+2025-12-24T01:39:56.450466602Z [err]               ^^^^^^
+2025-12-24T01:39:56.450470455Z [err]    File "/opt/venv/lib/python3.12/site-packages/flask/cli.py", line 1131, in main
+2025-12-24T01:39:56.450474173Z [err]      cli.main()
+2025-12-24T01:39:56.450478007Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/core.py", line 1406, in main
+2025-12-24T01:39:56.450481738Z [err]      rv = self.invoke(ctx)
+2025-12-24T01:39:56.450485430Z [err]           ^^^^^^^^^^^^^^^^
+2025-12-24T01:39:56.450489690Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/core.py", line 1873, in invoke
+2025-12-24T01:39:56.450493615Z [err]      return _process_result(sub_ctx.command.invoke(sub_ctx))
+2025-12-24T01:39:56.450497622Z [err]                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:39:56.452255424Z [err]  [SQL: ALTER TABLE cotacoes ADD COLUMN status cotacaostatus NOT NULL]
+2025-12-24T01:39:56.452255605Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:39:56.452257027Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/sql/ddl.py", line 187, in _execute_on_connection
+2025-12-24T01:39:56.452263416Z [err]  (Background on this error at: https://sqlalche.me/e/20/f405)
+2025-12-24T01:39:56.452264304Z [err]      return connection._execute_ddl(
+2025-12-24T01:39:56.452265173Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/core.py", line 824, in invoke
+2025-12-24T01:39:56.452270406Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:39:56.452272864Z [err]      self.dialect.do_execute(
+2025-12-24T01:39:56.452273034Z [err]      return callback(*args, **kwargs)
+2025-12-24T01:39:56.452276829Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1530, in _execute_ddl
+2025-12-24T01:39:56.452280906Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 952, in do_execute
+2025-12-24T01:39:56.452282592Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:39:56.452282979Z [err]      ret = self._execute_context(
+2025-12-24T01:39:56.452288657Z [err]      cursor.execute(statement, parameters)
+2025-12-24T01:39:56.452288732Z [err]            ^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:39:56.452290558Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/decorators.py", line 34, in new_func
+2025-12-24T01:39:56.452295063Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1846, in _execute_context
+2025-12-24T01:39:56.452295674Z [err]  sqlalchemy.exc.ProgrammingError: (psycopg2.errors.UndefinedObject) type "cotacaostatus" does not exist
+2025-12-24T01:39:56.452298539Z [err]      return f(get_current_context(), *args, **kwargs)
+2025-12-24T01:39:56.452301039Z [err]      return self._exec_single_context(
+2025-12-24T01:39:56.452303539Z [err]  LINE 1: ALTER TABLE cotacoes ADD COLUMN status cotacaostatus NOT NUL...
+2025-12-24T01:39:56.452306944Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:39:56.452309588Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:39:56.452310539Z [err]                                                 ^
+2025-12-24T01:39:56.452313104Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1986, in _exec_single_context
+2025-12-24T01:39:56.452317486Z [err]    File "/opt/venv/lib/python3.12/site-packages/flask/cli.py", line 400, in decorator
+2025-12-24T01:39:56.452318545Z [err]  
+2025-12-24T01:39:56.452319376Z [err]      self._handle_dbapi_exception(
+2025-12-24T01:39:56.452324664Z [err]      return ctx.invoke(f, *args, **kwargs)
+2025-12-24T01:39:56.452324700Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 2363, in _handle_dbapi_exception
+2025-12-24T01:39:56.452329865Z [err]      raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+2025-12-24T01:39:56.452331924Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:39:56.452335022Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+2025-12-24T01:39:56.452341571Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/core.py", line 824, in invoke
+2025-12-24T01:39:56.452347095Z [err]      return callback(*args, **kwargs)
+2025-12-24T01:39:56.452352496Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:39:56.452358562Z [err]    File "/opt/venv/lib/python3.12/site-packages/flask_migrate/cli.py", line 157, in upgrade
+2025-12-24T01:39:56.452364466Z [err]      _upgrade(directory or g.directory, revision, sql, tag, x_arg or g.x_arg)
+2025-12-24T01:39:56.452370834Z [err]    File "/opt/venv/lib/python3.12/site-packages/flask_migrate/__init__.py", line 111, in wrapped
+2025-12-24T01:39:56.452377431Z [err]      f(*args, **kwargs)
+2025-12-24T01:39:56.452383595Z [err]    File "/opt/venv/lib/python3.12/site-packages/flask_migrate/__init__.py", line 200, in upgrade
+2025-12-24T01:39:56.452389233Z [err]      command.upgrade(config, revision, sql=sql, tag=tag)
+2025-12-24T01:39:56.452394905Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/command.py", line 483, in upgrade
+2025-12-24T01:39:56.452400393Z [err]      script.run_env()
+2025-12-24T01:39:56.452405643Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/script/base.py", line 545, in run_env
+2025-12-24T01:39:56.452411803Z [err]      util.load_python_file(self.dir, "env.py")
+2025-12-24T01:39:56.452421298Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/util/pyfiles.py", line 116, in load_python_file
+2025-12-24T01:39:56.452427357Z [err]      module = load_module_py(module_id, path)
+2025-12-24T01:39:56.452433151Z [err]               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:39:56.452439133Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/util/pyfiles.py", line 136, in load_module_py
+2025-12-24T01:39:56.452446067Z [err]      spec.loader.exec_module(module)  # type: ignore
+2025-12-24T01:39:56.452451816Z [err]      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:39:56.452457496Z [err]    File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+2025-12-24T01:39:56.452463349Z [err]    File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+2025-12-24T01:39:56.452469212Z [err]    File "/app/migrations/env.py", line 114, in <module>
+2025-12-24T01:39:56.452474744Z [err]      run_migrations_online()
+2025-12-24T01:39:56.452480723Z [err]    File "/app/migrations/env.py", line 108, in run_migrations_online
+2025-12-24T01:39:56.452486595Z [err]      context.run_migrations()
+2025-12-24T01:39:56.452491884Z [err]    File "<string>", line 8, in run_migrations
+2025-12-24T01:39:56.452497739Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/runtime/environment.py", line 946, in run_migrations
+2025-12-24T01:39:56.452503028Z [err]      self.get_context().run_migrations(**kw)
+2025-12-24T01:39:56.452508639Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/runtime/migration.py", line 627, in run_migrations
+2025-12-24T01:39:56.452514436Z [err]      step.migration_fn(**kw)
+2025-12-24T01:39:56.452520225Z [err]    File "/app/migrations/versions/7d59f933ff26_adiciona_status_ao_modelo_cotacao.py", line 21, in upgrade
+2025-12-24T01:39:56.452525735Z [err]      with op.batch_alter_table('cotacoes', schema=None) as batch_op:
+2025-12-24T01:39:56.452531396Z [err]           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:39:56.452536712Z [err]    File "/root/.nix-profile/lib/python3.12/contextlib.py", line 144, in __exit__
+2025-12-24T01:39:56.452541913Z [err]      next(self.gen)
+2025-12-24T01:39:56.452548490Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/operations/base.py", line 410, in batch_alter_table
+2025-12-24T01:39:56.452554714Z [err]      impl.flush()
+2025-12-24T01:39:56.452560056Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/operations/batch.py", line 115, in flush
+2025-12-24T01:39:56.452565538Z [err]      fn(*arg, **kw)
+2025-12-24T01:39:56.452570651Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/ddl/impl.py", line 378, in add_column
+2025-12-24T01:39:56.452577899Z [err]      self._exec(
+2025-12-24T01:39:56.452583399Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/ddl/impl.py", line 246, in _exec
+2025-12-24T01:39:56.452589011Z [err]      return conn.execute(construct, params)
+2025-12-24T01:39:56.452594096Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:39:56.452599579Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1419, in execute
+2025-12-24T01:39:56.452604626Z [err]      return meth(
+2025-12-24T01:39:56.452610076Z [err]             ^^^^^
+2025-12-24T01:39:57.237865043Z [inf]  ✅ Usando PostgreSQL em produção
+2025-12-24T01:39:57.896749301Z [err]  INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+2025-12-24T01:39:57.896754826Z [err]  INFO  [alembic.runtime.migration] Will assume transactional DDL.
+2025-12-24T01:39:57.965258966Z [err]  INFO  [alembic.runtime.migration] Running upgrade  -> 173f5518beb9, Initial database migration.
+2025-12-24T01:39:58.229562269Z [err]  INFO  [alembic.runtime.migration] Running upgrade 173f5518beb9 -> c877254787d7, Add fornecedor_id to Item model
+2025-12-24T01:39:58.229570014Z [err]  INFO  [alembic.runtime.migration] Running upgrade c877254787d7 -> c568f5f72228, Adiciona status ao modelo Pedido
+2025-12-24T01:39:58.363526520Z [err]  INFO  [alembic.runtime.migration] Running upgrade c568f5f72228 -> a1b2c3d4e5f6, Add ListaMaeItem model for master list items
+2025-12-24T01:39:58.381422198Z [err]  INFO  [alembic.runtime.migration] Running upgrade c568f5f72228 -> 7d59f933ff26, Adiciona status ao modelo Cotacao
+2025-12-24T01:39:58.418041453Z [err]  Traceback (most recent call last):
+2025-12-24T01:39:58.418047160Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+2025-12-24T01:39:58.418051976Z [err]      self.dialect.do_execute(
+2025-12-24T01:39:58.418056222Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 952, in do_execute
+2025-12-24T01:39:58.418060366Z [err]      cursor.execute(statement, parameters)
+2025-12-24T01:39:58.418065645Z [err]  psycopg2.errors.UndefinedObject: type "cotacaostatus" does not exist
+2025-12-24T01:39:58.418069997Z [err]  LINE 1: ALTER TABLE cotacoes ADD COLUMN status cotacaostatus NOT NUL...
+2025-12-24T01:39:58.418073809Z [err]                                                 ^
+2025-12-24T01:39:58.418077816Z [err]  
+2025-12-24T01:39:58.418082498Z [err]  
+2025-12-24T01:39:58.418086627Z [err]  The above exception was the direct cause of the following exception:
+2025-12-24T01:39:58.418090287Z [err]  
+2025-12-24T01:39:58.418094923Z [err]  Traceback (most recent call last):
+2025-12-24T01:39:58.418114685Z [err]    File "/opt/venv/bin/flask", line 8, in <module>
+2025-12-24T01:39:58.418118849Z [err]      sys.exit(main())
+2025-12-24T01:39:58.418122816Z [err]               ^^^^^^
+2025-12-24T01:39:58.418126927Z [err]    File "/opt/venv/lib/python3.12/site-packages/flask/cli.py", line 1131, in main
+2025-12-24T01:39:58.418131050Z [err]      cli.main()
+2025-12-24T01:39:58.418135054Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/core.py", line 1406, in main
+2025-12-24T01:39:58.418139178Z [err]      rv = self.invoke(ctx)
+2025-12-24T01:39:58.418143587Z [err]           ^^^^^^^^^^^^^^^^
+2025-12-24T01:39:58.418147649Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/core.py", line 1873, in invoke
+2025-12-24T01:39:58.418152178Z [err]      return _process_result(sub_ctx.command.invoke(sub_ctx))
+2025-12-24T01:39:58.420773195Z [err]                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:39:58.420785637Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/core.py", line 1873, in invoke
+2025-12-24T01:39:58.420794464Z [err]      return _process_result(sub_ctx.command.invoke(sub_ctx))
+2025-12-24T01:39:58.420802375Z [err]                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:39:58.420810117Z [err]  ^^^
+2025-12-24T01:39:58.420817344Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/core.py", line 1269, in invoke
+2025-12-24T01:39:58.420822639Z [err]      return ctx.invoke(self.callback, **ctx.params)
+2025-12-24T01:39:58.420828182Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:39:58.420835315Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/core.py", line 824, in invoke
+2025-12-24T01:39:58.420841031Z [err]      return callback(*args, **kwargs)
+2025-12-24T01:39:58.420846457Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:39:58.420851736Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/decorators.py", line 34, in new_func
+2025-12-24T01:39:58.420857113Z [err]      return f(get_current_context(), *args, **kwargs)
+2025-12-24T01:39:58.420862184Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:39:58.420867274Z [err]    File "/opt/venv/lib/python3.12/site-packages/flask/cli.py", line 400, in decorator
+2025-12-24T01:39:58.420872513Z [err]      return ctx.invoke(f, *args, **kwargs)
+2025-12-24T01:39:58.420877988Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:39:58.420883317Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/core.py", line 824, in invoke
+2025-12-24T01:39:58.420888850Z [err]      return callback(*args, **kwargs)
+2025-12-24T01:39:58.420901298Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:39:58.420906898Z [err]    File "/opt/venv/lib/python3.12/site-packages/flask_migrate/cli.py", line 157, in upgrade
+2025-12-24T01:39:58.420912748Z [err]      _upgrade(directory or g.directory, revision, sql, tag, x_arg or g.x_arg)
+2025-12-24T01:39:58.420918035Z [err]    File "/opt/venv/lib/python3.12/site-packages/flask_migrate/__init__.py", line 111, in wrapped
+2025-12-24T01:39:58.420923352Z [err]      f(*args, **kwargs)
+2025-12-24T01:39:58.420928810Z [err]    File "/opt/venv/lib/python3.12/site-packages/flask_migrate/__init__.py", line 200, in upgrade
+2025-12-24T01:39:58.420934145Z [err]      command.upgrade(config, revision, sql=sql, tag=tag)
+2025-12-24T01:39:58.420939513Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/command.py", line 483, in upgrade
+2025-12-24T01:39:58.420945077Z [err]      script.run_env()
+2025-12-24T01:39:58.420951267Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/script/base.py", line 545, in run_env
+2025-12-24T01:39:58.420956503Z [err]      util.load_python_file(self.dir, "env.py")
+2025-12-24T01:39:58.420961777Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/util/pyfiles.py", line 116, in load_python_file
+2025-12-24T01:39:58.420966798Z [err]      module = load_module_py(module_id, path)
+2025-12-24T01:39:58.420972167Z [err]               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:39:58.420978287Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/util/pyfiles.py", line 136, in load_module_py
+2025-12-24T01:39:58.420983545Z [err]      spec.loader.exec_module(module)  # type: ignore
+2025-12-24T01:39:58.420988837Z [err]      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:39:58.420994068Z [err]    File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+2025-12-24T01:39:58.420999416Z [err]    File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+2025-12-24T01:39:58.421004798Z [err]    File "/app/migrations/env.py", line 114, in <module>
+2025-12-24T01:39:58.421010459Z [err]      run_migrations_online()
+2025-12-24T01:39:58.421015547Z [err]    File "/app/migrations/env.py", line 108, in run_migrations_online
+2025-12-24T01:39:58.421020578Z [err]      context.run_migrations()
+2025-12-24T01:39:58.421026659Z [err]    File "<string>", line 8, in run_migrations
+2025-12-24T01:39:58.421033267Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/runtime/environment.py", line 946, in run_migrations
+2025-12-24T01:39:58.421038445Z [err]      self.get_context().run_migrations(**kw)
+2025-12-24T01:39:58.423415019Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/ddl/impl.py", line 378, in add_column
+2025-12-24T01:39:58.423416876Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/runtime/migration.py", line 627, in run_migrations
+2025-12-24T01:39:58.423423402Z [err]      self._exec(
+2025-12-24T01:39:58.423425053Z [err]      step.migration_fn(**kw)
+2025-12-24T01:39:58.423430779Z [err]    File "/app/migrations/versions/7d59f933ff26_adiciona_status_ao_modelo_cotacao.py", line 21, in upgrade
+2025-12-24T01:39:58.423431175Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/ddl/impl.py", line 246, in _exec
+2025-12-24T01:39:58.423436539Z [err]      with op.batch_alter_table('cotacoes', schema=None) as batch_op:
+2025-12-24T01:39:58.423438715Z [err]      return conn.execute(construct, params)
+2025-12-24T01:39:58.423442004Z [err]           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:39:58.423445976Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:39:58.423447700Z [err]    File "/root/.nix-profile/lib/python3.12/contextlib.py", line 144, in __exit__
+2025-12-24T01:39:58.423451507Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1419, in execute
+2025-12-24T01:39:58.423452990Z [err]      next(self.gen)
+2025-12-24T01:39:58.423457252Z [err]      return meth(
+2025-12-24T01:39:58.423458709Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/operations/base.py", line 410, in batch_alter_table
+2025-12-24T01:39:58.423462997Z [err]             ^^^^^
+2025-12-24T01:39:58.423464523Z [err]      impl.flush()
+2025-12-24T01:39:58.423469555Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/sql/ddl.py", line 187, in _execute_on_connection
+2025-12-24T01:39:58.423470497Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/operations/batch.py", line 115, in flush
+2025-12-24T01:39:58.423474980Z [err]      fn(*arg, **kw)
+2025-12-24T01:39:58.423766320Z [err]      return connection._execute_ddl(
+2025-12-24T01:39:58.423772920Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:39:58.423777700Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1530, in _execute_ddl
+2025-12-24T01:39:58.423782040Z [err]      ret = self._execute_context(
+2025-12-24T01:39:58.423786800Z [err]            ^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:39:58.423794331Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+2025-12-24T01:39:58.423795457Z [err]  
+2025-12-24T01:39:58.423797275Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1846, in _execute_context
+2025-12-24T01:39:58.423797839Z [err]  LINE 1: ALTER TABLE cotacoes ADD COLUMN status cotacaostatus NOT NUL...
+2025-12-24T01:39:58.423804913Z [err]      self.dialect.do_execute(
+2025-12-24T01:39:58.423804983Z [err]  [SQL: ALTER TABLE cotacoes ADD COLUMN status cotacaostatus NOT NULL]
+2025-12-24T01:39:58.423805369Z [err]      return self._exec_single_context(
+2025-12-24T01:39:58.423807693Z [err]                                                 ^
+2025-12-24T01:39:58.423811795Z [err]  (Background on this error at: https://sqlalche.me/e/20/f405)
+2025-12-24T01:39:58.423813943Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:39:58.423814673Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 952, in do_execute
+2025-12-24T01:39:58.423819262Z [err]      cursor.execute(statement, parameters)
+2025-12-24T01:39:58.423821122Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1986, in _exec_single_context
+2025-12-24T01:39:58.423826282Z [err]      self._handle_dbapi_exception(
+2025-12-24T01:39:58.423829610Z [err]  sqlalchemy.exc.ProgrammingError: (psycopg2.errors.UndefinedObject) type "cotacaostatus" does not exist
+2025-12-24T01:39:58.423831176Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 2363, in _handle_dbapi_exception
+2025-12-24T01:39:58.423835492Z [err]      raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+2025-12-24T01:39:58.975672205Z [inf]  ✅ Usando PostgreSQL em produção
+2025-12-24T01:39:59.628998027Z [err]  INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+2025-12-24T01:39:59.629003991Z [err]  INFO  [alembic.runtime.migration] Will assume transactional DDL.
+2025-12-24T01:39:59.762177454Z [err]  INFO  [alembic.runtime.migration] Running upgrade  -> 173f5518beb9, Initial database migration.
+2025-12-24T01:40:00.029059163Z [err]  INFO  [alembic.runtime.migration] Running upgrade 173f5518beb9 -> c877254787d7, Add fornecedor_id to Item model
+2025-12-24T01:40:00.029065575Z [err]  INFO  [alembic.runtime.migration] Running upgrade c877254787d7 -> c568f5f72228, Adiciona status ao modelo Pedido
+2025-12-24T01:40:00.096957565Z [err]  INFO  [alembic.runtime.migration] Running upgrade c568f5f72228 -> a1b2c3d4e5f6, Add ListaMaeItem model for master list items
+2025-12-24T01:40:00.131581871Z [err]  INFO  [alembic.runtime.migration] Running upgrade c568f5f72228 -> 7d59f933ff26, Adiciona status ao modelo Cotacao
+2025-12-24T01:40:00.167583692Z [err]  psycopg2.errors.UndefinedObject: type "cotacaostatus" does not exist
+2025-12-24T01:40:00.167584367Z [err]  Traceback (most recent call last):
+2025-12-24T01:40:00.167586573Z [err]  
+2025-12-24T01:40:00.167593164Z [err]  LINE 1: ALTER TABLE cotacoes ADD COLUMN status cotacaostatus NOT NUL...
+2025-12-24T01:40:00.167596567Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+2025-12-24T01:40:00.167599620Z [err]  Traceback (most recent call last):
+2025-12-24T01:40:00.167601362Z [err]                                                 ^
+2025-12-24T01:40:00.167607882Z [err]      self.dialect.do_execute(
+2025-12-24T01:40:00.167609742Z [err]  
+2025-12-24T01:40:00.167610954Z [err]    File "/opt/venv/bin/flask", line 8, in <module>
+2025-12-24T01:40:00.167617198Z [err]  
+2025-12-24T01:40:00.167618686Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 952, in do_execute
+2025-12-24T01:40:00.167621947Z [err]      sys.exit(main())
+2025-12-24T01:40:00.167625041Z [err]  The above exception was the direct cause of the following exception:
+2025-12-24T01:40:00.167627167Z [err]      cursor.execute(statement, parameters)
+2025-12-24T01:40:00.167631100Z [err]               ^^^^^^
+2025-12-24T01:40:00.167639482Z [err]    File "/opt/venv/lib/python3.12/site-packages/flask/cli.py", line 1131, in main
+2025-12-24T01:40:00.167646220Z [err]      cli.main()
+2025-12-24T01:40:00.167653388Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/core.py", line 1406, in main
+2025-12-24T01:40:00.167777633Z [err]      rv = self.invoke(ctx)
+2025-12-24T01:40:00.167783289Z [err]           ^^^^^^^^^^^^^^^^
+2025-12-24T01:40:00.167788654Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/core.py", line 1873, in invoke
+2025-12-24T01:40:00.168158027Z [err]      return _process_result(sub_ctx.command.invoke(sub_ctx))
+2025-12-24T01:40:00.168169067Z [err]                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:40:00.168175638Z [err]  ^^^
+2025-12-24T01:40:00.168181547Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/core.py", line 1873, in invoke
+2025-12-24T01:40:00.172497125Z [err]      return _process_result(sub_ctx.command.invoke(sub_ctx))
+2025-12-24T01:40:00.172506011Z [err]                             ^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:40:00.172513489Z [err]  ^^^^^^^^^^
+2025-12-24T01:40:00.172520242Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/core.py", line 1269, in invoke
+2025-12-24T01:40:00.172527356Z [err]      return ctx.invoke(self.callback, **ctx.params)
+2025-12-24T01:40:00.172534162Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:40:00.172541319Z [err]  ^^
+2025-12-24T01:40:00.172548285Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/core.py", line 824, in invoke
+2025-12-24T01:40:00.172555225Z [err]      return callback(*args, **kwargs)
+2025-12-24T01:40:00.172562399Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:40:00.172569514Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/decorators.py", line 34, in new_func
+2025-12-24T01:40:00.172577341Z [err]      return f(get_current_context(), *args, **kwargs)
+2025-12-24T01:40:00.172585002Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:40:00.172592000Z [err]  ^
+2025-12-24T01:40:00.172598967Z [err]    File "/opt/venv/lib/python3.12/site-packages/flask/cli.py", line 400, in decorator
+2025-12-24T01:40:00.172605760Z [err]      return ctx.invoke(f, *args, **kwargs)
+2025-12-24T01:40:00.172612456Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:40:00.172619102Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/core.py", line 824, in invoke
+2025-12-24T01:40:00.172625918Z [err]      return callback(*args, **kwargs)
+2025-12-24T01:40:00.172632582Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:40:00.172639742Z [err]    File "/opt/venv/lib/python3.12/site-packages/flask_migrate/cli.py", line 157, in upgrade
+2025-12-24T01:40:00.172646529Z [err]      _upgrade(directory or g.directory, revision, sql, tag, x_arg or g.x_arg)
+2025-12-24T01:40:00.172653252Z [err]    File "/opt/venv/lib/python3.12/site-packages/flask_migrate/__init__.py", line 111, in wrapped
+2025-12-24T01:40:00.172660001Z [err]      f(*args, **kwargs)
+2025-12-24T01:40:00.172666840Z [err]    File "/opt/venv/lib/python3.12/site-packages/flask_migrate/__init__.py", line 200, in upgrade
+2025-12-24T01:40:00.172673632Z [err]      command.upgrade(config, revision, sql=sql, tag=tag)
+2025-12-24T01:40:00.172680336Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/command.py", line 483, in upgrade
+2025-12-24T01:40:00.172687745Z [err]      script.run_env()
+2025-12-24T01:40:00.172694721Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/script/base.py", line 545, in run_env
+2025-12-24T01:40:00.172701453Z [err]      util.load_python_file(self.dir, "env.py")
+2025-12-24T01:40:00.172708109Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/util/pyfiles.py", line 116, in load_python_file
+2025-12-24T01:40:00.172715764Z [err]      module = load_module_py(module_id, path)
+2025-12-24T01:40:00.172722596Z [err]               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:40:00.172729386Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/util/pyfiles.py", line 136, in load_module_py
+2025-12-24T01:40:00.172737251Z [err]      spec.loader.exec_module(module)  # type: ignore
+2025-12-24T01:40:00.172745589Z [err]      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:40:00.172752379Z [err]    File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+2025-12-24T01:40:00.172759179Z [err]    File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+2025-12-24T01:40:00.172766125Z [err]    File "/app/migrations/env.py", line 114, in <module>
+2025-12-24T01:40:00.172772938Z [err]      run_migrations_online()
+2025-12-24T01:40:00.172779187Z [err]    File "/app/migrations/env.py", line 108, in run_migrations_online
+2025-12-24T01:40:00.172785949Z [err]      context.run_migrations()
+2025-12-24T01:40:00.172791694Z [err]    File "<string>", line 8, in run_migrations
+2025-12-24T01:40:00.172798302Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/runtime/environment.py", line 946, in run_migrations
+2025-12-24T01:40:00.172806171Z [err]      self.get_context().run_migrations(**kw)
+2025-12-24T01:40:00.172813092Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/runtime/migration.py", line 627, in run_migrations
+2025-12-24T01:40:00.172819746Z [err]      step.migration_fn(**kw)
+2025-12-24T01:40:00.172826177Z [err]    File "/app/migrations/versions/7d59f933ff26_adiciona_status_ao_modelo_cotacao.py", line 21, in upgrade
+2025-12-24T01:40:00.172833543Z [err]      with op.batch_alter_table('cotacoes', schema=None) as batch_op:
+2025-12-24T01:40:00.172847424Z [err]           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:40:00.172855227Z [err]    File "/root/.nix-profile/lib/python3.12/contextlib.py", line 144, in __exit__
+2025-12-24T01:40:00.172862106Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/ddl/impl.py", line 378, in add_column
+2025-12-24T01:40:00.172863691Z [err]      next(self.gen)
+2025-12-24T01:40:00.172873214Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/operations/base.py", line 410, in batch_alter_table
+2025-12-24T01:40:00.172873404Z [err]      self._exec(
+2025-12-24T01:40:00.172874967Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1419, in execute
+2025-12-24T01:40:00.172881909Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/ddl/impl.py", line 246, in _exec
+2025-12-24T01:40:00.172882607Z [err]      impl.flush()
+2025-12-24T01:40:00.172886371Z [err]      return meth(
+2025-12-24T01:40:00.172889478Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/operations/batch.py", line 115, in flush
+2025-12-24T01:40:00.172889615Z [err]      return conn.execute(construct, params)
+2025-12-24T01:40:00.172894166Z [err]             ^^^^^
+2025-12-24T01:40:00.172895951Z [err]      fn(*arg, **kw)
+2025-12-24T01:40:00.172897119Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:40:00.172901220Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/sql/ddl.py", line 187, in _execute_on_connection
+2025-12-24T01:40:00.173071782Z [err]      return connection._execute_ddl(
+2025-12-24T01:40:00.173083649Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:40:00.173228896Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1530, in _execute_ddl
+2025-12-24T01:40:00.173233820Z [err]      ret = self._execute_context(
+2025-12-24T01:40:00.173238345Z [err]            ^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:40:00.173243201Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1846, in _execute_context
+2025-12-24T01:40:00.175670723Z [err]      return self._exec_single_context(
+2025-12-24T01:40:00.175676931Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:40:00.175682114Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1986, in _exec_single_context
+2025-12-24T01:40:00.175686152Z [err]      self._handle_dbapi_exception(
+2025-12-24T01:40:00.175691327Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 2363, in _handle_dbapi_exception
+2025-12-24T01:40:00.175695893Z [err]      raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+2025-12-24T01:40:00.175699824Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+2025-12-24T01:40:00.175706239Z [err]      self.dialect.do_execute(
+2025-12-24T01:40:00.175710114Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 952, in do_execute
+2025-12-24T01:40:00.175715129Z [err]      cursor.execute(statement, parameters)
+2025-12-24T01:40:00.175719367Z [err]  sqlalchemy.exc.ProgrammingError: (psycopg2.errors.UndefinedObject) type "cotacaostatus" does not exist
+2025-12-24T01:40:00.175724154Z [err]  LINE 1: ALTER TABLE cotacoes ADD COLUMN status cotacaostatus NOT NUL...
+2025-12-24T01:40:00.175728200Z [err]                                                 ^
+2025-12-24T01:40:00.175732330Z [err]  
+2025-12-24T01:40:00.175737924Z [err]  [SQL: ALTER TABLE cotacoes ADD COLUMN status cotacaostatus NOT NULL]
+2025-12-24T01:40:00.175742140Z [err]  (Background on this error at: https://sqlalche.me/e/20/f405)
+2025-12-24T01:40:01.212947600Z [inf]  ✅ Usando PostgreSQL em produção
+2025-12-24T01:40:01.476504393Z [err]  INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+2025-12-24T01:40:01.476510991Z [err]  INFO  [alembic.runtime.migration] Will assume transactional DDL.
+2025-12-24T01:40:01.476519774Z [err]  INFO  [alembic.runtime.migration] Running upgrade  -> 173f5518beb9, Initial database migration.
+2025-12-24T01:40:01.692962570Z [err]  INFO  [alembic.runtime.migration] Running upgrade 173f5518beb9 -> c877254787d7, Add fornecedor_id to Item model
+2025-12-24T01:40:01.727459816Z [err]  INFO  [alembic.runtime.migration] Running upgrade c877254787d7 -> c568f5f72228, Adiciona status ao modelo Pedido
+2025-12-24T01:40:01.861861768Z [err]  INFO  [alembic.runtime.migration] Running upgrade c568f5f72228 -> a1b2c3d4e5f6, Add ListaMaeItem model for master list items
+2025-12-24T01:40:01.896533932Z [err]  INFO  [alembic.runtime.migration] Running upgrade c568f5f72228 -> 7d59f933ff26, Adiciona status ao modelo Cotacao
+2025-12-24T01:40:01.933974953Z [err]  Traceback (most recent call last):
+2025-12-24T01:40:01.933981806Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+2025-12-24T01:40:01.933987338Z [err]      self.dialect.do_execute(
+2025-12-24T01:40:01.933989843Z [err]      cli.main()
+2025-12-24T01:40:01.933993239Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 952, in do_execute
+2025-12-24T01:40:01.933999493Z [err]      cursor.execute(statement, parameters)
+2025-12-24T01:40:01.934000958Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/core.py", line 1406, in main
+2025-12-24T01:40:01.934005702Z [err]  psycopg2.errors.UndefinedObject: type "cotacaostatus" does not exist
+2025-12-24T01:40:01.934009641Z [err]      rv = self.invoke(ctx)
+2025-12-24T01:40:01.934010800Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/script/base.py", line 545, in run_env
+2025-12-24T01:40:01.934012372Z [err]  LINE 1: ALTER TABLE cotacoes ADD COLUMN status cotacaostatus NOT NUL...
+2025-12-24T01:40:01.934013693Z [err]      return callback(*args, **kwargs)
+2025-12-24T01:40:01.934014068Z [err]      return callback(*args, **kwargs)
+2025-12-24T01:40:01.934019126Z [err]                                                 ^
+2025-12-24T01:40:01.934019228Z [err]           ^^^^^^^^^^^^^^^^
+2025-12-24T01:40:01.934019766Z [err]      util.load_python_file(self.dir, "env.py")
+2025-12-24T01:40:01.934022538Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:40:01.934024943Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:40:01.934025658Z [err]  
+2025-12-24T01:40:01.934027693Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/util/pyfiles.py", line 116, in load_python_file
+2025-12-24T01:40:01.934028585Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/core.py", line 1873, in invoke
+2025-12-24T01:40:01.934030858Z [err]    File "/opt/venv/lib/python3.12/site-packages/flask_migrate/cli.py", line 157, in upgrade
+2025-12-24T01:40:01.934033533Z [err]  
+2025-12-24T01:40:01.934035182Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/decorators.py", line 34, in new_func
+2025-12-24T01:40:01.934035274Z [err]      module = load_module_py(module_id, path)
+2025-12-24T01:40:01.934037949Z [err]      return _process_result(sub_ctx.command.invoke(sub_ctx))
+2025-12-24T01:40:01.934038409Z [err]      _upgrade(directory or g.directory, revision, sql, tag, x_arg or g.x_arg)
+2025-12-24T01:40:01.934043488Z [err]  The above exception was the direct cause of the following exception:
+2025-12-24T01:40:01.934045801Z [err]      return f(get_current_context(), *args, **kwargs)
+2025-12-24T01:40:01.934045867Z [err]      f(*args, **kwargs)
+2025-12-24T01:40:01.934046771Z [err]                             ^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:40:01.934046973Z [err]    File "/opt/venv/lib/python3.12/site-packages/flask_migrate/__init__.py", line 111, in wrapped
+2025-12-24T01:40:01.934053781Z [err]    File "/opt/venv/lib/python3.12/site-packages/flask_migrate/__init__.py", line 200, in upgrade
+2025-12-24T01:40:01.934055083Z [err]  
+2025-12-24T01:40:01.934055375Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:40:01.934055661Z [err]  ^^^^^^^^^^
+2025-12-24T01:40:01.934056675Z [err]    File "/opt/venv/lib/python3.12/site-packages/flask/cli.py", line 400, in decorator
+2025-12-24T01:40:01.934061421Z [err]      command.upgrade(config, revision, sql=sql, tag=tag)
+2025-12-24T01:40:01.934062268Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/core.py", line 1873, in invoke
+2025-12-24T01:40:01.934065041Z [err]  Traceback (most recent call last):
+2025-12-24T01:40:01.934067482Z [err]      return ctx.invoke(f, *args, **kwargs)
+2025-12-24T01:40:01.934068628Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/command.py", line 483, in upgrade
+2025-12-24T01:40:01.934069801Z [err]      return _process_result(sub_ctx.command.invoke(sub_ctx))
+2025-12-24T01:40:01.934074692Z [err]      script.run_env()
+2025-12-24T01:40:01.934075967Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:40:01.934076619Z [err]                             ^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:40:01.934082358Z [err]  ^^^^^^^
+2025-12-24T01:40:01.934083889Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/core.py", line 824, in invoke
+2025-12-24T01:40:01.934084492Z [err]    File "/opt/venv/bin/flask", line 8, in <module>
+2025-12-24T01:40:01.934088526Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/core.py", line 1269, in invoke
+2025-12-24T01:40:01.934092114Z [err]      sys.exit(main())
+2025-12-24T01:40:01.934094827Z [err]      return ctx.invoke(self.callback, **ctx.params)
+2025-12-24T01:40:01.934097955Z [err]               ^^^^^^
+2025-12-24T01:40:01.934103424Z [err]    File "/opt/venv/lib/python3.12/site-packages/flask/cli.py", line 1131, in main
+2025-12-24T01:40:01.934103764Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:40:01.934108315Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/core.py", line 824, in invoke
+2025-12-24T01:40:01.934496509Z [err]               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:40:01.934497781Z [err]  [SQL: ALTER TABLE cotacoes ADD COLUMN status cotacaostatus NOT NULL]
+2025-12-24T01:40:01.934502479Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/util/pyfiles.py", line 136, in load_module_py
+2025-12-24T01:40:01.934504812Z [err]  (Background on this error at: https://sqlalche.me/e/20/f405)
+2025-12-24T01:40:01.934509688Z [err]      spec.loader.exec_module(module)  # type: ignore
+2025-12-24T01:40:01.934514910Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:40:01.934515506Z [err]      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:40:01.934521733Z [err]    File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+2025-12-24T01:40:01.934522412Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1986, in _exec_single_context
+2025-12-24T01:40:01.934527863Z [err]    File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+2025-12-24T01:40:01.934528289Z [err]      self._handle_dbapi_exception(
+2025-12-24T01:40:01.934533559Z [err]    File "/app/migrations/env.py", line 114, in <module>
+2025-12-24T01:40:01.934534147Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 2363, in _handle_dbapi_exception
+2025-12-24T01:40:01.934539869Z [err]      run_migrations_online()
+2025-12-24T01:40:01.934540099Z [err]      raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+2025-12-24T01:40:01.934545541Z [err]    File "/app/migrations/env.py", line 108, in run_migrations_online
+2025-12-24T01:40:01.934548300Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+2025-12-24T01:40:01.934551618Z [err]      context.run_migrations()
+2025-12-24T01:40:01.934554156Z [err]      self.dialect.do_execute(
+2025-12-24T01:40:01.934557632Z [err]    File "<string>", line 8, in run_migrations
+2025-12-24T01:40:01.934560806Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 952, in do_execute
+2025-12-24T01:40:01.934563128Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/runtime/environment.py", line 946, in run_migrations
+2025-12-24T01:40:01.934566306Z [err]      cursor.execute(statement, parameters)
+2025-12-24T01:40:01.934568488Z [err]      self.get_context().run_migrations(**kw)
+2025-12-24T01:40:01.934572049Z [err]  sqlalchemy.exc.ProgrammingError: (psycopg2.errors.UndefinedObject) type "cotacaostatus" does not exist
+2025-12-24T01:40:01.934574520Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/runtime/migration.py", line 627, in run_migrations
+2025-12-24T01:40:01.934577713Z [err]  LINE 1: ALTER TABLE cotacoes ADD COLUMN status cotacaostatus NOT NUL...
+2025-12-24T01:40:01.934579970Z [err]      step.migration_fn(**kw)
+2025-12-24T01:40:01.934584365Z [err]                                                 ^
+2025-12-24T01:40:01.934585208Z [err]    File "/app/migrations/versions/7d59f933ff26_adiciona_status_ao_modelo_cotacao.py", line 21, in upgrade
+2025-12-24T01:40:01.934589638Z [err]      with op.batch_alter_table('cotacoes', schema=None) as batch_op:
+2025-12-24T01:40:01.934592889Z [err]  
+2025-12-24T01:40:01.934595292Z [err]           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:40:01.934599033Z [err]    File "/root/.nix-profile/lib/python3.12/contextlib.py", line 144, in __exit__
+2025-12-24T01:40:01.934603286Z [err]      next(self.gen)
+2025-12-24T01:40:01.934607888Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/operations/base.py", line 410, in batch_alter_table
+2025-12-24T01:40:01.934611799Z [err]      impl.flush()
+2025-12-24T01:40:01.934615476Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/operations/batch.py", line 115, in flush
+2025-12-24T01:40:01.934619630Z [err]      fn(*arg, **kw)
+2025-12-24T01:40:01.934623430Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/ddl/impl.py", line 378, in add_column
+2025-12-24T01:40:01.934627173Z [err]      self._exec(
+2025-12-24T01:40:01.934631078Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/ddl/impl.py", line 246, in _exec
+2025-12-24T01:40:01.934635013Z [err]      return conn.execute(construct, params)
+2025-12-24T01:40:01.934642218Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:40:01.934645979Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1419, in execute
+2025-12-24T01:40:01.934650596Z [err]      return meth(
+2025-12-24T01:40:01.934655443Z [err]             ^^^^^
+2025-12-24T01:40:01.934659812Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/sql/ddl.py", line 187, in _execute_on_connection
+2025-12-24T01:40:01.934664683Z [err]      return connection._execute_ddl(
+2025-12-24T01:40:01.934668385Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:40:01.934672446Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1530, in _execute_ddl
+2025-12-24T01:40:01.934676695Z [err]      ret = self._execute_context(
+2025-12-24T01:40:01.934680769Z [err]            ^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T01:40:01.934684579Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1846, in _execute_context
+2025-12-24T01:40:01.934688438Z [err]      return self._exec_single_context(

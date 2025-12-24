@@ -21,29 +21,48 @@ class Config:
 
 class DevelopmentConfig(Config):
     """Configurações para o ambiente de desenvolvimento."""
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DEV_DATABASE_URL') or \
-        'sqlite:///' + os.path.join(basedir, '..', 'kaizen_dev.db')
+    # Usar PostgreSQL do Railway também no desenvolvimento
+    database_url = os.environ.get('DEV_DATABASE_URL') or os.environ.get('DATABASE_URL')
+    
+    if not database_url:
+        # Fallback para SQLite apenas se não houver PostgreSQL configurado
+        sqlite_path = os.path.join(basedir, '..', 'kaizen_dev.db')
+        database_url = f'sqlite:///{sqlite_path}'
+        print(f"⚠️  PostgreSQL não configurado. Usando SQLite: {sqlite_path}")
+    else:
+        # Fix para Railway: postgres:// → postgresql://
+        if database_url.startswith('postgres://'):
+            database_url = database_url.replace('postgres://', 'postgresql://', 1)
+        print(f"✅ Usando PostgreSQL no desenvolvimento")
+    
+    SQLALCHEMY_DATABASE_URI = database_url
 
 
 class TestingConfig(Config):
     """Configurações para o ambiente de testes."""
     TESTING = True
-    SQLALCHEMY_DATABASE_URI = os.environ.get('TEST_DATABASE_URL') or \
-        'sqlite:///' + os.path.join(basedir, '..', 'kaizen_test.db')
+    # Usar PostgreSQL também nos testes (com database separado)
+    database_url = os.environ.get('TEST_DATABASE_URL')
+    
+    if not database_url:
+        # Fallback para SQLite apenas em testes locais sem PostgreSQL
+        sqlite_path = os.path.join(basedir, '..', 'kaizen_test.db')
+        database_url = f'sqlite:///{sqlite_path}'
+    else:
+        # Fix para Railway: postgres:// → postgresql://
+        if database_url.startswith('postgres://'):
+            database_url = database_url.replace('postgres://', 'postgresql://', 1)
+    
+    SQLALCHEMY_DATABASE_URI = database_url
 
 
 class ProductionConfig(Config):
-    """Configurações para o ambiente de produção (Railway/Render)."""
-    # Railway/Render fornecem DATABASE_URL automaticamente
+    """Configurações para o ambiente de produção (Railway)."""
+    # Railway fornece DATABASE_URL automaticamente
     database_url = os.environ.get('DATABASE_URL')
     
     if not database_url:
-        # Fallback para SQLite se não houver PostgreSQL
-        sqlite_path = os.path.join(basedir, '..', 'kaizen_prod.db')
-        database_url = f'sqlite:///{sqlite_path}'
-        print(f"⚠️  Usando SQLite em produção: {sqlite_path}")
-    else:
-        print(f"✅ Usando PostgreSQL em produção")
+        raise ValueError("❌ DATABASE_URL não configurado! Configure a variável de ambiente.")
     
     # Fix para compatibilidade: postgres:// → postgresql://
     if database_url.startswith('postgres://'):
@@ -55,9 +74,9 @@ class ProductionConfig(Config):
         if '?' in database_url:
             database_url = database_url.split('?')[0]
         
-        # Railway já fornece SSL correto, mas Render precisa
-        # Adiciona parâmetros SSL seguros
+        # Adiciona parâmetros SSL seguros para Railway
         database_url += '?sslmode=prefer&connect_timeout=10'
+        print(f"✅ Usando PostgreSQL em produção")
     
     SQLALCHEMY_DATABASE_URI = database_url
 
