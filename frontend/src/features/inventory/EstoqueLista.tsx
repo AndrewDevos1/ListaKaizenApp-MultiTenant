@@ -1,7 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { Table, Button, Form, Spinner, Alert, Row, Col, Card } from 'react-bootstrap';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faUpload } from '@fortawesome/free-solid-svg-icons';
 import CustomSpinner from '../../components/Spinner';
+import ImportacaoEstoque from './ImportacaoEstoque';
 import api from '../../services/api';
 
 interface EstoqueItem {
@@ -27,6 +30,7 @@ const EstoqueLista: React.FC = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [areaName, setAreaName] = useState('');
     const [searchTerm, setSearchTerm] = useState('');
+    const [showImportModal, setShowImportModal] = useState(false);
 
     useEffect(() => {
         if (areaId) {
@@ -108,9 +112,41 @@ const EstoqueLista: React.FC = () => {
         return { totalItems, itemsToRequest, changedItems };
     }, [estoque]);
 
+    const handleImportSuccess = () => {
+        // Recarrega o estoque após importação bem-sucedida
+        if (areaId) {
+            const fetchEstoque = async () => {
+                setIsLoading(true);
+                try {
+                    const estoqueRes = await api.get(`/v1/areas/${areaId}/estoque`);
+                    const estoqueComStatus = estoqueRes.data.map(item => ({ ...item, changed: false }));
+                    setEstoque(estoqueComStatus);
+                    setOriginalEstoque(JSON.parse(JSON.stringify(estoqueComStatus)));
+                    setSuccess('Estoque atualizado com sucesso após importação!');
+                } catch (err) {
+                    setError('Erro ao recarregar o estoque.');
+                } finally {
+                    setIsLoading(false);
+                }
+            };
+            fetchEstoque();
+        }
+    };
+
     return (
         <div>
-            <h2 className="fs-2 mb-4">Preenchimento de Estoque: {areaName}</h2>
+            <div className="d-flex justify-content-between align-items-center mb-4">
+                <h2 className="fs-2 mb-0">Preenchimento de Estoque: {areaName}</h2>
+                <Button 
+                    variant="success" 
+                    onClick={() => setShowImportModal(true)}
+                    title="Importar itens em lote"
+                >
+                    <FontAwesomeIcon icon={faUpload} className="me-2" />
+                    Importar Itens
+                </Button>
+            </div>
+
             {error && <Alert variant="danger">{error}</Alert>}
             {success && <Alert variant="success">{success}</Alert>}
 
@@ -178,6 +214,13 @@ const EstoqueLista: React.FC = () => {
                     </Button>
                 </div>
             </Form>
+
+            {/* Modal de Importação */}
+            <ImportacaoEstoque
+                show={showImportModal}
+                onHide={() => setShowImportModal(false)}
+                onSuccess={handleImportSuccess}
+            />
         </div>
     );
 };
