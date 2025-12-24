@@ -28,7 +28,13 @@ fi
 # Ativa o ambiente virtual
 source .venv/bin/activate
 
+# 🔧 FORÇA USO DE SQLITE LOCAL (remove PostgreSQL do ambiente)
+unset DATABASE_URL
+unset DEV_DATABASE_URL
+unset TEST_DATABASE_URL
+
 # Roda o Flask
 echo "🚀 Iniciando Backend na porta 5000..."
+echo "💾 Usando SQLite local (kaizen_dev.db)"
 export FLASK_APP=run.py
 flask run

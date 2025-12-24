@@ -1,0 +1,1001 @@
+2025-12-24T02:29:06.400854656Z [err]      raise exc_value.with_traceback(exc_tb)
+2025-12-24T02:29:06.400864313Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/impl.py", line 175, in _do_get
+2025-12-24T02:29:06.400865475Z [err]            ^^^^^^^^^^^^^^
+2025-12-24T02:29:06.400874256Z [err]      return self._create_connection()
+2025-12-24T02:29:06.400876487Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 673, in __init__
+2025-12-24T02:29:06.400876908Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/impl.py", line 177, in _do_get
+2025-12-24T02:29:06.400883592Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:06.400887563Z [err]      with util.safe_reraise():
+2025-12-24T02:29:06.400892487Z [err]      self.__connect()
+2025-12-24T02:29:06.400896846Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 388, in _create_connection
+2025-12-24T02:29:06.400902374Z [err]           ^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:06.400906165Z [err]      return _ConnectionFairy._checkout(self)
+2025-12-24T02:29:06.400911014Z [err]      return _ConnectionRecord(self)
+2025-12-24T02:29:06.400917347Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:06.400923920Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:07.423860158Z [err]      conn = _connect(dsn, connection_factory=connection_factory, **kwasync)
+2025-12-24T02:29:07.423872210Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:07.423880110Z [err]  sqlalchemy.exc.OperationalError: (psycopg2.OperationalError) connection to server at "postgres-production-f11c.up.railway.app" (66.33.22.97), port 5432 failed: timeout expired
+2025-12-24T02:29:07.423901696Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/create.py", line 661, in connect
+2025-12-24T02:29:07.423905292Z [err]      return self.loaded_dbapi.connect(*cargs, **cparams)  # type: ignore[no-any-return]  # NOQA: E501
+2025-12-24T02:29:07.423913376Z [err]      return dialect.connect(*cargs, **cparams)
+2025-12-24T02:29:07.423916621Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:07.423922243Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 899, in __connect
+2025-12-24T02:29:07.423922556Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:07.423927727Z [err]    File "/opt/venv/lib/python3.12/site-packages/psycopg2/__init__.py", line 122, in connect
+2025-12-24T02:29:07.423932562Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 630, in connect
+2025-12-24T02:29:07.423933826Z [err]      with util.safe_reraise():
+2025-12-24T02:29:07.423942142Z [err]           ^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:07.423949879Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/util/langhelpers.py", line 224, in __exit__
+2025-12-24T02:29:07.423959224Z [err]      raise exc_value.with_traceback(exc_tb)
+2025-12-24T02:29:07.423978902Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 895, in __connect
+2025-12-24T02:29:07.423988854Z [err]      self.dbapi_connection = connection = pool._invoke_creator(self)
+2025-12-24T02:29:07.424003621Z [err]                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:08.318518732Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 447, in connect
+2025-12-24T02:29:08.318527823Z [err]      return _ConnectionFairy._checkout(self)
+2025-12-24T02:29:08.318533871Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:08.318539153Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 1264, in _checkout
+2025-12-24T02:29:08.318545550Z [err]      fairy = _ConnectionRecord.checkout(pool)
+2025-12-24T02:29:08.318551798Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 899, in __connect
+2025-12-24T02:29:08.318553276Z [err]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:08.318559217Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 711, in checkout
+2025-12-24T02:29:08.318567336Z [err]      with util.safe_reraise():
+2025-12-24T02:29:08.318567616Z [err]      rec = pool._do_get()
+2025-12-24T02:29:08.318593088Z [err]      with util.safe_reraise():
+2025-12-24T02:29:08.318599664Z [err]  
+2025-12-24T02:29:08.318602020Z [err]           ^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:08.318609658Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/util/langhelpers.py", line 224, in __exit__
+2025-12-24T02:29:08.318617953Z [err]  (Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-12-24T02:29:08.318631322Z [inf]  ✅ Usando PostgreSQL no desenvolvimento
+2025-12-24T02:29:08.318637949Z [inf]  ✅ Usando PostgreSQL em produção
+2025-12-24T02:29:08.318644436Z [err]  Traceback (most recent call last):
+2025-12-24T02:29:08.318650798Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 143, in __init__
+2025-12-24T02:29:08.318657235Z [err]      self._dbapi_connection = engine.raw_connection()
+2025-12-24T02:29:08.318663536Z [err]                               ^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:08.318720661Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:08.318733858Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 673, in __init__
+2025-12-24T02:29:08.318743511Z [err]      self.__connect()
+2025-12-24T02:29:08.318751147Z [err]            ^^^^^^^^^^^^^^
+2025-12-24T02:29:08.318756849Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 3309, in raw_connection
+2025-12-24T02:29:08.318767695Z [err]      return self.pool.connect()
+2025-12-24T02:29:08.318775008Z [err]             ^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:08.318778387Z [err]      raise exc_value.with_traceback(exc_tb)
+2025-12-24T02:29:08.318788648Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/impl.py", line 175, in _do_get
+2025-12-24T02:29:08.318794439Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/impl.py", line 177, in _do_get
+2025-12-24T02:29:08.318801215Z [err]      return self._create_connection()
+2025-12-24T02:29:08.318808700Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:08.318815834Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 388, in _create_connection
+2025-12-24T02:29:08.318822442Z [err]      return _ConnectionRecord(self)
+2025-12-24T02:29:08.320830250Z [err]           ^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:08.320847420Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/util/langhelpers.py", line 224, in __exit__
+2025-12-24T02:29:08.320854324Z [err]      raise exc_value.with_traceback(exc_tb)
+2025-12-24T02:29:08.320860259Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 895, in __connect
+2025-12-24T02:29:08.320865909Z [err]      self.dbapi_connection = connection = pool._invoke_creator(self)
+2025-12-24T02:29:08.320872053Z [err]                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:08.321007039Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/core.py", line 824, in invoke
+2025-12-24T02:29:08.321007818Z [err]           ^^^^^^^^^^^^^^^^
+2025-12-24T02:29:08.321017435Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/core.py", line 1873, in invoke
+2025-12-24T02:29:08.321026654Z [err]      return _process_result(sub_ctx.command.invoke(sub_ctx))
+2025-12-24T02:29:08.321028027Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/core.py", line 1873, in invoke
+2025-12-24T02:29:08.321036505Z [err]                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:08.321040203Z [err]      return _process_result(sub_ctx.command.invoke(sub_ctx))
+2025-12-24T02:29:08.321050638Z [err]                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:08.321056866Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:08.321058864Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/core.py", line 1269, in invoke
+2025-12-24T02:29:08.321071173Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/decorators.py", line 34, in new_func
+2025-12-24T02:29:08.321075732Z [err]      return ctx.invoke(self.callback, **ctx.params)
+2025-12-24T02:29:08.321081241Z [err]      return f(get_current_context(), *args, **kwargs)
+2025-12-24T02:29:08.321085368Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:08.321090843Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:08.321094471Z [err]      rv = self.invoke(ctx)
+2025-12-24T02:29:08.321096531Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/core.py", line 824, in invoke
+2025-12-24T02:29:08.321100443Z [err]    File "/opt/venv/lib/python3.12/site-packages/flask/cli.py", line 400, in decorator
+2025-12-24T02:29:08.321105442Z [err]      return callback(*args, **kwargs)
+2025-12-24T02:29:08.321110385Z [err]      return ctx.invoke(f, *args, **kwargs)
+2025-12-24T02:29:08.321117582Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:08.321255719Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/create.py", line 661, in connect
+2025-12-24T02:29:08.321262326Z [err]      return dialect.connect(*cargs, **cparams)
+2025-12-24T02:29:08.321268262Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:08.321274563Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 630, in connect
+2025-12-24T02:29:08.321280672Z [err]      return self.loaded_dbapi.connect(*cargs, **cparams)  # type: ignore[no-any-return]  # NOQA: E501
+2025-12-24T02:29:08.321286282Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:08.321291841Z [err]    File "/opt/venv/lib/python3.12/site-packages/psycopg2/__init__.py", line 122, in connect
+2025-12-24T02:29:08.321318362Z [err]      conn = _connect(dsn, connection_factory=connection_factory, **kwasync)
+2025-12-24T02:29:08.321325857Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:08.321336001Z [err]  psycopg2.OperationalError: connection to server at "postgres-production-f11c.up.railway.app" (66.33.22.97), port 5432 failed: timeout expired
+2025-12-24T02:29:08.321341565Z [err]  
+2025-12-24T02:29:08.321347330Z [err]  
+2025-12-24T02:29:08.321353111Z [err]  The above exception was the direct cause of the following exception:
+2025-12-24T02:29:08.321359306Z [err]  
+2025-12-24T02:29:08.321365274Z [err]  Traceback (most recent call last):
+2025-12-24T02:29:08.321372146Z [err]    File "/opt/venv/bin/flask", line 8, in <module>
+2025-12-24T02:29:08.321377690Z [err]      sys.exit(main())
+2025-12-24T02:29:08.321383443Z [err]               ^^^^^^
+2025-12-24T02:29:08.321389344Z [err]    File "/opt/venv/lib/python3.12/site-packages/flask/cli.py", line 1131, in main
+2025-12-24T02:29:08.321394987Z [err]      cli.main()
+2025-12-24T02:29:08.321400343Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/core.py", line 1406, in main
+2025-12-24T02:29:08.325589999Z [err]      with connectable.connect() as connection:
+2025-12-24T02:29:08.325602966Z [err]           ^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:08.325610309Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 3285, in connect
+2025-12-24T02:29:08.325616483Z [err]      return self._connection_cls(self)
+2025-12-24T02:29:08.325622379Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:08.325628555Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 145, in __init__
+2025-12-24T02:29:08.325635543Z [err]      Connection._handle_dbapi_exception_noconnection(
+2025-12-24T02:29:08.325641864Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 2448, in _handle_dbapi_exception_noconnection
+2025-12-24T02:29:08.325648265Z [err]      raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+2025-12-24T02:29:08.325654051Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 143, in __init__
+2025-12-24T02:29:08.325659682Z [err]      self._dbapi_connection = engine.raw_connection()
+2025-12-24T02:29:08.325665234Z [err]                               ^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:08.325671362Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 3309, in raw_connection
+2025-12-24T02:29:08.325677836Z [err]      return self.pool.connect()
+2025-12-24T02:29:08.325683653Z [err]             ^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:08.325689744Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 447, in connect
+2025-12-24T02:29:08.325780043Z [err]      return callback(*args, **kwargs)
+2025-12-24T02:29:08.325785775Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:08.325794772Z [err]    File "/opt/venv/lib/python3.12/site-packages/flask_migrate/cli.py", line 157, in upgrade
+2025-12-24T02:29:08.325800416Z [err]      _upgrade(directory or g.directory, revision, sql, tag, x_arg or g.x_arg)
+2025-12-24T02:29:08.325806744Z [err]    File "/opt/venv/lib/python3.12/site-packages/flask_migrate/__init__.py", line 111, in wrapped
+2025-12-24T02:29:08.325813514Z [err]      f(*args, **kwargs)
+2025-12-24T02:29:08.325818715Z [err]    File "/opt/venv/lib/python3.12/site-packages/flask_migrate/__init__.py", line 200, in upgrade
+2025-12-24T02:29:08.325824012Z [err]      command.upgrade(config, revision, sql=sql, tag=tag)
+2025-12-24T02:29:08.325831701Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/command.py", line 483, in upgrade
+2025-12-24T02:29:08.325836763Z [err]      script.run_env()
+2025-12-24T02:29:08.325842618Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/script/base.py", line 545, in run_env
+2025-12-24T02:29:08.325848910Z [err]      util.load_python_file(self.dir, "env.py")
+2025-12-24T02:29:08.325861535Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/util/pyfiles.py", line 116, in load_python_file
+2025-12-24T02:29:08.325869788Z [err]      module = load_module_py(module_id, path)
+2025-12-24T02:29:08.325876412Z [err]               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:08.325882325Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/util/pyfiles.py", line 136, in load_module_py
+2025-12-24T02:29:08.325891912Z [err]      spec.loader.exec_module(module)  # type: ignore
+2025-12-24T02:29:08.325897398Z [err]      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:08.325906266Z [err]    File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+2025-12-24T02:29:08.326195839Z [err]    File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+2025-12-24T02:29:08.326201343Z [err]    File "/app/migrations/env.py", line 114, in <module>
+2025-12-24T02:29:08.326209173Z [err]      run_migrations_online()
+2025-12-24T02:29:08.326215483Z [err]    File "/app/migrations/env.py", line 100, in run_migrations_online
+2025-12-24T02:29:08.328318109Z [err]      return _ConnectionFairy._checkout(self)
+2025-12-24T02:29:08.328323456Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:08.328328463Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 1264, in _checkout
+2025-12-24T02:29:08.328333299Z [err]      fairy = _ConnectionRecord.checkout(pool)
+2025-12-24T02:29:08.328338274Z [err]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:08.328343115Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 711, in checkout
+2025-12-24T02:29:08.328348312Z [err]      rec = pool._do_get()
+2025-12-24T02:29:08.328353573Z [err]            ^^^^^^^^^^^^^^
+2025-12-24T02:29:08.328358409Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/impl.py", line 177, in _do_get
+2025-12-24T02:29:08.328363243Z [err]      with util.safe_reraise():
+2025-12-24T02:29:08.328368249Z [err]           ^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:08.328373588Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/util/langhelpers.py", line 224, in __exit__
+2025-12-24T02:29:08.328378525Z [err]      raise exc_value.with_traceback(exc_tb)
+2025-12-24T02:29:08.328383632Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/impl.py", line 175, in _do_get
+2025-12-24T02:29:08.328388235Z [err]      return self._create_connection()
+2025-12-24T02:29:08.328392955Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:08.328507628Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 388, in _create_connection
+2025-12-24T02:29:08.328517399Z [err]      return _ConnectionRecord(self)
+2025-12-24T02:29:08.328525633Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:08.328542572Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 673, in __init__
+2025-12-24T02:29:08.328548124Z [err]      self.__connect()
+2025-12-24T02:29:08.334787470Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 899, in __connect
+2025-12-24T02:29:08.334793825Z [err]      with util.safe_reraise():
+2025-12-24T02:29:08.334799918Z [err]           ^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:08.334806474Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/util/langhelpers.py", line 224, in __exit__
+2025-12-24T02:29:08.334813304Z [err]      raise exc_value.with_traceback(exc_tb)
+2025-12-24T02:29:08.334820689Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 895, in __connect
+2025-12-24T02:29:08.334826633Z [err]      self.dbapi_connection = connection = pool._invoke_creator(self)
+2025-12-24T02:29:08.334833751Z [err]                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:08.334841612Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/create.py", line 661, in connect
+2025-12-24T02:29:08.334849560Z [err]      return dialect.connect(*cargs, **cparams)
+2025-12-24T02:29:08.334856224Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:08.334863569Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 630, in connect
+2025-12-24T02:29:08.334869924Z [err]      return self.loaded_dbapi.connect(*cargs, **cparams)  # type: ignore[no-any-return]  # NOQA: E501
+2025-12-24T02:29:08.334876200Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:08.334882399Z [err]    File "/opt/venv/lib/python3.12/site-packages/psycopg2/__init__.py", line 122, in connect
+2025-12-24T02:29:08.334889292Z [err]      conn = _connect(dsn, connection_factory=connection_factory, **kwasync)
+2025-12-24T02:29:08.334894966Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:08.334900489Z [err]  sqlalchemy.exc.OperationalError: (psycopg2.OperationalError) connection to server at "postgres-production-f11c.up.railway.app" (66.33.22.97), port 5432 failed: timeout expired
+2025-12-24T02:29:08.335450606Z [err]  
+2025-12-24T02:29:08.335457770Z [err]  (Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-12-24T02:29:16.442256059Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 143, in __init__
+2025-12-24T02:29:16.442267079Z [err]      self._dbapi_connection = engine.raw_connection()
+2025-12-24T02:29:16.442267660Z [err]           ^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:16.442275227Z [err]                               ^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:16.442293542Z [err]      return _ConnectionFairy._checkout(self)
+2025-12-24T02:29:16.442293811Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 711, in checkout
+2025-12-24T02:29:16.442294403Z [inf]  ✅ Usando PostgreSQL no desenvolvimento
+2025-12-24T02:29:16.442304016Z [err]      rec = pool._do_get()
+2025-12-24T02:29:16.442305865Z [inf]  ✅ Usando PostgreSQL em produção
+2025-12-24T02:29:16.442307665Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:16.442315349Z [err]            ^^^^^^^^^^^^^^
+2025-12-24T02:29:16.442315995Z [err]  Traceback (most recent call last):
+2025-12-24T02:29:16.442322682Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 1264, in _checkout
+2025-12-24T02:29:16.442324706Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/impl.py", line 177, in _do_get
+2025-12-24T02:29:16.442332133Z [err]      fairy = _ConnectionRecord.checkout(pool)
+2025-12-24T02:29:16.442334191Z [err]      with util.safe_reraise():
+2025-12-24T02:29:16.442334742Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 3309, in raw_connection
+2025-12-24T02:29:16.442340672Z [err]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:16.442348912Z [err]      return self.pool.connect()
+2025-12-24T02:29:16.442368340Z [err]             ^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:16.442377793Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 447, in connect
+2025-12-24T02:29:17.581085442Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/util/langhelpers.py", line 224, in __exit__
+2025-12-24T02:29:17.581091947Z [err]      raise exc_value.with_traceback(exc_tb)
+2025-12-24T02:29:17.581098382Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/impl.py", line 175, in _do_get
+2025-12-24T02:29:17.581104544Z [err]      return self._create_connection()
+2025-12-24T02:29:17.581158695Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:17.581165290Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 388, in _create_connection
+2025-12-24T02:29:17.581170825Z [err]      return _ConnectionRecord(self)
+2025-12-24T02:29:17.581176405Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:17.581182303Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 673, in __init__
+2025-12-24T02:29:17.581186852Z [err]      self.__connect()
+2025-12-24T02:29:17.581191369Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 899, in __connect
+2025-12-24T02:29:17.581196301Z [err]      with util.safe_reraise():
+2025-12-24T02:29:17.581200951Z [err]           ^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:17.581205879Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/util/langhelpers.py", line 224, in __exit__
+2025-12-24T02:29:17.581210175Z [err]      raise exc_value.with_traceback(exc_tb)
+2025-12-24T02:29:17.582086529Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 895, in __connect
+2025-12-24T02:29:17.582097453Z [err]      self.dbapi_connection = connection = pool._invoke_creator(self)
+2025-12-24T02:29:17.582103314Z [err]                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:17.582109439Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/create.py", line 661, in connect
+2025-12-24T02:29:18.420112494Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 630, in connect
+2025-12-24T02:29:18.420120409Z [err]      return self.loaded_dbapi.connect(*cargs, **cparams)  # type: ignore[no-any-return]  # NOQA: E501
+2025-12-24T02:29:18.420127872Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:18.420207369Z [err]  psycopg2.OperationalError: connection to server at "postgres-production-f11c.up.railway.app" (66.33.22.97), port 5432 failed: timeout expired
+2025-12-24T02:29:18.420214975Z [err]  
+2025-12-24T02:29:18.420250411Z [err]  The above exception was the direct cause of the following exception:
+2025-12-24T02:29:18.420257648Z [err]  
+2025-12-24T02:29:18.420264948Z [err]  Traceback (most recent call last):
+2025-12-24T02:29:18.420271725Z [err]    File "/opt/venv/bin/flask", line 8, in <module>
+2025-12-24T02:29:18.420283272Z [err]    File "/opt/venv/lib/python3.12/site-packages/psycopg2/__init__.py", line 122, in connect
+2025-12-24T02:29:18.420290065Z [err]      conn = _connect(dsn, connection_factory=connection_factory, **kwasync)
+2025-12-24T02:29:18.420296471Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:18.420306277Z [err]      sys.exit(main())
+2025-12-24T02:29:18.420311911Z [err]               ^^^^^^
+2025-12-24T02:29:18.420316832Z [err]    File "/opt/venv/lib/python3.12/site-packages/flask/cli.py", line 1131, in main
+2025-12-24T02:29:18.420321532Z [err]      cli.main()
+2025-12-24T02:29:18.420331483Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/core.py", line 1406, in main
+2025-12-24T02:29:18.420338189Z [err]      return dialect.connect(*cargs, **cparams)
+2025-12-24T02:29:18.420340272Z [err]      rv = self.invoke(ctx)
+2025-12-24T02:29:18.420346144Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:18.420349431Z [err]  
+2025-12-24T02:29:18.428229965Z [err]      return callback(*args, **kwargs)
+2025-12-24T02:29:18.428237707Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:18.428338532Z [err]    File "/opt/venv/lib/python3.12/site-packages/flask_migrate/cli.py", line 157, in upgrade
+2025-12-24T02:29:18.428345362Z [err]      _upgrade(directory or g.directory, revision, sql, tag, x_arg or g.x_arg)
+2025-12-24T02:29:18.428351963Z [err]    File "/opt/venv/lib/python3.12/site-packages/flask_migrate/__init__.py", line 111, in wrapped
+2025-12-24T02:29:18.428359692Z [err]      f(*args, **kwargs)
+2025-12-24T02:29:18.428378349Z [err]      util.load_python_file(self.dir, "env.py")
+2025-12-24T02:29:18.428385033Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/util/pyfiles.py", line 116, in load_python_file
+2025-12-24T02:29:18.428391670Z [err]      module = load_module_py(module_id, path)
+2025-12-24T02:29:18.428397709Z [err]               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:18.428407303Z [err]    File "/opt/venv/lib/python3.12/site-packages/flask_migrate/__init__.py", line 200, in upgrade
+2025-12-24T02:29:18.428413898Z [err]      command.upgrade(config, revision, sql=sql, tag=tag)
+2025-12-24T02:29:18.428420477Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/command.py", line 483, in upgrade
+2025-12-24T02:29:18.428428184Z [err]      script.run_env()
+2025-12-24T02:29:18.428434894Z [err]    File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+2025-12-24T02:29:18.428436495Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/script/base.py", line 545, in run_env
+2025-12-24T02:29:18.428441892Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/util/pyfiles.py", line 136, in load_module_py
+2025-12-24T02:29:18.428591254Z [err]    File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+2025-12-24T02:29:18.428597368Z [err]    File "/app/migrations/env.py", line 114, in <module>
+2025-12-24T02:29:18.428607072Z [err]      run_migrations_online()
+2025-12-24T02:29:18.428613113Z [err]    File "/app/migrations/env.py", line 100, in run_migrations_online
+2025-12-24T02:29:18.428619848Z [err]      with connectable.connect() as connection:
+2025-12-24T02:29:18.428625493Z [err]           ^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:18.428636160Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 3285, in connect
+2025-12-24T02:29:18.428643447Z [err]      return self._connection_cls(self)
+2025-12-24T02:29:18.428650303Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:18.428657420Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 145, in __init__
+2025-12-24T02:29:18.428667019Z [err]      Connection._handle_dbapi_exception_noconnection(
+2025-12-24T02:29:18.428669677Z [err]           ^^^^^^^^^^^^^^^^
+2025-12-24T02:29:18.428673009Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 2448, in _handle_dbapi_exception_noconnection
+2025-12-24T02:29:18.428679576Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/core.py", line 1873, in invoke
+2025-12-24T02:29:18.428679943Z [err]      raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+2025-12-24T02:29:18.428687539Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 143, in __init__
+2025-12-24T02:29:18.428692419Z [err]      self._dbapi_connection = engine.raw_connection()
+2025-12-24T02:29:18.428696647Z [err]                               ^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:18.428702233Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 3309, in raw_connection
+2025-12-24T02:29:18.428709966Z [err]      return self.pool.connect()
+2025-12-24T02:29:18.428711916Z [err]      return _process_result(sub_ctx.command.invoke(sub_ctx))
+2025-12-24T02:29:18.428724852Z [err]                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:18.428731429Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/core.py", line 1873, in invoke
+2025-12-24T02:29:18.428738285Z [err]      return _process_result(sub_ctx.command.invoke(sub_ctx))
+2025-12-24T02:29:18.428745703Z [err]                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:18.428752498Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/core.py", line 1269, in invoke
+2025-12-24T02:29:18.428763080Z [err]      return ctx.invoke(self.callback, **ctx.params)
+2025-12-24T02:29:18.428769662Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:18.428777171Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/core.py", line 824, in invoke
+2025-12-24T02:29:18.428784775Z [err]             ^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:18.428785522Z [err]      return callback(*args, **kwargs)
+2025-12-24T02:29:18.428792826Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 447, in connect
+2025-12-24T02:29:18.428795364Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:18.428806294Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/decorators.py", line 34, in new_func
+2025-12-24T02:29:18.428813579Z [err]      return f(get_current_context(), *args, **kwargs)
+2025-12-24T02:29:18.428819993Z [err]      spec.loader.exec_module(module)  # type: ignore
+2025-12-24T02:29:18.428823078Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:18.428833443Z [err]      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:18.428835645Z [err]    File "/opt/venv/lib/python3.12/site-packages/flask/cli.py", line 400, in decorator
+2025-12-24T02:29:18.428842926Z [err]      return ctx.invoke(f, *args, **kwargs)
+2025-12-24T02:29:18.428849426Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:18.428856315Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/core.py", line 824, in invoke
+2025-12-24T02:29:18.433970736Z [err]      return _ConnectionFairy._checkout(self)
+2025-12-24T02:29:18.433990096Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:18.433996600Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 1264, in _checkout
+2025-12-24T02:29:18.434002143Z [err]      fairy = _ConnectionRecord.checkout(pool)
+2025-12-24T02:29:18.434009850Z [err]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:18.434015861Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 711, in checkout
+2025-12-24T02:29:18.434022061Z [err]      rec = pool._do_get()
+2025-12-24T02:29:18.434030026Z [err]            ^^^^^^^^^^^^^^
+2025-12-24T02:29:18.434036028Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/impl.py", line 177, in _do_get
+2025-12-24T02:29:18.434042175Z [err]      with util.safe_reraise():
+2025-12-24T02:29:18.434048099Z [err]           ^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:18.434053995Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/util/langhelpers.py", line 224, in __exit__
+2025-12-24T02:29:18.434059524Z [err]      raise exc_value.with_traceback(exc_tb)
+2025-12-24T02:29:18.434065570Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/impl.py", line 175, in _do_get
+2025-12-24T02:29:18.434177958Z [err]      return self._create_connection()
+2025-12-24T02:29:18.434182530Z [err]  (Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-12-24T02:29:18.434259579Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:18.434268912Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 388, in _create_connection
+2025-12-24T02:29:18.434275481Z [err]      return _ConnectionRecord(self)
+2025-12-24T02:29:18.434283595Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:18.434289618Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 673, in __init__
+2025-12-24T02:29:18.434295350Z [err]      self.__connect()
+2025-12-24T02:29:18.434434334Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 899, in __connect
+2025-12-24T02:29:18.434440546Z [err]      with util.safe_reraise():
+2025-12-24T02:29:18.434450742Z [err]           ^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:18.434456850Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/util/langhelpers.py", line 224, in __exit__
+2025-12-24T02:29:18.434462572Z [err]      raise exc_value.with_traceback(exc_tb)
+2025-12-24T02:29:18.434468817Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 895, in __connect
+2025-12-24T02:29:18.434475997Z [err]      self.dbapi_connection = connection = pool._invoke_creator(self)
+2025-12-24T02:29:18.434482823Z [err]                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:18.434488888Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/create.py", line 661, in connect
+2025-12-24T02:29:18.434494827Z [err]      return dialect.connect(*cargs, **cparams)
+2025-12-24T02:29:18.434500703Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:18.434507038Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 630, in connect
+2025-12-24T02:29:18.434513095Z [err]      return self.loaded_dbapi.connect(*cargs, **cparams)  # type: ignore[no-any-return]  # NOQA: E501
+2025-12-24T02:29:18.434519424Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:18.434526576Z [err]    File "/opt/venv/lib/python3.12/site-packages/psycopg2/__init__.py", line 122, in connect
+2025-12-24T02:29:18.434532922Z [err]      conn = _connect(dsn, connection_factory=connection_factory, **kwasync)
+2025-12-24T02:29:18.434539726Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:18.434544464Z [err]  sqlalchemy.exc.OperationalError: (psycopg2.OperationalError) connection to server at "postgres-production-f11c.up.railway.app" (66.33.22.97), port 5432 failed: timeout expired
+2025-12-24T02:29:18.434694098Z [err]  
+2025-12-24T02:29:28.276855663Z [inf]  ✅ Usando PostgreSQL no desenvolvimento
+2025-12-24T02:29:28.276861763Z [inf]  ✅ Usando PostgreSQL em produção
+2025-12-24T02:29:28.276867814Z [err]  Traceback (most recent call last):
+2025-12-24T02:29:28.276874603Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 143, in __init__
+2025-12-24T02:29:28.276881211Z [err]      self._dbapi_connection = engine.raw_connection()
+2025-12-24T02:29:28.276887281Z [err]                               ^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:28.276893021Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 3309, in raw_connection
+2025-12-24T02:29:28.276899123Z [err]      return self.pool.connect()
+2025-12-24T02:29:28.276905869Z [err]             ^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:28.276913107Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 447, in connect
+2025-12-24T02:29:28.276920220Z [err]      return _ConnectionFairy._checkout(self)
+2025-12-24T02:29:28.276926131Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:28.276932229Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 1264, in _checkout
+2025-12-24T02:29:28.276939020Z [err]      fairy = _ConnectionRecord.checkout(pool)
+2025-12-24T02:29:28.276945930Z [err]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:28.276952739Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 711, in checkout
+2025-12-24T02:29:28.276959674Z [err]      rec = pool._do_get()
+2025-12-24T02:29:28.276966317Z [err]            ^^^^^^^^^^^^^^
+2025-12-24T02:29:28.276972770Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/impl.py", line 177, in _do_get
+2025-12-24T02:29:28.276979457Z [err]      with util.safe_reraise():
+2025-12-24T02:29:28.276986108Z [err]           ^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:29.465164205Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/util/langhelpers.py", line 224, in __exit__
+2025-12-24T02:29:29.465173847Z [err]      raise exc_value.with_traceback(exc_tb)
+2025-12-24T02:29:29.465179013Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/impl.py", line 175, in _do_get
+2025-12-24T02:29:29.465184170Z [err]      return self._create_connection()
+2025-12-24T02:29:29.465188817Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:29.465194047Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 388, in _create_connection
+2025-12-24T02:29:29.465198683Z [err]      return _ConnectionRecord(self)
+2025-12-24T02:29:29.465203219Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:29.465209266Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 673, in __init__
+2025-12-24T02:29:29.465214138Z [err]      self.__connect()
+2025-12-24T02:29:29.465218258Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 899, in __connect
+2025-12-24T02:29:29.465222512Z [err]      with util.safe_reraise():
+2025-12-24T02:29:29.465227148Z [err]           ^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:29.465231436Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/util/langhelpers.py", line 224, in __exit__
+2025-12-24T02:29:29.465235347Z [err]      raise exc_value.with_traceback(exc_tb)
+2025-12-24T02:29:29.465239330Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 895, in __connect
+2025-12-24T02:29:29.465243959Z [err]      self.dbapi_connection = connection = pool._invoke_creator(self)
+2025-12-24T02:29:29.465248888Z [err]                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:29.465253460Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/create.py", line 661, in connect
+2025-12-24T02:29:30.752768619Z [err]      return dialect.connect(*cargs, **cparams)
+2025-12-24T02:29:30.752775417Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:30.752781755Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 630, in connect
+2025-12-24T02:29:30.752788016Z [err]      return self.loaded_dbapi.connect(*cargs, **cparams)  # type: ignore[no-any-return]  # NOQA: E501
+2025-12-24T02:29:30.752794642Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:30.752800757Z [err]    File "/opt/venv/lib/python3.12/site-packages/psycopg2/__init__.py", line 122, in connect
+2025-12-24T02:29:30.752808574Z [err]      conn = _connect(dsn, connection_factory=connection_factory, **kwasync)
+2025-12-24T02:29:30.752815498Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:30.752821165Z [err]  psycopg2.OperationalError: connection to server at "postgres-production-f11c.up.railway.app" (66.33.22.97), port 5432 failed: timeout expired
+2025-12-24T02:29:30.752828792Z [err]  
+2025-12-24T02:29:30.752834922Z [err]  
+2025-12-24T02:29:30.752841689Z [err]  The above exception was the direct cause of the following exception:
+2025-12-24T02:29:30.752847422Z [err]  
+2025-12-24T02:29:30.752853885Z [err]  Traceback (most recent call last):
+2025-12-24T02:29:30.752860482Z [err]    File "/opt/venv/bin/flask", line 8, in <module>
+2025-12-24T02:29:30.752866722Z [err]      sys.exit(main())
+2025-12-24T02:29:30.752872716Z [err]               ^^^^^^
+2025-12-24T02:29:30.752884998Z [err]    File "/opt/venv/lib/python3.12/site-packages/flask/cli.py", line 1131, in main
+2025-12-24T02:29:30.752890568Z [err]      cli.main()
+2025-12-24T02:29:30.752896719Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/core.py", line 1406, in main
+2025-12-24T02:29:30.752903389Z [err]      rv = self.invoke(ctx)
+2025-12-24T02:29:31.694865434Z [err]      _upgrade(directory or g.directory, revision, sql, tag, x_arg or g.x_arg)
+2025-12-24T02:29:31.694866310Z [err]    File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+2025-12-24T02:29:31.694875923Z [err]    File "/opt/venv/lib/python3.12/site-packages/flask_migrate/__init__.py", line 111, in wrapped
+2025-12-24T02:29:31.694887072Z [err]      f(*args, **kwargs)
+2025-12-24T02:29:31.694890366Z [err]      script.run_env()
+2025-12-24T02:29:31.694897063Z [err]    File "/opt/venv/lib/python3.12/site-packages/flask_migrate/__init__.py", line 200, in upgrade
+2025-12-24T02:29:31.694897324Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/script/base.py", line 545, in run_env
+2025-12-24T02:29:31.694905854Z [err]      command.upgrade(config, revision, sql=sql, tag=tag)
+2025-12-24T02:29:31.694905907Z [err]      util.load_python_file(self.dir, "env.py")
+2025-12-24T02:29:31.694910516Z [err]               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:31.694912827Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/util/pyfiles.py", line 116, in load_python_file
+2025-12-24T02:29:31.694915176Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/command.py", line 483, in upgrade
+2025-12-24T02:29:31.694920501Z [err]      module = load_module_py(module_id, path)
+2025-12-24T02:29:31.694926235Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/util/pyfiles.py", line 136, in load_module_py
+2025-12-24T02:29:31.694932608Z [err]      spec.loader.exec_module(module)  # type: ignore
+2025-12-24T02:29:31.694939439Z [err]      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:31.694985060Z [err]      return callback(*args, **kwargs)
+2025-12-24T02:29:31.694992098Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:31.694998391Z [err]    File "/opt/venv/lib/python3.12/site-packages/flask_migrate/cli.py", line 157, in upgrade
+2025-12-24T02:29:31.695142704Z [err]           ^^^^^^^^^^^^^^^^
+2025-12-24T02:29:31.695148512Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/core.py", line 1873, in invoke
+2025-12-24T02:29:31.695158668Z [err]      return _process_result(sub_ctx.command.invoke(sub_ctx))
+2025-12-24T02:29:31.695164763Z [err]                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:31.695170506Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/core.py", line 1873, in invoke
+2025-12-24T02:29:31.695175815Z [err]      return _process_result(sub_ctx.command.invoke(sub_ctx))
+2025-12-24T02:29:31.695181796Z [err]                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:31.695187427Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/core.py", line 1269, in invoke
+2025-12-24T02:29:31.695193226Z [err]      return ctx.invoke(self.callback, **ctx.params)
+2025-12-24T02:29:31.695198667Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:31.695205321Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/core.py", line 824, in invoke
+2025-12-24T02:29:31.695210949Z [err]      return callback(*args, **kwargs)
+2025-12-24T02:29:31.695215969Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:31.695221144Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/decorators.py", line 34, in new_func
+2025-12-24T02:29:31.695226988Z [err]      return f(get_current_context(), *args, **kwargs)
+2025-12-24T02:29:31.695232324Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:31.695238696Z [err]    File "/opt/venv/lib/python3.12/site-packages/flask/cli.py", line 400, in decorator
+2025-12-24T02:29:31.695243624Z [err]      return ctx.invoke(f, *args, **kwargs)
+2025-12-24T02:29:31.695249118Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:31.695254171Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/core.py", line 824, in invoke
+2025-12-24T02:29:31.697429110Z [err]    File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+2025-12-24T02:29:31.697436479Z [err]    File "/app/migrations/env.py", line 114, in <module>
+2025-12-24T02:29:31.697440644Z [err]      run_migrations_online()
+2025-12-24T02:29:31.697444701Z [err]    File "/app/migrations/env.py", line 100, in run_migrations_online
+2025-12-24T02:29:31.697561771Z [err]      with connectable.connect() as connection:
+2025-12-24T02:29:31.697570638Z [err]           ^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:31.697577211Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 3285, in connect
+2025-12-24T02:29:31.697583268Z [err]      return self._connection_cls(self)
+2025-12-24T02:29:31.697589155Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:31.697594700Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 145, in __init__
+2025-12-24T02:29:31.697600323Z [err]      Connection._handle_dbapi_exception_noconnection(
+2025-12-24T02:29:31.697606122Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 2448, in _handle_dbapi_exception_noconnection
+2025-12-24T02:29:31.697612225Z [err]      raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+2025-12-24T02:29:31.697617828Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 143, in __init__
+2025-12-24T02:29:31.697623926Z [err]      self._dbapi_connection = engine.raw_connection()
+2025-12-24T02:29:31.697629834Z [err]                               ^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:31.697636004Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 3309, in raw_connection
+2025-12-24T02:29:31.697641843Z [err]      return self.pool.connect()
+2025-12-24T02:29:31.697648529Z [err]             ^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:31.697654542Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 447, in connect
+2025-12-24T02:29:31.699678748Z [err]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:31.699679100Z [err]      self.__connect()
+2025-12-24T02:29:31.699688977Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 711, in checkout
+2025-12-24T02:29:31.699696406Z [err]      return _ConnectionRecord(self)
+2025-12-24T02:29:31.699696976Z [err]      rec = pool._do_get()
+2025-12-24T02:29:31.699704737Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:31.699708182Z [err]            ^^^^^^^^^^^^^^
+2025-12-24T02:29:31.699715159Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 673, in __init__
+2025-12-24T02:29:31.699717306Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/impl.py", line 177, in _do_get
+2025-12-24T02:29:31.699723496Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/impl.py", line 175, in _do_get
+2025-12-24T02:29:31.699725666Z [err]      with util.safe_reraise():
+2025-12-24T02:29:31.699731605Z [err]      return _ConnectionFairy._checkout(self)
+2025-12-24T02:29:31.699736497Z [err]      return self._create_connection()
+2025-12-24T02:29:31.699739961Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:31.699747818Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 1264, in _checkout
+2025-12-24T02:29:31.699751879Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:31.699757781Z [err]      fairy = _ConnectionRecord.checkout(pool)
+2025-12-24T02:29:31.699760596Z [err]           ^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:31.699760971Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 388, in _create_connection
+2025-12-24T02:29:31.699771315Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/util/langhelpers.py", line 224, in __exit__
+2025-12-24T02:29:31.699778811Z [err]      raise exc_value.with_traceback(exc_tb)
+2025-12-24T02:29:31.700393664Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 899, in __connect
+2025-12-24T02:29:31.700400852Z [err]      with util.safe_reraise():
+2025-12-24T02:29:31.700406113Z [err]           ^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:31.700412119Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/util/langhelpers.py", line 224, in __exit__
+2025-12-24T02:29:31.700417890Z [err]      raise exc_value.with_traceback(exc_tb)
+2025-12-24T02:29:31.700424132Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 895, in __connect
+2025-12-24T02:29:31.700429981Z [err]      self.dbapi_connection = connection = pool._invoke_creator(self)
+2025-12-24T02:29:31.700435310Z [err]                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:31.700442065Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/create.py", line 661, in connect
+2025-12-24T02:29:31.700444986Z [err]      conn = _connect(dsn, connection_factory=connection_factory, **kwasync)
+2025-12-24T02:29:31.700449913Z [err]      return dialect.connect(*cargs, **cparams)
+2025-12-24T02:29:31.700453796Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:31.700460013Z [err]  sqlalchemy.exc.OperationalError: (psycopg2.OperationalError) connection to server at "postgres-production-f11c.up.railway.app" (66.33.22.97), port 5432 failed: timeout expired
+2025-12-24T02:29:31.700461469Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:31.700467415Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 630, in connect
+2025-12-24T02:29:31.700472648Z [err]      return self.loaded_dbapi.connect(*cargs, **cparams)  # type: ignore[no-any-return]  # NOQA: E501
+2025-12-24T02:29:31.700477776Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:31.700482992Z [err]    File "/opt/venv/lib/python3.12/site-packages/psycopg2/__init__.py", line 122, in connect
+2025-12-24T02:29:31.701321247Z [err]  
+2025-12-24T02:29:31.701326676Z [err]  (Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-12-24T02:29:39.911411356Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 3309, in raw_connection
+2025-12-24T02:29:39.911417320Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/impl.py", line 177, in _do_get
+2025-12-24T02:29:39.911423520Z [err]      return self.pool.connect()
+2025-12-24T02:29:39.911431040Z [err]      with util.safe_reraise():
+2025-12-24T02:29:39.911432239Z [err]             ^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:39.911440758Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 447, in connect
+2025-12-24T02:29:39.911441372Z [err]           ^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:39.911459881Z [err]      return _ConnectionFairy._checkout(self)
+2025-12-24T02:29:39.911466413Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:39.911471829Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 1264, in _checkout
+2025-12-24T02:29:39.911481177Z [err]      fairy = _ConnectionRecord.checkout(pool)
+2025-12-24T02:29:39.911486050Z [err]  Traceback (most recent call last):
+2025-12-24T02:29:39.911489305Z [err]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:39.911491757Z [err]      self._dbapi_connection = engine.raw_connection()
+2025-12-24T02:29:39.911497296Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 143, in __init__
+2025-12-24T02:29:39.911499735Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 711, in checkout
+2025-12-24T02:29:39.911502756Z [err]                               ^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:39.911517859Z [inf]  ✅ Usando PostgreSQL no desenvolvimento
+2025-12-24T02:29:39.911519410Z [err]      rec = pool._do_get()
+2025-12-24T02:29:39.911528469Z [err]            ^^^^^^^^^^^^^^
+2025-12-24T02:29:39.911533635Z [inf]  ✅ Usando PostgreSQL em produção
+2025-12-24T02:29:39.915917916Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/util/langhelpers.py", line 224, in __exit__
+2025-12-24T02:29:39.915923465Z [err]      raise exc_value.with_traceback(exc_tb)
+2025-12-24T02:29:39.915929181Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/impl.py", line 175, in _do_get
+2025-12-24T02:29:39.915935346Z [err]      return self._create_connection()
+2025-12-24T02:29:39.915941205Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:39.915959519Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 388, in _create_connection
+2025-12-24T02:29:39.915965508Z [err]      return _ConnectionRecord(self)
+2025-12-24T02:29:39.915971986Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:39.915978090Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 673, in __init__
+2025-12-24T02:29:39.915984545Z [err]      self.__connect()
+2025-12-24T02:29:39.915990700Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 899, in __connect
+2025-12-24T02:29:39.915996870Z [err]      with util.safe_reraise():
+2025-12-24T02:29:39.916003282Z [err]           ^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:39.916009948Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/util/langhelpers.py", line 224, in __exit__
+2025-12-24T02:29:39.916016278Z [err]      raise exc_value.with_traceback(exc_tb)
+2025-12-24T02:29:39.916238664Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 895, in __connect
+2025-12-24T02:29:39.916248833Z [err]      self.dbapi_connection = connection = pool._invoke_creator(self)
+2025-12-24T02:29:39.916255456Z [err]                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:39.916261022Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/create.py", line 661, in connect
+2025-12-24T02:29:39.916292756Z [err]      return dialect.connect(*cargs, **cparams)
+2025-12-24T02:29:39.916299614Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:39.916305424Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 630, in connect
+2025-12-24T02:29:39.916310890Z [err]      return self.loaded_dbapi.connect(*cargs, **cparams)  # type: ignore[no-any-return]  # NOQA: E501
+2025-12-24T02:29:39.916317300Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:39.916322997Z [err]    File "/opt/venv/lib/python3.12/site-packages/psycopg2/__init__.py", line 122, in connect
+2025-12-24T02:29:39.916328115Z [err]      conn = _connect(dsn, connection_factory=connection_factory, **kwasync)
+2025-12-24T02:29:39.916333784Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:39.916339670Z [err]  psycopg2.OperationalError: connection to server at "postgres-production-f11c.up.railway.app" (66.33.22.97), port 5432 failed: timeout expired
+2025-12-24T02:29:39.916345948Z [err]  
+2025-12-24T02:29:39.916352656Z [err]  
+2025-12-24T02:29:39.916357878Z [err]  The above exception was the direct cause of the following exception:
+2025-12-24T02:29:39.916364110Z [err]  
+2025-12-24T02:29:39.916369604Z [err]  Traceback (most recent call last):
+2025-12-24T02:29:39.916375069Z [err]    File "/opt/venv/bin/flask", line 8, in <module>
+2025-12-24T02:29:39.916400645Z [err]      sys.exit(main())
+2025-12-24T02:29:39.916406483Z [err]               ^^^^^^
+2025-12-24T02:29:39.916412752Z [err]    File "/opt/venv/lib/python3.12/site-packages/flask/cli.py", line 1131, in main
+2025-12-24T02:29:39.916417626Z [err]      cli.main()
+2025-12-24T02:29:39.916423741Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/core.py", line 1406, in main
+2025-12-24T02:29:39.916429464Z [err]      rv = self.invoke(ctx)
+2025-12-24T02:29:39.918371698Z [err]           ^^^^^^^^^^^^^^^^
+2025-12-24T02:29:39.918381348Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/core.py", line 1873, in invoke
+2025-12-24T02:29:39.918389260Z [err]      return _process_result(sub_ctx.command.invoke(sub_ctx))
+2025-12-24T02:29:39.918396852Z [err]                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:39.918403544Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/core.py", line 1873, in invoke
+2025-12-24T02:29:39.918410316Z [err]      return _process_result(sub_ctx.command.invoke(sub_ctx))
+2025-12-24T02:29:39.918417142Z [err]                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:39.918425698Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/core.py", line 1269, in invoke
+2025-12-24T02:29:39.918438592Z [err]      return ctx.invoke(self.callback, **ctx.params)
+2025-12-24T02:29:39.918445969Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:39.918452804Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/core.py", line 824, in invoke
+2025-12-24T02:29:39.918461658Z [err]      return callback(*args, **kwargs)
+2025-12-24T02:29:39.918468758Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:39.918477182Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/decorators.py", line 34, in new_func
+2025-12-24T02:29:39.918484687Z [err]      return f(get_current_context(), *args, **kwargs)
+2025-12-24T02:29:39.918493648Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:39.918500751Z [err]    File "/opt/venv/lib/python3.12/site-packages/flask/cli.py", line 400, in decorator
+2025-12-24T02:29:39.918507407Z [err]      return ctx.invoke(f, *args, **kwargs)
+2025-12-24T02:29:39.918513668Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:39.918520083Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/core.py", line 824, in invoke
+2025-12-24T02:29:39.922293252Z [err]      return callback(*args, **kwargs)
+2025-12-24T02:29:39.922297949Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:39.922305643Z [err]    File "/opt/venv/lib/python3.12/site-packages/flask_migrate/cli.py", line 157, in upgrade
+2025-12-24T02:29:39.922311597Z [err]      _upgrade(directory or g.directory, revision, sql, tag, x_arg or g.x_arg)
+2025-12-24T02:29:39.922317516Z [err]    File "/opt/venv/lib/python3.12/site-packages/flask_migrate/__init__.py", line 111, in wrapped
+2025-12-24T02:29:39.922323520Z [err]      f(*args, **kwargs)
+2025-12-24T02:29:39.922329396Z [err]    File "/opt/venv/lib/python3.12/site-packages/flask_migrate/__init__.py", line 200, in upgrade
+2025-12-24T02:29:39.922334556Z [err]      command.upgrade(config, revision, sql=sql, tag=tag)
+2025-12-24T02:29:39.922341228Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/command.py", line 483, in upgrade
+2025-12-24T02:29:39.922346961Z [err]      script.run_env()
+2025-12-24T02:29:39.922352755Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/script/base.py", line 545, in run_env
+2025-12-24T02:29:39.922357803Z [err]      util.load_python_file(self.dir, "env.py")
+2025-12-24T02:29:39.922363072Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/util/pyfiles.py", line 116, in load_python_file
+2025-12-24T02:29:39.922369273Z [err]      module = load_module_py(module_id, path)
+2025-12-24T02:29:39.922374747Z [err]               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:39.922380369Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/util/pyfiles.py", line 136, in load_module_py
+2025-12-24T02:29:39.922386220Z [err]      spec.loader.exec_module(module)  # type: ignore
+2025-12-24T02:29:39.922392755Z [err]      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:39.922398485Z [err]    File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+2025-12-24T02:29:39.926069578Z [err]      return self._connection_cls(self)
+2025-12-24T02:29:39.926082216Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:39.926089769Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 145, in __init__
+2025-12-24T02:29:39.926096349Z [err]      Connection._handle_dbapi_exception_noconnection(
+2025-12-24T02:29:39.926104101Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 2448, in _handle_dbapi_exception_noconnection
+2025-12-24T02:29:39.926112215Z [err]      raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+2025-12-24T02:29:39.926119075Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 143, in __init__
+2025-12-24T02:29:39.926120691Z [err]    File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+2025-12-24T02:29:39.926125159Z [err]      self._dbapi_connection = engine.raw_connection()
+2025-12-24T02:29:39.926130895Z [err]    File "/app/migrations/env.py", line 114, in <module>
+2025-12-24T02:29:39.926131583Z [err]                               ^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:39.926138379Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 3309, in raw_connection
+2025-12-24T02:29:39.926142039Z [err]      run_migrations_online()
+2025-12-24T02:29:39.926145155Z [err]      return self.pool.connect()
+2025-12-24T02:29:39.926151245Z [err]    File "/app/migrations/env.py", line 100, in run_migrations_online
+2025-12-24T02:29:39.926154428Z [err]             ^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:39.926161127Z [err]      with connectable.connect() as connection:
+2025-12-24T02:29:39.926163484Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 447, in connect
+2025-12-24T02:29:39.926168813Z [err]           ^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:39.926174753Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 3285, in connect
+2025-12-24T02:29:39.932413591Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:39.932426772Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 388, in _create_connection
+2025-12-24T02:29:39.932433152Z [err]      return _ConnectionRecord(self)
+2025-12-24T02:29:39.932438511Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:39.932443326Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 673, in __init__
+2025-12-24T02:29:39.932449018Z [err]      self.__connect()
+2025-12-24T02:29:39.932480200Z [err]      return _ConnectionFairy._checkout(self)
+2025-12-24T02:29:39.932484867Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:39.932491343Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 1264, in _checkout
+2025-12-24T02:29:39.932497699Z [err]      fairy = _ConnectionRecord.checkout(pool)
+2025-12-24T02:29:39.932503960Z [err]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:39.932509816Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 711, in checkout
+2025-12-24T02:29:39.932516295Z [err]      rec = pool._do_get()
+2025-12-24T02:29:39.932523012Z [err]            ^^^^^^^^^^^^^^
+2025-12-24T02:29:39.932529614Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/impl.py", line 177, in _do_get
+2025-12-24T02:29:39.932536708Z [err]      with util.safe_reraise():
+2025-12-24T02:29:39.932543098Z [err]           ^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:39.932566199Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/util/langhelpers.py", line 224, in __exit__
+2025-12-24T02:29:39.932572892Z [err]      raise exc_value.with_traceback(exc_tb)
+2025-12-24T02:29:39.932583200Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/impl.py", line 175, in _do_get
+2025-12-24T02:29:39.932589508Z [err]      return self._create_connection()
+2025-12-24T02:29:39.936897952Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 630, in connect
+2025-12-24T02:29:39.936910584Z [err]      return self.loaded_dbapi.connect(*cargs, **cparams)  # type: ignore[no-any-return]  # NOQA: E501
+2025-12-24T02:29:39.936919232Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:39.936926571Z [err]    File "/opt/venv/lib/python3.12/site-packages/psycopg2/__init__.py", line 122, in connect
+2025-12-24T02:29:39.936933872Z [err]      conn = _connect(dsn, connection_factory=connection_factory, **kwasync)
+2025-12-24T02:29:39.936942932Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:39.936945056Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 899, in __connect
+2025-12-24T02:29:39.936952488Z [err]  sqlalchemy.exc.OperationalError: (psycopg2.OperationalError) connection to server at "postgres-production-f11c.up.railway.app" (66.33.22.97), port 5432 failed: timeout expired
+2025-12-24T02:29:39.936953139Z [err]      with util.safe_reraise():
+2025-12-24T02:29:39.936960483Z [err]           ^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:39.936966986Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/util/langhelpers.py", line 224, in __exit__
+2025-12-24T02:29:39.936982483Z [err]      raise exc_value.with_traceback(exc_tb)
+2025-12-24T02:29:39.936989267Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 895, in __connect
+2025-12-24T02:29:39.936998226Z [err]      self.dbapi_connection = connection = pool._invoke_creator(self)
+2025-12-24T02:29:39.937005774Z [err]                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:39.937014352Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/create.py", line 661, in connect
+2025-12-24T02:29:39.937020293Z [err]      return dialect.connect(*cargs, **cparams)
+2025-12-24T02:29:39.937027068Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:29:39.940246076Z [err]  
+2025-12-24T02:29:39.940252253Z [err]  (Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-12-24T02:30:00.709106014Z [inf]  ✅ Usando PostgreSQL no desenvolvimento
+2025-12-24T02:30:00.709112789Z [inf]  ✅ Usando PostgreSQL em produção
+2025-12-24T02:30:00.709122782Z [err]  Traceback (most recent call last):
+2025-12-24T02:30:00.709129477Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 143, in __init__
+2025-12-24T02:30:00.709140564Z [err]      self._dbapi_connection = engine.raw_connection()
+2025-12-24T02:30:00.709147457Z [err]                               ^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:30:00.709153707Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 3309, in raw_connection
+2025-12-24T02:30:00.709161119Z [err]      return self.pool.connect()
+2025-12-24T02:30:00.709168493Z [err]             ^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:30:00.709175331Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 447, in connect
+2025-12-24T02:30:00.709183484Z [err]      return _ConnectionFairy._checkout(self)
+2025-12-24T02:30:00.709193531Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:30:00.709201110Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 1264, in _checkout
+2025-12-24T02:30:00.709209355Z [err]      fairy = _ConnectionRecord.checkout(pool)
+2025-12-24T02:30:00.709216487Z [err]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:30:00.709224452Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 711, in checkout
+2025-12-24T02:30:00.709232219Z [err]      rec = pool._do_get()
+2025-12-24T02:30:00.709239957Z [err]            ^^^^^^^^^^^^^^
+2025-12-24T02:30:00.709272979Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/impl.py", line 177, in _do_get
+2025-12-24T02:30:00.709281370Z [err]      with util.safe_reraise():
+2025-12-24T02:30:00.709288567Z [err]           ^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:30:02.541811973Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 388, in _create_connection
+2025-12-24T02:30:02.541812256Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 673, in __init__
+2025-12-24T02:30:02.541824736Z [err]      with util.safe_reraise():
+2025-12-24T02:30:02.541826700Z [err]      return _ConnectionRecord(self)
+2025-12-24T02:30:02.541829241Z [err]      self.__connect()
+2025-12-24T02:30:02.541831925Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/create.py", line 661, in connect
+2025-12-24T02:30:02.541837561Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:30:02.541841293Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 899, in __connect
+2025-12-24T02:30:02.541844306Z [err]           ^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:30:02.541859167Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 895, in __connect
+2025-12-24T02:30:02.541859568Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/util/langhelpers.py", line 224, in __exit__
+2025-12-24T02:30:02.541871429Z [err]      raise exc_value.with_traceback(exc_tb)
+2025-12-24T02:30:02.541888747Z [err]      self.dbapi_connection = connection = pool._invoke_creator(self)
+2025-12-24T02:30:02.541901356Z [err]                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:30:02.543375113Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/util/langhelpers.py", line 224, in __exit__
+2025-12-24T02:30:02.543381542Z [err]      raise exc_value.with_traceback(exc_tb)
+2025-12-24T02:30:02.543387724Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/impl.py", line 175, in _do_get
+2025-12-24T02:30:02.543393963Z [err]      return self._create_connection()
+2025-12-24T02:30:02.543405766Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:30:03.693750562Z [err]  psycopg2.OperationalError: connection to server at "postgres-production-f11c.up.railway.app" (66.33.22.97), port 5432 failed: timeout expired
+2025-12-24T02:30:03.693792636Z [err]      return dialect.connect(*cargs, **cparams)
+2025-12-24T02:30:03.693799922Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:30:03.693806628Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 630, in connect
+2025-12-24T02:30:03.693814158Z [err]      return self.loaded_dbapi.connect(*cargs, **cparams)  # type: ignore[no-any-return]  # NOQA: E501
+2025-12-24T02:30:03.693820832Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:30:03.693827054Z [err]    File "/opt/venv/lib/python3.12/site-packages/psycopg2/__init__.py", line 122, in connect
+2025-12-24T02:30:03.693835174Z [err]      conn = _connect(dsn, connection_factory=connection_factory, **kwasync)
+2025-12-24T02:30:03.693842296Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:30:03.697929788Z [err]  
+2025-12-24T02:30:03.697940962Z [err]  
+2025-12-24T02:30:03.697946661Z [err]  The above exception was the direct cause of the following exception:
+2025-12-24T02:30:03.697951889Z [err]  
+2025-12-24T02:30:03.697956735Z [err]  Traceback (most recent call last):
+2025-12-24T02:30:03.697962220Z [err]    File "/opt/venv/bin/flask", line 8, in <module>
+2025-12-24T02:30:03.697967838Z [err]      sys.exit(main())
+2025-12-24T02:30:03.697973472Z [err]               ^^^^^^
+2025-12-24T02:30:03.697980471Z [err]    File "/opt/venv/lib/python3.12/site-packages/flask/cli.py", line 1131, in main
+2025-12-24T02:30:03.697988476Z [err]      cli.main()
+2025-12-24T02:30:03.697994638Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/core.py", line 1406, in main
+2025-12-24T02:30:03.698000860Z [err]      rv = self.invoke(ctx)
+2025-12-24T02:30:05.047862715Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/core.py", line 824, in invoke
+2025-12-24T02:30:05.048062654Z [err]           ^^^^^^^^^^^^^^^^
+2025-12-24T02:30:05.048072375Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/core.py", line 1873, in invoke
+2025-12-24T02:30:05.048079744Z [err]      return _process_result(sub_ctx.command.invoke(sub_ctx))
+2025-12-24T02:30:05.048095431Z [err]                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:30:05.048114403Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:30:05.048115779Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/core.py", line 1873, in invoke
+2025-12-24T02:30:05.048122969Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/decorators.py", line 34, in new_func
+2025-12-24T02:30:05.048126049Z [err]      return _process_result(sub_ctx.command.invoke(sub_ctx))
+2025-12-24T02:30:05.048130989Z [err]      return f(get_current_context(), *args, **kwargs)
+2025-12-24T02:30:05.048138758Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:30:05.048143249Z [err]      return ctx.invoke(self.callback, **ctx.params)
+2025-12-24T02:30:05.048148204Z [err]    File "/opt/venv/lib/python3.12/site-packages/flask/cli.py", line 400, in decorator
+2025-12-24T02:30:05.048153801Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:30:05.048157966Z [err]      return ctx.invoke(f, *args, **kwargs)
+2025-12-24T02:30:05.048165412Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:30:05.048166415Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/core.py", line 824, in invoke
+2025-12-24T02:30:05.048170397Z [err]                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:30:05.048175136Z [err]      return callback(*args, **kwargs)
+2025-12-24T02:30:05.048185895Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/core.py", line 1269, in invoke
+2025-12-24T02:30:05.939349539Z [err]      return callback(*args, **kwargs)
+2025-12-24T02:30:05.939356905Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:30:05.939364881Z [err]    File "/opt/venv/lib/python3.12/site-packages/flask_migrate/cli.py", line 157, in upgrade
+2025-12-24T02:30:05.939372281Z [err]      _upgrade(directory or g.directory, revision, sql, tag, x_arg or g.x_arg)
+2025-12-24T02:30:05.939377436Z [err]    File "/opt/venv/lib/python3.12/site-packages/flask_migrate/__init__.py", line 111, in wrapped
+2025-12-24T02:30:05.939382415Z [err]      f(*args, **kwargs)
+2025-12-24T02:30:05.939387923Z [err]    File "/opt/venv/lib/python3.12/site-packages/flask_migrate/__init__.py", line 200, in upgrade
+2025-12-24T02:30:05.939393834Z [err]      command.upgrade(config, revision, sql=sql, tag=tag)
+2025-12-24T02:30:05.939399510Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/command.py", line 483, in upgrade
+2025-12-24T02:30:05.939408839Z [err]      script.run_env()
+2025-12-24T02:30:05.939414343Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/script/base.py", line 545, in run_env
+2025-12-24T02:30:05.939420157Z [err]      util.load_python_file(self.dir, "env.py")
+2025-12-24T02:30:05.939425941Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/util/pyfiles.py", line 116, in load_python_file
+2025-12-24T02:30:05.939431188Z [err]      module = load_module_py(module_id, path)
+2025-12-24T02:30:05.939436713Z [err]               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:30:05.939441812Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/util/pyfiles.py", line 136, in load_module_py
+2025-12-24T02:30:05.939447040Z [err]      spec.loader.exec_module(module)  # type: ignore
+2025-12-24T02:30:05.939452326Z [err]      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:30:05.939457870Z [err]    File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+2025-12-24T02:30:05.950499213Z [err]    File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+2025-12-24T02:30:05.950506251Z [err]    File "/app/migrations/env.py", line 114, in <module>
+2025-12-24T02:30:05.950513167Z [err]      run_migrations_online()
+2025-12-24T02:30:05.950519576Z [err]    File "/app/migrations/env.py", line 100, in run_migrations_online
+2025-12-24T02:30:05.950526717Z [err]      with connectable.connect() as connection:
+2025-12-24T02:30:05.950534429Z [err]           ^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:30:05.950542779Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 3285, in connect
+2025-12-24T02:30:05.950554533Z [err]      return self._connection_cls(self)
+2025-12-24T02:30:05.950563067Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:30:05.950569694Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 145, in __init__
+2025-12-24T02:30:05.950952188Z [err]      Connection._handle_dbapi_exception_noconnection(
+2025-12-24T02:30:05.950965706Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 2448, in _handle_dbapi_exception_noconnection
+2025-12-24T02:30:05.950974756Z [err]      raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+2025-12-24T02:30:05.950982748Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 143, in __init__
+2025-12-24T02:30:05.950991653Z [err]      self._dbapi_connection = engine.raw_connection()
+2025-12-24T02:30:05.951000403Z [err]                               ^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:30:05.951009359Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 3309, in raw_connection
+2025-12-24T02:30:05.951017688Z [err]      return self.pool.connect()
+2025-12-24T02:30:05.951025387Z [err]             ^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:30:05.951031446Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 447, in connect
+2025-12-24T02:30:05.956150600Z [err]      return _ConnectionFairy._checkout(self)
+2025-12-24T02:30:05.956165469Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 673, in __init__
+2025-12-24T02:30:05.956165621Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:30:05.956175468Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 1264, in _checkout
+2025-12-24T02:30:05.956180588Z [err]      self.__connect()
+2025-12-24T02:30:05.956184660Z [err]      fairy = _ConnectionRecord.checkout(pool)
+2025-12-24T02:30:05.956191038Z [err]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:30:05.956195191Z [err]      rec = pool._do_get()
+2025-12-24T02:30:05.956201052Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 711, in checkout
+2025-12-24T02:30:05.956203655Z [err]            ^^^^^^^^^^^^^^
+2025-12-24T02:30:05.956210287Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/impl.py", line 177, in _do_get
+2025-12-24T02:30:05.956215122Z [err]      with util.safe_reraise():
+2025-12-24T02:30:05.956223098Z [err]           ^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:30:05.956229000Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/util/langhelpers.py", line 224, in __exit__
+2025-12-24T02:30:05.956233886Z [err]      raise exc_value.with_traceback(exc_tb)
+2025-12-24T02:30:05.956238826Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/impl.py", line 175, in _do_get
+2025-12-24T02:30:05.956245544Z [err]      return self._create_connection()
+2025-12-24T02:30:05.956250845Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:30:05.956257694Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 388, in _create_connection
+2025-12-24T02:30:05.956263182Z [err]      return _ConnectionRecord(self)
+2025-12-24T02:30:05.956268477Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:30:05.961753637Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:30:05.961766029Z [err]  sqlalchemy.exc.OperationalError: (psycopg2.OperationalError) connection to server at "postgres-production-f11c.up.railway.app" (66.33.22.97), port 5432 failed: timeout expired
+2025-12-24T02:30:05.961769401Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/util/langhelpers.py", line 224, in __exit__
+2025-12-24T02:30:05.961786383Z [err]      self.dbapi_connection = connection = pool._invoke_creator(self)
+2025-12-24T02:30:05.961796401Z [err]                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:30:05.961799857Z [err]      raise exc_value.with_traceback(exc_tb)
+2025-12-24T02:30:05.961814342Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/create.py", line 661, in connect
+2025-12-24T02:30:05.961815516Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 895, in __connect
+2025-12-24T02:30:05.961829079Z [err]      return dialect.connect(*cargs, **cparams)
+2025-12-24T02:30:05.961838491Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:30:05.961850282Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 630, in connect
+2025-12-24T02:30:05.961851059Z [err]    File "/opt/venv/lib/python3.12/site-packages/psycopg2/__init__.py", line 122, in connect
+2025-12-24T02:30:05.961862949Z [err]      conn = _connect(dsn, connection_factory=connection_factory, **kwasync)
+2025-12-24T02:30:05.961874788Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 899, in __connect
+2025-12-24T02:30:05.961879867Z [err]      return self.loaded_dbapi.connect(*cargs, **cparams)  # type: ignore[no-any-return]  # NOQA: E501
+2025-12-24T02:30:05.961891846Z [err]      with util.safe_reraise():
+2025-12-24T02:30:05.961895917Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:30:05.961914025Z [err]           ^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:30:05.965863863Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 143, in __init__
+2025-12-24T02:30:05.965877736Z [err]      self._dbapi_connection = engine.raw_connection()
+2025-12-24T02:30:05.965884952Z [err]                               ^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:30:05.965891033Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 3309, in raw_connection
+2025-12-24T02:30:05.965896642Z [err]      return self.pool.connect()
+2025-12-24T02:30:05.965927133Z [err]             ^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:30:05.965935779Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 447, in connect
+2025-12-24T02:30:05.965942925Z [err]      return _ConnectionFairy._checkout(self)
+2025-12-24T02:30:05.965950072Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:30:05.965958334Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 1264, in _checkout
+2025-12-24T02:30:05.965979757Z [err]      fairy = _ConnectionRecord.checkout(pool)
+2025-12-24T02:30:05.965989054Z [err]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:30:05.965996374Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 711, in checkout
+2025-12-24T02:30:05.966004232Z [err]      rec = pool._do_get()
+2025-12-24T02:30:05.966011966Z [err]            ^^^^^^^^^^^^^^
+2025-12-24T02:30:05.966020879Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/impl.py", line 177, in _do_get
+2025-12-24T02:30:05.966029936Z [err]  
+2025-12-24T02:30:05.966039932Z [err]  (Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-12-24T02:30:05.966048093Z [inf]  ✅ Usando PostgreSQL no desenvolvimento
+2025-12-24T02:30:05.966053328Z [inf]  ✅ Usando PostgreSQL em produção
+2025-12-24T02:30:05.966062089Z [err]  Traceback (most recent call last):
+2025-12-24T02:30:05.971767407Z [err]                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:30:05.971771364Z [err]      raise exc_value.with_traceback(exc_tb)
+2025-12-24T02:30:05.971781149Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/impl.py", line 175, in _do_get
+2025-12-24T02:30:05.971787664Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:30:05.971791864Z [err]      return self._create_connection()
+2025-12-24T02:30:05.971796313Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 388, in _create_connection
+2025-12-24T02:30:05.971805453Z [err]      return _ConnectionRecord(self)
+2025-12-24T02:30:05.971807253Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 899, in __connect
+2025-12-24T02:30:05.971818275Z [err]      with util.safe_reraise():
+2025-12-24T02:30:05.971818879Z [err]      raise exc_value.with_traceback(exc_tb)
+2025-12-24T02:30:05.971828839Z [err]           ^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:30:05.971828841Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 895, in __connect
+2025-12-24T02:30:05.971838455Z [err]      self.dbapi_connection = connection = pool._invoke_creator(self)
+2025-12-24T02:30:05.971863489Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/util/langhelpers.py", line 224, in __exit__
+2025-12-24T02:30:05.971877446Z [err]      with util.safe_reraise():
+2025-12-24T02:30:05.971878265Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:30:05.971887252Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 673, in __init__
+2025-12-24T02:30:05.971888022Z [err]           ^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:30:05.971896628Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/util/langhelpers.py", line 224, in __exit__
+2025-12-24T02:30:05.971897118Z [err]      self.__connect()
+2025-12-24T02:30:05.978471826Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/create.py", line 661, in connect
+2025-12-24T02:30:05.978477326Z [err]      return dialect.connect(*cargs, **cparams)
+2025-12-24T02:30:05.978483322Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:30:05.978490109Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 630, in connect
+2025-12-24T02:30:05.978496615Z [err]      return self.loaded_dbapi.connect(*cargs, **cparams)  # type: ignore[no-any-return]  # NOQA: E501
+2025-12-24T02:30:05.978502875Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:30:05.978508736Z [err]    File "/opt/venv/lib/python3.12/site-packages/psycopg2/__init__.py", line 122, in connect
+2025-12-24T02:30:05.978514637Z [err]      conn = _connect(dsn, connection_factory=connection_factory, **kwasync)
+2025-12-24T02:30:05.978519304Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:30:05.978523837Z [err]  psycopg2.OperationalError: connection to server at "postgres-production-f11c.up.railway.app" (66.33.22.97), port 5432 failed: timeout expired
+2025-12-24T02:30:05.978528965Z [err]  
+2025-12-24T02:30:05.978536295Z [err]  
+2025-12-24T02:30:05.978542288Z [err]  The above exception was the direct cause of the following exception:
+2025-12-24T02:30:05.978548785Z [err]  
+2025-12-24T02:30:05.978554475Z [err]  Traceback (most recent call last):
+2025-12-24T02:30:05.978560109Z [err]    File "/opt/venv/bin/flask", line 8, in <module>
+2025-12-24T02:30:05.978565721Z [err]      sys.exit(main())
+2025-12-24T02:30:05.978572206Z [err]               ^^^^^^
+2025-12-24T02:30:05.978785544Z [err]    File "/opt/venv/lib/python3.12/site-packages/flask/cli.py", line 1131, in main
+2025-12-24T02:30:05.978793201Z [err]      cli.main()
+2025-12-24T02:30:05.978799022Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/core.py", line 1406, in main
+2025-12-24T02:30:05.981823048Z [err]      rv = self.invoke(ctx)
+2025-12-24T02:30:05.981829522Z [err]           ^^^^^^^^^^^^^^^^
+2025-12-24T02:30:05.981836311Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/core.py", line 1873, in invoke
+2025-12-24T02:30:05.981842933Z [err]      return _process_result(sub_ctx.command.invoke(sub_ctx))
+2025-12-24T02:30:05.981849790Z [err]                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:30:05.981857041Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/core.py", line 1873, in invoke
+2025-12-24T02:30:05.981865904Z [err]      return _process_result(sub_ctx.command.invoke(sub_ctx))
+2025-12-24T02:30:05.981872305Z [err]                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:30:05.981879108Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/core.py", line 1269, in invoke
+2025-12-24T02:30:05.981887916Z [err]      return ctx.invoke(self.callback, **ctx.params)
+2025-12-24T02:30:05.981894736Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:30:05.981901041Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/core.py", line 824, in invoke
+2025-12-24T02:30:05.981907456Z [err]      return callback(*args, **kwargs)
+2025-12-24T02:30:05.981921489Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:30:05.981929413Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/decorators.py", line 34, in new_func
+2025-12-24T02:30:05.981935653Z [err]      return f(get_current_context(), *args, **kwargs)
+2025-12-24T02:30:05.981942318Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:30:05.981949524Z [err]    File "/opt/venv/lib/python3.12/site-packages/flask/cli.py", line 400, in decorator
+2025-12-24T02:30:05.981956050Z [err]      return ctx.invoke(f, *args, **kwargs)
+2025-12-24T02:30:05.981962387Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:30:05.981970507Z [err]    File "/opt/venv/lib/python3.12/site-packages/click/core.py", line 824, in invoke
+2025-12-24T02:30:05.996441727Z [err]      return callback(*args, **kwargs)
+2025-12-24T02:30:05.996451592Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:30:05.996460971Z [err]    File "/opt/venv/lib/python3.12/site-packages/flask_migrate/cli.py", line 157, in upgrade
+2025-12-24T02:30:05.996470995Z [err]      _upgrade(directory or g.directory, revision, sql, tag, x_arg or g.x_arg)
+2025-12-24T02:30:05.996480684Z [err]    File "/opt/venv/lib/python3.12/site-packages/flask_migrate/__init__.py", line 111, in wrapped
+2025-12-24T02:30:05.996493708Z [err]      f(*args, **kwargs)
+2025-12-24T02:30:05.996510606Z [err]    File "/opt/venv/lib/python3.12/site-packages/flask_migrate/__init__.py", line 200, in upgrade
+2025-12-24T02:30:05.996521469Z [err]      command.upgrade(config, revision, sql=sql, tag=tag)
+2025-12-24T02:30:05.996531126Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/command.py", line 483, in upgrade
+2025-12-24T02:30:05.996541212Z [err]      script.run_env()
+2025-12-24T02:30:05.996556749Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/script/base.py", line 545, in run_env
+2025-12-24T02:30:05.996567908Z [err]      util.load_python_file(self.dir, "env.py")
+2025-12-24T02:30:05.996577691Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/util/pyfiles.py", line 116, in load_python_file
+2025-12-24T02:30:05.996586230Z [err]      module = load_module_py(module_id, path)
+2025-12-24T02:30:05.996596061Z [err]               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:30:05.996606797Z [err]    File "/opt/venv/lib/python3.12/site-packages/alembic/util/pyfiles.py", line 136, in load_module_py
+2025-12-24T02:30:05.996615658Z [err]      spec.loader.exec_module(module)  # type: ignore
+2025-12-24T02:30:05.996621661Z [err]      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:30:05.996628524Z [err]    File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+2025-12-24T02:30:06.004039062Z [err]    File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+2025-12-24T02:30:06.004044391Z [err]    File "/app/migrations/env.py", line 114, in <module>
+2025-12-24T02:30:06.004049956Z [err]      run_migrations_online()
+2025-12-24T02:30:06.004055733Z [err]    File "/app/migrations/env.py", line 100, in run_migrations_online
+2025-12-24T02:30:06.004134947Z [err]      with connectable.connect() as connection:
+2025-12-24T02:30:06.004151917Z [err]           ^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:30:06.004161355Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 3285, in connect
+2025-12-24T02:30:06.004167453Z [err]      return self._connection_cls(self)
+2025-12-24T02:30:06.004176510Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:30:06.004185417Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 145, in __init__
+2025-12-24T02:30:06.004207783Z [err]      Connection._handle_dbapi_exception_noconnection(
+2025-12-24T02:30:06.004213515Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 2448, in _handle_dbapi_exception_noconnection
+2025-12-24T02:30:06.004220756Z [err]      raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+2025-12-24T02:30:06.004228386Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 143, in __init__
+2025-12-24T02:30:06.004235741Z [err]      self._dbapi_connection = engine.raw_connection()
+2025-12-24T02:30:06.004242491Z [err]                               ^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:30:06.004250250Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 3309, in raw_connection
+2025-12-24T02:30:06.004257513Z [err]      return self.pool.connect()
+2025-12-24T02:30:06.004265052Z [err]             ^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:30:06.004272220Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 447, in connect
+2025-12-24T02:30:06.010072265Z [err]      return _ConnectionFairy._checkout(self)
+2025-12-24T02:30:06.010078745Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:30:06.010084833Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 1264, in _checkout
+2025-12-24T02:30:06.010090695Z [err]      fairy = _ConnectionRecord.checkout(pool)
+2025-12-24T02:30:06.010096040Z [err]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:30:06.010101643Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 711, in checkout
+2025-12-24T02:30:06.010107499Z [err]      rec = pool._do_get()
+2025-12-24T02:30:06.010112831Z [err]            ^^^^^^^^^^^^^^
+2025-12-24T02:30:06.010118569Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/impl.py", line 177, in _do_get
+2025-12-24T02:30:06.010124105Z [err]      with util.safe_reraise():
+2025-12-24T02:30:06.010132996Z [err]           ^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:30:06.010138792Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/util/langhelpers.py", line 224, in __exit__
+2025-12-24T02:30:06.010145200Z [err]      raise exc_value.with_traceback(exc_tb)
+2025-12-24T02:30:06.010151580Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/impl.py", line 175, in _do_get
+2025-12-24T02:30:06.010157659Z [err]      return self._create_connection()
+2025-12-24T02:30:06.010163158Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:30:06.010168620Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 388, in _create_connection
+2025-12-24T02:30:06.010174232Z [err]      return _ConnectionRecord(self)
+2025-12-24T02:30:06.010180916Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:30:06.010186805Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 673, in __init__
+2025-12-24T02:30:06.010192354Z [err]      self.__connect()
+2025-12-24T02:30:06.015982909Z [err]      return self.loaded_dbapi.connect(*cargs, **cparams)  # type: ignore[no-any-return]  # NOQA: E501
+2025-12-24T02:30:06.016000916Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:30:06.016018986Z [err]    File "/opt/venv/lib/python3.12/site-packages/psycopg2/__init__.py", line 122, in connect
+2025-12-24T02:30:06.016026966Z [err]      conn = _connect(dsn, connection_factory=connection_factory, **kwasync)
+2025-12-24T02:30:06.016036762Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:30:06.016043726Z [err]  sqlalchemy.exc.OperationalError: (psycopg2.OperationalError) connection to server at "postgres-production-f11c.up.railway.app" (66.33.22.97), port 5432 failed: timeout expired
+2025-12-24T02:30:06.016167894Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 899, in __connect
+2025-12-24T02:30:06.016175305Z [err]      with util.safe_reraise():
+2025-12-24T02:30:06.016182078Z [err]           ^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:30:06.016189902Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/util/langhelpers.py", line 224, in __exit__
+2025-12-24T02:30:06.016197802Z [err]      raise exc_value.with_traceback(exc_tb)
+2025-12-24T02:30:06.016205388Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 895, in __connect
+2025-12-24T02:30:06.016212630Z [err]      self.dbapi_connection = connection = pool._invoke_creator(self)
+2025-12-24T02:30:06.016219666Z [err]                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:30:06.016226969Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/create.py", line 661, in connect
+2025-12-24T02:30:06.016234156Z [err]      return dialect.connect(*cargs, **cparams)
+2025-12-24T02:30:06.016241077Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-24T02:30:06.016248286Z [err]    File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 630, in connect
+2025-12-24T02:30:06.030954160Z [err]  
+2025-12-24T02:30:06.030959016Z [err]  (Background on this error at: https://sqlalche.me/e/20/e3q8)

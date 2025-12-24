@@ -62,21 +62,24 @@ class ProductionConfig(Config):
     database_url = os.environ.get('DATABASE_URL')
     
     if not database_url:
-        raise ValueError("❌ DATABASE_URL não configurado! Configure a variável de ambiente.")
-    
-    # Fix para compatibilidade: postgres:// → postgresql://
-    if database_url.startswith('postgres://'):
-        database_url = database_url.replace('postgres://', 'postgresql://', 1)
-    
-    # Configurações específicas para PostgreSQL
-    if database_url.startswith('postgresql://'):
-        # Remove query params existentes
-        if '?' in database_url:
-            database_url = database_url.split('?')[0]
+        # Fallback para SQLite em produção (não recomendado, mas evita crash)
+        sqlite_path = os.path.join(basedir, '..', 'kaizen_prod.db')
+        database_url = f'sqlite:///{sqlite_path}'
+        print(f"⚠️  AVISO: DATABASE_URL não configurado! Usando SQLite temporário.")
+    else:
+        # Fix para compatibilidade: postgres:// → postgresql://
+        if database_url.startswith('postgres://'):
+            database_url = database_url.replace('postgres://', 'postgresql://', 1)
         
-        # Adiciona parâmetros SSL seguros para Railway
-        database_url += '?sslmode=prefer&connect_timeout=10'
-        print(f"✅ Usando PostgreSQL em produção")
+        # Configurações específicas para PostgreSQL
+        if database_url.startswith('postgresql://'):
+            # Remove query params existentes
+            if '?' in database_url:
+                database_url = database_url.split('?')[0]
+            
+            # Adiciona parâmetros SSL seguros para Railway
+            database_url += '?sslmode=prefer&connect_timeout=10'
+            print(f"✅ Usando PostgreSQL em produção")
     
     SQLALCHEMY_DATABASE_URI = database_url
 
