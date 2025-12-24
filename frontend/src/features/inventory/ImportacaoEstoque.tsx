@@ -56,6 +56,7 @@ const ImportacaoEstoque: React.FC<ImportacaoEstoqueProps> = ({ show, onHide, onS
     const [areaId, setAreaId] = useState<number | null>(null);
     const [fornecedorId, setFornecedorId] = useState<number | null>(null);
     const [atualizarExistentes, setAtualizarExistentes] = useState(true);
+    const [formatoEscolhido, setFormatoEscolhido] = useState<'simples' | 'completo'>('completo');
     
     const [areas, setAreas] = useState<Area[]>([]);
     const [fornecedores, setFornecedores] = useState<Fornecedor[]>([]);
@@ -114,7 +115,8 @@ const ImportacaoEstoque: React.FC<ImportacaoEstoqueProps> = ({ show, onHide, onS
             setError(null);
             
             const response = await api.post('/admin/import/preview', {
-                texto: texto.trim()
+                texto: texto.trim(),
+                formato_forcado: formatoEscolhido  // Força o formato escolhido
             });
 
             setPreview(response.data);
@@ -179,6 +181,7 @@ const ImportacaoEstoque: React.FC<ImportacaoEstoqueProps> = ({ show, onHide, onS
         setAreaId(null);
         setFornecedorId(null);
         setAtualizarExistentes(true);
+        setFormatoEscolhido('completo');
         setPreview(null);
         setShowPreview(false);
         setError(null);
@@ -251,6 +254,51 @@ const ImportacaoEstoque: React.FC<ImportacaoEstoqueProps> = ({ show, onHide, onS
                                         {texto.trim().split('\n').length} linha(s) carregada(s)
                                     </Form.Text>
                                 )}
+                            </Form.Group>
+
+                            <Form.Group className="mb-3">
+                                <Form.Label>
+                                    <strong>Formato dos Dados *</strong>
+                                </Form.Label>
+                                <div className="d-flex gap-3">
+                                    <Form.Check
+                                        type="radio"
+                                        id="formato-completo"
+                                        name="formato"
+                                        label={
+                                            <span>
+                                                <strong>Completo</strong> - Nome + Qtd Atual + Qtd Mínima
+                                                <br />
+                                                <small className="text-muted">
+                                                    Exemplo: Alga Nori[TAB]2[TAB]6
+                                                </small>
+                                            </span>
+                                        }
+                                        checked={formatoEscolhido === 'completo'}
+                                        onChange={() => setFormatoEscolhido('completo')}
+                                        disabled={loadingPreview || loadingImport}
+                                    />
+                                    <Form.Check
+                                        type="radio"
+                                        id="formato-simples"
+                                        name="formato"
+                                        label={
+                                            <span>
+                                                <strong>Simples</strong> - Apenas nomes
+                                                <br />
+                                                <small className="text-muted">
+                                                    Exemplo: Alga Nori
+                                                </small>
+                                            </span>
+                                        }
+                                        checked={formatoEscolhido === 'simples'}
+                                        onChange={() => setFormatoEscolhido('simples')}
+                                        disabled={loadingPreview || loadingImport}
+                                    />
+                                </div>
+                                <Form.Text className="text-muted">
+                                    ⚠️ Importante: No formato <strong>Completo</strong>, separe as colunas com <strong>TAB</strong> (copie do Excel/Sheets)
+                                </Form.Text>
                             </Form.Group>
 
                             <Form.Group className="mb-3">

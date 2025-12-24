@@ -2648,7 +2648,8 @@ def preview_importacao_estoque(data):
         data: {
             'texto': str - Texto com dados para importar,
             'area_id': int - ID da área (opcional para preview),
-            'fornecedor_id': int - ID do fornecedor (opcional para preview)
+            'fornecedor_id': int - ID do fornecedor (opcional para preview),
+            'formato_forcado': str - 'simples' ou 'completo' (opcional)
         }
     
     Returns:
@@ -2658,12 +2659,16 @@ def preview_importacao_estoque(data):
     
     try:
         texto = data.get('texto', '').strip()
+        formato_forcado = data.get('formato_forcado')  # Novo parâmetro
         
         if not texto:
             return {"error": "Texto para importação é obrigatório"}, 400
         
-        # Parse do texto
-        resultado = parse_texto_importacao(texto)
+        # Parse do texto COM formato forçado se especificado
+        if formato_forcado:
+            resultado = parse_texto_importacao(texto, formato_forcado=formato_forcado)
+        else:
+            resultado = parse_texto_importacao(texto)
         
         if not resultado['sucesso']:
             return {

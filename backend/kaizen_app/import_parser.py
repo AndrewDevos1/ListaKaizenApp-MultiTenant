@@ -161,6 +161,81 @@ class ImportParser:
         
         return itens, erros
     
+    @staticmethod
+    def parse_completo_rigido(texto: str) -> Tuple[List[Dict], List[str]]:
+        """
+        Parse formato completo RÍGIDO: nome + qtd_atual + qtd_minima
+        EXIGE separação por TAB - NÃO aceita espaços
+        
+        Args:
+            texto: String com dados separados por TAB
+            
+        Returns:
+            Tuple (itens_validos, erros)
+        """
+        linhas = texto.strip().split('\n')
+        itens = []
+        erros = []
+        
+        for num_linha, linha in enumerate(linhas, start=1):
+            linha_original = linha
+            linha = linha.strip()
+            if not linha:  # Ignora linhas vazias
+                continue
+            
+            # Separa APENAS por TAB (regra rígida)
+            if '\t' not in linha_original:
+                erros.append(
+                    f"Linha {num_linha}: Formato inválido. "
+                    f"Use TAB para separar as colunas (copie do Excel/Google Sheets). "
+                    f"Não use espaços."
+                )
+                continue
+            
+            partes = linha_original.split('\t')
+            partes = [p.strip() for p in partes if p.strip()]
+            
+            if len(partes) < 3:
+                erros.append(
+                    f"Linha {num_linha}: Esperado 3 colunas (Nome [TAB] Qtd Atual [TAB] Qtd Mínima), "
+                    f"encontrado {len(partes)} coluna(s)"
+                )
+                continue
+            
+            # Extrai as 3 colunas
+            qtd_minima_str = partes[-1]
+            qtd_atual_str = partes[-2]
+            nome_partes = partes[:-2]
+            nome = ' '.join(nome_partes) if nome_partes else partes[0]
+            
+            # Valida quantidades
+            try:
+                qtd_atual = float(qtd_atual_str)
+                qtd_minima = float(qtd_minima_str)
+                
+                if qtd_atual < 0:
+                    erros.append(f"Linha {num_linha}: Quantidade atual não pode ser negativa")
+                    continue
+                
+                if qtd_minima < 0:
+                    erros.append(f"Linha {num_linha}: Quantidade mínima não pode ser negativa")
+                    continue
+                
+                itens.append({
+                    'nome': nome,
+                    'quantidade_atual': int(qtd_atual),
+                    'quantidade_minima': int(qtd_minima)
+                })
+                
+            except ValueError:
+                erros.append(
+                    f"Linha {num_linha}: Quantidades devem ser números válidos "
+                    f"(encontrado: atual='{qtd_atual_str}', mínima='{qtd_minima_str}')"
+                )
+                continue
+        
+        return itens, erros
+    
     @classmethod
     def parse(cls, texto: str) -> Tuple[List[Dict], str, List[str]]:
         """
@@ -190,9 +265,13 @@ class ImportParser:
 
 # Funções auxiliares para facilitar o uso no service
 
-def parse_texto_importacao(texto: str) -> Dict:
+def parse_texto_importacao(texto: str, formato_forcado: str = None) -> Dict:
     """
     Função auxiliar para parse de texto importado
+    
+    Args:
+        texto: Texto para parsear
+        formato_forcado: 'simples' ou 'completo' (força formato específico)
     
     Returns:
         {
@@ -204,13 +283,36 @@ def parse_texto_importacao(texto: str) -> Dict:
             'total_erros': int
         }
     """
-    itens, formato, erros = ImportParser.parse(texto)
-    
-    return {
-        'sucesso': len(itens) > 0,
-        'formato': formato,
-        'itens': itens,
-        'erros': erros,
-        'total_itens': len(itens),
-        'total_erros': len(erros)
-    }
+    if formato_forcado == 'simples':
+        # Força formato simples - SEMPRE trata como apenas nomes
+        itens = ImportParser.parse_simples(texto)
+        return {
+            'sucesso': len(itens) > 0,
+            'formato': 'simples',
+            'itens': itens,
+            'erros': [],
+            'total_itens': len(itens),
+            'total_erros': 0
+        }
+    elif formato_forcado == 'completo':
+        # Força formato completo - EXIGE TAB entre colunas (regra rígida)
+        itens, erros = ImportParser.parse_completo_rigido(texto)
+        return {
+            'sucesso': len(itens) > 0,
+            'formato': 'completo',
+            'itens': itens,
+            'erros': erros,
+            'total_itens': len(itens),
+            'total_erros': len(erros)
+        }
+    else:
+        # Auto-detecta (comportamento original)
+        itens, formato, erros = ImportParser.parse(texto)
+        return {
+            'sucesso': len(itens) > 0,
+            'formato': formato,
+            'itens': itens,
+            'erros': erros,
+            'total_itens': len(itens),
+            'total_erros': len(erros)
+        }
