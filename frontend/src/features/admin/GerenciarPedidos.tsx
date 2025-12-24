@@ -55,6 +55,7 @@ const GerenciarPedidos: React.FC = () => {
 
     useEffect(() => {
         fetchPedidos();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [statusFilter]);
 
     const fetchPedidos = async () => {

@@ -100,6 +100,7 @@ const ListaMaeConsolidada: React.FC = () => {
             fetchListaMae();
             fetchFornecedores();
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [listaId]);
 
     const fetchListaMae = async () => {

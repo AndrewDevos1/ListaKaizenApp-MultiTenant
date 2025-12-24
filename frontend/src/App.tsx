@@ -29,7 +29,6 @@ import CollaboratorDashboard from './features/collaborator/CollaboratorDashboard
 import MinhasListas from './features/collaborator/MinhasListas';
 import EstoqueListaCompras from './features/collaborator/EstoqueListaCompras';
 import ListaEstoque from './features/collaborator/ListaEstoque';
-import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
 import CollaboratorRoute from './components/CollaboratorRoute';
 import Layout from './components/Layout';

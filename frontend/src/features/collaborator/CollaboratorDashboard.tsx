@@ -29,7 +29,6 @@ import { Container, Row, Col, Card, Button, Table } from 'react-bootstrap';
 import {
     faListAlt,
     faCheckCircle,
-    faFileInvoiceDollar,
     faChartLine,
     faArrowUp,
     faArrowDown,
@@ -40,7 +39,6 @@ import {
     faSave,
     faUser,
     faKey,
-    faClipboardList,
     faShoppingCart,
     faTasks,
 } from '@fortawesome/free-solid-svg-icons';

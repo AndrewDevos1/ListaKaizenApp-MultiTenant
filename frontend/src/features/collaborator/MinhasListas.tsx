@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Container, Button, Spinner, Alert, Row, Col, Card, ListGroup } from 'react-bootstrap';
+import { Container, Button, Spinner, Alert, Row, Col, Card } from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faArrowLeft, faClipboardList, faArrowRight } from '@fortawesome/free-solid-svg-icons';
 import api from '../../services/api';

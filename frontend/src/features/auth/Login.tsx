@@ -43,8 +43,7 @@ const Login: React.FC = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
-    const [testUsers, setTestUsers] = useState<TestUser[]>([]);
-    const [loadingTestUsers, setLoadingTestUsers] = useState(false);
+    const [testUsers] = useState<TestUser[]>([]);
     const navigate = useNavigate();
     const { login } = useAuth();
 

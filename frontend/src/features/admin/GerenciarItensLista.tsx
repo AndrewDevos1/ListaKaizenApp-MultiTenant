@@ -67,6 +67,7 @@ const GerenciarItensLista: React.FC = () => {
         if (listaId) {
             fetchDados();
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [listaId]);
 
     const fetchDados = async () => {

@@ -170,6 +170,7 @@ const ListasCompras: React.FC = () => {
     // useEffect para carregar listas na montagem
     useEffect(() => {
         fetchListas();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     // Funções do modal de criar/editar

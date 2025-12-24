@@ -6,7 +6,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Container, Card, Table, Button, Modal, Form, Alert, Spinner, Row, Col, Badge } from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faArrowLeft, faEdit, faBox, faPhone, faPencil, faCheckCircle, faExclamationCircle, faClipboardList } from '@fortawesome/free-solid-svg-icons';
+import { faArrowLeft, faEdit, faBox, faPencil, faCheckCircle, faExclamationCircle, faClipboardList } from '@fortawesome/free-solid-svg-icons';
 import api from '../../services/api';
 import styles from './FornecedorDetalhes.module.css';
 
@@ -67,6 +67,7 @@ const FornecedorDetalhes: React.FC = () => {
 
     useEffect(() => {
         fetchData();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [fornecedorId]);
 
     const fetchData = async () => {

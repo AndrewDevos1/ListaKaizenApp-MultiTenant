@@ -6,7 +6,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Container, Table, Button, Form, Spinner, Alert, Row, Col, Card } from 'react-bootstrap';
+import { Container, Table, Button, Form, Spinner, Alert, Card } from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faArrowLeft, faSave, faExclamationTriangle } from '@fortawesome/free-solid-svg-icons';
 import api from '../../services/api';
@@ -44,6 +44,7 @@ const ListaEstoque: React.FC = () => {
         if (listaId) {
             fetchEstoque();
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [listaId]);
 
     const fetchEstoque = async () => {
