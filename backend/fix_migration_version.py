@@ -34,17 +34,18 @@ def fix_alembic_version():
 
             print(f"Versão atual no banco: {current_version}")
 
-            # Versões problemáticas que foram removidas
+            # Versões problemáticas que foram removidas ou renomeadas
             problematic_versions = [
                 '7e15fa804c55',  # create_lista_mae_item_status_auxiliary
                 'f3a4b5c6d7e9',  # add_soft_delete_to_listas
                 '2c3d4e5f6a71',  # add_lista_tarefas_table
                 '1ada75de6c22',  # Versão antiga removida no revert
+                'add_default_unidade',  # Migração renomeada para .bak
             ]
 
             if current_version in problematic_versions:
-                # Atualizar para o head correto (versão mais recente)
-                correct_head = 'add_default_unidade'  # Última migração aplicada
+                # Atualizar para o head correto (última migração válida)
+                correct_head = 'dc03c5827d09'  # add_soft_delete_fields_to_lista
                 db.session.execute(
                     db.text("UPDATE alembic_version SET version_num = :version"),
                     {"version": correct_head}
