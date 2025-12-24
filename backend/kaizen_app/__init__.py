@@ -1,3 +1,4 @@
+import os
 from flask import Flask, request, jsonify
 from .config import config_by_name
 from .extensions import db, migrate, jwt, cors
@@ -15,10 +16,14 @@ def create_app(config_name='development'):
     migrate.init_app(app, db)
     jwt.init_app(app)
 
-    # Inicializa CORS com configuração permissiva para desenvolvimento e produção
+    # Configura CORS origins dinamicamente
+    cors_origins = os.environ.get('CORS_ORIGINS', '*').split(',')
+    cors_origins = [origin.strip() for origin in cors_origins]
+    
+    # Inicializa CORS com configuração dinâmica
     cors.init_app(app, resources={
         r"/api/*": {
-            "origins": ["*"],
+            "origins": cors_origins,
             "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
             "allow_headers": ["Content-Type", "Authorization", "X-Requested-With"],
             "expose_headers": ["Content-Type", "Authorization"],
@@ -31,7 +36,17 @@ def create_app(config_name='development'):
     @app.after_request
     def add_cors_headers(response):
         """Adiciona headers CORS a TODAS as respostas"""
-        response.headers['Access-Control-Allow-Origin'] = '*'
+        # Usa a variável de ambiente ou fallback para *
+        allowed_origins = os.environ.get('CORS_ORIGINS', '*')
+        origin = request.headers.get('Origin')
+        
+        if allowed_origins == '*':
+            response.headers['Access-Control-Allow-Origin'] = '*'
+        elif origin and origin in allowed_origins:
+            response.headers['Access-Control-Allow-Origin'] = origin
+        else:
+            response.headers['Access-Control-Allow-Origin'] = allowed_origins.split(',')[0].strip()
+            
         response.headers['Access-Control-Allow-Methods'] = 'GET, HEAD, POST, PUT, DELETE, OPTIONS, PATCH'
         response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With'
         response.headers['Access-Control-Max-Age'] = '86400'
