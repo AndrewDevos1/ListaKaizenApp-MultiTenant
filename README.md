@@ -87,7 +87,7 @@ O CORS está configurado de forma **dinâmica e automática** baseado no ambient
 **Como Funciona:**
 O arquivo `backend/kaizen_app/__init__.py` detecta automaticamente:
 - Se `FLASK_CONFIG=development` (padrão local) → CORS aberto para `*`
-- Se `FLASK_CONFIG=production` (Render) → CORS restrito apenas a `https://lista-kaizen-app.vercel.app`
+- Se `FLASK_CONFIG=production` (Railway) → CORS restrito conforme variável `CORS_ORIGINS`
 
 **Resultado:**
 Você **nunca mais precisa editar configurações de CORS** ao mudar de rede. Simplesmente execute o backend e frontend localmente e tudo funciona!
