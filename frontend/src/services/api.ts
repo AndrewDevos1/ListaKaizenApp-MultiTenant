@@ -3,6 +3,11 @@ import axios from 'axios';
 // URL da API em produção (Railway)
 const PRODUCTION_API_URL = 'https://kaizen-lists-api-production.up.railway.app/api';
 
+const normalizeApiUrl = (url: string) => {
+  const trimmed = url.replace(/\/+$/, '');
+  return trimmed.endsWith('/api') ? trimmed : `${trimmed}/api`;
+};
+
 // Determina a URL base da API
 const getApiBaseUrl = () => {
   // Em produção (hostname do Railway), usar URL hardcoded
@@ -11,11 +16,11 @@ const getApiBaseUrl = () => {
   }
   // REACT_APP_API_URL já inclui /api
   if (process.env.REACT_APP_API_URL) {
-    return process.env.REACT_APP_API_URL;
+    return normalizeApiUrl(process.env.REACT_APP_API_URL);
   }
   // REACT_APP_API_BASE_URL precisa adicionar /api
   if (process.env.REACT_APP_API_BASE_URL) {
-    return `${process.env.REACT_APP_API_BASE_URL}/api`;
+    return normalizeApiUrl(process.env.REACT_APP_API_BASE_URL);
   }
   // Fallback para desenvolvimento local
   return 'http://127.0.0.1:5000/api';

@@ -87,6 +87,6 @@ def test_get_dashboard_summary(client, app):
         
         assert response.status_code == 200
         data = response.get_json()
-        assert data['total_usuarios'] == 2
-        assert data['usuarios_pendentes'] == 1
-        assert data['total_listas'] == 1
+        assert data['total_users'] == 2
+        assert data['pending_users'] == 1
+        assert data['total_lists'] == 1

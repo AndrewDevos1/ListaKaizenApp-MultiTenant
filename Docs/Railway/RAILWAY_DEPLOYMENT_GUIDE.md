@@ -82,7 +82,7 @@ pip install -r requirements.txt && flask db upgrade && python diagnose_system.py
 
 #### Variáveis de Ambiente:
 ```
-REACT_APP_API_URL=${{kaizen-backend.RAILWAY_PUBLIC_DOMAIN}}
+REACT_APP_API_URL=${{kaizen-backend.RAILWAY_PUBLIC_DOMAIN}}/api
 NODE_ENV=production
 ```
 
@@ -126,7 +126,7 @@ class ProductionConfig(Config):
 
 ```bash
 # URL do backend no Railway
-REACT_APP_API_URL=https://kaizen-backend-production.up.railway.app
+REACT_APP_API_URL=https://kaizen-backend-production.up.railway.app/api
 ```
 
 ---

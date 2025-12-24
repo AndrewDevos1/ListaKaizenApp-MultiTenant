@@ -16,7 +16,7 @@ import {
     faExclamationTriangle,
     faCheckCircle
 } from '@fortawesome/free-solid-svg-icons';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import api from '../../services/api';
 import styles from './MinhasListasCompras.module.css';
 
@@ -29,8 +29,6 @@ interface Lista {
 }
 
 const MinhasListasCompras: React.FC = () => {
-    const navigate = useNavigate();
-
     // Estados principais
     const [listas, setListas] = useState<Lista[]>([]);
     const [loading, setLoading] = useState(true);

@@ -3,8 +3,14 @@ Script de teste para criar usuário via API
 Testa se a rota /api/admin/create_user está funcionando corretamente
 """
 
-import requests
+import os
 import json
+
+if __name__ != "__main__" and not os.getenv("RUN_API_TESTS"):
+    import pytest
+    pytest.skip("Defina RUN_API_TESTS=1 para executar testes de API.", allow_module_level=True)
+
+import requests
 
 # URL base da API
 BASE_URL = "http://127.0.0.1:5000"

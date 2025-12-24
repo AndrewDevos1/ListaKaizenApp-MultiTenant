@@ -18,10 +18,16 @@ O QUE O SCRIPT TESTA:
 ✓ Limpeza após os testes (deleta usuário de teste)
 """
 
-import requests
+import os
 import json
 import sys
 from datetime import datetime
+
+if __name__ != "__main__" and not os.getenv("RUN_API_TESTS"):
+    import pytest
+    pytest.skip("Defina RUN_API_TESTS=1 para executar testes de API.", allow_module_level=True)
+
+import requests
 
 # Configurações
 BASE_URL = "http://127.0.0.1:5000/api"

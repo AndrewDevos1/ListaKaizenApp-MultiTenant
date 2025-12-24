@@ -102,7 +102,7 @@ gunicorn -w 4 -b 0.0.0.0:$PORT run:app
 ### **Frontend (React Frontend)**
 ```bash
 # Variáveis de Ambiente
-REACT_APP_API_URL=https://kaizen-lists-api-production.up.railway.app
+REACT_APP_API_URL=https://kaizen-lists-api-production.up.railway.app/api
 ```
 
 ### **PostgreSQL (Postgres)**

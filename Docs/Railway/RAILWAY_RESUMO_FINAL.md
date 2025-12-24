@@ -42,7 +42,7 @@ Railway → **React Frontend** → **Variables** → **Raw Editor**
 
 **COLE ISSO:**
 ```env
-REACT_APP_API_URL=https://kaizen-lists-api-production.up.railway.app
+REACT_APP_API_URL=https://kaizen-lists-api-production.up.railway.app/api
 ```
 
 Salvar → **Redeploy** (aguardar ficar verde)

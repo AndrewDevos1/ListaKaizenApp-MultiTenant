@@ -77,7 +77,7 @@ gunicorn -w 4 -b 0.0.0.0:$PORT run:app
 #### **C) Frontend (React Frontend)**
 **Variáveis configuradas:**
 ```bash
-REACT_APP_API_URL=https://kaizen-lists-api-production.up.railway.app
+REACT_APP_API_URL=https://kaizen-lists-api-production.up.railway.app/api
 NODE_ENV=production
 ```
 
@@ -104,10 +104,10 @@ DATABASE_URL=postgresql://postgres:jdmrKwvtVwncIsPChhdOEQLyCSnphyAm@trolley.prox
 #### **Frontend Local (.env.local)**
 ```bash
 # 🌐 Aponta para backend LOCAL
-REACT_APP_API_URL=http://127.0.0.1:5000
+REACT_APP_API_URL=http://127.0.0.1:5000/api
 
 # OU aponta para backend RAILWAY (testar produção)
-# REACT_APP_API_URL=https://kaizen-lists-api-production.up.railway.app
+# REACT_APP_API_URL=https://kaizen-lists-api-production.up.railway.app/api
 ```
 
 ---
@@ -180,7 +180,7 @@ Settings > Variables
 ```
 
 Certifique-se de que tem:
-- `REACT_APP_API_URL=https://kaizen-lists-api-production.up.railway.app`
+- `REACT_APP_API_URL=https://kaizen-lists-api-production.up.railway.app/api`
 - `NODE_ENV=production`
 
 **SALVE** e espere o **redeploy automático**.
