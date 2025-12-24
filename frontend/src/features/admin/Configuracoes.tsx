@@ -44,6 +44,7 @@ const Configuracoes: React.FC = () => {
     const [clearDbLoading, setClearDbLoading] = useState(false);
     const [clearDbError, setClearDbError] = useState('');
     const [populateLoading, setPopulateLoading] = useState(false);
+    const [, setPopulateSuccess] = useState(false);
 
     // Estados para exportação em lote
     const [showExportModal, setShowExportModal] = useState(false);
@@ -135,9 +136,10 @@ const Configuracoes: React.FC = () => {
         setClearDbError('');
 
         try {
-            await api.post('/admin/database/clear', {
+            const response = await api.post('/admin/database/clear', {
                 senha: clearDbPassword
             });
+            console.log('Clear DB response:', response);
 
             // Sucesso - mostrar mensagem e fechar modal
             setShowClearDbModal(false);
@@ -160,7 +162,9 @@ const Configuracoes: React.FC = () => {
         setPopulateLoading(true);
 
         try {
-            await api.post('/admin/database/populate');
+            const response = await api.post('/admin/database/populate');
+            console.log('Populate DB response:', response);
+            setPopulateSuccess(true);
 
             // Sucesso - mostrar mensagem
             setShowSuccess(true);
