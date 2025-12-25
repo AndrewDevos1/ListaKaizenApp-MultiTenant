@@ -26,9 +26,8 @@ import MudarSenha from './features/admin/MudarSenha';
 import EditarPerfil from './features/admin/EditarPerfil';
 import CriarUsuario from './features/admin/CriarUsuario';
 import CollaboratorDashboard from './features/collaborator/CollaboratorDashboard';
-import MinhasListas from './features/collaborator/MinhasListas';
+import MinhasListasCompras from './features/collaborator/MinhasListasCompras';
 import EstoqueListaCompras from './features/collaborator/EstoqueListaCompras';
-import ListaEstoque from './features/collaborator/ListaEstoque';
 import AdminRoute from './components/AdminRoute';
 import CollaboratorRoute from './components/CollaboratorRoute';
 import Layout from './components/Layout';
@@ -75,9 +74,8 @@ function App() {
               <Route path="areas" element={<MinhasSubmissoes />} />
               <Route path="submissions" element={<MinhasSubmissoes />} />
               <Route path="areas/:areaId/estoque" element={<EstoqueLista />} />
-              <Route path="listas" element={<MinhasListas />} />
+              <Route path="listas" element={<MinhasListasCompras />} />
               <Route path="listas/:listaId/estoque" element={<EstoqueListaCompras />} />
-              <Route path="lista/:listaId/estoque" element={<ListaEstoque />} />
               <Route path="perfil" element={<EditarPerfil />} />
               <Route path="mudar-senha" element={<MudarSenha />} />
             </Route>

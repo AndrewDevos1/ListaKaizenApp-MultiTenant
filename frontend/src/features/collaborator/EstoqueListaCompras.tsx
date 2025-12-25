@@ -62,18 +62,18 @@ const EstoqueListaCompras: React.FC = () => {
             const fetchEstoque = async () => {
                 setIsLoading(true);
                 try {
-                    const response = await api.get(`/v1/listas/${listaId}/estoque`);
-                    const estoqueComStatus = response.data.map((item: EstoqueItem) => ({
+                    const [listaResponse, estoqueResponse] = await Promise.all([
+                        api.get(`/collaborator/listas/${listaId}`),
+                        api.get(`/collaborator/listas/${listaId}/estoque`)
+                    ]);
+                    const estoqueComStatus = estoqueResponse.data.map((item: EstoqueItem) => ({
                         ...item,
                         changed: false
                     }));
                     setEstoque(estoqueComStatus);
                     setOriginalEstoque(JSON.parse(JSON.stringify(estoqueComStatus))); // Deep copy
 
-                    // Se há itens, pega o nome da lista do primeiro item (ou você pode fazer outro request)
-                    if (estoqueComStatus.length > 0) {
-                        setListaName(`Lista #${listaId}`);
-                    }
+                    setListaName(listaResponse.data?.nome || `Lista #${listaId}`);
                 } catch (err: any) {
                     setError(err.response?.data?.error || 'Não foi possível carregar os itens de estoque.');
                     console.error('Erro:', err);
@@ -124,7 +124,7 @@ const EstoqueListaCompras: React.FC = () => {
 
             // Faz um request para cada item (pode otimizar depois com batch)
             for (const item of itemsParaSalvar) {
-                await api.put(`/v1/estoque/${item.estoque_id}`, {
+                await api.put(`/collaborator/estoque/${item.estoque_id}`, {
                     quantidade_atual: item.quantidade_atual
                 });
             }
@@ -153,7 +153,7 @@ const EstoqueListaCompras: React.FC = () => {
             }));
 
             const response = await api.post<SubmitResponse>(
-                `/v1/listas/${listaId}/estoque/submit`,
+                `/listas/${listaId}/estoque/submit`,
                 { items: itemsParaSubmeter }
             );
 

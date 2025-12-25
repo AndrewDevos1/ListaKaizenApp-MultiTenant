@@ -1,4 +1,4 @@
-# 📝 ANOTAÇÕES - IMPORTAÇÃO DE ESTOQUE
+ # 📝 ANOTAÇÕES - IMPORTAÇÃO DE ESTOQUE
 
 **Data:** 24/12/2025 06:12 BRT  
 **Branch:** importacao-completa  

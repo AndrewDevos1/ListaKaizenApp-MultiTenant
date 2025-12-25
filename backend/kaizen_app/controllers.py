@@ -660,6 +660,14 @@ def collaborator_dashboard_summary_route():
     response, status = services.get_collaborator_dashboard_summary(user_id)
     return jsonify(response), status
 
+@collaborator_bp.route('/minhas-listas-status', methods=['GET'])
+@collaborator_required()
+def get_minhas_listas_status_route():
+    """Retorna status das listas atribuídas ao colaborador."""
+    user_id = get_user_id_from_jwt()
+    response, status = services.get_minhas_listas_status(user_id)
+    return jsonify(response), status
+
 # ============================================
 # NOVAS ROTAS - LISTAS COM ESTOQUE
 # ============================================

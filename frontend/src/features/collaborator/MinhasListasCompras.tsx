@@ -41,7 +41,7 @@ const MinhasListasCompras: React.FC = () => {
             setLoading(true);
             setError(null);
             const response = await api.get('/collaborator/minhas-listas');
-            setListas(response.data);
+            setListas(response.data.listas || []);
         } catch (err: any) {
             setError(err.response?.data?.error || 'Erro ao carregar listas');
             console.error('Erro ao buscar listas:', err);

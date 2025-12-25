@@ -28,7 +28,7 @@ const MinhasSubmissoes: React.FC = () => {
         const fetchPedidos = async () => {
             setIsLoading(true);
             try {
-                const response = await api.get('/v1/pedidos/me');
+                const response = await api.get('/pedidos/me');
                 setPedidos(response.data);
             } catch (err) {
                 setError('Não foi possível carregar o histórico de pedidos.');

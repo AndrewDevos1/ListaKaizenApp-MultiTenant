@@ -40,7 +40,6 @@ import {
     faUser,
     faKey,
     faShoppingCart,
-    faTasks,
 } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
@@ -70,10 +69,10 @@ interface DashboardStats {
     pedidos_pendentes: number;
 }
 
-interface AreaStatus {
+interface ListStatus {
     id: number;
-    area: string;
-    last_submission: string;
+    nome: string;
+    last_submission: string | null;
     pending_items: number;
 }
 
@@ -159,7 +158,7 @@ const CollaboratorDashboard: React.FC = () => {
         pedidos_pendentes: 0,
     });
 
-    const [areaStatus, setAreaStatus] = useState<AreaStatus[]>([]);
+    const [listStatus, setListStatus] = useState<ListStatus[]>([]);
     const [recentActivities, setRecentActivities] = useState<Activity[]>([]);
     const [loading, setLoading] = useState(true);
     const [widgets, setWidgets] = useState<Widget[]>([]);
@@ -176,6 +175,19 @@ const CollaboratorDashboard: React.FC = () => {
     // Toggle edit mode
     const toggleEditMode = () => {
         setIsEditMode(!isEditMode);
+    };
+
+    const formatListSubmissionDate = (value: string | null) => {
+        if (!value) {
+            return 'Nunca';
+        }
+
+        const parsedDate = new Date(value);
+        if (Number.isNaN(parsedDate.getTime())) {
+            return value;
+        }
+
+        return parsedDate.toLocaleString('pt-BR');
     };
 
     // DIAGNOSTICO: Verificar se este componente esta sendo carregado
@@ -207,18 +219,17 @@ const CollaboratorDashboard: React.FC = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [statsResponse] = await Promise.all([
-                    api.get('/collaborator/dashboard-summary'),
-                ]);
+                const statsResponse = await api.get('/collaborator/dashboard-summary');
 
                 setStats(statsResponse.data);
 
-                // Mock data para demonstração (remover quando backend estiver pronto)
-                setAreaStatus([
-                    { id: 1, area: 'Cozinha', last_submission: '2025-10-20 14:30', pending_items: 3 },
-                    { id: 2, area: 'Almoxarifado', last_submission: '2025-10-20 10:15', pending_items: 1 },
-                    { id: 3, area: 'Manutenção', last_submission: '2025-10-19 16:45', pending_items: 5 },
-                ]);
+                try {
+                    const listasResponse = await api.get('/collaborator/minhas-listas-status');
+                    setListStatus(listasResponse.data || []);
+                } catch (err) {
+                    console.error('Erro ao buscar status das listas:', err);
+                    setListStatus([]);
+                }
 
                 setRecentActivities([
                     { time: '14:30', description: 'Você submeteu lista "Cozinha"' },
@@ -252,20 +263,10 @@ const CollaboratorDashboard: React.FC = () => {
             {
                 id: 'widget-compras',
                 title: 'Minhas Compras',
-                value: 0,
+                value: stats.minhas_areas,
                 icon: faShoppingCart,
                 color: styles.widgetPurple,
                 link: '/collaborator/listas',
-                trend: '',
-                trendType: 'positive',
-            },
-            {
-                id: 'widget-tarefas',
-                title: 'Minhas Tarefas',
-                value: 0,
-                icon: faTasks,
-                color: styles.widgetOrange,
-                link: '/collaborator/tarefas',
                 trend: '',
                 trendType: 'positive',
             },
@@ -380,43 +381,43 @@ const CollaboratorDashboard: React.FC = () => {
                 </div>
 
                 <Row>
-                    {/* Status das Áreas */}
+                    {/* Status das Listas */}
                     <Col lg={8} className="mb-4">
                         <Card className={styles.sectionCard}>
                             <div className={styles.sectionCardHeader}>
                                 <h4 className={styles.sectionCardTitle}>
                                     <FontAwesomeIcon icon={faListAlt} />
-                                    Minhas Áreas de Trabalho
+                                    Minhas Listas de Compras
                                 </h4>
                             </div>
-                            {areaStatus.length > 0 ? (
+                            {listStatus.length > 0 ? (
                                 <Table responsive hover className={styles.customTable}>
                                     <thead>
                                         <tr>
-                                            <th>Área</th>
+                                            <th>Lista</th>
                                             <th>Última Submissão</th>
                                             <th>Itens Pendentes</th>
                                             <th>Ação</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {areaStatus.map((area) => (
-                                            <tr key={area.id}>
-                                                <td><strong>{area.area}</strong></td>
-                                                <td>{area.last_submission}</td>
+                                        {listStatus.map((lista) => (
+                                            <tr key={lista.id}>
+                                                <td><strong>{lista.nome}</strong></td>
+                                                <td>{formatListSubmissionDate(lista.last_submission)}</td>
                                                 <td>
                                                     <span className={styles.badgeWarning}>
-                                                        {area.pending_items} pendente{area.pending_items !== 1 ? 's' : ''}
+                                                        {lista.pending_items} pendente{lista.pending_items !== 1 ? 's' : ''}
                                                     </span>
                                                 </td>
                                                 <td>
                                                     <Button
                                                         as={Link}
-                                                        to={`/collaborator/areas/${area.id}/estoque`}
+                                                        to={`/collaborator/listas/${lista.id}/estoque`}
                                                         variant="outline-primary"
                                                         size="sm"
                                                     >
-                                                        Ver Estoque
+                                                        Ver Lista
                                                     </Button>
                                                 </td>
                                             </tr>
@@ -426,7 +427,7 @@ const CollaboratorDashboard: React.FC = () => {
                             ) : (
                                 <div className={styles.emptyState}>
                                     <FontAwesomeIcon icon={faListAlt} />
-                                    <p>Nenhuma área atribuída a você</p>
+                                    <p>Nenhuma lista atribuída a você</p>
                                 </div>
                             )}
                         </Card>

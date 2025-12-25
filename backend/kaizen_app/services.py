@@ -893,7 +893,24 @@ def create_lista(data):
 def get_all_listas():
     """Retorna todas as listas de compras não deletadas."""
     listas = Lista.query.filter_by(deletado=False).all()
-    return [lista.to_dict() for lista in listas], 200
+    
+    # Serializar listas incluindo colaboradores
+    resultado = []
+    for lista in listas:
+        lista_dict = lista.to_dict()
+        # Adicionar colaboradores manualmente
+        lista_dict['colaboradores'] = [
+            {
+                'id': colaborador.id,
+                'nome': colaborador.nome,
+                'email': colaborador.email,
+                'role': colaborador.role.value if hasattr(colaborador.role, 'value') else colaborador.role
+            }
+            for colaborador in lista.colaboradores
+        ]
+        resultado.append(lista_dict)
+    
+    return resultado, 200
 
 def get_lista_by_id(lista_id):
     """Retorna uma lista específica."""
@@ -910,12 +927,15 @@ def assign_colaboradores_to_lista(lista_id, data):
         # Se a lista de IDs está vazia, remove todos os colaboradores
         lista.colaboradores = []
     else:
-        # Limpa atribuições existentes para garantir que a lista de IDs seja a nova verdade
-        lista.colaboradores = []
+        # Buscar todos os colaboradores válidos primeiro
+        colaboradores_novos = []
         for user_id in colaborador_ids:
             user = repositories.get_by_id(Usuario, user_id)
             if user and user.role == UserRoles.COLLABORATOR:
-                lista.colaboradores.append(user)
+                colaboradores_novos.append(user)
+        
+        # Substituir de uma vez (mais eficiente)
+        lista.colaboradores = colaboradores_novos
     
     db.session.commit()
 
@@ -1193,20 +1213,20 @@ def get_collaborator_dashboard_summary(user_id):
 
     # Submissões pendentes do colaborador
     pending_submissions = Pedido.query.filter_by(
-        criado_por=user_id,
-        status='PENDENTE'
+        usuario_id=user_id,
+        status=PedidoStatus.PENDENTE
     ).count()
 
     # Submissões concluídas do colaborador
     completed_submissions = Pedido.query.filter_by(
-        criado_por=user_id,
-        status='APROVADO'
+        usuario_id=user_id,
+        status=PedidoStatus.APROVADO
     ).count()
 
     # Pedidos pendentes
     pedidos_pendentes = Pedido.query.filter_by(
-        criado_por=user_id,
-        status='PENDENTE'
+        usuario_id=user_id,
+        status=PedidoStatus.PENDENTE
     ).count()
 
     summary_data = {
@@ -1217,6 +1237,37 @@ def get_collaborator_dashboard_summary(user_id):
     }
 
     return summary_data, 200
+
+def get_minhas_listas_status(user_id):
+    """
+    Retorna status das listas atribuídas ao colaborador.
+    Inclui última submissão e quantidade de itens pendentes por lista.
+    """
+    usuario = repositories.get_by_id(Usuario, user_id)
+    if not usuario:
+        return {"error": "Usuário não encontrado."}, 404
+
+    listas = [lista for lista in usuario.listas_atribuidas if not lista.deletado]
+    resultado = []
+
+    for lista in listas:
+        estoques = Estoque.query.filter_by(lista_id=lista.id).all()
+        datas_submissao = [e.data_ultima_submissao for e in estoques if e.data_ultima_submissao]
+        ultima_submissao = max(datas_submissao) if datas_submissao else None
+
+        pending_items = sum(
+            1 for estoque in estoques
+            if float(estoque.quantidade_atual) < float(estoque.quantidade_minima)
+        )
+
+        resultado.append({
+            "id": lista.id,
+            "nome": lista.nome,
+            "last_submission": ultima_submissao.isoformat() if ultima_submissao else None,
+            "pending_items": pending_items
+        })
+
+    return resultado, 200
 
 # --- Serviços de Listas com Estoque (Nova Feature) ---
 
@@ -1229,7 +1280,9 @@ def get_minhas_listas(user_id):
         current_app.logger.error(f"[GET_MINHAS_LISTAS] Usuário {user_id} não encontrado")
         return {"error": "Usuário não encontrado."}, 404
 
-    listas = usuario.listas_atribuidas
+    # Filtrar apenas listas não deletadas
+    listas = [l for l in usuario.listas_atribuidas if not l.deletado]
+    
     current_app.logger.info(f"[GET_MINHAS_LISTAS] Usuário: {usuario.nome}, Listas atribuídas: {len(listas)}")
     for lista in listas:
         current_app.logger.info(f"  - Lista: {lista.id} - {lista.nome}")
