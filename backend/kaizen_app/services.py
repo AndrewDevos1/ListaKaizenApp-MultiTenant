@@ -1096,6 +1096,11 @@ def get_dashboard_summary():
     total_users = Usuario.query.count()
     pending_users = Usuario.query.filter_by(aprovado=False).count()
     total_lists = Lista.query.count()
+    total_items = Item.query.count()
+    pending_submissions = Pedido.query.filter_by(status=PedidoStatus.PENDENTE).count()
+    orders_today = Pedido.query.filter(
+        func.date(Pedido.data_pedido) == datetime.now(timezone.utc).date()
+    ).count()
     pending_cotacoes = Cotacao.query.filter_by(status=CotacaoStatus.PENDENTE).count()
     completed_cotacoes = Cotacao.query.filter_by(status=CotacaoStatus.CONCLUIDA).count()
 
@@ -1103,7 +1108,10 @@ def get_dashboard_summary():
         'total_users': total_users,
         'pending_users': pending_users,
         'total_lists': total_lists,
+        'total_items': total_items,
+        'pending_submissions': pending_submissions,
         'pending_cotacoes': pending_cotacoes,
+        'orders_today': orders_today,
         'completed_cotacoes': completed_cotacoes,
     }
     

@@ -79,7 +79,7 @@ const MinhasListas: React.FC = () => {
                         <Col lg={6} key={lista.id} className="mb-3">
                             <Card
                                 className={styles.listaCard}
-                                onClick={() => navigate(`/collaborator/lista/${lista.id}/estoque`)}
+                                onClick={() => navigate(`/collaborator/listas/${lista.id}/estoque`)}
                                 style={{ cursor: 'pointer' }}
                             >
                                 <Card.Body>
@@ -99,7 +99,7 @@ const MinhasListas: React.FC = () => {
                                             size="sm"
                                             onClick={(e) => {
                                                 e.stopPropagation();
-                                                navigate(`/collaborator/lista/${lista.id}/estoque`);
+                                                navigate(`/collaborator/listas/${lista.id}/estoque`);
                                             }}
                                         >
                                             <FontAwesomeIcon icon={faArrowRight} /> Editar

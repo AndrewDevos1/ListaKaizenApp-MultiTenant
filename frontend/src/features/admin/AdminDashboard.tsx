@@ -71,6 +71,7 @@ interface DashboardStats {
     total_users: number;
     pending_users: number;
     total_lists: number;
+    total_items: number;
     pending_submissions: number;
     pending_cotacoes: number;
     orders_today: number;
@@ -162,6 +163,7 @@ const AdminDashboard: React.FC = () => {
         total_users: 0,
         pending_users: 0,
         total_lists: 0,
+        total_items: 0,
         pending_submissions: 0,
         pending_cotacoes: 0,
         orders_today: 0,
@@ -314,7 +316,7 @@ const AdminDashboard: React.FC = () => {
             {
                 id: 'widget-items',
                 title: 'Itens e Insumos',
-                value: stats.total_lists,
+                value: stats.total_items,
                 icon: faBox,
                 color: styles.widgetBlue,
                 link: '/admin/items',
@@ -327,7 +329,7 @@ const AdminDashboard: React.FC = () => {
                 value: stats.orders_today,
                 icon: faClipboardList,
                 color: styles.widgetRed,
-                link: '/admin/listas-compras',
+                link: '/admin/gerenciar-pedidos',
                 trend: '+7',
                 trendType: 'positive',
             },
