@@ -1093,7 +1093,7 @@ def get_activity_summary():
     """Retorna o número de pedidos por dia nos últimos 7 dias."""
     today = datetime.now(timezone.utc).date()
     dates = [today - timedelta(days=i) for i in range(6, -1, -1)] # Últimos 7 dias
-    
+
     activity_data = []
     for d in dates:
         count = Pedido.query.filter(func.date(Pedido.data_pedido) == d).count()
@@ -1102,6 +1102,79 @@ def get_activity_summary():
     labels = [d.strftime('%d/%m') for d in dates]
 
     return {"labels": labels, "data": activity_data}, 200
+
+def get_listas_status_submissoes():
+    """
+    Retorna o status das submissões de listas com pedidos pendentes.
+
+    Para cada lista, inclui:
+    - ID e nome
+    - Data da última submissão
+    - Quantidade de pedidos pendentes
+    """
+    listas = Lista.query.filter_by(deletado=False).all()
+    resultado = []
+
+    for lista in listas:
+        estoques = Estoque.query.filter_by(lista_id=lista.id).all()
+        if not estoques:
+            continue
+
+        datas_submissao = [e.data_ultima_submissao for e in estoques if e.data_ultima_submissao]
+        ultima_submissao = max(datas_submissao) if datas_submissao else None
+
+        item_ids = {e.item_id for e in estoques if e.item_id}
+        if not item_ids:
+            continue
+
+        pedidos_pendentes = Pedido.query.filter(
+            Pedido.item_id.in_(item_ids),
+            Pedido.status == PedidoStatus.PENDENTE
+        ).count()
+
+        if pedidos_pendentes > 0:
+            resultado.append({
+                "id": lista.id,
+                "nome": lista.nome,
+                "area": lista.nome,
+                "last_submission": ultima_submissao.isoformat() if ultima_submissao else None,
+                "pending_submissions": pedidos_pendentes
+            })
+
+    return resultado, 200
+
+def aprovar_todos_pedidos_lista(lista_id):
+    """
+    Aprova todos os pedidos pendentes associados aos itens de uma lista.
+    """
+    lista = repositories.get_by_id(Lista, lista_id)
+    if not lista:
+        return {"error": "Lista não encontrada."}, 404
+
+    estoques = Estoque.query.filter_by(lista_id=lista_id).all()
+    item_ids = {e.item_id for e in estoques if e.item_id}
+
+    if not item_ids:
+        return {"error": "Lista não possui itens."}, 404
+
+    pedidos_pendentes = Pedido.query.filter(
+        Pedido.item_id.in_(item_ids),
+        Pedido.status == PedidoStatus.PENDENTE
+    ).all()
+
+    if not pedidos_pendentes:
+        return {"error": "Nenhum pedido pendente encontrado para esta lista."}, 404
+
+    for pedido in pedidos_pendentes:
+        pedido.status = PedidoStatus.APROVADO
+
+    db.session.commit()
+
+    return {
+        "message": f"Todos os {len(pedidos_pendentes)} pedidos pendentes foram aprovados com sucesso!",
+        "pedidos_aprovados": len(pedidos_pendentes),
+        "lista_nome": lista.nome
+    }, 200
 
 def get_collaborator_dashboard_summary(user_id):
     """Retorna estatísticas do dashboard para colaboradores."""
@@ -2828,4 +2901,3 @@ def executar_importacao_estoque(data):
         import traceback
         traceback.print_exc()
         return {"error": f"Erro ao executar importação: {str(e)}"}, 500
-

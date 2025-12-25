@@ -719,6 +719,20 @@ def submit_lista_estoque_route(lista_id):
     response, status = services.submit_estoque_lista(lista_id, user_id, items_data)
     return jsonify(response), status
 
+@admin_bp.route('/listas/status-submissoes', methods=['GET'])
+@admin_required()
+def get_listas_status_submissoes_route():
+    """Retorna o status das submissões das listas com pedidos pendentes."""
+    response, status = services.get_listas_status_submissoes()
+    return jsonify(response), status
+
+@admin_bp.route('/listas/<int:lista_id>/aprovar-pedidos', methods=['POST'])
+@admin_required()
+def aprovar_todos_pedidos_lista_route(lista_id):
+    """Aprova todos os pedidos pendentes de uma lista específica."""
+    response, status = services.aprovar_todos_pedidos_lista(lista_id)
+    return jsonify(response), status
+
 @admin_bp.route('/listas/<int:lista_id>/itens', methods=['POST'])
 @admin_required()
 def adicionar_itens_na_lista_route(lista_id):
