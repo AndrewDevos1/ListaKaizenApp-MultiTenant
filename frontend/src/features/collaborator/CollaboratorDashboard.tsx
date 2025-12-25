@@ -69,9 +69,9 @@ interface DashboardStats {
     pedidos_pendentes: number;
 }
 
-interface ListStatus {
+interface AreaStatus {
     id: number;
-    nome: string;
+    area: string;
     last_submission: string | null;
     pending_items: number;
 }
@@ -158,7 +158,7 @@ const CollaboratorDashboard: React.FC = () => {
         pedidos_pendentes: 0,
     });
 
-    const [listStatus, setListStatus] = useState<ListStatus[]>([]);
+    const [areaStatus, setAreaStatus] = useState<AreaStatus[]>([]);
     const [recentActivities, setRecentActivities] = useState<Activity[]>([]);
     const [loading, setLoading] = useState(true);
     const [widgets, setWidgets] = useState<Widget[]>([]);
@@ -224,11 +224,11 @@ const CollaboratorDashboard: React.FC = () => {
                 setStats(statsResponse.data);
 
                 try {
-                    const listasResponse = await api.get('/collaborator/minhas-listas-status');
-                    setListStatus(listasResponse.data || []);
+                    const areasResponse = await api.get('/collaborator/minhas-areas-status');
+                    setAreaStatus(areasResponse.data || []);
                 } catch (err) {
-                    console.error('Erro ao buscar status das listas:', err);
-                    setListStatus([]);
+                    console.error('Erro ao buscar status das áreas:', err);
+                    setAreaStatus([]);
                 }
 
                 setRecentActivities([
@@ -387,37 +387,37 @@ const CollaboratorDashboard: React.FC = () => {
                             <div className={styles.sectionCardHeader}>
                                 <h4 className={styles.sectionCardTitle}>
                                     <FontAwesomeIcon icon={faListAlt} />
-                                    Minhas Listas de Compras
+                                    Minhas Áreas
                                 </h4>
                             </div>
-                            {listStatus.length > 0 ? (
+                            {areaStatus.length > 0 ? (
                                 <Table responsive hover className={styles.customTable}>
                                     <thead>
                                         <tr>
-                                            <th>Lista</th>
+                                            <th>Área</th>
                                             <th>Última Submissão</th>
                                             <th>Itens Pendentes</th>
                                             <th>Ação</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {listStatus.map((lista) => (
-                                            <tr key={lista.id}>
-                                                <td><strong>{lista.nome}</strong></td>
-                                                <td>{formatListSubmissionDate(lista.last_submission)}</td>
+                                        {areaStatus.map((area) => (
+                                            <tr key={area.id}>
+                                                <td><strong>{area.area}</strong></td>
+                                                <td>{formatListSubmissionDate(area.last_submission)}</td>
                                                 <td>
                                                     <span className={styles.badgeWarning}>
-                                                        {lista.pending_items} pendente{lista.pending_items !== 1 ? 's' : ''}
+                                                        {area.pending_items} pendente{area.pending_items !== 1 ? 's' : ''}
                                                     </span>
                                                 </td>
                                                 <td>
                                                     <Button
                                                         as={Link}
-                                                        to={`/collaborator/listas/${lista.id}/estoque`}
+                                                        to={`/collaborator/areas/${area.id}/estoque`}
                                                         variant="outline-primary"
                                                         size="sm"
                                                     >
-                                                        Ver Lista
+                                                        Ver Área
                                                     </Button>
                                                 </td>
                                             </tr>
@@ -427,7 +427,7 @@ const CollaboratorDashboard: React.FC = () => {
                             ) : (
                                 <div className={styles.emptyState}>
                                     <FontAwesomeIcon icon={faListAlt} />
-                                    <p>Nenhuma lista atribuída a você</p>
+                                    <p>Nenhuma área atribuída a você</p>
                                 </div>
                             )}
                         </Card>

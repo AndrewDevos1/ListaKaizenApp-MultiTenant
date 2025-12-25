@@ -6,6 +6,8 @@ from flask_jwt_extended import create_access_token
 from datetime import datetime, timedelta, timezone
 from sqlalchemy import func
 from flask import current_app
+import re
+import unicodedata
 
 def register_user(data):
     """Cria um novo usuário no sistema."""
@@ -1097,6 +1099,8 @@ def get_dashboard_summary():
     pending_users = Usuario.query.filter_by(aprovado=False).count()
     total_lists = Lista.query.count()
     total_items = Item.query.count()
+    if total_items == 0:
+        total_items = ListaMaeItem.query.count()
     pending_submissions = Pedido.query.filter_by(status=PedidoStatus.PENDENTE).count()
     orders_today = Pedido.query.filter(
         func.date(Pedido.data_pedido) == datetime.now(timezone.utc).date()
@@ -1277,6 +1281,47 @@ def get_minhas_listas_status(user_id):
 
     return resultado, 200
 
+def get_minhas_areas_status(user_id):
+    """
+    Retorna status das áreas atribuídas ao colaborador.
+    """
+    usuario = repositories.get_by_id(Usuario, user_id)
+    if not usuario:
+        return {"error": "Usuário não encontrado."}, 404
+
+    pedidos = Pedido.query.filter_by(usuario_id=user_id).all()
+    areas_status = {}
+
+    for pedido in pedidos:
+        if pedido.item and pedido.item.area:
+            area_id = pedido.item.area.id
+            area_nome = pedido.item.area.nome
+
+            if area_id not in areas_status:
+                areas_status[area_id] = {
+                    "id": area_id,
+                    "area": area_nome,
+                    "last_submission": None,
+                    "pending_items": 0
+                }
+
+            if pedido.data_pedido:
+                if not areas_status[area_id]["last_submission"] or pedido.data_pedido > areas_status[area_id]["last_submission"]:
+                    areas_status[area_id]["last_submission"] = pedido.data_pedido
+
+            if pedido.status == PedidoStatus.PENDENTE:
+                areas_status[area_id]["pending_items"] += 1
+
+    resultado = []
+    for area_status in areas_status.values():
+        if area_status["last_submission"]:
+            area_status["last_submission"] = area_status["last_submission"].strftime("%Y-%m-%d %H:%M")
+        else:
+            area_status["last_submission"] = "Nunca"
+        resultado.append(area_status)
+
+    return resultado, 200
+
 # --- Serviços de Listas com Estoque (Nova Feature) ---
 
 def get_minhas_listas(user_id):
@@ -1453,6 +1498,77 @@ def remover_item_da_lista(lista_id, item_id):
 
 # ===== LISTA MAE ITENS (Nova Funcionalidade) =====
 
+def normalize_item_nome(value):
+    if not value:
+        return ""
+    normalized = unicodedata.normalize("NFKD", value)
+    normalized = "".join(char for char in normalized if not unicodedata.combining(char))
+    normalized = re.sub(r"\s+", " ", normalized).strip().lower()
+    return normalized
+
+def sync_lista_mae_itens_para_estoque(lista_id):
+    """
+    Sincroniza itens da Lista Mãe com o estoque da lista.
+    Apenas cria estoque para itens com quantidade_minima > 0.
+    """
+    itens_lista_mae = ListaMaeItem.query.filter_by(lista_mae_id=lista_id).all()
+    if not itens_lista_mae:
+        return {"criados": 0, "atualizados": 0, "ignorados": 0}
+
+    itens_cadastrados = Item.query.all()
+    itens_por_nome = {}
+    for item in itens_cadastrados:
+        chave = normalize_item_nome(item.nome)
+        if not chave or chave in itens_por_nome:
+            continue
+        itens_por_nome[chave] = item
+
+    criados = 0
+    atualizados = 0
+    ignorados = 0
+
+    for item_mae in itens_lista_mae:
+        nome_normalizado = normalize_item_nome(item_mae.nome)
+        if not nome_normalizado:
+            ignorados += 1
+            continue
+
+        item = itens_por_nome.get(nome_normalizado)
+        if not item:
+            ignorados += 1
+            continue
+
+        estoque = Estoque.query.filter_by(lista_id=lista_id, item_id=item.id).first()
+        quantidade_minima = float(item_mae.quantidade_minima or 0)
+        quantidade_atual = float(item_mae.quantidade_atual or 0)
+
+        if not estoque:
+            if quantidade_minima <= 0:
+                ignorados += 1
+                continue
+
+            novo_estoque = Estoque(
+                lista_id=lista_id,
+                item_id=item.id,
+                area_id=1,
+                quantidade_atual=quantidade_atual,
+                quantidade_minima=quantidade_minima,
+                pedido=0
+            )
+            db.session.add(novo_estoque)
+            criados += 1
+            continue
+
+        estoque.quantidade_minima = quantidade_minima
+        if estoque.data_ultima_submissao is None:
+            estoque.quantidade_atual = quantidade_atual
+        estoque.pedido = estoque.calcular_pedido()
+        atualizados += 1
+
+    db.session.commit()
+
+    return {"criados": criados, "atualizados": atualizados, "ignorados": ignorados}
+
 def adicionar_item_lista_mae(lista_id, data):
     """Adiciona um novo item à Lista Mãe."""
     try:
@@ -1470,6 +1586,8 @@ def adicionar_item_lista_mae(lista_id, data):
 
         db.session.add(novo_item)
         db.session.commit()
+
+        sync_lista_mae_itens_para_estoque(lista_id)
 
         return novo_item.to_dict(), 201
     except Exception as e:
@@ -1504,6 +1622,7 @@ def editar_item_lista_mae(lista_id, item_id, data):
         item.atualizado_em = datetime.now(timezone.utc)
 
         db.session.commit()
+        sync_lista_mae_itens_para_estoque(lista_id)
         return item.to_dict(), 200
     except Exception as e:
         import traceback
@@ -1726,7 +1845,7 @@ def importar_items_em_lote(lista_id, data):
                 nome=nome_limpo,
                 unidade='Unidade',  # Padrão - usuário pode editar depois
                 quantidade_atual=0,
-                quantidade_minima=0
+                quantidade_minima=1.0
             )
             db.session.add(novo_item)
             items_criados += 1
@@ -1781,8 +1900,13 @@ def get_estoque_lista_colaborador(user_id, lista_id):
     if lista not in usuario.listas_atribuidas:
         return {"error": "Acesso negado. Esta lista não foi atribuída a você."}, 403
 
+    sync_lista_mae_itens_para_estoque(lista_id)
+
     # Buscar estoques da lista
-    estoques = Estoque.query.filter_by(lista_id=lista_id).all()
+    estoques = Estoque.query.filter(
+        Estoque.lista_id == lista_id,
+        Estoque.quantidade_minima > 0
+    ).all()
 
     # Preparar resposta com dados do item
     estoques_data = []
@@ -2414,7 +2538,7 @@ def import_lista_from_csv(lista_id, csv_file):
                     nome=row['nome'].strip(),
                     unidade=row['unidade'].strip(),
                     quantidade_atual=float(row['quantidade_atual']) if row['quantidade_atual'] else 0,
-                    quantidade_minima=float(row['quantidade_minima']) if row['quantidade_minima'] else 0
+                    quantidade_minima=float(row['quantidade_minima']) if row['quantidade_minima'] else 1.0
                 )
                 db.session.add(novo_item)
                 itens_importados += 1
@@ -2515,7 +2639,7 @@ def create_lista_from_csv(nome, descricao, csv_file):
                     # Criar novo item com valores padrão para campos opcionais
                     unidade = row.get('unidade', 'un').strip() if row.get('unidade') else 'un'
                     quantidade_atual = 0
-                    quantidade_minima = 0
+                    quantidade_minima = 1.0
 
                     # Tentar extrair quantidades se fornecidas
                     if row.get('quantidade_atual'):
@@ -2527,9 +2651,11 @@ def create_lista_from_csv(nome, descricao, csv_file):
 
                     if row.get('quantidade_minima'):
                         try:
-                            quantidade_minima = float(row['quantidade_minima'])
+                            valor = float(row['quantidade_minima'])
+                            if valor > 0:
+                                quantidade_minima = valor
                         except ValueError:
-                            # Ignorar se não for número válido, usar 0
+                            # Ignorar se não for número válido, usar 1.0
                             pass
 
                     # Criar novo item
@@ -2567,7 +2693,7 @@ def create_lista_from_csv(nome, descricao, csv_file):
                         nome=nome_item,
                         unidade='un',  # Padrão
                         quantidade_atual=0,
-                        quantidade_minima=0
+                        quantidade_minima=1.0
                     )
                     db.session.add(novo_item)
                     itens_importados += 1

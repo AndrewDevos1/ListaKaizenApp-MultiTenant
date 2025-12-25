@@ -285,8 +285,21 @@ def create_item_route():
 @api_bp.route('/items', methods=['GET'])
 @jwt_required()
 def get_items_route():
-    items, _ = services.get_all_items()
-    return jsonify([item.to_dict() for item in items])
+    print(f"[DEBUG] get_items_route chamado por user: {get_jwt_identity()}")
+    items, status = services.get_all_items()
+    print(f"[DEBUG] Retornando {len(items)} itens")
+
+    result = []
+    for item in items:
+        item_dict = item.to_dict()
+        if item.fornecedor:
+            item_dict['fornecedor'] = {
+                'id': item.fornecedor.id,
+                'nome': item.fornecedor.nome
+            }
+        result.append(item_dict)
+
+    return jsonify(result), status
 
 @api_bp.route('/items/<int:item_id>', methods=['GET'])
 @admin_required()
@@ -667,6 +680,33 @@ def get_minhas_listas_status_route():
     user_id = get_user_id_from_jwt()
     response, status = services.get_minhas_listas_status(user_id)
     return jsonify(response), status
+
+@collaborator_bp.route('/minhas-areas-status', methods=['GET'])
+@jwt_required()
+def get_minhas_areas_status_route():
+    """
+    Retorna status das áreas atribuídas ao colaborador.
+    Para cada área, mostra última submissão e itens pendentes.
+    """
+    user_id = get_user_id_from_jwt()
+    response, status = services.get_minhas_areas_status(user_id)
+    return jsonify(response), status
+
+@collaborator_bp.route('/areas/<int:area_id>', methods=['GET'])
+@jwt_required()
+def get_area_collaborator_route(area_id):
+    """Retorna dados básicos de uma área para o colaborador."""
+    area, _ = services.get_area_by_id(area_id)
+    if not area:
+        return jsonify({"error": "Área não encontrada"}), 404
+    return jsonify(area.to_dict())
+
+@collaborator_bp.route('/areas/<int:area_id>/estoque', methods=['GET'])
+@jwt_required()
+def get_estoque_by_area_collaborator_route(area_id):
+    """Retorna itens de estoque de uma área para o colaborador."""
+    estoque, _ = services.get_estoque_by_area(area_id)
+    return jsonify([e.to_dict() for e in estoque])
 
 # ============================================
 # NOVAS ROTAS - LISTAS COM ESTOQUE

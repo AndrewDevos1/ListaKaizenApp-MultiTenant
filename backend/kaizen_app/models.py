@@ -240,7 +240,7 @@ class ListaMaeItem(db.Model, SerializerMixin):
     nome = db.Column(db.String(255), nullable=False)
     unidade = db.Column(db.String(50), nullable=False, default='un', server_default='un')  # Kg, Litro, Unidade (padrão: un)
     quantidade_atual = db.Column(db.Float, default=0, nullable=False)
-    quantidade_minima = db.Column(db.Float, default=0, nullable=False)
+    quantidade_minima = db.Column(db.Float, default=1.0, nullable=False)
     criado_em = db.Column(db.DateTime, default=utc_now)
     atualizado_em = db.Column(db.DateTime, default=utc_now, onupdate=utc_now)
 
