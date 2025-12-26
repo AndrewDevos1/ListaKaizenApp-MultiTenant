@@ -412,7 +412,7 @@ const Layout: React.FC = () => {
         <div className={styles.sidebarFooter}>
           {!isCollapsed ? (
             <>
-              <div className={styles.footerVersion}>v1.0.0</div>
+              <div className={styles.footerVersion}>v2.1.0</div>
               <a href="#!" className={styles.footerLink}>
                 <i className="fas fa-question-circle me-2" aria-hidden="true"></i>
                 Ajuda & Suporte
