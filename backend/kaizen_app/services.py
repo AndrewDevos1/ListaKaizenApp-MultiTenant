@@ -744,6 +744,61 @@ def rejeitar_submissao(submissao_id):
     return {"message": f"Submissão #{submissao_id} rejeitada."}, 200
 
 
+def editar_quantidades_submissao(submissao_id, pedidos_data):
+    """
+    Permite que admin edite as quantidades dos pedidos de uma submissão.
+    
+    Args:
+        submissao_id: ID da submissão
+        pedidos_data: Lista de dict com formato [{pedido_id: int, quantidade_solicitada: float}, ...]
+    
+    Returns:
+        tuple: (response_dict, status_code)
+    """
+    submissao = repositories.get_by_id(Submissao, submissao_id)
+    if not submissao:
+        return {"error": "Submissão não encontrada."}, 404
+    
+    # Validar que submissão está PENDENTE
+    if submissao.status != SubmissaoStatus.PENDENTE:
+        return {"error": "Apenas submissões PENDENTES podem ser editadas."}, 400
+    
+    # Validar dados recebidos
+    if not pedidos_data or not isinstance(pedidos_data, list):
+        return {"error": "Dados inválidos. Esperado: lista de pedidos."}, 400
+    
+    # Criar mapa de pedidos da submissão para validação
+    pedidos_map = {p.id: p for p in submissao.pedidos}
+    
+    # Atualizar cada pedido
+    pedidos_atualizados = 0
+    for item in pedidos_data:
+        pedido_id = item.get('pedido_id')
+        nova_quantidade = item.get('quantidade_solicitada')
+        
+        # Validações
+        if not pedido_id or nova_quantidade is None:
+            continue
+        
+        if pedido_id not in pedidos_map:
+            return {"error": f"Pedido #{pedido_id} não pertence a esta submissão."}, 400
+        
+        if nova_quantidade < 0:
+            return {"error": f"Quantidade não pode ser negativa (Pedido #{pedido_id})."}, 400
+        
+        # Atualizar quantidade
+        pedido = pedidos_map[pedido_id]
+        pedido.quantidade_solicitada = nova_quantidade
+        pedidos_atualizados += 1
+    
+    db.session.commit()
+    
+    return {
+        "message": f"{pedidos_atualizados} pedido(s) atualizado(s) com sucesso!",
+        "submissao_id": submissao_id
+    }, 200
+
+
 def submit_pedidos(user_id):
     """Cria registros de Pedido para todos os itens que estão abaixo do estoque mínimo."""
     itens_a_pedir = db.session.query(Estoque, Item).join(Item).filter(Estoque.quantidade_atual < Estoque.quantidade_minima).all()

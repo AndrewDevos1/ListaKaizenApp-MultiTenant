@@ -529,6 +529,20 @@ def rejeitar_submissao_route(submissao_id):
     response, status = services.rejeitar_submissao(submissao_id)
     return jsonify(response), status
 
+
+@admin_bp.route('/submissoes/<int:submissao_id>/editar', methods=['PUT'])
+@admin_required()
+def editar_quantidades_submissao_route(submissao_id):
+    """
+    Permite que admin edite as quantidades dos pedidos de uma submissão PENDENTE.
+    Espera JSON: [{"pedido_id": 1, "quantidade_solicitada": 10}, ...]
+    """
+    data = request.get_json()
+    pedidos_data = data.get('pedidos', [])
+    response, status = services.editar_quantidades_submissao(submissao_id, pedidos_data)
+    return jsonify(response), status
+
+
 @admin_bp.route('/pedidos/<int:pedido_id>/aprovar', methods=['POST'])
 @admin_required()
 def aprovar_pedido_route(pedido_id):

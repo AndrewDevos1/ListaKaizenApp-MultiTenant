@@ -11,6 +11,8 @@ import {
     faCalendar,
     faCheck,
     faTimes,
+    faEdit,
+    faSave,
 } from '@fortawesome/free-solid-svg-icons';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import api from '../../services/api';
@@ -45,6 +47,8 @@ const DetalhesSubmissao: React.FC = () => {
     const [successMessage, setSuccessMessage] = useState('');
     const [actionLoading, setActionLoading] = useState(false);
     const [selectedIds, setSelectedIds] = useState<number[]>([]);
+    const [modoEdicao, setModoEdicao] = useState(false);
+    const [quantidadesEditadas, setQuantidadesEditadas] = useState<{ [key: number]: number }>({});
 
     useEffect(() => {
         fetchSubmissao();
@@ -64,6 +68,13 @@ const DetalhesSubmissao: React.FC = () => {
             }
             
             setSubmissao(sub);
+            
+            // Inicializa quantidades editadas com valores atuais
+            const qtds: { [key: number]: number } = {};
+            sub.pedidos.forEach((p: Pedido) => {
+                qtds[p.id] = p.quantidade_solicitada;
+            });
+            setQuantidadesEditadas(qtds);
         } catch (err: any) {
             setError(err.response?.data?.error || 'Erro ao carregar submissão');
         } finally {
@@ -151,6 +162,61 @@ const DetalhesSubmissao: React.FC = () => {
             setSelectedIds([]);
         } else {
             setSelectedIds(submissao.pedidos.map(p => p.id));
+        }
+    };
+
+    const handleAlterarQuantidade = (pedidoId: number, novaQuantidade: number) => {
+        setQuantidadesEditadas(prev => ({
+            ...prev,
+            [pedidoId]: novaQuantidade
+        }));
+    };
+
+    const handleIniciarEdicao = () => {
+        setModoEdicao(true);
+        setError('');
+        setSuccessMessage('');
+    };
+
+    const handleCancelarEdicao = () => {
+        setModoEdicao(false);
+        // Resetar para valores originais
+        if (submissao) {
+            const qtds: { [key: number]: number } = {};
+            submissao.pedidos.forEach((p: Pedido) => {
+                qtds[p.id] = p.quantidade_solicitada;
+            });
+            setQuantidadesEditadas(qtds);
+        }
+    };
+
+    const handleSalvarEdicao = async () => {
+        if (!submissao) return;
+
+        try {
+            setActionLoading(true);
+            setError('');
+            
+            // Preparar payload
+            const pedidos = Object.entries(quantidadesEditadas).map(([pedidoId, quantidade]) => ({
+                pedido_id: Number(pedidoId),
+                quantidade_solicitada: quantidade
+            }));
+
+            await api.put(`/admin/submissoes/${submissao.id}/editar`, { pedidos });
+            
+            setSuccessMessage('✅ Quantidades atualizadas com sucesso!');
+            setModoEdicao(false);
+            
+            // Recarregar dados
+            setTimeout(() => {
+                fetchSubmissao();
+                setSuccessMessage('');
+            }, 1500);
+        } catch (err: any) {
+            setError(err.response?.data?.error || 'Erro ao atualizar quantidades');
+        } finally {
+            setActionLoading(false);
         }
     };
 
@@ -253,40 +319,71 @@ const DetalhesSubmissao: React.FC = () => {
             {/* Ações em Massa */}
             {submissao.status === 'PENDENTE' && (
                 <div className={styles.actions}>
-                    <Button
-                        variant="success"
-                        onClick={handleAprovarTodos}
-                        disabled={actionLoading}
-                    >
-                        <FontAwesomeIcon icon={faCheck} /> Aprovar Todos ({submissao.total_pedidos})
-                    </Button>
-                    <Button
-                        variant="primary"
-                        onClick={handleAprovarSelecionados}
-                        disabled={actionLoading || selectedIds.length === 0}
-                    >
-                        <FontAwesomeIcon icon={faCheck} /> Aprovar Selecionados ({selectedIds.length})
-                    </Button>
-                    <Button
-                        variant="danger"
-                        onClick={handleRejeitarTodos}
-                        disabled={actionLoading}
-                    >
-                        <FontAwesomeIcon icon={faTimes} /> Rejeitar Todos
-                    </Button>
+                    {!modoEdicao ? (
+                        <>
+                            <Button
+                                variant="warning"
+                                onClick={handleIniciarEdicao}
+                                disabled={actionLoading}
+                            >
+                                <FontAwesomeIcon icon={faEdit} /> Editar Quantidades
+                            </Button>
+                            <Button
+                                variant="success"
+                                onClick={handleAprovarTodos}
+                                disabled={actionLoading}
+                            >
+                                <FontAwesomeIcon icon={faCheck} /> Aprovar Todos ({submissao.total_pedidos})
+                            </Button>
+                            <Button
+                                variant="primary"
+                                onClick={handleAprovarSelecionados}
+                                disabled={actionLoading || selectedIds.length === 0}
+                            >
+                                <FontAwesomeIcon icon={faCheck} /> Aprovar Selecionados ({selectedIds.length})
+                            </Button>
+                            <Button
+                                variant="danger"
+                                onClick={handleRejeitarTodos}
+                                disabled={actionLoading}
+                            >
+                                <FontAwesomeIcon icon={faTimes} /> Rejeitar Todos
+                            </Button>
+                        </>
+                    ) : (
+                        <>
+                            <Button
+                                variant="success"
+                                onClick={handleSalvarEdicao}
+                                disabled={actionLoading}
+                            >
+                                <FontAwesomeIcon icon={faSave} /> Salvar Alterações
+                            </Button>
+                            <Button
+                                variant="secondary"
+                                onClick={handleCancelarEdicao}
+                                disabled={actionLoading}
+                            >
+                                <FontAwesomeIcon icon={faTimes} /> Cancelar
+                            </Button>
+                        </>
+                    )}
                 </div>
             )}
 
             {/* Tabela de Itens */}
             <Card className={styles.tableCard}>
                 <Card.Header>
-                    <h5>Itens Solicitados ({submissao.total_pedidos})</h5>
+                    <h5>
+                        Itens Solicitados ({submissao.total_pedidos})
+                        {modoEdicao && <Badge bg="warning" className="ms-2">Modo Edição</Badge>}
+                    </h5>
                 </Card.Header>
                 <Card.Body className="p-0">
                     <Table striped bordered hover responsive className="mb-0">
                         <thead>
                             <tr>
-                                {submissao.status === 'PENDENTE' && (
+                                {submissao.status === 'PENDENTE' && !modoEdicao && (
                                     <th className="text-center">
                                         <Form.Check
                                             type="checkbox"
@@ -304,7 +401,7 @@ const DetalhesSubmissao: React.FC = () => {
                         <tbody>
                             {submissao.pedidos.map((pedido, idx) => (
                                 <tr key={pedido.id}>
-                                    {submissao.status === 'PENDENTE' && (
+                                    {submissao.status === 'PENDENTE' && !modoEdicao && (
                                         <td className="text-center">
                                             <Form.Check
                                                 type="checkbox"
@@ -317,7 +414,22 @@ const DetalhesSubmissao: React.FC = () => {
                                     <td>{idx + 1}</td>
                                     <td><strong>{pedido.item_nome}</strong></td>
                                     <td className="text-center">
-                                        {pedido.quantidade_solicitada} {pedido.unidade}
+                                        {modoEdicao ? (
+                                            <Form.Control
+                                                type="number"
+                                                min="0"
+                                                step="0.01"
+                                                value={quantidadesEditadas[pedido.id] || 0}
+                                                onChange={(e) => handleAlterarQuantidade(
+                                                    pedido.id,
+                                                    parseFloat(e.target.value) || 0
+                                                )}
+                                                style={{ width: '120px', display: 'inline-block' }}
+                                            />
+                                        ) : (
+                                            `${pedido.quantidade_solicitada}`
+                                        )}
+                                        {' '}{pedido.unidade}
                                     </td>
                                     <td className="text-center">
                                         {getStatusBadge(pedido.status)}
