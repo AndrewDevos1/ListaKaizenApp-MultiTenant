@@ -44,7 +44,7 @@ Acesse: `Settings > Variables` e configure:
 
 ```bash
 # 🌐 URL DO BACKEND
-REACT_APP_API_URL=https://kaizen-lists-api-production.up.railway.app
+REACT_APP_API_URL=https://kaizen-lists-api-production.up.railway.app/api
 
 # ⚙️ NODE
 NODE_ENV=production
@@ -58,7 +58,7 @@ Arquivo: `/home/devos/Codigos-vscode/ListaKaizenApp/frontend/.env.local`
 
 ```bash
 # 🌐 URL do Backend RAILWAY (para testar localmente contra produção)
-REACT_APP_API_URL=https://kaizen-lists-api-production.up.railway.app
+REACT_APP_API_URL=https://kaizen-lists-api-production.up.railway.app/api
 
 # 🔧 Ambiente
 NODE_ENV=development
@@ -67,7 +67,7 @@ NODE_ENV=development
 **OU** se quiser testar contra o backend local:
 
 ```bash
-REACT_APP_API_URL=http://127.0.0.1:5000
+REACT_APP_API_URL=http://127.0.0.1:5000/api
 NODE_ENV=development
 ```
 

@@ -17,7 +17,7 @@ JWT_SECRET_KEY=27c6d58563ccbfed01f520340aed354f20a363f64141f41e3b91b77663a030bf
 ### 2. Frontend
 Railway → **React Frontend** → Variables → Raw Editor → Cole:
 ```
-REACT_APP_API_URL=https://kaizen-lists-api-production.up.railway.app
+REACT_APP_API_URL=https://kaizen-lists-api-production.up.railway.app/api
 ```
 → Save → Redeploy
 

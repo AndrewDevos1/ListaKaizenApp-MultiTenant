@@ -7,6 +7,7 @@ import Register from './features/auth/Register';
 import GlobalDashboard from './features/dashboard/GlobalDashboard';
 import EstoqueLista from './features/inventory/EstoqueLista';
 import MinhasSubmissoes from './features/inventory/MinhasSubmissoes';
+import DetalhesSubmissaoColaborador from './features/inventory/DetalhesSubmissaoColaborador';
 import GerarCotacao from './features/admin/GerarCotacao';
 import CotacaoList from './features/admin/CotacaoList';
 import CotacaoDetail from './features/admin/CotacaoDetail';
@@ -14,6 +15,7 @@ import FornecedorManagement from './features/admin/FornecedorManagement';
 import FornecedorDetalhes from './features/admin/FornecedorDetalhes';
 import AreaManagement from './features/admin/AreaManagement';
 import ItemManagement from './features/admin/ItemManagement';
+import CatalogoGlobal from './features/admin/CatalogoGlobal';
 import AdminDashboard from './features/admin/AdminDashboard';
 import UserManagement from './features/admin/UserManagement';
 import ListasCompras from './features/admin/ListasCompras';
@@ -21,14 +23,15 @@ import ListaMaeConsolidada from './features/admin/ListaMaeConsolidada';
 import GerenciarItensLista from './features/admin/GerenciarItensLista';
 import GerenciarUsuarios from './features/admin/GerenciarUsuarios';
 import GerenciarPedidos from './features/admin/GerenciarPedidos';
+import GerenciarSubmissoes from './features/admin/GerenciarSubmissoes';
+import DetalhesSubmissao from './features/admin/DetalhesSubmissao';
 import Configuracoes from './features/admin/Configuracoes';
 import MudarSenha from './features/admin/MudarSenha';
 import EditarPerfil from './features/admin/EditarPerfil';
 import CriarUsuario from './features/admin/CriarUsuario';
 import CollaboratorDashboard from './features/collaborator/CollaboratorDashboard';
-import MinhasListas from './features/collaborator/MinhasListas';
+import MinhasListasCompras from './features/collaborator/MinhasListasCompras';
 import EstoqueListaCompras from './features/collaborator/EstoqueListaCompras';
-import ListaEstoque from './features/collaborator/ListaEstoque';
 import AdminRoute from './components/AdminRoute';
 import CollaboratorRoute from './components/CollaboratorRoute';
 import Layout from './components/Layout';
@@ -51,6 +54,8 @@ function App() {
               <Route index element={<AdminDashboard />} />
               <Route path="gerenciar-usuarios" element={<GerenciarUsuarios />} />
               <Route path="gerenciar-pedidos" element={<GerenciarPedidos />} />
+              <Route path="submissoes" element={<GerenciarSubmissoes />} />
+              <Route path="submissoes/:id" element={<DetalhesSubmissao />} />
               <Route path="configuracoes" element={<Configuracoes />} />
               <Route path="mudar-senha" element={<MudarSenha />} />
               <Route path="editar-perfil" element={<EditarPerfil />} />
@@ -60,6 +65,7 @@ function App() {
               <Route path="listas/:listaId/lista-mae" element={<ListaMaeConsolidada />} />
               <Route path="listas/:listaId/gerenciar-itens" element={<GerenciarItensLista />} />
               <Route path="items" element={<ItemManagement />} />
+              <Route path="catalogo-global" element={<CatalogoGlobal />} />
               <Route path="areas" element={<AreaManagement />} />
               <Route path="fornecedores" element={<FornecedorManagement />} />
               <Route path="fornecedores/:fornecedorId/detalhes" element={<FornecedorDetalhes />} />
@@ -74,10 +80,10 @@ function App() {
               <Route index element={<CollaboratorDashboard />} />
               <Route path="areas" element={<MinhasSubmissoes />} />
               <Route path="submissions" element={<MinhasSubmissoes />} />
+              <Route path="submissions/:id" element={<DetalhesSubmissaoColaborador />} />
               <Route path="areas/:areaId/estoque" element={<EstoqueLista />} />
-              <Route path="listas" element={<MinhasListas />} />
+              <Route path="listas" element={<MinhasListasCompras />} />
               <Route path="listas/:listaId/estoque" element={<EstoqueListaCompras />} />
-              <Route path="lista/:listaId/estoque" element={<ListaEstoque />} />
               <Route path="perfil" element={<EditarPerfil />} />
               <Route path="mudar-senha" element={<MudarSenha />} />
             </Route>

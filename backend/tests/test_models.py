@@ -4,7 +4,7 @@ Testa a criação, validação e métodos dos modelos.
 """
 import pytest
 from decimal import Decimal
-from datetime import datetime
+from datetime import datetime, timezone
 from kaizen_app.models import (
     Usuario, UserRoles, Item, Area, Fornecedor, Estoque,
     Pedido, PedidoStatus, Cotacao, CotacaoStatus, CotacaoItem,
@@ -184,7 +184,7 @@ class TestPedidoModel:
         with app.app_context():
             pedido = Pedido(
                 quantidade_solicitada=Decimal('10.0'),
-                data_pedido=datetime.utcnow()
+                data_pedido=datetime.now(timezone.utc)
             )
             assert pedido.status == PedidoStatus.PENDENTE
 
@@ -204,7 +204,7 @@ class TestCotacaoModel:
     def test_criar_cotacao_status_padrao(self, app):
         """Testa que cotação é criada com status PENDENTE"""
         with app.app_context():
-            cotacao = Cotacao(data_cotacao=datetime.utcnow())
+            cotacao = Cotacao(data_cotacao=datetime.now(timezone.utc))
             assert cotacao.status == CotacaoStatus.PENDENTE
 
     def test_cotacao_to_dict_inclui_itens(self, app):
@@ -242,7 +242,7 @@ class TestListaModel:
         with app.app_context():
             lista = Lista(nome="Lista Temporária")
             lista.deletado = True
-            lista.data_delecao = datetime.utcnow()
+            lista.data_delecao = datetime.now(timezone.utc)
             assert lista.deletado is True
             assert lista.data_delecao is not None
 

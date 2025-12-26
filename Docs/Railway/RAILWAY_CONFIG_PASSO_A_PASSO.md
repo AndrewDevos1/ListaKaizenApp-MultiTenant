@@ -38,7 +38,7 @@ Vá para Railway → **React Frontend** → aba **Variables**
 **Adicione esta variável:**
 
 ```env
-REACT_APP_API_URL=https://kaizen-lists-api-production.up.railway.app
+REACT_APP_API_URL=https://kaizen-lists-api-production.up.railway.app/api
 ```
 
 **IMPORTANTE:** No Railway, variáveis do React são lidas **APENAS NO BUILD**, então após adicionar esta variável você PRECISA fazer **Redeploy**.
@@ -86,7 +86,7 @@ REACT_APP_API_URL=https://kaizen-lists-api-production.up.railway.app
 
 | Variável | Valor | Obrigatório |
 |----------|-------|-------------|
-| `REACT_APP_API_URL` | `https://kaizen-lists-api-production.up.railway.app` | ✅ SIM |
+| `REACT_APP_API_URL` | `https://kaizen-lists-api-production.up.railway.app/api` | ✅ SIM |
 
 ---
 

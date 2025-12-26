@@ -1,42 +1,50 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Table, Alert, Form, Badge } from 'react-bootstrap';
+import { Table, Alert, Form, Badge, Card, Container, Button } from 'react-bootstrap';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faArrowLeft, faClipboardList, faCheckCircle, faTimesCircle, faClock } from '@fortawesome/free-solid-svg-icons';
+import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import CustomSpinner from '../../components/Spinner';
-import Layout from '../../components/Layout';
 
 interface Pedido {
     id: number;
-    data_pedido: string;
+    item_nome: string;
     quantidade_solicitada: number;
-    item: {
-        nome: string;
-        unidade_medida: string;
-    };
-    fornecedor: {
-        nome: string;
-    };
     status: string;
+    unidade: string;
+}
+
+interface Submissao {
+    id: number;
+    lista_id: number;
+    lista_nome: string;
+    data_submissao: string;
+    status: string;
+    total_pedidos: number;
+    pedidos: Pedido[];
 }
 
 const MinhasSubmissoes: React.FC = () => {
-    const [pedidos, setPedidos] = useState<Pedido[]>([]);
+    const navigate = useNavigate();
+    const [submissoes, setSubmissoes] = useState<Submissao[]>([]);
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [filterStatus, setFilterStatus] = useState<string>('TODOS');
 
     useEffect(() => {
-        const fetchPedidos = async () => {
+        const fetchSubmissoes = async () => {
             setIsLoading(true);
             try {
-                const response = await api.get('/v1/pedidos/me');
-                setPedidos(response.data);
+                const response = await api.get('/v1/submissoes/me');
+                setSubmissoes(response.data);
             } catch (err) {
-                setError('Não foi possível carregar o histórico de pedidos.');
+                setError('Não foi possível carregar suas submissões.');
+                console.error('Erro ao buscar submissões:', err);
             } finally {
                 setIsLoading(false);
             }
         };
-        fetchPedidos();
+        fetchSubmissoes();
     }, []);
 
     const getStatusVariant = (status: string) => {
@@ -44,70 +52,139 @@ const MinhasSubmissoes: React.FC = () => {
             case 'PENDENTE': return 'warning';
             case 'APROVADO': return 'success';
             case 'REJEITADO': return 'danger';
+            case 'PARCIALMENTE_APROVADO': return 'info';
             default: return 'secondary';
         }
     };
 
-    const filteredPedidos = useMemo(() => {
-        if (filterStatus === 'TODOS') {
-            return pedidos;
+    const getStatusIcon = (status: string) => {
+        switch (status) {
+            case 'PENDENTE': return faClock;
+            case 'APROVADO': return faCheckCircle;
+            case 'REJEITADO': return faTimesCircle;
+            default: return faClipboardList;
         }
-        return pedidos.filter(pedido => pedido.status === filterStatus);
-    }, [pedidos, filterStatus]);
+    };
+
+    const formatarData = (dataISO: string) => {
+        const data = new Date(dataISO);
+        return data.toLocaleString('pt-BR', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    };
+
+    const filteredSubmissoes = useMemo(() => {
+        if (filterStatus === 'TODOS') {
+            return submissoes;
+        }
+        return submissoes.filter(sub => sub.status === filterStatus);
+    }, [submissoes, filterStatus]);
+
+    if (isLoading) {
+        return (
+            <Container className="py-4">
+                <CustomSpinner />
+            </Container>
+        );
+    }
 
     return (
-        <Layout title="Minhas Submissões (Pedidos Gerados)">
+        <Container fluid className="py-4">
+            {/* Header */}
+            <div className="mb-4">
+                <Button
+                    variant="outline-secondary"
+                    size="sm"
+                    onClick={() => navigate('/collaborator')}
+                    className="mb-3"
+                >
+                    <FontAwesomeIcon icon={faArrowLeft} /> Voltar ao Dashboard
+                </Button>
+                
+                <h2>
+                    <FontAwesomeIcon icon={faClipboardList} /> Minhas Submissões
+                </h2>
+                <p className="text-muted">
+                    Histórico de listas submetidas e status de aprovação
+                </p>
+            </div>
+
             {error && <Alert variant="danger">{error}</Alert>}
 
-            <Form.Group className="mb-3">
+            {/* Filtro */}
+            <Form.Group className="mb-4">
                 <Form.Label>Filtrar por Status:</Form.Label>
                 <Form.Select 
                     value={filterStatus} 
                     onChange={(e) => setFilterStatus(e.target.value)}
-                    style={{ maxWidth: '200px' }}
+                    style={{ maxWidth: '250px' }}
                 >
                     <option value="TODOS">Todos</option>
                     <option value="PENDENTE">Pendente</option>
                     <option value="APROVADO">Aprovado</option>
                     <option value="REJEITADO">Rejeitado</option>
+                    <option value="PARCIALMENTE_APROVADO">Parcialmente Aprovado</option>
                 </Form.Select>
             </Form.Group>
 
-            <Table striped bordered hover responsive>
-                <thead className="table-dark">
-                    <tr>
-                        <th>Data</th>
-                        <th>Item</th>
-                        <th className="text-center">Quantidade</th>
-                        <th>Fornecedor</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {isLoading ? (
+            {/* Tabela de Submissões (LISTA, não cards) */}
+            {filteredSubmissoes.length === 0 ? (
+                <Alert variant="info" className="text-center py-5">
+                    <FontAwesomeIcon icon={faClipboardList} size="3x" className="mb-3 d-block" />
+                    <h5>Nenhuma submissão encontrada</h5>
+                    <p className="text-muted">Você ainda não submeteu nenhuma lista.</p>
+                </Alert>
+            ) : (
+                <Table striped bordered hover responsive>
+                    <thead className="table-dark">
                         <tr>
-                            <td colSpan={5} className="text-center"><CustomSpinner /></td>
+                            <th>#</th>
+                            <th>Lista</th>
+                            <th>Data/Hora</th>
+                            <th className="text-center">Total Itens</th>
+                            <th className="text-center">Status</th>
+                            <th className="text-center">Ações</th>
                         </tr>
-                    ) : filteredPedidos.length > 0 ? (
-                        filteredPedidos.map(p => (
-                            <tr key={p.id}>
-                                <td>{new Date(p.data_pedido).toLocaleDateString()}</td>
-                                <td>{p.item.nome}</td>
-                                <td className="text-center">{`${p.quantidade_solicitada} ${p.item.unidade_medida}`}</td>
-                                <td>{p.fornecedor.nome}</td>
+                    </thead>
+                    <tbody>
+                        {filteredSubmissoes.map((submissao) => (
+                            <tr key={submissao.id}>
+                                <td>{submissao.id}</td>
                                 <td>
-                                    <Badge bg={getStatusVariant(p.status)}>{p.status}</Badge>
+                                    <strong>{submissao.lista_nome}</strong>
+                                </td>
+                                <td>{formatarData(submissao.data_submissao)}</td>
+                                <td className="text-center">
+                                    <Badge bg="secondary">{submissao.total_pedidos}</Badge>
+                                </td>
+                                <td className="text-center">
+                                    <Badge 
+                                        bg={getStatusVariant(submissao.status)}
+                                        style={{ fontSize: '0.9rem', padding: '0.5rem 1rem' }}
+                                    >
+                                        <FontAwesomeIcon icon={getStatusIcon(submissao.status)} className="me-1" />
+                                        {submissao.status}
+                                    </Badge>
+                                </td>
+                                <td className="text-center">
+                                    <Button
+                                        size="sm"
+                                        variant="primary"
+                                        onClick={() => navigate(`/collaborator/submissions/${submissao.id}`)}
+                                    >
+                                        <FontAwesomeIcon icon={faClipboardList} /> Ver Detalhes
+                                    </Button>
                                 </td>
                             </tr>
-                        ))
-                    ) : (
-                        <tr>
-                            <td colSpan={5} className="text-center">Você ainda não gerou nenhum pedido ou não há pedidos com o status selecionado.</td>
-                        </tr>
-                    )}
-                </tbody>
-            </Table>
-        </Layout>
+                        ))}
+                    </tbody>
+                </Table>
+            )}
+        </Container>
     );
 };
 

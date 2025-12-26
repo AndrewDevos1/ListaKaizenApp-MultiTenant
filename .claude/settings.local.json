@@ -54,7 +54,16 @@
       "Bash(FLASK_APP=kaizen_app:create_app ../.venv/bin/python -m flask:*)",
       "Bash(flask db:*)",
       "Bash(cat:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(git ls-tree:*)",
+      "Bash(git log:*)",
+      "Bash(grep:*)",
+      "Bash(mkdir:*)",
+      "Bash(.venv/bin/python:*)",
+      "Bash(timeout 10 .venv/bin/python:*)",
+      "Bash(timeout 5 .venv/bin/python:*)",
+      "Bash(env)",
+      "Bash(export DATABASE_URL:*)"
     ],
     "deny": [],
     "ask": []

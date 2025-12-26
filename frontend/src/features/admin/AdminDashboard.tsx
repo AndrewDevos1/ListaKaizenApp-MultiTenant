@@ -23,9 +23,9 @@
  * - Mobile: 1 coluna
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { Container, Row, Col, Card, Button, Table } from 'react-bootstrap';
+import { Container, Row, Col, Card, Button, Table, Alert } from 'react-bootstrap';
 import {
     faUsers,
     faListAlt,
@@ -44,6 +44,7 @@ import {
     faClipboardList,
     faBox,
     faTruck,
+    faCheck,
 } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
@@ -70,6 +71,7 @@ interface DashboardStats {
     total_users: number;
     pending_users: number;
     total_lists: number;
+    total_items: number;
     pending_submissions: number;
     pending_cotacoes: number;
     orders_today: number;
@@ -78,7 +80,7 @@ interface DashboardStats {
 interface ListStatus {
     id: number;
     area: string;
-    last_submission: string;
+    last_submission: string | null;
     pending_submissions: number;
 }
 
@@ -161,12 +163,16 @@ const AdminDashboard: React.FC = () => {
         total_users: 0,
         pending_users: 0,
         total_lists: 0,
+        total_items: 0,
         pending_submissions: 0,
         pending_cotacoes: 0,
         orders_today: 0,
     });
 
     const [listStatus, setListStatus] = useState<ListStatus[]>([]);
+    const [loadingListStatus, setLoadingListStatus] = useState(true);
+    const [listStatusError, setListStatusError] = useState<string | null>(null);
+    const [listStatusSuccess, setListStatusSuccess] = useState<string | null>(null);
     const [recentActivities, setRecentActivities] = useState<Activity[]>([]);
     const [loading, setLoading] = useState(true);
     const [widgets, setWidgets] = useState<Widget[]>([]);
@@ -183,6 +189,59 @@ const AdminDashboard: React.FC = () => {
     // Toggle edit mode
     const toggleEditMode = () => {
         setIsEditMode(!isEditMode);
+    };
+
+    const formatListSubmissionDate = (value: string | null) => {
+        if (!value) {
+            return 'Nunca';
+        }
+
+        const parsedDate = new Date(value);
+        if (Number.isNaN(parsedDate.getTime())) {
+            return value;
+        }
+
+        return parsedDate.toLocaleString('pt-BR');
+    };
+
+    const fetchListStatus = useCallback(async () => {
+        try {
+            setLoadingListStatus(true);
+            const response = await api.get('/admin/listas/status-submissoes');
+            setListStatus(response.data);
+            setListStatusError(null);
+        } catch (error: any) {
+            console.error('Erro ao buscar status das listas', error);
+            setListStatusError(error.response?.data?.error || 'Erro ao carregar status das listas.');
+        } finally {
+            setLoadingListStatus(false);
+        }
+    }, []);
+
+    const handleAprovarTodosPedidos = async (
+        listaId: number,
+        listaNome: string,
+        pendingCount: number
+    ) => {
+        if (!window.confirm(`Deseja aprovar TODOS os ${pendingCount} pedidos da lista "${listaNome}"?`)) {
+            return;
+        }
+
+        try {
+            setLoadingListStatus(true);
+            const response = await api.post(`/admin/listas/${listaId}/aprovar-pedidos`);
+            setListStatusSuccess(response.data?.message || 'Pedidos aprovados com sucesso.');
+            setListStatusError(null);
+            await fetchListStatus();
+            setTimeout(() => setListStatusSuccess(null), 5000);
+        } catch (error: any) {
+            console.error('Erro ao aprovar pedidos da lista', error);
+            setListStatusError(error.response?.data?.error || 'Erro ao aprovar pedidos.');
+            setListStatusSuccess(null);
+            setTimeout(() => setListStatusError(null), 5000);
+        } finally {
+            setLoadingListStatus(false);
+        }
     };
 
     // DIAGNOSTICO: Verificar se este componente esta sendo carregado
@@ -221,12 +280,6 @@ const AdminDashboard: React.FC = () => {
                 setStats(statsResponse.data);
 
                 // Mock data para demonstração (remover quando backend estiver pronto)
-                setListStatus([
-                    { id: 1, area: 'Cozinha', last_submission: '2025-10-20 14:30', pending_submissions: 3 },
-                    { id: 2, area: 'Almoxarifado', last_submission: '2025-10-20 10:15', pending_submissions: 1 },
-                    { id: 3, area: 'Manutenção', last_submission: '2025-10-19 16:45', pending_submissions: 5 },
-                ]);
-
                 setRecentActivities([
                     { time: '14:30', description: 'Usuário João Silva submeteu lista "Cozinha"' },
                     { time: '13:15', description: 'Cotação #125 criada para Fornecedor ABC' },
@@ -242,6 +295,10 @@ const AdminDashboard: React.FC = () => {
 
         fetchData();
     }, []);
+
+    useEffect(() => {
+        fetchListStatus();
+    }, [fetchListStatus]);
 
     // Initialize widgets with saved order
     useEffect(() => {
@@ -259,10 +316,10 @@ const AdminDashboard: React.FC = () => {
             {
                 id: 'widget-items',
                 title: 'Itens e Insumos',
-                value: stats.total_lists,
+                value: stats.total_items,
                 icon: faBox,
                 color: styles.widgetBlue,
-                link: '/admin/items',
+                link: '/admin/catalogo-global',
                 trend: '+12',
                 trendType: 'positive',
             },
@@ -272,7 +329,7 @@ const AdminDashboard: React.FC = () => {
                 value: stats.orders_today,
                 icon: faClipboardList,
                 color: styles.widgetRed,
-                link: '/admin/listas-compras',
+                link: '/admin/submissoes',
                 trend: '+7',
                 trendType: 'positive',
             },
@@ -314,9 +371,9 @@ const AdminDashboard: React.FC = () => {
             link: '/admin/fornecedores',
         },
         {
-            title: 'Gerenciar Pedidos',
+            title: 'Gerenciar Submissões',
             icon: faBox,
-            link: '/admin/gerenciar-pedidos',
+            link: '/admin/submissoes',
         },
         {
             title: 'Cotações',
@@ -411,7 +468,21 @@ const AdminDashboard: React.FC = () => {
                                     Status das Listas
                                 </h4>
                             </div>
-                            {listStatus.length > 0 ? (
+                            {listStatusError && (
+                                <Alert variant="danger" dismissible onClose={() => setListStatusError(null)}>
+                                    {listStatusError}
+                                </Alert>
+                            )}
+                            {listStatusSuccess && (
+                                <Alert variant="success" dismissible onClose={() => setListStatusSuccess(null)}>
+                                    {listStatusSuccess}
+                                </Alert>
+                            )}
+                            {loadingListStatus ? (
+                                <div className={styles.loadingSpinner}>
+                                    <div className={styles.spinner}></div>
+                                </div>
+                            ) : listStatus.length > 0 ? (
                                 <Table responsive hover className={styles.customTable}>
                                     <thead>
                                         <tr>
@@ -425,7 +496,7 @@ const AdminDashboard: React.FC = () => {
                                         {listStatus.map((list) => (
                                             <tr key={list.id}>
                                                 <td><strong>{list.area}</strong></td>
-                                                <td>{list.last_submission}</td>
+                                                <td>{formatListSubmissionDate(list.last_submission)}</td>
                                                 <td>
                                                     <span className={styles.badgeWarning}>
                                                         {list.pending_submissions} pendente{list.pending_submissions !== 1 ? 's' : ''}
@@ -434,11 +505,25 @@ const AdminDashboard: React.FC = () => {
                                                 <td>
                                                     <Button
                                                         as={Link}
-                                                        to={`/admin/listas/${list.id}/consolidacao`}
+                                                        to={`/admin/listas/${list.id}/lista-mae`}
                                                         variant="outline-primary"
                                                         size="sm"
+                                                        className="me-2"
                                                     >
                                                         Ver Consolidação
+                                                    </Button>
+                                                    <Button
+                                                        variant="success"
+                                                        size="sm"
+                                                        onClick={() => handleAprovarTodosPedidos(
+                                                            list.id,
+                                                            list.area,
+                                                            list.pending_submissions
+                                                        )}
+                                                        disabled={loadingListStatus}
+                                                    >
+                                                        <FontAwesomeIcon icon={faCheck} className="me-1" />
+                                                        Aprovar Todos
                                                     </Button>
                                                 </td>
                                             </tr>

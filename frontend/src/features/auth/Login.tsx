@@ -43,7 +43,6 @@ const Login: React.FC = () => {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const [testUsers, setTestUsers] = useState<TestUser[]>([]);
-    const [loadingTestUsers, setLoadingTestUsers] = useState(false);
     const navigate = useNavigate();
     const { login } = useAuth();
 
@@ -61,13 +60,10 @@ const Login: React.FC = () => {
 
     const fetchTestUsers = async () => {
         try {
-            setLoadingTestUsers(true);
             const response = await api.get('/auth/test-users');
             setTestUsers(response.data.usuarios || []);
         } catch (err) {
             console.error('Erro ao carregar usuários de teste:', err);
-        } finally {
-            setLoadingTestUsers(false);
         }
     };
 

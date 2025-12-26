@@ -7,6 +7,10 @@ interface Item {
     nome: string;
     unidade_medida: string;
     fornecedor_id: number;
+    fornecedor?: {
+        id: number;
+        nome: string;
+    };
 }
 
 interface Fornecedor {
@@ -29,14 +33,24 @@ const ItemManagement: React.FC = () => {
         setIsLoading(true);
         setError('');
         try {
+            console.log('[ItemManagement] Buscando dados...');
+            console.log('[ItemManagement] Token presente:', !!localStorage.getItem('accessToken'));
+
             const [itemsRes, fornecedoresRes] = await Promise.all([
                 api.get('/v1/items'),
                 api.get('/v1/fornecedores')
             ]);
+
+            console.log('[ItemManagement] Itens recebidos:', itemsRes.data?.length || 0);
+            console.log('[ItemManagement] Fornecedores recebidos:', fornecedoresRes.data?.length || 0);
+
             setItems(itemsRes.data);
             setFornecedores(fornecedoresRes.data);
-        } catch (err) {
-            setError('Falha ao carregar dados. Tente atualizar a página.');
+        } catch (err: any) {
+            console.error('[ItemManagement] Erro completo:', err);
+            console.error('[ItemManagement] Status:', err.response?.status);
+            console.error('[ItemManagement] Dados:', err.response?.data);
+            setError(`Falha ao carregar dados: ${err.response?.data?.error || err.message}`);
         } finally {
             setIsLoading(false);
         }
@@ -128,7 +142,7 @@ const ItemManagement: React.FC = () => {
                             <td>{item.id}</td>
                             <td>{item.nome}</td>
                             <td>{item.unidade_medida}</td>
-                            <td>{fornecedores.find(f => f.id === item.fornecedor_id)?.nome || 'N/A'}</td>
+                            <td>{item.fornecedor?.nome || fornecedores.find(f => f.id === item.fornecedor_id)?.nome || 'N/A'}</td>
                             <td>
                                 <Button variant="warning" size="sm" onClick={() => handleShowModal(item)}>
                                     <i className="fas fa-edit"></i>

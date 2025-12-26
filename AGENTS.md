@@ -34,3 +34,4 @@
 
 ## Agent-Specific Instructions
 - Sempre responda em portugues e considere o horario de Brasilia (BRT) ao informar datas ou horarios.
+- Nao fazer push/merge na branch main sem autorizacao explicita do usuario; usar develop por padrao.

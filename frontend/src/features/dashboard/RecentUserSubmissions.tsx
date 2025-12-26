@@ -19,7 +19,7 @@ const RecentUserSubmissions: React.FC = () => {
   useEffect(() => {
     const fetchSubmissions = async () => {
       try {
-        const response = await api.get('/pedidos/me');
+        const response = await api.get('/v1/pedidos/me');
         setSubmissions(response.data);
       } catch (err) {
         setError('Falha ao carregar suas submissões recentes.');

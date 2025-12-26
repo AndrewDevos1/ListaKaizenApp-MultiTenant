@@ -40,7 +40,6 @@ import {
     faUser,
     faKey,
     faShoppingCart,
-    faTasks,
 } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
@@ -73,7 +72,7 @@ interface DashboardStats {
 interface AreaStatus {
     id: number;
     area: string;
-    last_submission: string;
+    last_submission: string | null;
     pending_items: number;
 }
 
@@ -178,6 +177,19 @@ const CollaboratorDashboard: React.FC = () => {
         setIsEditMode(!isEditMode);
     };
 
+    const formatListSubmissionDate = (value: string | null) => {
+        if (!value) {
+            return 'Nunca';
+        }
+
+        const parsedDate = new Date(value);
+        if (Number.isNaN(parsedDate.getTime())) {
+            return value;
+        }
+
+        return parsedDate.toLocaleString('pt-BR');
+    };
+
     // DIAGNOSTICO: Verificar se este componente esta sendo carregado
     console.log('[DASHBOARD] COLLABORATOR CARREGADO!', {
         styles,
@@ -207,18 +219,17 @@ const CollaboratorDashboard: React.FC = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [statsResponse] = await Promise.all([
-                    api.get('/collaborator/dashboard-summary'),
-                ]);
+                const statsResponse = await api.get('/collaborator/dashboard-summary');
 
                 setStats(statsResponse.data);
 
-                // Mock data para demonstração (remover quando backend estiver pronto)
-                setAreaStatus([
-                    { id: 1, area: 'Cozinha', last_submission: '2025-10-20 14:30', pending_items: 3 },
-                    { id: 2, area: 'Almoxarifado', last_submission: '2025-10-20 10:15', pending_items: 1 },
-                    { id: 3, area: 'Manutenção', last_submission: '2025-10-19 16:45', pending_items: 5 },
-                ]);
+                try {
+                    const areasResponse = await api.get('/collaborator/minhas-areas-status');
+                    setAreaStatus(areasResponse.data || []);
+                } catch (err) {
+                    console.error('Erro ao buscar status das áreas:', err);
+                    setAreaStatus([]);
+                }
 
                 setRecentActivities([
                     { time: '14:30', description: 'Você submeteu lista "Cozinha"' },
@@ -252,20 +263,10 @@ const CollaboratorDashboard: React.FC = () => {
             {
                 id: 'widget-compras',
                 title: 'Minhas Compras',
-                value: 0,
+                value: stats.minhas_areas,
                 icon: faShoppingCart,
                 color: styles.widgetPurple,
                 link: '/collaborator/listas',
-                trend: '',
-                trendType: 'positive',
-            },
-            {
-                id: 'widget-tarefas',
-                title: 'Minhas Tarefas',
-                value: 0,
-                icon: faTasks,
-                color: styles.widgetOrange,
-                link: '/collaborator/tarefas',
                 trend: '',
                 trendType: 'positive',
             },
@@ -380,13 +381,13 @@ const CollaboratorDashboard: React.FC = () => {
                 </div>
 
                 <Row>
-                    {/* Status das Áreas */}
+                    {/* Status das Listas */}
                     <Col lg={8} className="mb-4">
                         <Card className={styles.sectionCard}>
                             <div className={styles.sectionCardHeader}>
                                 <h4 className={styles.sectionCardTitle}>
                                     <FontAwesomeIcon icon={faListAlt} />
-                                    Minhas Áreas de Trabalho
+                                    Minhas Áreas
                                 </h4>
                             </div>
                             {areaStatus.length > 0 ? (
@@ -403,7 +404,7 @@ const CollaboratorDashboard: React.FC = () => {
                                         {areaStatus.map((area) => (
                                             <tr key={area.id}>
                                                 <td><strong>{area.area}</strong></td>
-                                                <td>{area.last_submission}</td>
+                                                <td>{formatListSubmissionDate(area.last_submission)}</td>
                                                 <td>
                                                     <span className={styles.badgeWarning}>
                                                         {area.pending_items} pendente{area.pending_items !== 1 ? 's' : ''}
@@ -416,7 +417,7 @@ const CollaboratorDashboard: React.FC = () => {
                                                         variant="outline-primary"
                                                         size="sm"
                                                     >
-                                                        Ver Estoque
+                                                        Ver Área
                                                     </Button>
                                                 </td>
                                             </tr>

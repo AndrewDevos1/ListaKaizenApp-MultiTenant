@@ -14,7 +14,8 @@ import {
     faClipboardList,
     faChevronRight,
     faExclamationTriangle,
-    faCheckCircle
+    faCheckCircle,
+    faArrowLeft
 } from '@fortawesome/free-solid-svg-icons';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../../services/api';
@@ -30,7 +31,7 @@ interface Lista {
 
 const MinhasListasCompras: React.FC = () => {
     const navigate = useNavigate();
-
+    
     // Estados principais
     const [listas, setListas] = useState<Lista[]>([]);
     const [loading, setLoading] = useState(true);
@@ -43,7 +44,7 @@ const MinhasListasCompras: React.FC = () => {
             setLoading(true);
             setError(null);
             const response = await api.get('/collaborator/minhas-listas');
-            setListas(response.data);
+            setListas(response.data.listas || []);
         } catch (err: any) {
             setError(err.response?.data?.error || 'Erro ao carregar listas');
             console.error('Erro ao buscar listas:', err);
@@ -90,6 +91,15 @@ const MinhasListasCompras: React.FC = () => {
             {/* Header */}
             <div className={styles.header}>
                 <div className={styles.headerContent}>
+                    <Button
+                        variant="outline-secondary"
+                        size="sm"
+                        onClick={() => navigate('/collaborator')}
+                        className="mb-3"
+                    >
+                        <FontAwesomeIcon icon={faArrowLeft} /> Voltar ao Dashboard
+                    </Button>
+                    
                     <h1>
                         <FontAwesomeIcon icon={faShoppingCart} /> Minhas Listas de Compras
                     </h1>

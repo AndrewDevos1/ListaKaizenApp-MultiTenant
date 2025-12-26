@@ -285,8 +285,21 @@ def create_item_route():
 @api_bp.route('/items', methods=['GET'])
 @jwt_required()
 def get_items_route():
-    items, _ = services.get_all_items()
-    return jsonify([item.to_dict() for item in items])
+    print(f"[DEBUG] get_items_route chamado por user: {get_jwt_identity()}")
+    items, status = services.get_all_items()
+    print(f"[DEBUG] Retornando {len(items)} itens")
+
+    result = []
+    for item in items:
+        item_dict = item.to_dict()
+        if item.fornecedor:
+            item_dict['fornecedor'] = {
+                'id': item.fornecedor.id,
+                'nome': item.fornecedor.nome
+            }
+        result.append(item_dict)
+
+    return jsonify(result), status
 
 @api_bp.route('/items/<int:item_id>', methods=['GET'])
 @admin_required()
@@ -451,6 +464,20 @@ def get_my_pedidos_route():
     return jsonify([p.to_dict() for p in pedidos])
 
 
+@api_bp.route('/submissoes/me', methods=['GET'])
+@jwt_required()
+def get_my_submissoes_route():
+    """Retorna submissões agrupadas do usuário."""
+    user_id = get_user_id_from_jwt()
+    submissoes, _ = services.get_submissoes_by_user(user_id)
+    
+    response = jsonify(submissoes)
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    return response
+
+
 @api_bp.route('/pedidos/submit', methods=['POST'])
 @jwt_required()
 def submit_pedidos_route():
@@ -476,6 +503,68 @@ def get_all_pedidos_route():
         pedidos, _ = services.get_all_pedidos()
 
     return jsonify([p.to_dict() for p in pedidos])
+
+
+@admin_bp.route('/submissoes', methods=['GET'])
+@admin_required()
+def get_all_submissoes_route():
+    """Retorna todas as submissões com filtro opcional por status."""
+    status_filter = request.args.get('status')  # PENDENTE, APROVADO, REJEITADO
+    submissoes, _ = services.get_all_submissoes(status_filter)
+    return jsonify(submissoes)
+
+
+@admin_bp.route('/submissoes/<int:submissao_id>/aprovar', methods=['POST'])
+@admin_required()
+def aprovar_submissao_route(submissao_id):
+    """Aprova todos os pedidos de uma submissão."""
+    response, status = services.aprovar_submissao(submissao_id)
+    return jsonify(response), status
+
+
+@admin_bp.route('/submissoes/<int:submissao_id>/rejeitar', methods=['POST'])
+@admin_required()
+def rejeitar_submissao_route(submissao_id):
+    """Rejeita todos os pedidos de uma submissão."""
+    response, status = services.rejeitar_submissao(submissao_id)
+    return jsonify(response), status
+
+
+@admin_bp.route('/submissoes/<int:submissao_id>/reverter', methods=['POST'])
+@admin_required()
+def reverter_submissao_route(submissao_id):
+    """
+    Reverte uma submissão APROVADA ou REJEITADA para PENDENTE.
+    Permite que admin reconsidere a decisão.
+    """
+    response, status = services.reverter_submissao_para_pendente(submissao_id)
+    return jsonify(response), status
+
+
+@admin_bp.route('/submissoes/<int:submissao_id>/editar', methods=['PUT'])
+@admin_required()
+def editar_quantidades_submissao_route(submissao_id):
+    """
+    Permite que admin edite as quantidades ATUAIS do estoque de uma submissão PENDENTE.
+    Similar ao comportamento do colaborador: edita quantidade_atual, sistema recalcula pedidos.
+    Espera JSON: {"items": [{"item_id": 1, "quantidade_atual": 10}, ...]}
+    """
+    data = request.get_json()
+    items_data = data.get('items', [])
+    response, status = services.editar_quantidades_submissao(submissao_id, items_data)
+    return jsonify(response), status
+
+
+@admin_bp.route('/listas/<int:lista_id>/estoque', methods=['GET'])
+@admin_required()
+def get_estoque_lista_admin_route(lista_id):
+    """
+    Retorna os itens do estoque de uma lista (para admin editar submissões).
+    Mesmo formato usado pelo colaborador.
+    """
+    response, status = services.get_estoque_lista_admin(lista_id)
+    return jsonify(response), status
+
 
 @admin_bp.route('/pedidos/<int:pedido_id>/aprovar', methods=['POST'])
 @admin_required()
@@ -660,6 +749,41 @@ def collaborator_dashboard_summary_route():
     response, status = services.get_collaborator_dashboard_summary(user_id)
     return jsonify(response), status
 
+@collaborator_bp.route('/minhas-listas-status', methods=['GET'])
+@collaborator_required()
+def get_minhas_listas_status_route():
+    """Retorna status das listas atribuídas ao colaborador."""
+    user_id = get_user_id_from_jwt()
+    response, status = services.get_minhas_listas_status(user_id)
+    return jsonify(response), status
+
+@collaborator_bp.route('/minhas-areas-status', methods=['GET'])
+@jwt_required()
+def get_minhas_areas_status_route():
+    """
+    Retorna status das áreas atribuídas ao colaborador.
+    Para cada área, mostra última submissão e itens pendentes.
+    """
+    user_id = get_user_id_from_jwt()
+    response, status = services.get_minhas_areas_status(user_id)
+    return jsonify(response), status
+
+@collaborator_bp.route('/areas/<int:area_id>', methods=['GET'])
+@jwt_required()
+def get_area_collaborator_route(area_id):
+    """Retorna dados básicos de uma área para o colaborador."""
+    area, _ = services.get_area_by_id(area_id)
+    if not area:
+        return jsonify({"error": "Área não encontrada"}), 404
+    return jsonify(area.to_dict())
+
+@collaborator_bp.route('/areas/<int:area_id>/estoque', methods=['GET'])
+@jwt_required()
+def get_estoque_by_area_collaborator_route(area_id):
+    """Retorna itens de estoque de uma área para o colaborador."""
+    estoque, _ = services.get_estoque_by_area(area_id)
+    return jsonify([e.to_dict() for e in estoque])
+
 # ============================================
 # NOVAS ROTAS - LISTAS COM ESTOQUE
 # ============================================
@@ -709,7 +833,7 @@ def get_lista_estoque_route(lista_id):
 @jwt_required()
 def submit_lista_estoque_route(lista_id):
     """
-    Submete múltiplos itens de estoque de uma lista.
+    Submete múltiplos itens de estoque de uma lista (CRIA nova submissão).
     Payload: {"items": [{"estoque_id": 1, "quantidade_atual": 5}, ...]}
     """
     user_id = get_user_id_from_jwt()
@@ -717,6 +841,31 @@ def submit_lista_estoque_route(lista_id):
     items_data = data.get('items', [])
 
     response, status = services.submit_estoque_lista(lista_id, user_id, items_data)
+    return jsonify(response), status
+
+
+@api_bp.route('/submissoes/<int:submissao_id>', methods=['PUT'])
+@jwt_required()
+def update_submissao_route(submissao_id):
+    """Atualiza submissão existente PENDENTE."""
+    user_id = get_user_id_from_jwt()
+    data = request.get_json()
+    items_data = data.get('items', [])
+    response, status = services.update_submissao(submissao_id, user_id, items_data)
+    return jsonify(response), status
+
+@admin_bp.route('/listas/status-submissoes', methods=['GET'])
+@admin_required()
+def get_listas_status_submissoes_route():
+    """Retorna o status das submissões das listas com pedidos pendentes."""
+    response, status = services.get_listas_status_submissoes()
+    return jsonify(response), status
+
+@admin_bp.route('/listas/<int:lista_id>/aprovar-pedidos', methods=['POST'])
+@admin_required()
+def aprovar_todos_pedidos_lista_route(lista_id):
+    """Aprova todos os pedidos pendentes de uma lista específica."""
+    response, status = services.aprovar_todos_pedidos_lista(lista_id)
     return jsonify(response), status
 
 @admin_bp.route('/listas/<int:lista_id>/itens', methods=['POST'])
@@ -753,7 +902,20 @@ def remover_item_da_lista_route(lista_id, item_id):
     return jsonify(response), status
 
 
-# ===== LISTA MAE ITENS ENDPOINTS (Nova Funcionalidade) =====
+# ===== CATÁLOGO GLOBAL DE ITENS =====
+
+@admin_bp.route('/catalogo-global', methods=['GET'])
+@admin_required()
+def get_catalogo_global_route():
+    """
+    Retorna todos os itens do catálogo global.
+    Usado pelo admin no card "Itens e Insumos".
+    """
+    response, status = services.get_catalogo_global()
+    return jsonify(response), status
+
+
+# ===== LISTA MAE ITENS ENDPOINTS =====
 
 @admin_bp.route('/listas/<int:lista_id>/lista-mae', methods=['GET'])
 @admin_required()
@@ -870,6 +1032,65 @@ def create_lista_from_csv_route():
 
     response, status = services.create_lista_from_csv(nome, descricao, conteudo)
     return jsonify(response), status
+
+
+# ===== IMPORTAÇÃO COM ESTOQUE (NOVA FUNCIONALIDADE) =====
+
+@admin_bp.route('/import/preview', methods=['POST'])
+@admin_required()
+def preview_importacao_route():
+    """
+    Faz preview da importação de itens com estoque antes de confirmar
+    
+    Body JSON:
+    {
+        "texto": "Nome Item\\t\\tQtd Atual\\tQtd Mínima\\n...",
+        "area_id": 1,
+        "fornecedor_id": 2
+    }
+    
+    Returns:
+    {
+        "formato": "simples" | "completo",
+        "total_itens": 10,
+        "itens": [...],
+        "erros": [...]
+    }
+    """
+    data = request.get_json()
+    response, status = services.preview_importacao_estoque(data)
+    return jsonify(response), status
+
+
+@admin_bp.route('/import/execute', methods=['POST'])
+@admin_required()
+def executar_importacao_route():
+    """
+    Executa a importação de itens com estoque
+    
+    Body JSON:
+    {
+        "texto": "Nome Item\\t\\tQtd Atual\\tQtd Mínima\\n...",
+        "area_id": 1,
+        "fornecedor_id": 2,
+        "atualizar_existentes": true
+    }
+    
+    Returns:
+    {
+        "sucesso": true,
+        "total_criados": 5,
+        "total_atualizados": 3,
+        "total_erros": 0,
+        "itens_criados": [...],
+        "itens_atualizados": [...],
+        "erros": [...]
+    }
+    """
+    data = request.get_json()
+    response, status = services.executar_importacao_estoque(data)
+    return jsonify(response), status
+
 
 @admin_bp.route('/database/clear', methods=['POST'])
 @admin_required()
