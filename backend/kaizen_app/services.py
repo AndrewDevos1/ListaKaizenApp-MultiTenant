@@ -381,33 +381,40 @@ def update_fornecedor(fornecedor_id, data):
     from .extensions import db
     from .models import Lista
 
-    # Extrai lista_ids do data se existir
-    lista_ids = data.pop('lista_ids', None)
+    try:
+        # Extrai lista_ids do data se existir
+        lista_ids = data.pop('lista_ids', None)
 
-    # Busca o fornecedor
-    updated_fornecedor = repositories.get_by_id(Fornecedor, fornecedor_id)
-    if not updated_fornecedor:
-        return {"error": "Fornecedor não encontrado"}, 404
+        # Busca o fornecedor
+        updated_fornecedor = repositories.get_by_id(Fornecedor, fornecedor_id)
+        if not updated_fornecedor:
+            return {"error": "Fornecedor não encontrado"}, 404
 
-    # Atualiza campos do fornecedor
-    for key, value in data.items():
-        setattr(updated_fornecedor, key, value)
+        # Atualiza campos do fornecedor
+        for key, value in data.items():
+            if hasattr(updated_fornecedor, key):
+                setattr(updated_fornecedor, key, value)
 
-    # Atualiza as listas se foi fornecido lista_ids
-    if lista_ids is not None:
-        # Remove todas as listas anteriores
-        updated_fornecedor.listas.clear()
+        # Atualiza as listas se foi fornecido lista_ids
+        if lista_ids is not None:
+            # Limpa listas anteriores e adiciona novas
+            updated_fornecedor.listas = []
+            db.session.flush()
+            
+            for lista_id in lista_ids:
+                lista = repositories.get_by_id(Lista, lista_id)
+                if lista:
+                    updated_fornecedor.listas.append(lista)
 
-        # Adiciona as novas listas
-        for lista_id in lista_ids:
-            lista = repositories.get_by_id(Lista, lista_id)
-            if lista:
-                updated_fornecedor.listas.append(lista)
+        # Commit das mudanças
+        db.session.commit()
 
-    # Faz um único commit para todas as mudanças
-    db.session.commit()
-
-    return updated_fornecedor.to_dict(), 200
+        return updated_fornecedor.to_dict(), 200
+    
+    except Exception as e:
+        db.session.rollback()
+        print(f"Erro ao atualizar fornecedor {fornecedor_id}: {str(e)}")
+        return {"error": f"Erro ao atualizar fornecedor: {str(e)}"}, 500
 
 def delete_fornecedor(fornecedor_id):
     if not repositories.delete_instance(Fornecedor, fornecedor_id):

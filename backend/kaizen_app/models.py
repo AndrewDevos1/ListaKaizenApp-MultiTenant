@@ -98,6 +98,8 @@ fornecedor_lista = db.Table('fornecedor_lista',
 
 class Fornecedor(db.Model, SerializerMixin):
     __tablename__ = "fornecedores"
+    serialize_rules = ('-listas.fornecedores',)
+    
     id = db.Column(db.Integer, primary_key=True)
     nome = db.Column(db.String(100), nullable=False)
     contato = db.Column(db.String(100))
@@ -261,6 +263,8 @@ lista_colaborador = db.Table('lista_colaborador',
 
 class Lista(db.Model, SerializerMixin):
     __tablename__ = "listas"
+    serialize_rules = ('-fornecedores.listas', '-colaboradores.listas_atribuidas')
+    
     id = db.Column(db.Integer, primary_key=True)
     nome = db.Column(db.String(100), nullable=False, unique=True)
     descricao = db.Column(db.String(255), nullable=True)
