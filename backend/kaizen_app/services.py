@@ -1994,7 +1994,7 @@ def get_lista_colaborador(user_id, lista_id):
 
 
 def get_estoque_lista_colaborador(user_id, lista_id):
-    """Retorna itens de estoque da lista para um colaborador."""
+    """Retorna itens da lista via ListaItemRef (sem usar tabela Estoque)."""
     # Verificar se o usuário tem acesso a esta lista
     usuario = repositories.get_by_id(Usuario, user_id)
     if not usuario:
@@ -2008,51 +2008,43 @@ def get_estoque_lista_colaborador(user_id, lista_id):
     if lista not in usuario.listas_atribuidas:
         return {"error": "Acesso negado. Esta lista não foi atribuída a você."}, 403
 
-    sync_lista_mae_itens_para_estoque(lista_id)
-
-    # Buscar estoques da lista
-    estoques = Estoque.query.filter(
-        Estoque.lista_id == lista_id,
-        Estoque.quantidade_minima > 0
-    ).all()
+    # Buscar itens da lista via ListaItemRef
+    refs = ListaItemRef.query.filter_by(lista_id=lista_id).all()
 
     # Preparar resposta com dados do item
-    estoques_data = []
-    for estoque in estoques:
-        item = estoque.item
-        estoque_dict = {
-            "id": estoque.id,
-            "item_id": estoque.item_id,
-            "lista_id": estoque.lista_id,
-            "quantidade_atual": float(estoque.quantidade_atual),
-            "quantidade_minima": float(estoque.quantidade_minima),
-            "pedido": max(0, float(estoque.quantidade_minima - estoque.quantidade_atual)),
+    itens_data = []
+    for ref in refs:
+        # Pular itens sem quantidade mínima definida
+        if ref.quantidade_minima <= 0:
+            continue
+        
+        item_dict = {
+            "id": ref.item_id,  # Usar item_id como identificador (compatibilidade com frontend)
+            "item_id": ref.item_id,
+            "lista_id": ref.lista_id,
+            "quantidade_atual": float(ref.quantidade_atual),
+            "quantidade_minima": float(ref.quantidade_minima),
+            "pedido": float(ref.get_pedido()),
             "item": {
-                "id": item.id,
-                "nome": item.nome,
-                "unidade_medida": item.unidade_medida
-            } if item else None
+                "id": ref.item.id,
+                "nome": ref.item.nome,
+                "unidade_medida": ref.item.unidade  # ListaMaeItem usa 'unidade', não 'unidade_medida'
+            }
         }
-        estoques_data.append(estoque_dict)
+        itens_data.append(item_dict)
 
-    return estoques_data, 200
+    return itens_data, 200
 
 
 def update_estoque_colaborador(user_id, estoque_id, data):
-    """Atualiza apenas a quantidade_atual de um estoque para um colaborador."""
+    """
+    Atualiza quantidade_atual de um item via ListaItemRef.
+    NOTA: estoque_id agora é interpretado como item_id (para compatibilidade).
+    """
     # Verificar se o usuário existe
     usuario = repositories.get_by_id(Usuario, user_id)
     if not usuario:
         return {"error": "Usuário não encontrado."}, 404
-
-    # Buscar estoque
-    estoque = repositories.get_by_id(Estoque, estoque_id)
-    if not estoque:
-        return {"error": "Estoque não encontrado."}, 404
-
-    # Verificar se o colaborador está atribuído à lista deste estoque
-    if estoque.lista not in usuario.listas_atribuidas:
-        return {"error": "Acesso negado. Esta lista não foi atribuída a você."}, 403
 
     # Validar que apenas quantidade_atual está sendo atualizado
     if "quantidade_atual" not in data:
@@ -2066,21 +2058,37 @@ def update_estoque_colaborador(user_id, estoque_id, data):
     except (ValueError, TypeError):
         return {"error": "Quantidade deve ser um número válido."}, 400
 
+    # Buscar ListaItemRef - precisa de lista_id também
+    # Por ora, vamos buscar por item_id em todas as listas do colaborador
+    item_id = estoque_id  # estoque_id é na verdade o item_id
+    
+    # Buscar qual lista contém este item e está atribuída ao colaborador
+    ref = None
+    for lista in usuario.listas_atribuidas:
+        ref = ListaItemRef.query.filter_by(
+            lista_id=lista.id,
+            item_id=item_id
+        ).first()
+        if ref:
+            break
+    
+    if not ref:
+        return {"error": "Item não encontrado nas suas listas."}, 404
+
     try:
         # Atualizar apenas quantidade_atual
-        estoque.quantidade_atual = quantidade_atual
-        estoque.data_ultima_submissao = datetime.now(timezone.utc)
-        estoque.usuario_ultima_submissao_id = user_id
-
+        ref.quantidade_atual = quantidade_atual
+        ref.atualizado_em = datetime.now(timezone.utc)
+        
         db.session.commit()
 
         return {
             "message": "Estoque atualizado com sucesso.",
             "estoque": {
-                "id": estoque.id,
-                "quantidade_atual": float(estoque.quantidade_atual),
-                "quantidade_minima": float(estoque.quantidade_minima),
-                "pedido": max(0, float(estoque.quantidade_minima - estoque.quantidade_atual))
+                "id": ref.item_id,
+                "quantidade_atual": float(ref.quantidade_atual),
+                "quantidade_minima": float(ref.quantidade_minima),
+                "pedido": float(ref.get_pedido())
             }
         }, 200
     except Exception as e:
