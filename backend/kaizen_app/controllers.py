@@ -529,6 +529,43 @@ def rejeitar_submissao_route(submissao_id):
     response, status = services.rejeitar_submissao(submissao_id)
     return jsonify(response), status
 
+
+@admin_bp.route('/submissoes/<int:submissao_id>/reverter', methods=['POST'])
+@admin_required()
+def reverter_submissao_route(submissao_id):
+    """
+    Reverte uma submissão APROVADA ou REJEITADA para PENDENTE.
+    Permite que admin reconsidere a decisão.
+    """
+    response, status = services.reverter_submissao_para_pendente(submissao_id)
+    return jsonify(response), status
+
+
+@admin_bp.route('/submissoes/<int:submissao_id>/editar', methods=['PUT'])
+@admin_required()
+def editar_quantidades_submissao_route(submissao_id):
+    """
+    Permite que admin edite as quantidades ATUAIS do estoque de uma submissão PENDENTE.
+    Similar ao comportamento do colaborador: edita quantidade_atual, sistema recalcula pedidos.
+    Espera JSON: {"items": [{"item_id": 1, "quantidade_atual": 10}, ...]}
+    """
+    data = request.get_json()
+    items_data = data.get('items', [])
+    response, status = services.editar_quantidades_submissao(submissao_id, items_data)
+    return jsonify(response), status
+
+
+@admin_bp.route('/listas/<int:lista_id>/estoque', methods=['GET'])
+@admin_required()
+def get_estoque_lista_admin_route(lista_id):
+    """
+    Retorna os itens do estoque de uma lista (para admin editar submissões).
+    Mesmo formato usado pelo colaborador.
+    """
+    response, status = services.get_estoque_lista_admin(lista_id)
+    return jsonify(response), status
+
+
 @admin_bp.route('/pedidos/<int:pedido_id>/aprovar', methods=['POST'])
 @admin_required()
 def aprovar_pedido_route(pedido_id):

@@ -1,11 +1,20 @@
 from .extensions import db
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import enum
 import decimal
 
-# Helper para datas UTC timezone-aware
+# Timezone de Brasília (BRT/BRST - UTC-3)
+BRASILIA_TZ = timezone(timedelta(hours=-3))
+
+# Helper para datas em horário de Brasília
+def brasilia_now():
+    """Retorna datetime atual no timezone de Brasília (BRT/BRST)."""
+    return datetime.now(BRASILIA_TZ)
+
+# Mantém compatibilidade com código antigo
 def utc_now():
-    return datetime.now(timezone.utc)
+    """DEPRECATED: Use brasilia_now() ao invés."""
+    return brasilia_now()
 
 # Helper para serialização
 class SerializerMixin:
@@ -39,7 +48,7 @@ class Usuario(db.Model, SerializerMixin):
     role = db.Column(db.Enum(UserRoles), nullable=False, default=UserRoles.COLLABORATOR)
     aprovado = db.Column(db.Boolean, default=False, nullable=False)
     ativo = db.Column(db.Boolean, default=True, nullable=False)
-    criado_em = db.Column(db.DateTime, default=utc_now)
+    criado_em = db.Column(db.DateTime, default=utc_now)  # Horário de Brasília (BRT/BRST)
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -147,7 +156,7 @@ class Submissao(db.Model, SerializerMixin):
     id = db.Column(db.Integer, primary_key=True)
     lista_id = db.Column(db.Integer, db.ForeignKey('listas.id', ondelete='CASCADE'), nullable=False)
     usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False)
-    data_submissao = db.Column(db.DateTime, nullable=False, default=utc_now)
+    data_submissao = db.Column(db.DateTime, nullable=False, default=utc_now)  # Horário de Brasília (BRT/BRST)
     status = db.Column(db.Enum(SubmissaoStatus), nullable=False, default=SubmissaoStatus.PENDENTE)
     total_pedidos = db.Column(db.Integer, nullable=False, default=0)
     
@@ -185,7 +194,7 @@ class Pedido(db.Model, SerializerMixin):
                               db.ForeignKey('fornecedores.id'), 
                               nullable=True)
     quantidade_solicitada = db.Column(db.Numeric(10, 2), nullable=False)
-    data_pedido = db.Column(db.DateTime, nullable=False, default=utc_now)
+    data_pedido = db.Column(db.DateTime, nullable=False, default=utc_now)  # Horário de Brasília (BRT/BRST)
     usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False)
     status = db.Column(db.Enum(PedidoStatus), nullable=False, default=PedidoStatus.PENDENTE)
     
