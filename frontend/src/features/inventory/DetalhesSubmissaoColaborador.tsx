@@ -108,6 +108,20 @@ const DetalhesSubmissaoColaborador: React.FC = () => {
         }));
     };
 
+    const handleKeyDown = (e: React.KeyboardEvent, currentIndex: number) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            const nextIndex = currentIndex + 1;
+            const nextInput = document.getElementById(`qtd-input-${nextIndex}`);
+            if (nextInput) {
+                nextInput.focus();
+            } else {
+                // Se chegou no último, foca no botão salvar
+                document.getElementById('btn-salvar')?.focus();
+            }
+        }
+    };
+
     const calcularPedido = (itemId: number): number => {
         const item = itensEstoque.find(i => i.item_id === itemId);
         if (!item) return 0;
@@ -275,6 +289,7 @@ const DetalhesSubmissaoColaborador: React.FC = () => {
             {editMode && (
                 <div className="mb-3">
                     <Button
+                        id="btn-salvar"
                         variant="success"
                         onClick={handleSalvarEdicao}
                         disabled={loading}
@@ -291,6 +306,9 @@ const DetalhesSubmissaoColaborador: React.FC = () => {
                     >
                         Cancelar
                     </Button>
+                    <small className="text-muted ms-3">
+                        💡 Dica: Pressione <kbd>Enter</kbd> para ir ao próximo item
+                    </small>
                 </div>
             )}
 
@@ -322,12 +340,15 @@ const DetalhesSubmissaoColaborador: React.FC = () => {
                                             <td><strong>{item.item.nome}</strong></td>
                                             <td className="text-center">
                                                 <Form.Control
+                                                    id={`qtd-input-${idx}`}
                                                     type="number"
                                                     step="0.01"
                                                     min="0"
                                                     value={quantidadesAtuais[item.item_id] || 0}
                                                     onChange={(e) => handleQuantidadeChange(item.item_id, parseFloat(e.target.value) || 0)}
+                                                    onKeyDown={(e) => handleKeyDown(e, idx)}
                                                     style={{ width: '120px', display: 'inline-block' }}
+                                                    autoFocus={idx === 0}
                                                 />
                                                 <span className="ms-2">{item.item.unidade_medida}</span>
                                             </td>
