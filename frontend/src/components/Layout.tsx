@@ -41,7 +41,6 @@ const Layout: React.FC = () => {
       items: [
         { path: '/admin/listas-compras', icon: 'fa-shopping-cart', label: 'Listas de Compras', ariaLabel: 'Listas de Compras' },
         { path: '/admin/catalogo-global', icon: 'fa-book', label: 'Catálogo Global', ariaLabel: 'Catálogo Global de Itens' },
-        { path: '/admin/items', icon: 'fa-boxes', label: 'Itens', ariaLabel: 'Itens' },
         { path: '/admin/areas', icon: 'fa-map-marker-alt', label: 'Áreas', ariaLabel: 'Áreas' }
       ]
     },
