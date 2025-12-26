@@ -8,7 +8,7 @@
  * - NOVO: Selecionar múltiplos itens e atribuir fornecedor para gerar pedidos
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Container, Card, Button, Table, Alert, Row, Col, Badge, Spinner, Form, Modal } from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -75,6 +75,9 @@ const ListaMaeConsolidada: React.FC = () => {
     // Estado para edição inline
     const [editandoId, setEditandoId] = useState<number | null>(null);
     const [itemEditando, setItemEditando] = useState<ListaMaeItem | null>(null);
+    
+    // Refs para navegação com Enter entre campos de quantidade
+    const quantidadeRefs = useRef<{ [key: number]: { atual: HTMLInputElement | null, minima: HTMLInputElement | null } }>({});
 
     // Estado para seleção e atribuição de fornecedor
     const [itensSelecionados, setItensSelecionados] = useState<Set<number>>(new Set());
@@ -288,6 +291,47 @@ const ListaMaeConsolidada: React.FC = () => {
 
     const calcularPedido = (qtdMin: number, qtdAtual: number) => {
         return Math.max(0, qtdMin - qtdAtual);
+    };
+
+    // Função para navegar entre campos com Enter
+    const handleKeyDownQuantidade = async (e: React.KeyboardEvent<HTMLInputElement>, itemId: number, campo: 'atual' | 'minima') => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            
+            // Salva o item atual antes de navegar
+            if (itemEditando) {
+                await handleEditarItem(itemEditando);
+            }
+            
+            const itensFiltrados = getItensFiltrados();
+            const indexAtual = itensFiltrados.findIndex(item => item.id === itemId);
+            
+            if (indexAtual === -1) return;
+            
+            // Se está no campo 'atual', vai para o campo 'minima' do mesmo item
+            if (campo === 'atual') {
+                quantidadeRefs.current[itemId]?.minima?.focus();
+                quantidadeRefs.current[itemId]?.minima?.select();
+            } 
+            // Se está no campo 'minima', vai para o campo 'atual' do próximo item
+            else if (campo === 'minima') {
+                const proximoIndex = indexAtual + 1;
+                if (proximoIndex < itensFiltrados.length) {
+                    const proximoItem = itensFiltrados[proximoIndex];
+                    if (proximoItem.id) {
+                        // Inicia edição do próximo item
+                        setEditandoId(proximoItem.id);
+                        setItemEditando({ ...proximoItem });
+                        
+                        // Aguarda um frame para o componente renderizar
+                        setTimeout(() => {
+                            quantidadeRefs.current[proximoItem.id!]?.atual?.focus();
+                            quantidadeRefs.current[proximoItem.id!]?.atual?.select();
+                        }, 50);
+                    }
+                }
+            }
+        }
     };
 
     // Função para filtrar itens
@@ -776,20 +820,38 @@ const ListaMaeConsolidada: React.FC = () => {
                                             </td>
                                             <td>
                                                 <input
+                                                    ref={(el) => {
+                                                        if (item.id && !quantidadeRefs.current[item.id]) {
+                                                            quantidadeRefs.current[item.id] = { atual: null, minima: null };
+                                                        }
+                                                        if (item.id) {
+                                                            quantidadeRefs.current[item.id].atual = el;
+                                                        }
+                                                    }}
                                                     type="number"
                                                     step="0.01"
                                                     className="form-control form-control-sm"
                                                     value={itemEditando.quantidade_atual}
                                                     onChange={(e) => setItemEditando({ ...itemEditando, quantidade_atual: parseFloat(e.target.value) || 0 })}
+                                                    onKeyDown={(e) => item.id && handleKeyDownQuantidade(e, item.id, 'atual')}
                                                 />
                                             </td>
                                             <td>
                                                 <input
+                                                    ref={(el) => {
+                                                        if (item.id && !quantidadeRefs.current[item.id]) {
+                                                            quantidadeRefs.current[item.id] = { atual: null, minima: null };
+                                                        }
+                                                        if (item.id) {
+                                                            quantidadeRefs.current[item.id].minima = el;
+                                                        }
+                                                    }}
                                                     type="number"
                                                     step="0.01"
                                                     className="form-control form-control-sm"
                                                     value={itemEditando.quantidade_minima}
                                                     onChange={(e) => setItemEditando({ ...itemEditando, quantidade_minima: parseFloat(e.target.value) || 0 })}
+                                                    onKeyDown={(e) => item.id && handleKeyDownQuantidade(e, item.id, 'minima')}
                                                 />
                                             </td>
                                             <td className="text-center">
