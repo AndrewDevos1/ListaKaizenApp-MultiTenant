@@ -189,6 +189,15 @@
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
+.editableCell {
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.editableCell:hover {
+    background-color: #f0f8ff !important;
+}
+
 /* Responsivo */
 @media (max-width: 992px) {
     .title {

@@ -888,8 +888,36 @@ const ListaMaeConsolidada: React.FC = () => {
                                             <td className="text-center">
                                                 <Badge bg="light" text="dark">{item.unidade}</Badge>
                                             </td>
-                                            <td className="text-center">{item.quantidade_atual.toFixed(2)}</td>
-                                            <td className="text-center">
+                                            <td 
+                                                className={`text-center ${styles.editableCell}`}
+                                                onClick={() => {
+                                                    setEditandoId(item.id || null);
+                                                    setItemEditando({ ...item });
+                                                    setTimeout(() => {
+                                                        if (item.id) {
+                                                            quantidadeRefs.current[item.id]?.atual?.focus();
+                                                            quantidadeRefs.current[item.id]?.atual?.select();
+                                                        }
+                                                    }, 50);
+                                                }}
+                                                title="Clique para editar"
+                                            >
+                                                {item.quantidade_atual.toFixed(2)}
+                                            </td>
+                                            <td 
+                                                className={`text-center ${styles.editableCell}`}
+                                                onClick={() => {
+                                                    setEditandoId(item.id || null);
+                                                    setItemEditando({ ...item });
+                                                    setTimeout(() => {
+                                                        if (item.id) {
+                                                            quantidadeRefs.current[item.id]?.minima?.focus();
+                                                            quantidadeRefs.current[item.id]?.minima?.select();
+                                                        }
+                                                    }, 50);
+                                                }}
+                                                title="Clique para editar"
+                                            >
                                                 <Badge bg="secondary">{item.quantidade_minima.toFixed(2)}</Badge>
                                             </td>
                                             <td className="text-center">
