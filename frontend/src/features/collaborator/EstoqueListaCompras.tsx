@@ -158,13 +158,13 @@ const EstoqueListaCompras: React.FC = () => {
             );
 
             setSuccess(
-                `[OK] Lista submetida com sucesso! ${response.data.pedidos_criados} pedido(s) criado(s).`
+                `✅ Lista submetida com sucesso! ${response.data.pedidos_criados} pedido(s) criado(s).`
             );
 
-            // Recarrega os dados
+            // Aguarda 4 segundos para usuário ler mensagem, depois volta
             setTimeout(() => {
                 navigate('/collaborator/listas');
-            }, 2000);
+            }, 4000);  // Aumentado de 2s para 4s
         } catch (err: any) {
             setError(
                 err.response?.data?.error || 'Erro ao submeter a lista.'

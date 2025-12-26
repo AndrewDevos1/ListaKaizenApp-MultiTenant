@@ -2038,8 +2038,10 @@ def get_estoque_lista_colaborador(user_id, lista_id):
     if lista not in usuario.listas_atribuidas:
         return {"error": "Acesso negado. Esta lista não foi atribuída a você."}, 403
 
-    # Buscar itens da lista via ListaItemRef
-    refs = ListaItemRef.query.filter_by(lista_id=lista_id).all()
+    # Buscar itens da lista via ListaItemRef com EAGER LOADING (otimização)
+    refs = ListaItemRef.query.options(
+        db.joinedload(ListaItemRef.item)  # Carrega item junto, evita N+1 queries
+    ).filter_by(lista_id=lista_id).all()
 
     # Preparar resposta com dados do item
     itens_data = []
