@@ -2032,10 +2032,11 @@ def adicionar_item_lista_mae(lista_id, data):
 def editar_item_lista_mae(lista_id, item_id, data):
     """
     Edita a referência de um item em uma lista específica.
-    Atualiza quantidades na referência e opcionalmente unidade no item global.
+    Se o nome for alterado, busca ou cria um item no catálogo global
+    e atualiza a referência para o novo item.
     """
     try:
-        # Buscar a referência (item_id é o ID do item global)
+        # Buscar a referência atual (item_id é o ID do item global)
         ref = ListaItemRef.query.filter_by(
             lista_id=lista_id,
             item_id=item_id
@@ -2044,6 +2045,43 @@ def editar_item_lista_mae(lista_id, item_id, data):
         if not ref:
             return {"error": "Item não encontrado nesta lista"}, 404
 
+        # Se o nome foi alterado, buscar ou criar novo item no catálogo
+        if 'nome' in data and data['nome']:
+            nome_novo = data['nome'].strip()
+            
+            # Busca case-insensitive por item com o mesmo nome
+            item_existente = ListaMaeItem.query.filter(
+                db.func.lower(ListaMaeItem.nome) == nome_novo.lower()
+            ).first()
+            
+            if item_existente:
+                # Item já existe no catálogo, apenas atualizar a referência
+                if item_existente.id != ref.item_id:
+                    # Verificar se já existe uma referência para este item nesta lista
+                    ref_existente = ListaItemRef.query.filter_by(
+                        lista_id=lista_id,
+                        item_id=item_existente.id
+                    ).first()
+                    
+                    if ref_existente:
+                        # Já existe referência, deletar a antiga e usar a existente
+                        db.session.delete(ref)
+                        ref = ref_existente
+                    else:
+                        # Atualizar o item_id da referência
+                        ref.item_id = item_existente.id
+            else:
+                # Item não existe, criar novo no catálogo
+                novo_item = ListaMaeItem(
+                    nome=nome_novo,
+                    unidade=data.get('unidade', ref.item.unidade)
+                )
+                db.session.add(novo_item)
+                db.session.flush()  # Gera o ID do novo item
+                
+                # Atualizar a referência para o novo item
+                ref.item_id = novo_item.id
+
         # Atualizar quantidades na referência
         if 'quantidade_atual' in data:
             ref.quantidade_atual = data['quantidade_atual']
@@ -2051,14 +2089,14 @@ def editar_item_lista_mae(lista_id, item_id, data):
             ref.quantidade_minima = data['quantidade_minima']
         ref.atualizado_em = datetime.now(timezone.utc)
 
-        # Se unidade foi fornecida, atualizar no item global
-        if data.get('unidade'):
+        # Se unidade foi fornecida (e nome não foi alterado), atualizar no item global
+        if 'unidade' in data and 'nome' not in data:
             ref.item.unidade = data['unidade']
             ref.item.atualizado_em = datetime.now(timezone.utc)
 
         db.session.commit()
-        # sync_lista_mae_itens_para_estoque(lista_id)  # REMOVIDO - Não mais necessário
         return ref.to_dict(), 200
+        
     except Exception as e:
         import traceback
         from flask import current_app
