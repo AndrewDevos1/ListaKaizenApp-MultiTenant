@@ -328,22 +328,35 @@ const ListaMaeConsolidada: React.FC = () => {
         const item = listaMae?.itens.find(i => i.id === editandoCampo.itemId);
         if (!item) return;
 
+        // Verifica se houve mudança
+        const valorAtual = editandoCampo.campo === 'nome' ? item.nome : item.quantidade_minima;
+        const valorNovo = editandoCampo.campo === 'nome' ? String(valorEditando).trim() : parseFloat(String(valorEditando)) || 0;
+        
+        if (valorAtual === valorNovo) {
+            // Sem mudanças, apenas fecha a edição
+            cancelarEdicao();
+            return;
+        }
+
         // Validações
         if (editandoCampo.campo === 'nome') {
             const nomeStr = String(valorEditando).trim();
             
             if (!nomeStr) {
                 setError('O nome do item não pode ser vazio');
+                cancelarEdicao();
                 return;
             }
             
             if (/^\d/.test(nomeStr)) {
                 setError('O nome do item não pode começar com número');
+                cancelarEdicao();
                 return;
             }
             
             if (/^\s/.test(String(valorEditando))) {
                 setError('O nome do item não pode começar com espaço');
+                cancelarEdicao();
                 return;
             }
         }
@@ -370,6 +383,7 @@ const ListaMaeConsolidada: React.FC = () => {
             setError(null);
         } catch (err: any) {
             setError(err.response?.data?.error || 'Erro ao salvar alteração');
+            cancelarEdicao();
         }
     };
 
