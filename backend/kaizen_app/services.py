@@ -874,7 +874,7 @@ def submit_estoque_lista(lista_id, usuario_id, items_data):
 # --- Serviços de Lista ---
 
 def create_lista(data):
-    """Cria uma nova lista de compras."""
+    """Cria uma nova lista de compras, opcionalmente com itens do catálogo global."""
     if not data or not data.get('nome'):
         return {"error": "O nome da lista é obrigatório."}, 400
 
@@ -889,6 +889,31 @@ def create_lista(data):
         descricao=data.get('descricao', '').strip() if data.get('descricao') else None
     )
     repositories.add_instance(nova_lista)
+    db.session.flush()  # Garantir que nova_lista.id está disponível
+    
+    # Adicionar itens do catálogo global, se fornecidos
+    itens_data = data.get('itens', [])
+    if itens_data and isinstance(itens_data, list):
+        for item_data in itens_data:
+            item_id = item_data.get('item_id')
+            if not item_id:
+                continue
+                
+            # Validar que o item existe no catálogo global
+            item = ListaMaeItem.query.get(item_id)
+            if not item:
+                continue
+            
+            # Criar referência lista-item
+            lista_item_ref = ListaItemRef(
+                lista_id=nova_lista.id,
+                item_id=item_id,
+                quantidade_atual=float(item_data.get('quantidade_atual', 0)),
+                quantidade_minima=float(item_data.get('quantidade_minima', 1.0))
+            )
+            db.session.add(lista_item_ref)
+    
+    db.session.commit()
 
     return nova_lista.to_dict(), 201
 
