@@ -38,8 +38,8 @@ const EstoqueLista: React.FC = () => {
                 setIsLoading(true);
                 try {
                     const [estoqueRes, areaRes] = await Promise.all([
-                        api.get(`/v1/areas/${areaId}/estoque`),
-                        api.get(`/v1/areas/${areaId}`)
+                        api.get(`/collaborator/areas/${areaId}/estoque`),
+                        api.get(`/collaborator/areas/${areaId}`)
                     ]);
                     const estoqueComStatus = estoqueRes.data.map(item => ({ ...item, changed: false }));
                     setEstoque(estoqueComStatus);
@@ -118,7 +118,7 @@ const EstoqueLista: React.FC = () => {
             const fetchEstoque = async () => {
                 setIsLoading(true);
                 try {
-                    const estoqueRes = await api.get(`/v1/areas/${areaId}/estoque`);
+                    const estoqueRes = await api.get(`/collaborator/areas/${areaId}/estoque`);
                     const estoqueComStatus = estoqueRes.data.map(item => ({ ...item, changed: false }));
                     setEstoque(estoqueComStatus);
                     setOriginalEstoque(JSON.parse(JSON.stringify(estoqueComStatus)));

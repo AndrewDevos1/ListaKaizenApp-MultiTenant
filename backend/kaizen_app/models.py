@@ -217,8 +217,7 @@ class Lista(db.Model, SerializerMixin):
     # Relacionamento muitos-para-muitos com os usuários (colaboradores)
     colaboradores = db.relationship('Usuario', secondary=lista_colaborador,
                                     lazy=True, backref=db.backref('listas_atribuidas', lazy=True))
-    # Relacionamento um-para-muitos com ListaMaeItem
-    itens = db.relationship('ListaMaeItem', backref='lista', lazy='subquery', cascade='all, delete-orphan')
+    # Relacionamento com itens via tabela intermediária ListaItemRef (definido no model ListaItemRef)
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -230,26 +229,68 @@ class Lista(db.Model, SerializerMixin):
 
 class ListaMaeItem(db.Model, SerializerMixin):
     """
-    Representa um item na Lista Mãe.
-    Cada item tem um ID único para ser referenciado em Cotações futuras.
+    Catálogo GLOBAL de todos os itens.
+    Cada item existe independentemente das listas e pode ser referenciado
+    por múltiplas listas através da tabela intermediária ListaItemRef.
     """
     __tablename__ = "lista_mae_itens"
 
     id = db.Column(db.Integer, primary_key=True)
-    lista_mae_id = db.Column(db.Integer, db.ForeignKey('listas.id'), nullable=False)
-    nome = db.Column(db.String(255), nullable=False)
-    unidade = db.Column(db.String(50), nullable=False, default='un', server_default='un')  # Kg, Litro, Unidade (padrão: un)
-    quantidade_atual = db.Column(db.Float, default=0, nullable=False)
-    quantidade_minima = db.Column(db.Float, default=0, nullable=False)
+    nome = db.Column(db.String(255), unique=True, nullable=False)  # ÚNICO GLOBALMENTE
+    unidade = db.Column(db.String(50), nullable=False, default='un', server_default='un')
     criado_em = db.Column(db.DateTime, default=utc_now)
     atualizado_em = db.Column(db.DateTime, default=utc_now, onupdate=utc_now)
 
     def to_dict(self):
-        """Serializa o item com o cálculo de pedido."""
-        d = super().to_dict()
-        d['pedido'] = self.get_pedido()
-        return d
+        """Serializa o item do catálogo global."""
+        return {
+            "id": self.id,
+            "nome": self.nome,
+            "unidade": self.unidade,
+            "criado_em": self.criado_em.isoformat() if self.criado_em else None,
+            "atualizado_em": self.atualizado_em.isoformat() if self.atualizado_em else None,
+            "total_listas": self.lista_refs.count() if hasattr(self, 'lista_refs') else 0
+        }
+
+
+class ListaItemRef(db.Model, SerializerMixin):
+    """
+    Tabela intermediária que associa Listas a Itens do Catálogo Global.
+    Armazena quantidades específicas por lista.
+    """
+    __tablename__ = "lista_item_ref"
+
+    lista_id = db.Column(db.Integer, db.ForeignKey('listas.id', ondelete='CASCADE'), primary_key=True)
+    item_id = db.Column(db.Integer, db.ForeignKey('lista_mae_itens.id', ondelete='CASCADE'), primary_key=True)
+    quantidade_atual = db.Column(db.Float, default=0, nullable=False)
+    quantidade_minima = db.Column(db.Float, default=1.0, nullable=False)
+    criado_em = db.Column(db.DateTime, default=utc_now)
+    atualizado_em = db.Column(db.DateTime, default=utc_now, onupdate=utc_now)
+
+    # Relacionamentos
+    lista = db.relationship('Lista', backref=db.backref('item_refs', lazy='dynamic', cascade='all, delete-orphan'))
+    item = db.relationship('ListaMaeItem', backref=db.backref('lista_refs', lazy='dynamic'))
 
     def get_pedido(self):
         """Calcula o pedido: max(0, qtd_minima - qtd_atual)"""
         return max(0, self.quantidade_minima - self.quantidade_atual)
+
+    def to_dict(self):
+        """Serializa a referência com dados do item e cálculo de pedido."""
+        d = {
+            "lista_id": self.lista_id,
+            "item_id": self.item_id,
+            "quantidade_atual": self.quantidade_atual,
+            "quantidade_minima": self.quantidade_minima,
+            "pedido": self.get_pedido(),
+            "criado_em": self.criado_em.isoformat() if self.criado_em else None,
+            "atualizado_em": self.atualizado_em.isoformat() if self.atualizado_em else None,
+        }
+        # Incluir dados do item
+        if self.item:
+            d['item'] = {
+                "id": self.item.id,
+                "nome": self.item.nome,
+                "unidade": self.item.unidade
+            }
+        return d

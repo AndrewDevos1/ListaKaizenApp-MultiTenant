@@ -319,7 +319,7 @@ const AdminDashboard: React.FC = () => {
                 value: stats.total_items,
                 icon: faBox,
                 color: styles.widgetBlue,
-                link: '/admin/items',
+                link: '/admin/catalogo-global',
                 trend: '+12',
                 trendType: 'positive',
             },

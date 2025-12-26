@@ -14,6 +14,7 @@ import FornecedorManagement from './features/admin/FornecedorManagement';
 import FornecedorDetalhes from './features/admin/FornecedorDetalhes';
 import AreaManagement from './features/admin/AreaManagement';
 import ItemManagement from './features/admin/ItemManagement';
+import CatalogoGlobal from './features/admin/CatalogoGlobal';
 import AdminDashboard from './features/admin/AdminDashboard';
 import UserManagement from './features/admin/UserManagement';
 import ListasCompras from './features/admin/ListasCompras';
@@ -59,6 +60,7 @@ function App() {
               <Route path="listas/:listaId/lista-mae" element={<ListaMaeConsolidada />} />
               <Route path="listas/:listaId/gerenciar-itens" element={<GerenciarItensLista />} />
               <Route path="items" element={<ItemManagement />} />
+              <Route path="catalogo-global" element={<CatalogoGlobal />} />
               <Route path="areas" element={<AreaManagement />} />
               <Route path="fornecedores" element={<FornecedorManagement />} />
               <Route path="fornecedores/:fornecedorId/detalhes" element={<FornecedorDetalhes />} />

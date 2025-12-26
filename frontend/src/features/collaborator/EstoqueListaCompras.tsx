@@ -314,7 +314,12 @@ const EstoqueListaCompras: React.FC = () => {
                             )) : (
                                 <tr>
                                     <td colSpan={5} className="text-center text-muted py-4">
-                                        Nenhum item encontrado.
+                                        <div>Nenhum item encontrado.</div>
+                                        <small className="text-muted">
+                                            Apenas itens com quantidade mínima definida aparecem aqui.
+                                            <br />
+                                            Peça ao administrador para configurar os itens da lista.
+                                        </small>
                                     </td>
                                 </tr>
                             )}
