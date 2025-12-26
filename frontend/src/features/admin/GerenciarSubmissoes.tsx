@@ -106,7 +106,7 @@ const GerenciarSubmissoes: React.FC = () => {
                         Visualizar e aprovar submissões de listas de reposição
                     </p>
                 </div>
-                <Link to="/admin/dashboard">
+                <Link to="/admin">
                     <Button variant="outline-secondary">
                         <FontAwesomeIcon icon={faArrowLeft} /> Voltar
                     </Button>
