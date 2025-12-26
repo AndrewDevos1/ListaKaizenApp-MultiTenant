@@ -153,7 +153,7 @@ const EstoqueListaCompras: React.FC = () => {
             }));
 
             const response = await api.post<SubmitResponse>(
-                `/listas/${listaId}/estoque/submit`,
+                `/v1/listas/${listaId}/estoque/submit`,
                 { items: itemsParaSubmeter }
             );
 
