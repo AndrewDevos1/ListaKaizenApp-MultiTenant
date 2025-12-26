@@ -464,6 +464,20 @@ def get_my_pedidos_route():
     return jsonify([p.to_dict() for p in pedidos])
 
 
+@api_bp.route('/submissoes/me', methods=['GET'])
+@jwt_required()
+def get_my_submissoes_route():
+    """Retorna submissões agrupadas do usuário."""
+    user_id = get_user_id_from_jwt()
+    submissoes, _ = services.get_submissoes_by_user(user_id)
+    
+    response = jsonify(submissoes)
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    return response
+
+
 @api_bp.route('/pedidos/submit', methods=['POST'])
 @jwt_required()
 def submit_pedidos_route():
@@ -489,6 +503,31 @@ def get_all_pedidos_route():
         pedidos, _ = services.get_all_pedidos()
 
     return jsonify([p.to_dict() for p in pedidos])
+
+
+@admin_bp.route('/submissoes', methods=['GET'])
+@admin_required()
+def get_all_submissoes_route():
+    """Retorna todas as submissões com filtro opcional por status."""
+    status_filter = request.args.get('status')  # PENDENTE, APROVADO, REJEITADO
+    submissoes, _ = services.get_all_submissoes(status_filter)
+    return jsonify(submissoes)
+
+
+@admin_bp.route('/submissoes/<int:submissao_id>/aprovar', methods=['POST'])
+@admin_required()
+def aprovar_submissao_route(submissao_id):
+    """Aprova todos os pedidos de uma submissão."""
+    response, status = services.aprovar_submissao(submissao_id)
+    return jsonify(response), status
+
+
+@admin_bp.route('/submissoes/<int:submissao_id>/rejeitar', methods=['POST'])
+@admin_required()
+def rejeitar_submissao_route(submissao_id):
+    """Rejeita todos os pedidos de uma submissão."""
+    response, status = services.rejeitar_submissao(submissao_id)
+    return jsonify(response), status
 
 @admin_bp.route('/pedidos/<int:pedido_id>/aprovar', methods=['POST'])
 @admin_required()
@@ -757,7 +796,7 @@ def get_lista_estoque_route(lista_id):
 @jwt_required()
 def submit_lista_estoque_route(lista_id):
     """
-    Submete múltiplos itens de estoque de uma lista.
+    Submete múltiplos itens de estoque de uma lista (CRIA nova submissão).
     Payload: {"items": [{"estoque_id": 1, "quantidade_atual": 5}, ...]}
     """
     user_id = get_user_id_from_jwt()
@@ -765,6 +804,17 @@ def submit_lista_estoque_route(lista_id):
     items_data = data.get('items', [])
 
     response, status = services.submit_estoque_lista(lista_id, user_id, items_data)
+    return jsonify(response), status
+
+
+@api_bp.route('/submissoes/<int:submissao_id>', methods=['PUT'])
+@jwt_required()
+def update_submissao_route(submissao_id):
+    """Atualiza submissão existente PENDENTE."""
+    user_id = get_user_id_from_jwt()
+    data = request.get_json()
+    items_data = data.get('items', [])
+    response, status = services.update_submissao(submissao_id, user_id, items_data)
     return jsonify(response), status
 
 @admin_bp.route('/listas/status-submissoes', methods=['GET'])

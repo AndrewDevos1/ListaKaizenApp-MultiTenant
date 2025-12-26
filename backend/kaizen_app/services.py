@@ -1,4 +1,4 @@
-from .models import Usuario, UserRoles, Item, Area, Fornecedor, Estoque, Cotacao, CotacaoStatus, CotacaoItem, Pedido, PedidoStatus, Lista, ListaMaeItem, ListaItemRef
+from .models import Usuario, UserRoles, Item, Area, Fornecedor, Estoque, Cotacao, CotacaoStatus, CotacaoItem, Pedido, PedidoStatus, Lista, ListaMaeItem, ListaItemRef, Submissao, SubmissaoStatus
 from .extensions import db
 from . import repositories
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -632,6 +632,118 @@ def get_pedidos_by_user(user_id):
     return pedidos, 200
 
 
+def get_submissoes_by_user(user_id):
+    """
+    Retorna todas as submissões do usuário com pedidos agrupados.
+    Formato otimizado para exibição em tela.
+    """
+    submissoes = Submissao.query.options(
+        db.joinedload(Submissao.lista),
+        db.joinedload(Submissao.pedidos).joinedload(Pedido.item)
+    ).filter_by(usuario_id=user_id).order_by(Submissao.data_submissao.desc()).all()
+    
+    resultado = []
+    for sub in submissoes:
+        sub_dict = {
+            "id": sub.id,
+            "lista_id": sub.lista_id,
+            "lista_nome": sub.lista.nome if sub.lista else "N/A",
+            "data_submissao": sub.data_submissao.isoformat(),
+            "status": sub.status.value,
+            "total_pedidos": sub.total_pedidos,
+            "pedidos": [
+                {
+                    "id": p.id,
+                    "item_nome": p.item.nome if p.item else "N/A",
+                    "quantidade_solicitada": float(p.quantidade_solicitada),
+                    "status": p.status.value,
+                    "unidade": p.item.unidade if p.item else ""
+                }
+                for p in sub.pedidos
+            ]
+        }
+        resultado.append(sub_dict)
+    
+    return resultado, 200
+
+
+def get_all_submissoes(status_filter=None):
+    """
+    Retorna todas as submissões (admin) com pedidos agrupados.
+    
+    Args:
+        status_filter: PENDENTE, APROVADO, REJEITADO, PARCIALMENTE_APROVADO ou None
+    """
+    query = Submissao.query.options(
+        db.joinedload(Submissao.lista),
+        db.joinedload(Submissao.usuario),
+        db.joinedload(Submissao.pedidos).joinedload(Pedido.item)
+    )
+    
+    if status_filter:
+        query = query.filter_by(status=status_filter)
+    
+    submissoes = query.order_by(Submissao.data_submissao.desc()).all()
+    
+    resultado = []
+    for sub in submissoes:
+        sub_dict = {
+            "id": sub.id,
+            "lista_id": sub.lista_id,
+            "lista_nome": sub.lista.nome if sub.lista else "N/A",
+            "usuario_id": sub.usuario_id,
+            "usuario_nome": sub.usuario.nome if sub.usuario else "N/A",
+            "data_submissao": sub.data_submissao.isoformat(),
+            "status": sub.status.value,
+            "total_pedidos": sub.total_pedidos,
+            "pedidos": [
+                {
+                    "id": p.id,
+                    "item_nome": p.item.nome if p.item else "N/A",
+                    "quantidade_solicitada": float(p.quantidade_solicitada),
+                    "status": p.status.value,
+                    "unidade": p.item.unidade if p.item else ""
+                }
+                for p in sub.pedidos
+            ]
+        }
+        resultado.append(sub_dict)
+    
+    return resultado, 200
+
+
+def aprovar_submissao(submissao_id):
+    """Aprova todos os pedidos de uma submissão."""
+    submissao = repositories.get_by_id(Submissao, submissao_id)
+    if not submissao:
+        return {"error": "Submissão não encontrada."}, 404
+    
+    # Aprovar todos os pedidos
+    for pedido in submissao.pedidos:
+        pedido.status = PedidoStatus.APROVADO
+    
+    submissao.status = SubmissaoStatus.APROVADO
+    db.session.commit()
+    
+    return {"message": f"Submissão #{submissao_id} aprovada com sucesso!"}, 200
+
+
+def rejeitar_submissao(submissao_id):
+    """Rejeita todos os pedidos de uma submissão."""
+    submissao = repositories.get_by_id(Submissao, submissao_id)
+    if not submissao:
+        return {"error": "Submissão não encontrada."}, 404
+    
+    # Rejeitar todos os pedidos
+    for pedido in submissao.pedidos:
+        pedido.status = PedidoStatus.REJEITADO
+    
+    submissao.status = SubmissaoStatus.REJEITADO
+    db.session.commit()
+    
+    return {"message": f"Submissão #{submissao_id} rejeitada."}, 200
+
+
 def submit_pedidos(user_id):
     """Cria registros de Pedido para todos os itens que estão abaixo do estoque mínimo."""
     itens_a_pedir = db.session.query(Estoque, Item).join(Item).filter(Estoque.quantidade_atual < Estoque.quantidade_minima).all()
@@ -813,12 +925,108 @@ def atualizar_estoque_e_calcular_pedido(estoque_id, quantidade_atual, usuario_id
     db.session.commit()
     return estoque.to_dict(), 200
 
+def update_submissao(submissao_id, usuario_id, items_data):
+    """
+    Atualiza uma submissão existente PENDENTE.
+    - Atualiza quantidades atuais dos itens
+    - Recalcula pedidos
+    - Atualiza ou cria novos pedidos
+    - Marca submissao como atualizada
+    """
+    submissao = repositories.get_by_id(Submissao, submissao_id)
+    if not submissao:
+        return {"error": "Submissão não encontrada."}, 404
+    
+    # Validar que é do usuário
+    if submissao.usuario_id != usuario_id:
+        return {"error": "Você não pode editar esta submissão."}, 403
+    
+    # Validar que está PENDENTE
+    if submissao.status != SubmissaoStatus.PENDENTE:
+        return {"error": "Só é possível editar submissões PENDENTES."}, 400
+    
+    lista_id = submissao.lista_id
+    lista = repositories.get_by_id(Lista, lista_id)
+    if not lista:
+        return {"error": "Lista não encontrada."}, 404
+
+    # Buscar refs atuais
+    item_ids = [item.get('estoque_id') for item in items_data if item.get('estoque_id')]
+    refs_map = {}
+    if item_ids:
+        refs = ListaItemRef.query.options(
+            db.joinedload(ListaItemRef.item)
+        ).filter(
+            ListaItemRef.lista_id == lista_id,
+            ListaItemRef.item_id.in_(item_ids)
+        ).all()
+        refs_map = {ref.item_id: ref for ref in refs}
+
+    # Deletar pedidos antigos desta submissão
+    Pedido.query.filter_by(submissao_id=submissao_id).delete()
+
+    pedidos_criados = []
+    refs_atualizados = []
+    agora = datetime.now(timezone.utc)
+
+    for item_data in items_data:
+        estoque_id = item_data.get('estoque_id')  # item_id
+        quantidade_atual = item_data.get('quantidade_atual')
+
+        if not estoque_id or quantidade_atual is None:
+            continue
+
+        ref = refs_map.get(estoque_id)
+        if not ref:
+            continue
+
+        # Atualiza quantidade
+        ref.quantidade_atual = quantidade_atual
+        ref.atualizado_em = agora
+        refs_atualizados.append(ref)
+
+        # Recria Pedido se necessário
+        if float(quantidade_atual) < float(ref.quantidade_minima):
+            quantidade_a_pedir = float(ref.quantidade_minima) - float(quantidade_atual)
+            
+            novo_pedido = Pedido(
+                submissao_id=submissao.id,
+                lista_mae_item_id=ref.item_id,
+                fornecedor_id=None,
+                quantidade_solicitada=quantidade_a_pedir,
+                usuario_id=usuario_id,
+                status=PedidoStatus.PENDENTE
+            )
+            pedidos_criados.append(novo_pedido)
+
+    # Atualizar contador e data
+    submissao.total_pedidos = len(pedidos_criados)
+    submissao.data_submissao = agora  # Atualiza data da submissão
+
+    # Commit
+    if pedidos_criados:
+        db.session.add_all(pedidos_criados)
+    db.session.commit()
+
+    return {
+        "message": f"Submissão atualizada! {len(pedidos_criados)} pedido(s) criado(s).",
+        "submissao_id": submissao.id,
+        "estoques_atualizados": len(refs_atualizados),
+        "pedidos_criados": len(pedidos_criados)
+    }, 200
+
+
 def submit_estoque_lista(lista_id, usuario_id, items_data):
     """
     Submete múltiplos itens de estoque de uma lista.
+    REFATORADO: Usa ListaItemRef em vez de Estoque.
     Calcula pedidos automaticamente e cria registros de Pedido se necessário.
 
     items_data: [{"estoque_id": 1, "quantidade_atual": 5}, ...]
+    NOTA: estoque_id é interpretado como item_id (compatibilidade)
+    
+    OTIMIZADO: Busca TODOS os refs de uma vez (1 query ao invés de N queries).
+    Cria Submissao para agrupar pedidos.
     """
     lista = repositories.get_by_id(Lista, lista_id)
     if not lista:
@@ -828,46 +1036,78 @@ def submit_estoque_lista(lista_id, usuario_id, items_data):
     if usuario_id not in [u.id for u in lista.colaboradores]:
         return {"error": "Você não tem acesso a esta lista."}, 403
 
+    # 🚀 OTIMIZAÇÃO: Buscar TODOS os refs de uma vez com IN (1 query ao invés de 32)
+    item_ids = [item.get('estoque_id') for item in items_data if item.get('estoque_id')]
+    refs_map = {}
+    if item_ids:
+        refs = ListaItemRef.query.options(
+            db.joinedload(ListaItemRef.item)
+        ).filter(
+            ListaItemRef.lista_id == lista_id,
+            ListaItemRef.item_id.in_(item_ids)
+        ).all()
+        refs_map = {ref.item_id: ref for ref in refs}
+
+    # Criar Submissao primeiro
+    submissao = Submissao(
+        lista_id=lista_id,
+        usuario_id=usuario_id,
+        status=SubmissaoStatus.PENDENTE
+    )
+    db.session.add(submissao)
+    db.session.flush()  # Gera ID da submissao
+
     pedidos_criados = []
-    estoques_atualizados = []
+    refs_atualizados = []
+    agora = datetime.now(timezone.utc)
 
     for item_data in items_data:
-        estoque_id = item_data.get('estoque_id')
+        estoque_id = item_data.get('estoque_id')  # Na verdade é item_id
         quantidade_atual = item_data.get('quantidade_atual')
 
         if not estoque_id or quantidade_atual is None:
             continue
 
-        estoque = repositories.get_by_id(Estoque, estoque_id)
-        if not estoque or estoque.lista_id != lista_id:
+        ref = refs_map.get(estoque_id)
+        if not ref:
             continue
 
-        # Atualiza quantidade e calcula pedido
-        estoque.quantidade_atual = quantidade_atual
-        estoque.pedido = estoque.calcular_pedido()
-        estoque.data_ultima_submissao = datetime.now(timezone.utc)
-        estoque.usuario_ultima_submissao_id = usuario_id
-
-        db.session.add(estoque)
-        estoques_atualizados.append(estoque)
+        # Atualiza quantidade
+        ref.quantidade_atual = quantidade_atual
+        ref.atualizado_em = agora
+        refs_atualizados.append(ref)
 
         # Cria Pedido se quantidade está abaixo do mínimo
-        if float(quantidade_atual) < float(estoque.quantidade_minima):
-            quantidade_a_pedir = float(estoque.quantidade_minima) - float(quantidade_atual)
+        if float(quantidade_atual) < float(ref.quantidade_minima):
+            quantidade_a_pedir = float(ref.quantidade_minima) - float(quantidade_atual)
+            
             novo_pedido = Pedido(
-                item_id=estoque.item_id,
-                fornecedor_id=estoque.item.fornecedor_id,
+                submissao_id=submissao.id,
+                lista_mae_item_id=ref.item_id,
+                fornecedor_id=None,
                 quantidade_solicitada=quantidade_a_pedir,
-                usuario_id=usuario_id
+                usuario_id=usuario_id,
+                status=PedidoStatus.PENDENTE
             )
-            db.session.add(novo_pedido)
             pedidos_criados.append(novo_pedido)
+            
+            current_app.logger.info(
+                f"[SUBMIT] Pedido criado: item {ref.item.nome}, "
+                f"qtd={quantidade_a_pedir}, usuario={usuario_id}"
+            )
 
+    # Atualizar contador de pedidos na submissao
+    submissao.total_pedidos = len(pedidos_criados)
+
+    # Commit único ao final
+    if pedidos_criados:
+        db.session.add_all(pedidos_criados)
     db.session.commit()
 
     return {
         "message": f"Lista submetida com sucesso! {len(pedidos_criados)} pedido(s) criado(s).",
-        "estoques_atualizados": len(estoques_atualizados),
+        "submissao_id": submissao.id,
+        "estoques_atualizados": len(refs_atualizados),
         "pedidos_criados": len(pedidos_criados)
     }, 201
 
@@ -1558,8 +1798,24 @@ def normalize_item_nome(value):
 
 def sync_lista_mae_itens_para_estoque(lista_id):
     """
+    FUNÇÃO LEGADA - DEPRECADA
+    
+    Esta função foi substituída pela arquitetura ListaItemRef.
+    Mantida apenas para compatibilidade temporária.
+    
+    TODO: Remover esta função após garantir que nenhum código a chama.
+    
     Sincroniza itens da lista (via ListaItemRef) com o estoque.
     Apenas cria estoque para itens com quantidade_minima > 0.
+    """
+    # FUNÇÃO DESABILITADA - Retorna imediatamente
+    current_app.logger.warning(
+        f"[DEPRECADO] sync_lista_mae_itens_para_estoque() foi chamada para lista {lista_id}. "
+        "Esta função não é mais necessária com a arquitetura ListaItemRef."
+    )
+    return {"criados": 0, "atualizados": 0, "ignorados": 0, "warning": "Função deprecada"}
+    
+    # Código original comentado abaixo (para referência)
     """
     # Buscar referências de itens para esta lista
     refs = ListaItemRef.query.filter_by(lista_id=lista_id).all()
@@ -1620,6 +1876,7 @@ def sync_lista_mae_itens_para_estoque(lista_id):
     db.session.commit()
 
     return {"criados": criados, "atualizados": atualizados, "ignorados": ignorados}
+    """
 
 def adicionar_item_lista_mae(lista_id, data):
     """
@@ -1668,7 +1925,7 @@ def adicionar_item_lista_mae(lista_id, data):
             db.session.add(ref)
 
         db.session.commit()
-        sync_lista_mae_itens_para_estoque(lista_id)
+        # sync_lista_mae_itens_para_estoque(lista_id)  # REMOVIDO - Não mais necessário
 
         # Retornar dados combinados (item + referência)
         return ref.to_dict(), 201
@@ -1713,7 +1970,7 @@ def editar_item_lista_mae(lista_id, item_id, data):
             ref.item.atualizado_em = datetime.now(timezone.utc)
 
         db.session.commit()
-        sync_lista_mae_itens_para_estoque(lista_id)
+        # sync_lista_mae_itens_para_estoque(lista_id)  # REMOVIDO - Não mais necessário
         return ref.to_dict(), 200
     except Exception as e:
         import traceback
@@ -1994,7 +2251,7 @@ def get_lista_colaborador(user_id, lista_id):
 
 
 def get_estoque_lista_colaborador(user_id, lista_id):
-    """Retorna itens de estoque da lista para um colaborador."""
+    """Retorna itens da lista via ListaItemRef (sem usar tabela Estoque)."""
     # Verificar se o usuário tem acesso a esta lista
     usuario = repositories.get_by_id(Usuario, user_id)
     if not usuario:
@@ -2008,51 +2265,45 @@ def get_estoque_lista_colaborador(user_id, lista_id):
     if lista not in usuario.listas_atribuidas:
         return {"error": "Acesso negado. Esta lista não foi atribuída a você."}, 403
 
-    sync_lista_mae_itens_para_estoque(lista_id)
-
-    # Buscar estoques da lista
-    estoques = Estoque.query.filter(
-        Estoque.lista_id == lista_id,
-        Estoque.quantidade_minima > 0
-    ).all()
+    # Buscar itens da lista via ListaItemRef com EAGER LOADING (otimização)
+    refs = ListaItemRef.query.options(
+        db.joinedload(ListaItemRef.item)  # Carrega item junto, evita N+1 queries
+    ).filter_by(lista_id=lista_id).all()
 
     # Preparar resposta com dados do item
-    estoques_data = []
-    for estoque in estoques:
-        item = estoque.item
-        estoque_dict = {
-            "id": estoque.id,
-            "item_id": estoque.item_id,
-            "lista_id": estoque.lista_id,
-            "quantidade_atual": float(estoque.quantidade_atual),
-            "quantidade_minima": float(estoque.quantidade_minima),
-            "pedido": max(0, float(estoque.quantidade_minima - estoque.quantidade_atual)),
+    itens_data = []
+    for ref in refs:
+        # Pular itens sem quantidade mínima definida
+        if ref.quantidade_minima <= 0:
+            continue
+        
+        item_dict = {
+            "id": ref.item_id,  # Usar item_id como identificador (compatibilidade com frontend)
+            "item_id": ref.item_id,
+            "lista_id": ref.lista_id,
+            "quantidade_atual": float(ref.quantidade_atual),
+            "quantidade_minima": float(ref.quantidade_minima),
+            "pedido": float(ref.get_pedido()),
             "item": {
-                "id": item.id,
-                "nome": item.nome,
-                "unidade_medida": item.unidade_medida
-            } if item else None
+                "id": ref.item.id,
+                "nome": ref.item.nome,
+                "unidade_medida": ref.item.unidade  # ListaMaeItem usa 'unidade', não 'unidade_medida'
+            }
         }
-        estoques_data.append(estoque_dict)
+        itens_data.append(item_dict)
 
-    return estoques_data, 200
+    return itens_data, 200
 
 
 def update_estoque_colaborador(user_id, estoque_id, data):
-    """Atualiza apenas a quantidade_atual de um estoque para um colaborador."""
+    """
+    Atualiza quantidade_atual de um item via ListaItemRef.
+    NOTA: estoque_id agora é interpretado como item_id (para compatibilidade).
+    """
     # Verificar se o usuário existe
     usuario = repositories.get_by_id(Usuario, user_id)
     if not usuario:
         return {"error": "Usuário não encontrado."}, 404
-
-    # Buscar estoque
-    estoque = repositories.get_by_id(Estoque, estoque_id)
-    if not estoque:
-        return {"error": "Estoque não encontrado."}, 404
-
-    # Verificar se o colaborador está atribuído à lista deste estoque
-    if estoque.lista not in usuario.listas_atribuidas:
-        return {"error": "Acesso negado. Esta lista não foi atribuída a você."}, 403
 
     # Validar que apenas quantidade_atual está sendo atualizado
     if "quantidade_atual" not in data:
@@ -2066,21 +2317,37 @@ def update_estoque_colaborador(user_id, estoque_id, data):
     except (ValueError, TypeError):
         return {"error": "Quantidade deve ser um número válido."}, 400
 
+    # Buscar ListaItemRef - precisa de lista_id também
+    # Por ora, vamos buscar por item_id em todas as listas do colaborador
+    item_id = estoque_id  # estoque_id é na verdade o item_id
+    
+    # Buscar qual lista contém este item e está atribuída ao colaborador
+    ref = None
+    for lista in usuario.listas_atribuidas:
+        ref = ListaItemRef.query.filter_by(
+            lista_id=lista.id,
+            item_id=item_id
+        ).first()
+        if ref:
+            break
+    
+    if not ref:
+        return {"error": "Item não encontrado nas suas listas."}, 404
+
     try:
         # Atualizar apenas quantidade_atual
-        estoque.quantidade_atual = quantidade_atual
-        estoque.data_ultima_submissao = datetime.now(timezone.utc)
-        estoque.usuario_ultima_submissao_id = user_id
-
+        ref.quantidade_atual = quantidade_atual
+        ref.atualizado_em = datetime.now(timezone.utc)
+        
         db.session.commit()
 
         return {
             "message": "Estoque atualizado com sucesso.",
             "estoque": {
-                "id": estoque.id,
-                "quantidade_atual": float(estoque.quantidade_atual),
-                "quantidade_minima": float(estoque.quantidade_minima),
-                "pedido": max(0, float(estoque.quantidade_minima - estoque.quantidade_atual))
+                "id": ref.item_id,
+                "quantidade_atual": float(ref.quantidade_atual),
+                "quantidade_minima": float(ref.quantidade_minima),
+                "pedido": float(ref.get_pedido())
             }
         }, 200
     except Exception as e:

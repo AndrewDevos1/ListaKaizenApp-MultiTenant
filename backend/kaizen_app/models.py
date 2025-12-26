@@ -132,21 +132,65 @@ class Estoque(db.Model, SerializerMixin):
             d['pedido'] = self.calcular_pedido()
         return d
 
+class SubmissaoStatus(enum.Enum):
+    PENDENTE = "PENDENTE"
+    PARCIALMENTE_APROVADO = "PARCIALMENTE_APROVADO"
+    APROVADO = "APROVADO"
+    REJEITADO = "REJEITADO"
+
+class Submissao(db.Model, SerializerMixin):
+    """
+    Agrupa múltiplos pedidos de uma submissão de lista.
+    Uma submissão representa um único envio de lista pelo colaborador.
+    """
+    __tablename__ = "submissoes"
+    id = db.Column(db.Integer, primary_key=True)
+    lista_id = db.Column(db.Integer, db.ForeignKey('listas.id', ondelete='CASCADE'), nullable=False)
+    usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False)
+    data_submissao = db.Column(db.DateTime, nullable=False, default=utc_now)
+    status = db.Column(db.Enum(SubmissaoStatus), nullable=False, default=SubmissaoStatus.PENDENTE)
+    total_pedidos = db.Column(db.Integer, nullable=False, default=0)
+    
+    # Relacionamentos
+    lista = db.relationship('Lista', backref=db.backref('submissoes', lazy=True))
+    usuario = db.relationship('Usuario', backref=db.backref('submissoes', lazy=True))
+    pedidos = db.relationship('Pedido', backref='submissao', lazy='joined')
+    
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        if self.status is None:
+            self.status = SubmissaoStatus.PENDENTE
+        if self.data_submissao is None:
+            self.data_submissao = utc_now()
+
 class PedidoStatus(enum.Enum):
     PENDENTE = "PENDENTE"
     APROVADO = "APROVADO"
     REJEITADO = "REJEITADO"
 
 class Pedido(db.Model, SerializerMixin):
+    """
+    Pedido de compra gerado automaticamente quando qtd_atual < qtd_minima.
+    Refatorado para usar ListaMaeItem (catálogo global).
+    """
     __tablename__ = "pedidos"
     id = db.Column(db.Integer, primary_key=True)
-    item_id = db.Column(db.Integer, db.ForeignKey('itens.id'), nullable=False)
-    fornecedor_id = db.Column(db.Integer, db.ForeignKey('fornecedores.id'), nullable=False)
+    submissao_id = db.Column(db.Integer, 
+                             db.ForeignKey('submissoes.id', ondelete='CASCADE'), 
+                             nullable=True)  # Nullable para pedidos antigos
+    lista_mae_item_id = db.Column(db.Integer, 
+                                   db.ForeignKey('lista_mae_itens.id', ondelete='CASCADE'), 
+                                   nullable=False)
+    fornecedor_id = db.Column(db.Integer, 
+                              db.ForeignKey('fornecedores.id'), 
+                              nullable=True)
     quantidade_solicitada = db.Column(db.Numeric(10, 2), nullable=False)
     data_pedido = db.Column(db.DateTime, nullable=False, default=utc_now)
     usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False)
     status = db.Column(db.Enum(PedidoStatus), nullable=False, default=PedidoStatus.PENDENTE)
-    item = db.relationship('Item', backref=db.backref('pedidos', lazy=True))
+    
+    # Relacionamentos
+    item = db.relationship('ListaMaeItem', backref=db.backref('pedidos', lazy=True))
     fornecedor = db.relationship('Fornecedor', backref=db.backref('pedidos', lazy=True))
     usuario = db.relationship('Usuario', backref=db.backref('pedidos', lazy=True))
 

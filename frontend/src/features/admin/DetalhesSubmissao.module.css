@@ -1,0 +1,66 @@
+.container {
+    padding: 2rem;
+    max-width: 1400px;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.header h2 {
+    margin-bottom: 0;
+}
+
+.infoCard {
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.infoGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+}
+
+.infoGrid div {
+    padding: 0.5rem;
+}
+
+.infoGrid small {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-size: 0.85rem;
+}
+
+.infoGrid h5 {
+    margin: 0;
+    font-size: 1.1rem;
+}
+
+.actions {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+}
+
+.actions button {
+    flex: 1;
+    min-width: 200px;
+}
+
+.tableCard {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.tableCard .card-header {
+    background-color: #f8f9fa;
+    border-bottom: 2px solid #dee2e6;
+}
+
+.tableCard .card-header h5 {
+    margin: 0;
+}

@@ -7,6 +7,7 @@ import Register from './features/auth/Register';
 import GlobalDashboard from './features/dashboard/GlobalDashboard';
 import EstoqueLista from './features/inventory/EstoqueLista';
 import MinhasSubmissoes from './features/inventory/MinhasSubmissoes';
+import DetalhesSubmissaoColaborador from './features/inventory/DetalhesSubmissaoColaborador';
 import GerarCotacao from './features/admin/GerarCotacao';
 import CotacaoList from './features/admin/CotacaoList';
 import CotacaoDetail from './features/admin/CotacaoDetail';
@@ -22,6 +23,8 @@ import ListaMaeConsolidada from './features/admin/ListaMaeConsolidada';
 import GerenciarItensLista from './features/admin/GerenciarItensLista';
 import GerenciarUsuarios from './features/admin/GerenciarUsuarios';
 import GerenciarPedidos from './features/admin/GerenciarPedidos';
+import GerenciarSubmissoes from './features/admin/GerenciarSubmissoes';
+import DetalhesSubmissao from './features/admin/DetalhesSubmissao';
 import Configuracoes from './features/admin/Configuracoes';
 import MudarSenha from './features/admin/MudarSenha';
 import EditarPerfil from './features/admin/EditarPerfil';
@@ -51,6 +54,8 @@ function App() {
               <Route index element={<AdminDashboard />} />
               <Route path="gerenciar-usuarios" element={<GerenciarUsuarios />} />
               <Route path="gerenciar-pedidos" element={<GerenciarPedidos />} />
+              <Route path="submissoes" element={<GerenciarSubmissoes />} />
+              <Route path="submissoes/:id" element={<DetalhesSubmissao />} />
               <Route path="configuracoes" element={<Configuracoes />} />
               <Route path="mudar-senha" element={<MudarSenha />} />
               <Route path="editar-perfil" element={<EditarPerfil />} />
@@ -75,6 +80,7 @@ function App() {
               <Route index element={<CollaboratorDashboard />} />
               <Route path="areas" element={<MinhasSubmissoes />} />
               <Route path="submissions" element={<MinhasSubmissoes />} />
+              <Route path="submissions/:id" element={<DetalhesSubmissaoColaborador />} />
               <Route path="areas/:areaId/estoque" element={<EstoqueLista />} />
               <Route path="listas" element={<MinhasListasCompras />} />
               <Route path="listas/:listaId/estoque" element={<EstoqueListaCompras />} />
