@@ -132,6 +132,37 @@ class Estoque(db.Model, SerializerMixin):
             d['pedido'] = self.calcular_pedido()
         return d
 
+class SubmissaoStatus(enum.Enum):
+    PENDENTE = "PENDENTE"
+    PARCIALMENTE_APROVADO = "PARCIALMENTE_APROVADO"
+    APROVADO = "APROVADO"
+    REJEITADO = "REJEITADO"
+
+class Submissao(db.Model, SerializerMixin):
+    """
+    Agrupa múltiplos pedidos de uma submissão de lista.
+    Uma submissão representa um único envio de lista pelo colaborador.
+    """
+    __tablename__ = "submissoes"
+    id = db.Column(db.Integer, primary_key=True)
+    lista_id = db.Column(db.Integer, db.ForeignKey('listas.id', ondelete='CASCADE'), nullable=False)
+    usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False)
+    data_submissao = db.Column(db.DateTime, nullable=False, default=utc_now)
+    status = db.Column(db.Enum(SubmissaoStatus), nullable=False, default=SubmissaoStatus.PENDENTE)
+    total_pedidos = db.Column(db.Integer, nullable=False, default=0)
+    
+    # Relacionamentos
+    lista = db.relationship('Lista', backref=db.backref('submissoes', lazy=True))
+    usuario = db.relationship('Usuario', backref=db.backref('submissoes', lazy=True))
+    pedidos = db.relationship('Pedido', backref='submissao', lazy='joined')
+    
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        if self.status is None:
+            self.status = SubmissaoStatus.PENDENTE
+        if self.data_submissao is None:
+            self.data_submissao = utc_now()
+
 class PedidoStatus(enum.Enum):
     PENDENTE = "PENDENTE"
     APROVADO = "APROVADO"
@@ -144,6 +175,9 @@ class Pedido(db.Model, SerializerMixin):
     """
     __tablename__ = "pedidos"
     id = db.Column(db.Integer, primary_key=True)
+    submissao_id = db.Column(db.Integer, 
+                             db.ForeignKey('submissoes.id', ondelete='CASCADE'), 
+                             nullable=True)  # Nullable para pedidos antigos
     lista_mae_item_id = db.Column(db.Integer, 
                                    db.ForeignKey('lista_mae_itens.id', ondelete='CASCADE'), 
                                    nullable=False)

@@ -1,4 +1,4 @@
-from .models import Usuario, UserRoles, Item, Area, Fornecedor, Estoque, Cotacao, CotacaoStatus, CotacaoItem, Pedido, PedidoStatus, Lista, ListaMaeItem, ListaItemRef
+from .models import Usuario, UserRoles, Item, Area, Fornecedor, Estoque, Cotacao, CotacaoStatus, CotacaoItem, Pedido, PedidoStatus, Lista, ListaMaeItem, ListaItemRef, Submissao, SubmissaoStatus
 from .extensions import db
 from . import repositories
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -632,6 +632,41 @@ def get_pedidos_by_user(user_id):
     return pedidos, 200
 
 
+def get_submissoes_by_user(user_id):
+    """
+    Retorna todas as submissões do usuário com pedidos agrupados.
+    Formato otimizado para exibição em tela.
+    """
+    submissoes = Submissao.query.options(
+        db.joinedload(Submissao.lista),
+        db.joinedload(Submissao.pedidos).joinedload(Pedido.item)
+    ).filter_by(usuario_id=user_id).order_by(Submissao.data_submissao.desc()).all()
+    
+    resultado = []
+    for sub in submissoes:
+        sub_dict = {
+            "id": sub.id,
+            "lista_id": sub.lista_id,
+            "lista_nome": sub.lista.nome if sub.lista else "N/A",
+            "data_submissao": sub.data_submissao.isoformat(),
+            "status": sub.status.value,
+            "total_pedidos": sub.total_pedidos,
+            "pedidos": [
+                {
+                    "id": p.id,
+                    "item_nome": p.item.nome if p.item else "N/A",
+                    "quantidade_solicitada": float(p.quantidade_solicitada),
+                    "status": p.status.value,
+                    "unidade": p.item.unidade if p.item else ""
+                }
+                for p in sub.pedidos
+            ]
+        }
+        resultado.append(sub_dict)
+    
+    return resultado, 200
+
+
 def submit_pedidos(user_id):
     """Cria registros de Pedido para todos os itens que estão abaixo do estoque mínimo."""
     itens_a_pedir = db.session.query(Estoque, Item).join(Item).filter(Estoque.quantidade_atual < Estoque.quantidade_minima).all()
@@ -821,6 +856,9 @@ def submit_estoque_lista(lista_id, usuario_id, items_data):
 
     items_data: [{"estoque_id": 1, "quantidade_atual": 5}, ...]
     NOTA: estoque_id é interpretado como item_id (compatibilidade)
+    
+    OTIMIZADO: Busca TODOS os refs de uma vez (1 query ao invés de N queries).
+    Cria Submissao para agrupar pedidos.
     """
     lista = repositories.get_by_id(Lista, lista_id)
     if not lista:
@@ -830,8 +868,30 @@ def submit_estoque_lista(lista_id, usuario_id, items_data):
     if usuario_id not in [u.id for u in lista.colaboradores]:
         return {"error": "Você não tem acesso a esta lista."}, 403
 
+    # 🚀 OTIMIZAÇÃO: Buscar TODOS os refs de uma vez com IN (1 query ao invés de 32)
+    item_ids = [item.get('estoque_id') for item in items_data if item.get('estoque_id')]
+    refs_map = {}
+    if item_ids:
+        refs = ListaItemRef.query.options(
+            db.joinedload(ListaItemRef.item)
+        ).filter(
+            ListaItemRef.lista_id == lista_id,
+            ListaItemRef.item_id.in_(item_ids)
+        ).all()
+        refs_map = {ref.item_id: ref for ref in refs}
+
+    # Criar Submissao primeiro
+    submissao = Submissao(
+        lista_id=lista_id,
+        usuario_id=usuario_id,
+        status=SubmissaoStatus.PENDENTE
+    )
+    db.session.add(submissao)
+    db.session.flush()  # Gera ID da submissao
+
     pedidos_criados = []
     refs_atualizados = []
+    agora = datetime.now(timezone.utc)
 
     for item_data in items_data:
         estoque_id = item_data.get('estoque_id')  # Na verdade é item_id
@@ -840,35 +900,27 @@ def submit_estoque_lista(lista_id, usuario_id, items_data):
         if not estoque_id or quantidade_atual is None:
             continue
 
-        # Buscar ListaItemRef
-        ref = ListaItemRef.query.filter_by(
-            lista_id=lista_id,
-            item_id=estoque_id  # estoque_id = item_id
-        ).first()
-        
+        ref = refs_map.get(estoque_id)
         if not ref:
             continue
 
         # Atualiza quantidade
         ref.quantidade_atual = quantidade_atual
-        ref.atualizado_em = datetime.now(timezone.utc)
-
-        db.session.add(ref)
+        ref.atualizado_em = agora
         refs_atualizados.append(ref)
 
         # Cria Pedido se quantidade está abaixo do mínimo
         if float(quantidade_atual) < float(ref.quantidade_minima):
             quantidade_a_pedir = float(ref.quantidade_minima) - float(quantidade_atual)
             
-            # ✅ REFATORADO: Agora usa lista_mae_item_id
             novo_pedido = Pedido(
-                lista_mae_item_id=ref.item_id,  # FK para lista_mae_itens
-                fornecedor_id=None,  # Nullable agora, pode adicionar lógica depois
+                submissao_id=submissao.id,
+                lista_mae_item_id=ref.item_id,
+                fornecedor_id=None,
                 quantidade_solicitada=quantidade_a_pedir,
                 usuario_id=usuario_id,
                 status=PedidoStatus.PENDENTE
             )
-            db.session.add(novo_pedido)
             pedidos_criados.append(novo_pedido)
             
             current_app.logger.info(
@@ -876,10 +928,17 @@ def submit_estoque_lista(lista_id, usuario_id, items_data):
                 f"qtd={quantidade_a_pedir}, usuario={usuario_id}"
             )
 
+    # Atualizar contador de pedidos na submissao
+    submissao.total_pedidos = len(pedidos_criados)
+
+    # Commit único ao final
+    if pedidos_criados:
+        db.session.add_all(pedidos_criados)
     db.session.commit()
 
     return {
         "message": f"Lista submetida com sucesso! {len(pedidos_criados)} pedido(s) criado(s).",
+        "submissao_id": submissao.id,
         "estoques_atualizados": len(refs_atualizados),
         "pedidos_criados": len(pedidos_criados)
     }, 201

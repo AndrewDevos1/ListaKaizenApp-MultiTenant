@@ -464,6 +464,15 @@ def get_my_pedidos_route():
     return jsonify([p.to_dict() for p in pedidos])
 
 
+@api_bp.route('/v1/submissoes/me', methods=['GET'])
+@jwt_required()
+def get_my_submissoes_route():
+    """Retorna submissões agrupadas do usuário."""
+    user_id = get_user_id_from_jwt()
+    submissoes, _ = services.get_submissoes_by_user(user_id)
+    return jsonify(submissoes)
+
+
 @api_bp.route('/pedidos/submit', methods=['POST'])
 @jwt_required()
 def submit_pedidos_route():
