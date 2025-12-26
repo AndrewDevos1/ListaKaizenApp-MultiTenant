@@ -55,6 +55,7 @@ const EstoqueListaCompras: React.FC = () => {
     const [listaName, setListaName] = useState('');
     const [searchTerm, setSearchTerm] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
 
     // Carregar estoque da lista
     useEffect(() => {
