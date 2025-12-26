@@ -40,7 +40,7 @@ const Layout: React.FC = () => {
       title: 'LISTAS & ESTOQUE',
       items: [
         { path: '/admin/listas-compras', icon: 'fa-shopping-cart', label: 'Listas de Compras', ariaLabel: 'Listas de Compras' },
-        { path: '/admin/catalogo-global', icon: 'fa-book', label: 'Catálogo Global', ariaLabel: 'Catálogo Global de Itens' },
+        { path: '/admin/catalogo-global', icon: 'fa-book', label: 'Itens Cadastrados', ariaLabel: 'Itens Cadastrados no Sistema' },
         { path: '/admin/areas', icon: 'fa-map-marker-alt', label: 'Áreas', ariaLabel: 'Áreas' }
       ]
     },
