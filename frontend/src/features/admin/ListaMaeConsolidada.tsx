@@ -17,6 +17,7 @@ import {
     faExclamationTriangle,
     faClipboardList,
     faPlus,
+    faEdit,
     faTrash,
     faCheck,
     faTruck,
@@ -75,8 +76,13 @@ const ListaMaeConsolidada: React.FC = () => {
     const [editandoCampo, setEditandoCampo] = useState<{ itemId: number; campo: 'nome' | 'quantidade_minima' } | null>(null);
     const [valorEditando, setValorEditando] = useState<string | number>('');
     
+    // Estado para modo de edição em lote
+    const [modoEdicaoLote, setModoEdicaoLote] = useState(false);
+    const [quantidadesLote, setQuantidadesLote] = useState<{ [key: number]: number }>({});
+    
     // Refs para campos editáveis
     const campoEditavelRef = useRef<HTMLInputElement | null>(null);
+    const quantidadeLoteRefs = useRef<{ [key: number]: HTMLInputElement | null }>({});
 
     // Estado para seleção e atribuição de fornecedor
     const [itensSelecionados, setItensSelecionados] = useState<Set<number>>(new Set());
@@ -368,6 +374,81 @@ const ListaMaeConsolidada: React.FC = () => {
             salvarEdicao();
         } else if (e.key === 'Escape') {
             cancelarEdicao();
+        }
+    };
+
+    // Ativar modo de edição em lote
+    const ativarModoLote = () => {
+        const qtds: { [key: number]: number } = {};
+        listaMae?.itens.forEach(item => {
+            if (item.id) {
+                qtds[item.id] = item.quantidade_minima;
+            }
+        });
+        setQuantidadesLote(qtds);
+        setModoEdicaoLote(true);
+    };
+
+    // Cancelar modo de edição em lote
+    const cancelarModoLote = () => {
+        setModoEdicaoLote(false);
+        setQuantidadesLote({});
+    };
+
+    // Salvar todas as quantidades em lote
+    const salvarQuantidadesLote = async () => {
+        try {
+            setError(null);
+            
+            const promises = Object.entries(quantidadesLote).map(async ([itemIdStr, qtdMinima]) => {
+                const itemId = parseInt(itemIdStr);
+                const item = listaMae?.itens.find(i => i.id === itemId);
+                
+                if (item && item.quantidade_minima !== qtdMinima) {
+                    const dataToSend = {
+                        nome: item.nome,
+                        unidade: item.unidade,
+                        quantidade_atual: item.quantidade_atual,
+                        quantidade_minima: qtdMinima
+                    };
+                    
+                    return api.put(`/admin/listas/${listaId}/mae-itens/${itemId}`, dataToSend);
+                }
+            });
+            
+            await Promise.all(promises.filter(p => p !== undefined));
+            
+            await fetchListaMae();
+            
+            setModoEdicaoLote(false);
+            setQuantidadesLote({});
+            setSuccess('Quantidades mínimas atualizadas com sucesso!');
+            setTimeout(() => setSuccess(null), 3000);
+        } catch (err: any) {
+            setError(err.response?.data?.error || 'Erro ao salvar quantidades em lote');
+        }
+    };
+
+    // Navegação com Enter entre campos em modo lote
+    const handleKeyDownLote = (e: React.KeyboardEvent<HTMLInputElement>, itemId: number) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            
+            const itensFiltrados = getItensFiltrados();
+            const indexAtual = itensFiltrados.findIndex(item => item.id === itemId);
+            
+            if (indexAtual !== -1) {
+                const proximoIndex = indexAtual + 1;
+                if (proximoIndex < itensFiltrados.length) {
+                    const proximoItem = itensFiltrados[proximoIndex];
+                    if (proximoItem.id) {
+                        setTimeout(() => {
+                            quantidadeLoteRefs.current[proximoItem.id!]?.focus();
+                            quantidadeLoteRefs.current[proximoItem.id!]?.select();
+                        }, 10);
+                    }
+                }
+            }
         }
     };
 
@@ -757,7 +838,41 @@ const ListaMaeConsolidada: React.FC = () => {
                             <th>Nome</th>
                             <th className="text-center" style={{ width: '100px' }}>Unidade</th>
                             <th className="text-center" style={{ width: '120px' }}>Qtd Atual</th>
-                            <th className="text-center" style={{ width: '120px' }}>Qtd Mín</th>
+                            <th className="text-center" style={{ width: '120px' }}>
+                                Qtd Mín
+                                {!modoEdicaoLote ? (
+                                    <Button
+                                        variant="outline-light"
+                                        size="sm"
+                                        className="ms-2"
+                                        onClick={ativarModoLote}
+                                        title="Editar todas as quantidades mínimas"
+                                    >
+                                        <FontAwesomeIcon icon={faEdit} />
+                                    </Button>
+                                ) : (
+                                    <>
+                                        <Button
+                                            variant="success"
+                                            size="sm"
+                                            className="ms-1"
+                                            onClick={salvarQuantidadesLote}
+                                            title="Salvar todas"
+                                        >
+                                            ✓
+                                        </Button>
+                                        <Button
+                                            variant="secondary"
+                                            size="sm"
+                                            className="ms-1"
+                                            onClick={cancelarModoLote}
+                                            title="Cancelar"
+                                        >
+                                            ✕
+                                        </Button>
+                                    </>
+                                )}
+                            </th>
                             <th className="text-center" style={{ width: '100px' }}>Pedido</th>
                             <th className="text-center" style={{ width: '100px' }}>Ações</th>
                         </tr>
@@ -859,11 +974,33 @@ const ListaMaeConsolidada: React.FC = () => {
                                     <td className="text-center">{item.quantidade_atual.toFixed(2)}</td>
                                     <td 
                                         className="text-center"
-                                        onDoubleClick={() => item.id && iniciarEdicao(item.id, 'quantidade_minima', item.quantidade_minima)}
-                                        style={{ cursor: 'pointer' }}
-                                        title="Duplo clique para editar"
+                                        onDoubleClick={() => !modoEdicaoLote && item.id && iniciarEdicao(item.id, 'quantidade_minima', item.quantidade_minima)}
+                                        style={{ cursor: modoEdicaoLote ? 'default' : 'pointer' }}
+                                        title={modoEdicaoLote ? '' : 'Duplo clique para editar'}
                                     >
-                                        {(editandoCampo && editandoCampo.itemId === item.id && editandoCampo.campo === 'quantidade_minima') ? (
+                                        {modoEdicaoLote && item.id ? (
+                                            <input
+                                                ref={(el) => {
+                                                    if (item.id) {
+                                                        quantidadeLoteRefs.current[item.id] = el;
+                                                    }
+                                                }}
+                                                type="number"
+                                                step="0.01"
+                                                min="0"
+                                                className="form-control form-control-sm"
+                                                value={quantidadesLote[item.id] ?? item.quantidade_minima}
+                                                onChange={(e) => {
+                                                    if (item.id) {
+                                                        setQuantidadesLote({
+                                                            ...quantidadesLote,
+                                                            [item.id]: parseFloat(e.target.value) || 0
+                                                        });
+                                                    }
+                                                }}
+                                                onKeyDown={(e) => item.id && handleKeyDownLote(e, item.id)}
+                                            />
+                                        ) : (editandoCampo && editandoCampo.itemId === item.id && editandoCampo.campo === 'quantidade_minima') ? (
                                             <input
                                                 ref={campoEditavelRef}
                                                 type="number"
