@@ -530,6 +530,17 @@ def rejeitar_submissao_route(submissao_id):
     return jsonify(response), status
 
 
+@admin_bp.route('/submissoes/<int:submissao_id>/reverter', methods=['POST'])
+@admin_required()
+def reverter_submissao_route(submissao_id):
+    """
+    Reverte uma submissão APROVADA ou REJEITADA para PENDENTE.
+    Permite que admin reconsidere a decisão.
+    """
+    response, status = services.reverter_submissao_para_pendente(submissao_id)
+    return jsonify(response), status
+
+
 @admin_bp.route('/submissoes/<int:submissao_id>/editar', methods=['PUT'])
 @admin_required()
 def editar_quantidades_submissao_route(submissao_id):

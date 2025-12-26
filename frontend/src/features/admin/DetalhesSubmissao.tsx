@@ -13,6 +13,7 @@ import {
     faTimes,
     faEdit,
     faSave,
+    faUndo,
 } from '@fortawesome/free-solid-svg-icons';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import api from '../../services/api';
@@ -295,6 +296,35 @@ const DetalhesSubmissao: React.FC = () => {
         }
     };
 
+    const handleReverterParaPendente = async () => {
+        if (!submissao) return;
+        
+        if (!window.confirm(`Reverter submissão para PENDENTE? Todos os ${submissao.total_pedidos} pedidos voltarão ao status PENDENTE.`)) {
+            return;
+        }
+
+        try {
+            setActionLoading(true);
+            setError('');
+            await api.post(`/admin/submissoes/${submissao.id}/reverter`);
+            
+            // Mostrar modal de info
+            setModalType('info');
+            setModalMessage(`${submissao.total_pedidos} pedido(s) revertido(s) para PENDENTE`);
+            setPedidosCriados(submissao.total_pedidos);
+            setShowSuccessModal(true);
+            
+            setTimeout(() => {
+                setShowSuccessModal(false);
+                fetchSubmissao();
+            }, 2000);
+        } catch (err: any) {
+            setError(err.response?.data?.error || 'Erro ao reverter submissão');
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
     const getStatusBadge = (status: string) => {
         switch (status) {
             case 'PENDENTE':
@@ -418,7 +448,7 @@ const DetalhesSubmissao: React.FC = () => {
             </Card>
 
             {/* Ações em Massa */}
-            {submissao.status === 'PENDENTE' && (
+            {submissao.status === 'PENDENTE' ? (
                 <div className={styles.actions}>
                     {!modoEdicao ? (
                         <>
@@ -469,6 +499,17 @@ const DetalhesSubmissao: React.FC = () => {
                             </Button>
                         </>
                     )}
+                </div>
+            ) : (
+                // Botão para reverter submissão APROVADA ou REJEITADA
+                <div className={styles.actions}>
+                    <Button
+                        variant="info"
+                        onClick={handleReverterParaPendente}
+                        disabled={actionLoading}
+                    >
+                        <FontAwesomeIcon icon={faUndo} /> Reverter para Pendente
+                    </Button>
                 </div>
             )}
 

@@ -745,6 +745,29 @@ def rejeitar_submissao(submissao_id):
     return {"message": f"Submissão #{submissao_id} rejeitada."}, 200
 
 
+def reverter_submissao_para_pendente(submissao_id):
+    """
+    Reverte o status de uma submissão APROVADA ou REJEITADA para PENDENTE.
+    Permite que admin reconsidere a decisão.
+    """
+    submissao = repositories.get_by_id(Submissao, submissao_id)
+    if not submissao:
+        return {"error": "Submissão não encontrada."}, 404
+    
+    # Validar que submissão não está PENDENTE
+    if submissao.status == SubmissaoStatus.PENDENTE:
+        return {"error": "Submissão já está PENDENTE."}, 400
+    
+    # Reverter todos os pedidos para PENDENTE
+    for pedido in submissao.pedidos:
+        pedido.status = PedidoStatus.PENDENTE
+    
+    submissao.status = SubmissaoStatus.PENDENTE
+    db.session.commit()
+    
+    return {"message": f"Submissão #{submissao_id} revertida para PENDENTE."}, 200
+
+
 def editar_quantidades_submissao(submissao_id, pedidos_data):
     """
     Permite que admin edite as quantidades dos pedidos de uma submissão.
