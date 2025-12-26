@@ -1,18 +1,43 @@
 # 📝 Funcionalidade: Admin Editar Quantidades de Submissões
 
-**Data:** 26/12/2024 - 05:37 BRT  
+**Data:** 26/12/2024 - 05:45 BRT  
 **Branch:** `gerenciar-submissoes`  
-**Commit:** `99f4039`
+**Commits:** `99f4039`, `40af01e`, `cb3ea04`
 
 ---
 
 ## 🎯 Objetivo
 
-Permitir que o **administrador** edite as quantidades solicitadas em uma submissão **PENDENTE** para:
+Permitir que o **administrador** edite as **quantidades atuais do estoque** em uma submissão **PENDENTE**, similar ao comportamento do colaborador:
+- ✅ Edita **estoque atual** (não pedidos diretamente)
+- ✅ Sistema **recalcula pedidos** automaticamente
+- ✅ Visualiza impacto em **tempo real**
 - ✅ Tangenciar pedidos (ajustar para lotes de compra)
 - ✅ Corrigir erros do colaborador
 - ✅ Adequar ao orçamento disponível
-- ✅ Ajustar por promoções ou ofertas
+
+---
+
+## 🔄 MUDANÇA IMPORTANTE (Refatoração)
+
+### **Antes (99f4039):**
+```
+Admin editava: Quantidade do Pedido (direto)
+Exemplo: Pedido de Arroz = 10kg
+```
+
+### **Depois (cb3ea04):**
+```
+Admin edita: Quantidade Atual do Estoque
+Sistema calcula: Pedido = max(0, Mínimo - Atual)
+
+Exemplo:
+  Qtd Mínima: 50kg
+  Qtd Atual:  40kg (editável)
+  → Pedido:   10kg (calculado)
+```
+
+**Por quê?** Comportamento consistente entre admin e colaborador.
 
 ---
 
@@ -20,7 +45,33 @@ Permitir que o **administrador** edite as quantidades solicitadas em uma submiss
 
 ### **Backend**
 
-#### Nova Rota
+#### Novas Rotas
+
+**1. Buscar Estoque da Lista (Admin)**
+```python
+GET /api/admin/listas/{lista_id}/estoque
+```
+
+**Response:**
+```json
+[
+  {
+    "id": 1,
+    "item_id": 1,
+    "lista_id": 2,
+    "quantidade_atual": 40.0,
+    "quantidade_minima": 50.0,
+    "pedido": 10.0,
+    "item": {
+      "id": 1,
+      "nome": "Arroz 1kg",
+      "unidade_medida": "kg"
+    }
+  }
+]
+```
+
+**2. Editar Quantidades (Admin)**
 ```python
 PUT /api/admin/submissoes/{submissao_id}/editar
 ```
@@ -31,17 +82,17 @@ Authorization: Bearer {token_admin}
 Content-Type: application/json
 ```
 
-**Request Body:**
+**Request Body (NOVO):**
 ```json
 {
-  "pedidos": [
+  "items": [
     {
-      "pedido_id": 1,
-      "quantidade_solicitada": 15.5
+      "item_id": 1,
+      "quantidade_atual": 45.0
     },
     {
-      "pedido_id": 2,
-      "quantidade_solicitada": 30.0
+      "item_id": 2,
+      "quantidade_atual": 30.0
     }
   ]
 }
@@ -50,29 +101,39 @@ Content-Type: application/json
 **Response Success (200):**
 ```json
 {
-  "message": "2 pedido(s) atualizado(s) com sucesso!",
-  "submissao_id": 5
+  "message": "2 item(ns) atualizado(s), 1 pedido(s) gerado(s)!",
+  "submissao_id": 5,
+  "pedidos_criados": 1
 }
 ```
 
-**Response Error (400):**
-```json
-{
-  "error": "Apenas submissões PENDENTES podem ser editadas."
-}
-```
+#### Funções em `services.py`
 
-#### Função em `services.py`
-
+**1. `get_estoque_lista_admin(lista_id)`**
 ```python
-def editar_quantidades_submissao(submissao_id, pedidos_data):
+def get_estoque_lista_admin(lista_id):
     """
-    Permite que admin edite as quantidades dos pedidos de uma submissão.
+    Retorna itens do estoque da lista para admin (sem verificação de atribuição).
+    Formato idêntico ao usado pelo colaborador.
+    """
+```
+
+**2. `editar_quantidades_submissao(submissao_id, items_data)` (REFATORADA)**
+```python
+def editar_quantidades_submissao(submissao_id, items_data):
+    """
+    Recebe quantidades ATUAIS do estoque, não quantidades dos pedidos.
+    
+    Processo:
+    1. Atualiza quantidade_atual em ListaItemRef
+    2. DELETA todos os pedidos antigos da submissão
+    3. RECRIA pedidos com base no cálculo: max(0, minimo - atual)
+    4. Atualiza total_pedidos da submissão
     
     Validações:
     - Submissão deve existir
     - Status deve ser PENDENTE
-    - Pedidos devem pertencer à submissão
+    - Itens devem pertencer à lista
     - Quantidades devem ser >= 0
     """
 ```
@@ -91,16 +152,44 @@ if submissao.status != SubmissaoStatus.PENDENTE:
     return {"error": "Apenas submissões PENDENTES podem ser editadas."}, 400
 ```
 
-✅ **Pedido pertence à submissão?**
+✅ **Item pertence à lista?**
 ```python
-if pedido_id not in pedidos_map:
-    return {"error": f"Pedido #{pedido_id} não pertence a esta submissão."}, 400
+if item_id not in refs_map:
+    return {"error": f"Item #{item_id} não pertence a esta lista."}, 400
 ```
 
 ✅ **Quantidade válida?**
 ```python
-if nova_quantidade < 0:
+if nova_quantidade_atual < 0:
     return {"error": f"Quantidade não pode ser negativa."}, 400
+```
+
+#### Lógica de Recálculo
+
+```python
+# 1. Atualizar quantidade_atual
+for item in items_data:
+    ref = refs_map[item['item_id']]
+    ref.quantidade_atual = item['quantidade_atual']
+
+# 2. Deletar pedidos antigos
+Pedido.query.filter_by(submissao_id=submissao_id).delete()
+
+# 3. Recriar pedidos
+for ref in refs:
+    pedido_qtd = ref.get_pedido()  # max(0, minimo - atual)
+    if pedido_qtd > 0:
+        novo_pedido = Pedido(
+            submissao_id=submissao_id,
+            lista_mae_item_id=ref.item_id,
+            quantidade_solicitada=pedido_qtd,
+            status=PedidoStatus.PENDENTE
+        )
+        db.session.add(novo_pedido)
+
+# 4. Atualizar total
+submissao.total_pedidos = pedidos_criados
+db.session.commit()
 ```
 
 ---
@@ -109,51 +198,153 @@ if nova_quantidade < 0:
 
 #### Novos Estados
 ```typescript
+const [itensEstoque, setItensEstoque] = useState<ItemEstoque[]>([]);
 const [modoEdicao, setModoEdicao] = useState(false);
-const [quantidadesEditadas, setQuantidadesEditadas] = useState<{[key: number]: number}>({});
+const [quantidadesAtuais, setQuantidadesAtuais] = useState<{[key: number]: number}>({});
 ```
 
-#### Novo Botão (Status = PENDENTE)
-```tsx
-<Button variant="warning" onClick={handleIniciarEdicao}>
-    <FontAwesomeIcon icon={faEdit} /> Editar Quantidades
-</Button>
+#### Interfaces TypeScript
+```typescript
+interface ItemEstoque {
+    id: number;
+    item_id: number;
+    lista_id: number;
+    quantidade_atual: number;
+    quantidade_minima: number;
+    pedido: number;
+    item: {
+        id: number;
+        nome: string;
+        unidade_medida: string;
+    };
+}
 ```
 
-#### Modo Edição Ativado
+#### Fluxo de Carregamento
 
-**Inputs editáveis na tabela:**
+**1. Buscar submissão e estoque:**
+```typescript
+const fetchSubmissao = async () => {
+    // 1. Buscar submissão
+    const response = await api.get(`/admin/submissoes`);
+    const sub = response.data.find(s => s.id === Number(id));
+    
+    // 2. Buscar estoque da lista
+    const responseEstoque = await api.get(`/admin/listas/${sub.lista_id}/estoque`);
+    setItensEstoque(responseEstoque.data);
+    
+    // 3. Inicializar quantidades atuais
+    const qtds = {};
+    responseEstoque.data.forEach(item => {
+        qtds[item.item_id] = item.quantidade_atual;
+    });
+    setQuantidadesAtuais(qtds);
+};
+```
+
+#### Cálculo em Tempo Real
+
+```typescript
+const calcularPedido = (itemId: number): number => {
+    const item = itensEstoque.find(i => i.item_id === itemId);
+    if (!item) return 0;
+    
+    const qtdAtual = quantidadesAtuais[itemId] || 0;
+    const qtdMinima = item.quantidade_minima || 0;
+    
+    return Math.max(0, qtdMinima - qtdAtual);
+};
+```
+
+#### Navegação por Enter
+
+```typescript
+const handleKeyDown = (e: React.KeyboardEvent, currentIndex: number) => {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        const nextIndex = currentIndex + 1;
+        const nextInput = document.getElementById(`qtd-input-${nextIndex}`);
+        if (nextInput) {
+            nextInput.focus();
+        } else {
+            document.getElementById('btn-salvar')?.focus();
+        }
+    }
+};
+```
+
+#### Modo Edição - Tabela
+
 ```tsx
 {modoEdicao ? (
-    <Form.Control
-        type="number"
-        min="0"
-        step="0.01"
-        value={quantidadesEditadas[pedido.id] || 0}
-        onChange={(e) => handleAlterarQuantidade(
-            pedido.id,
-            parseFloat(e.target.value) || 0
-        )}
-        style={{ width: '120px', display: 'inline-block' }}
-    />
+    // Mostra todos os itens do estoque (editáveis)
+    itensEstoque.map((item, idx) => {
+        const pedido = calcularPedido(item.item_id);
+        return (
+            <tr key={item.item_id}>
+                <td>{idx + 1}</td>
+                <td><strong>{item.item.nome}</strong></td>
+                <td className="text-center">
+                    <Form.Control
+                        id={`qtd-input-${idx}`}
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={quantidadesAtuais[item.item_id] || 0}
+                        onChange={(e) => handleAlterarQuantidade(...)}
+                        onKeyDown={(e) => handleKeyDown(e, idx)}
+                        autoFocus={idx === 0}
+                    />
+                    <span>{item.item.unidade_medida}</span>
+                </td>
+                <td className="text-center">
+                    {item.quantidade_minima} {item.item.unidade_medida}
+                </td>
+                <td className="text-center">
+                    <Badge bg={pedido > 0 ? 'warning' : 'success'}>
+                        {pedido.toFixed(2)} {item.item.unidade_medida}
+                    </Badge>
+                </td>
+                <td className="text-center">
+                    <Badge bg={pedido > 0 ? 'warning' : 'success'}>
+                        {pedido > 0 ? 'NECESSÁRIO' : 'OK'}
+                    </Badge>
+                </td>
+            </tr>
+        );
+    })
 ) : (
-    `${pedido.quantidade_solicitada}`
+    // Modo visualização: mostra apenas pedidos da submissão
+    submissao.pedidos.map((pedido, idx) => (
+        <tr key={pedido.id}>
+            <td>{idx + 1}</td>
+            <td><strong>{pedido.item_nome}</strong></td>
+            <td colSpan={2}><em>Clique em "Editar" para ver</em></td>
+            <td>{pedido.quantidade_solicitada} {pedido.unidade}</td>
+            <td>{getStatusBadge(pedido.status)}</td>
+        </tr>
+    ))
 )}
 ```
 
-**Botões de ação:**
-```tsx
-<Button variant="success" onClick={handleSalvarEdicao}>
-    <FontAwesomeIcon icon={faSave} /> Salvar Alterações
-</Button>
-<Button variant="secondary" onClick={handleCancelarEdicao}>
-    <FontAwesomeIcon icon={faTimes} /> Cancelar
-</Button>
-```
+#### Salvar Alterações
 
-#### Badge Visual
-```tsx
-{modoEdicao && <Badge bg="warning" className="ms-2">Modo Edição</Badge>}
+```typescript
+const handleSalvarEdicao = async () => {
+    const items = itensEstoque.map(item => ({
+        item_id: item.item_id,
+        quantidade_atual: quantidadesAtuais[item.item_id] || 0
+    }));
+
+    const response = await api.put(
+        `/admin/submissoes/${submissao.id}/editar`,
+        { items }
+    );
+    
+    setSuccessMessage(`✅ ${response.data.message}`);
+    setModoEdicao(false);
+    fetchSubmissao(); // Recarregar
+};
 ```
 
 ---
@@ -194,49 +385,81 @@ const [quantidadesEditadas, setQuantidadesEditadas] = useState<{[key: number]: n
 
 ### **Caso 1: Ajuste por Lote de Compra**
 
-**Antes:**
+**Situação:**
 ```
-Arroz 1kg: 12 unidades
+Item: Arroz 1kg
+Qtd Mínima: 50kg
+Qtd Atual:  40kg (submetida pelo colaborador)
+→ Pedido:   10kg
 ```
 
 **Admin edita:**
 ```
-Arroz 1kg: 15 unidades (lote de 15)
+Qtd Atual:  35kg (ajustando para baixo)
+→ Pedido:   15kg (recalculado automaticamente)
 ```
 
-**Motivo:** Fornecedor vende em lotes de 15 unidades
+**Motivo:** Pedido de 15kg fecha o lote do fornecedor.
 
 ---
 
 ### **Caso 2: Correção de Erro**
 
-**Antes:**
+**Situação:**
 ```
-Óleo 900ml: 100 unidades
+Item: Óleo 900ml
+Qtd Mínima: 20 unidades
+Qtd Atual:  100 unidades (erro do colaborador!)
+→ Pedido:   0 (sem necessidade)
 ```
 
 **Admin edita:**
 ```
-Óleo 900ml: 10 unidades
+Qtd Atual:  10 unidades (corrigindo)
+→ Pedido:   10 unidades (recalculado)
 ```
 
-**Motivo:** Colaborador digitou zero a mais
+**Motivo:** Colaborador digitou zero a mais.
 
 ---
 
 ### **Caso 3: Restrição Orçamentária**
 
-**Antes:**
+**Situação:**
 ```
-Sabão em pó 1kg: 50 unidades (R$ 1.500)
+Item: Sabão em pó 1kg
+Qtd Mínima: 100 unidades
+Qtd Atual:  50 unidades
+→ Pedido:   50 unidades (R$ 1.500)
 ```
 
 **Admin edita:**
 ```
-Sabão em pó 1kg: 30 unidades (R$ 900)
+Qtd Atual:  80 unidades (aumentando)
+→ Pedido:   20 unidades (R$ 600, recalculado)
 ```
 
-**Motivo:** Orçamento disponível limitado
+**Motivo:** Orçamento disponível limitado, ajusta para pedir menos.
+
+---
+
+### **Caso 4: Item Já Comprado Externamente**
+
+**Situação:**
+```
+Item: Detergente 500ml
+Qtd Mínima: 50 unidades
+Qtd Atual:  10 unidades
+→ Pedido:   40 unidades
+```
+
+**Admin edita:**
+```
+Qtd Atual:  55 unidades (recebimento externo)
+→ Pedido:   0 (recalculado - não precisa mais)
+```
+
+**Motivo:** Item foi comprado de forma emergencial.
 
 ---
 
@@ -257,29 +480,47 @@ Sabão em pó 1kg: 30 unidades (R$ 900)
 
 ## 🎨 Interface Visual
 
-### **Antes de Editar**
+### **Modo Visualização (Antes de Editar)**
 ```
-┌────────────────────────────────────────────┐
-│ [Editar Quantidades] [Aprovar] [Rejeitar] │
-├────────────────────────────────────────────┤
-│ # │ Item        │ Quantidade │ Status     │
-├───┼─────────────┼────────────┼────────────┤
-│ 1 │ Arroz 1kg   │ 12 kg      │ PENDENTE   │
-│ 2 │ Óleo 900ml  │ 20 un      │ PENDENTE   │
-└────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────┐
+│ [✏️ Editar Quantidades] [✅ Aprovar] [❌ Rejeitar]       │
+├──────────────────────────────────────────────────────────┤
+│ # │ Item        │ Qtd Atual/Mín │ Pedido │ Status       │
+├───┼─────────────┼───────────────┼────────┼──────────────┤
+│ 1 │ Arroz 1kg   │ Ver no editor │ 10 kg  │ PENDENTE     │
+│ 2 │ Óleo 900ml  │ Ver no editor │ 20 un  │ PENDENTE     │
+└──────────────────────────────────────────────────────────┘
 ```
 
-### **Durante Edição**
+### **Modo Edição (Ativo)**
 ```
-┌────────────────────────────────────────────┐
-│ [Salvar] [Cancelar]       🟡 Modo Edição   │
-├────────────────────────────────────────────┤
-│ # │ Item        │ Quantidade │ Status     │
-├───┼─────────────┼────────────┼────────────┤
-│ 1 │ Arroz 1kg   │ [__15__] kg│ PENDENTE   │
-│ 2 │ Óleo 900ml  │ [__18__] un│ PENDENTE   │
-└────────────────────────────────────────────┘
-         ↑ Inputs editáveis
+┌──────────────────────────────────────────────────────────┐
+│ [💾 Salvar] [❌ Cancelar]     🟡 Modo Edição             │
+├──────────────────────────────────────────────────────────┤
+│ # │ Item     │ Atual  │ Mín │ Pedido │ Status           │
+├───┼──────────┼────────┼─────┼────────┼──────────────────┤
+│ 1 │ Arroz    │ [_40_] │ 50  │ 10 🟡  │ NECESSÁRIO       │
+│ 2 │ Óleo     │ [_25_] │ 30  │  5 🟡  │ NECESSÁRIO       │
+│ 3 │ Feijão   │ [_60_] │ 50  │  0 🟢  │ OK               │
+└──────────────────────────────────────────────────────────┘
+    ↑ Editáveis         ↑ Calcula em tempo real
+    
+💡 Dica: Pressione [Enter] para ir ao próximo item
+```
+
+### **Feedback em Tempo Real**
+```
+Admin digita: Qtd Atual = 35kg
+                 ↓
+Sistema calcula: Pedido = 50 - 35 = 15kg
+                 ↓
+Badge atualiza: 🟡 15kg NECESSÁRIO
+
+Admin digita: Qtd Atual = 60kg
+                 ↓
+Sistema calcula: Pedido = 50 - 60 = 0kg (max com 0)
+                 ↓
+Badge atualiza: 🟢 0kg OK
 ```
 
 ---
