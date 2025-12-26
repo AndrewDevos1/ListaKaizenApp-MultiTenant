@@ -27,14 +27,6 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEye, faEyeSlash } from '@fortawesome/free-solid-svg-icons';
 import styles from './Login.module.css';
 
-interface TestUser {
-    id: number;
-    nome: string;
-    email: string;
-    role: string;
-    senha_padrao: string;
-}
-
 const Login: React.FC = () => {
     const [email, setEmail] = useState('');
     const [senha, setSenha] = useState('');
@@ -42,7 +34,6 @@ const Login: React.FC = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
-    const [testUsers, setTestUsers] = useState<TestUser[]>([]);
     const navigate = useNavigate();
     const { login } = useAuth();
 
@@ -53,24 +44,7 @@ const Login: React.FC = () => {
             setEmail(savedEmail);
             setRememberMe(true);
         }
-
-        // Carregar usuários de teste
-        fetchTestUsers();
     }, []);
-
-    const fetchTestUsers = async () => {
-        try {
-            const response = await api.get('/auth/test-users');
-            setTestUsers(response.data.usuarios || []);
-        } catch (err) {
-            console.error('Erro ao carregar usuários de teste:', err);
-        }
-    };
-
-    const handleQuickLogin = (user: TestUser) => {
-        setEmail(user.email);
-        setSenha(user.senha_padrao);
-    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -236,37 +210,6 @@ const Login: React.FC = () => {
                                         </Button>
                                     </div>
                                 </Form>
-
-                                {/* Divider */}
-                                <hr className={styles.divider} />
-
-                                {/* Atalhos de usuários de teste (Dev/Test) */}
-                                {testUsers.length > 0 && (
-                                    <div className={styles.testUsersSection}>
-                                        <p className={styles.testUsersLabel}>
-                                            <i className="fas fa-flask me-2"></i>
-                                            Atalhos para Testes
-                                        </p>
-                                        <div className={styles.testUsersGrid}>
-                                            {testUsers.map((user) => (
-                                                <button
-                                                    key={user.id}
-                                                    type="button"
-                                                    className={styles.testUserButton}
-                                                    onClick={() => handleQuickLogin(user)}
-                                                    disabled={loading}
-                                                    title={`${user.nome} (${user.role})`}
-                                                >
-                                                    <i className={`fas fa-${user.role === 'ADMIN' ? 'crown' : 'user'}`}></i>
-                                                    <div className={styles.testUserInfo}>
-                                                        <span className={styles.testUserName}>{user.nome}</span>
-                                                        <span className={styles.testUserRole}>{user.role}</span>
-                                                    </div>
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
 
                                 {/* Link para registro */}
                                 <div className={styles.registerRow}>

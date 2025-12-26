@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Table, Spinner, Alert, Badge, Form, InputGroup } from 'react-bootstrap';
 import api from '../../services/api';
+import styles from './CatalogoGlobal.module.css';
 
 interface CatalogoItem {
     id: number;
@@ -72,16 +73,18 @@ const CatalogoGlobal: React.FC = () => {
     };
 
     return (
-        <div>
-            <h2 className="mb-4">Catálogo Global de Itens</h2>
-            <p className="text-muted mb-4">
-                Este catálogo contém todos os itens cadastrados no sistema.
-                Itens são adicionados automaticamente quando você importa listas.
-            </p>
+        <div className={styles.container}>
+            <div className={styles.header}>
+                <h2 className="mb-2">Catálogo Global de Itens</h2>
+                <p className="text-muted mb-0">
+                    Este catálogo contém todos os itens cadastrados no sistema.
+                    Itens são adicionados automaticamente quando você importa listas.
+                </p>
+            </div>
 
             {error && <Alert variant="danger" onClose={() => setError('')} dismissible>{error}</Alert>}
 
-            <InputGroup className="mb-3" style={{ maxWidth: '400px' }}>
+            <InputGroup className={styles.searchBox}>
                 <InputGroup.Text>
                     <i className="fas fa-search"></i>
                 </InputGroup.Text>
@@ -93,7 +96,7 @@ const CatalogoGlobal: React.FC = () => {
                 />
             </InputGroup>
 
-            <div className="mb-3">
+            <div className={styles.badges}>
                 <Badge bg="info" className="me-2">
                     Total: {itens.length} itens
                 </Badge>
@@ -104,7 +107,8 @@ const CatalogoGlobal: React.FC = () => {
                 )}
             </div>
 
-            <Table striped bordered hover responsive>
+            {/* Tabela Desktop */}
+            <Table striped bordered hover responsive className={styles.tableDesktop}>
                 <thead className="table-dark">
                     <tr>
                         <th>#</th>
@@ -143,6 +147,47 @@ const CatalogoGlobal: React.FC = () => {
                     ))}
                 </tbody>
             </Table>
+
+            {/* Cards Mobile */}
+            <div className={styles.cardsMobile}>
+                {isLoading ? (
+                    <div className={styles.loadingState}>
+                        <Spinner animation="border" />
+                        <p className="mt-2 mb-0">Carregando catálogo...</p>
+                    </div>
+                ) : filteredItens.length === 0 ? (
+                    <div className={styles.emptyState}>
+                        {searchTerm ? 'Nenhum item encontrado com esse termo.' : 'Nenhum item no catálogo.'}
+                    </div>
+                ) : filteredItens.map((item, index) => (
+                    <div key={item.id} className={styles.itemCard}>
+                        <div className={styles.cardRow}>
+                            <span className={styles.cardLabel}>#</span>
+                            <span className={styles.cardValue}>{index + 1}</span>
+                        </div>
+                        <div className={styles.cardRow}>
+                            <span className={styles.cardLabel}>Nome</span>
+                            <span className={styles.cardValue}><strong>{item.nome}</strong></span>
+                        </div>
+                        <div className={styles.cardRow}>
+                            <span className={styles.cardLabel}>Unidade</span>
+                            <span className={styles.cardValue}>{item.unidade}</span>
+                        </div>
+                        <div className={styles.cardRow}>
+                            <span className={styles.cardLabel}>Listas</span>
+                            <span className={styles.cardValue}>
+                                <Badge bg={item.total_listas > 0 ? 'success' : 'secondary'}>
+                                    {item.total_listas} lista(s)
+                                </Badge>
+                            </span>
+                        </div>
+                        <div className={styles.cardRow}>
+                            <span className={styles.cardLabel}>Cadastrado</span>
+                            <span className={styles.cardValue}>{formatDate(item.criado_em)}</span>
+                        </div>
+                    </div>
+                ))}
+            </div>
         </div>
     );
 };

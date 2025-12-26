@@ -70,43 +70,19 @@ def authenticate_user(data):
 
     # O identity deve ser uma STRING (Flask-JWT-Extended espera string no campo 'sub')
     # Dados adicionais vão em additional_claims
-    additional_claims = {"role": user.role.value}
+    additional_claims = {
+        "role": user.role.value,
+        "nome": user.nome,
+        "email": user.email
+    }
     expires = timedelta(days=1)
     access_token = create_access_token(
         identity=str(user.id),  # Converte ID para string
-        additional_claims=additional_claims,  # Role e outros dados extras
+        additional_claims=additional_claims,  # Role, nome e outros dados extras
         expires_delta=expires
     )
 
     return {"access_token": access_token}, 200
-
-def get_test_users():
-    """Retorna lista de usuários ativos para atalho de login em desenvolvimento."""
-    try:
-        # Buscar todos os usuários aprovados e ativos
-        usuarios = Usuario.query.filter_by(aprovado=True, ativo=True).all()
-
-        # Mapeamento de senhas para testes (desenvolvimento apenas)
-        senhas_teste = {
-            "Andrew": "210891",
-            "Joya": "Joya"
-        }
-
-        usuarios_data = []
-        for user in usuarios:
-            senha_teste = senhas_teste.get(user.nome, "teste123")
-            usuarios_data.append({
-                "id": user.id,
-                "nome": user.nome,
-                "email": user.email,
-                "role": user.role.value,
-                "senha_padrao": senha_teste  # Senha para testes (desenvolvimento)
-            })
-
-        return {"usuarios": usuarios_data}, 200
-    except Exception as e:
-        current_app.logger.error(f"[GET_TEST_USERS] Erro: {str(e)}")
-        return {"error": "Erro ao buscar usuários de teste"}, 500
 
 def approve_user(user_id):
     """Aprova o cadastro de um usuário."""
@@ -3614,3 +3590,45 @@ def executar_importacao_estoque(data):
         import traceback
         traceback.print_exc()
         return {"error": f"Erro ao executar importação: {str(e)}"}, 500
+
+
+def get_navbar_preferences(user_id):
+    """Busca preferências de navbar do usuário."""
+    from .models import NavbarPreference
+    
+    pref = NavbarPreference.query.filter_by(usuario_id=user_id).first()
+    
+    if not pref:
+        # Retorna estado padrão (todas categorias recolhidas)
+        return {
+            "categorias_estado": {},
+            "usuario_id": user_id
+        }, 200
+    
+    return pref.to_dict(), 200
+
+
+def save_navbar_preferences(user_id, data):
+    """Salva ou atualiza preferências de navbar do usuário."""
+    from .models import NavbarPreference
+    from .extensions import db
+    
+    categorias_estado = data.get('categorias_estado', {})
+    
+    pref = NavbarPreference.query.filter_by(usuario_id=user_id).first()
+    
+    if pref:
+        # Atualizar existente
+        pref.categorias_estado = categorias_estado
+        pref.atualizado_em = brasilia_now()
+    else:
+        # Criar novo
+        pref = NavbarPreference(
+            usuario_id=user_id,
+            categorias_estado=categorias_estado
+        )
+        db.session.add(pref)
+    
+    db.session.commit()
+    
+    return {"message": "Preferências salvas com sucesso", "data": pref.to_dict()}, 200

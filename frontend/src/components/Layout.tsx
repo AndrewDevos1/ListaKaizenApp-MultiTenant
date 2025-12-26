@@ -1,7 +1,7 @@
-
 import React from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import api from '../services/api';
 import styles from './Layout.module.css';
 
 interface MenuItem {
@@ -22,6 +22,8 @@ const Layout: React.FC = () => {
     localStorage.getItem('sidebarCollapsed') === 'true'
   );
   const [searchTerm, setSearchTerm] = React.useState('');
+  const [expandedGroups, setExpandedGroups] = React.useState<{ [key: string]: boolean }>({});
+  const [preferencesLoaded, setPreferencesLoaded] = React.useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const { logout, user } = useAuth();
@@ -40,23 +42,18 @@ const Layout: React.FC = () => {
       title: 'LISTAS & ESTOQUE',
       items: [
         { path: '/admin/listas-compras', icon: 'fa-shopping-cart', label: 'Listas de Compras', ariaLabel: 'Listas de Compras' },
-        { path: '/admin/items', icon: 'fa-boxes', label: 'Itens', ariaLabel: 'Itens' },
-        { path: '/admin/areas', icon: 'fa-map-marker-alt', label: 'Áreas', ariaLabel: 'Áreas' }
-      ]
-    },
-    {
-      title: 'FORNECEDORES & COTAÇÕES',
-      items: [
-        { path: '/admin/fornecedores', icon: 'fa-truck', label: 'Fornecedores', ariaLabel: 'Fornecedores' },
-        { path: '/admin/gerar-cotacao', icon: 'fa-file-invoice-dollar', label: 'Gerar Cotação', ariaLabel: 'Gerar Cotação' },
-        { path: '/admin/cotacoes', icon: 'fa-chart-pie', label: 'Cotações', ariaLabel: 'Cotações' }
+        { path: '/admin/catalogo-global', icon: 'fa-book', label: 'Itens Cadastrados', ariaLabel: 'Itens Cadastrados no Sistema' },
+        { path: '/admin/submissoes', icon: 'fa-clipboard-check', label: 'Submissões', ariaLabel: 'Gerenciar Submissões' }
       ]
     },
     {
       title: 'GESTÃO',
       items: [
-        { path: '/admin/users', icon: 'fa-users-cog', label: 'Usuários', ariaLabel: 'Gestão de Usuários' },
-        { path: '/admin/gerenciar-usuarios', icon: 'fa-user-shield', label: 'Gerenciar Usuários', ariaLabel: 'Gerenciar Usuários' }
+        { path: '/admin/areas', icon: 'fa-map-marker-alt', label: 'Áreas', ariaLabel: 'Áreas' },
+        { path: '/admin/gerenciar-usuarios', icon: 'fa-users-cog', label: 'Gerenciar Usuários', ariaLabel: 'Gerenciar Usuários' },
+        { path: '/admin/fornecedores', icon: 'fa-truck', label: 'Fornecedores', ariaLabel: 'Fornecedores' },
+        { path: '/admin/gerar-cotacao', icon: 'fa-file-invoice-dollar', label: 'Gerar Cotação', ariaLabel: 'Gerar Cotação' },
+        { path: '/admin/cotacoes', icon: 'fa-chart-pie', label: 'Cotações', ariaLabel: 'Cotações' }
       ]
     },
     {
@@ -78,16 +75,10 @@ const Layout: React.FC = () => {
       ]
     },
     {
-      title: 'MINHAS ÁREAS',
+      title: 'MINHAS ATIVIDADES',
       items: [
-        { path: '/collaborator/areas', icon: 'fa-map-marker-alt', label: 'Áreas', ariaLabel: 'Áreas' },
-        { path: '/collaborator/submissions', icon: 'fa-clipboard-list', label: 'Submissões', ariaLabel: 'Submissões' }
-      ]
-    },
-    {
-      title: 'LISTAS DE COMPRAS',
-      items: [
-        { path: '/collaborator/listas', icon: 'fa-shopping-cart', label: 'Minhas Listas', ariaLabel: 'Minhas Listas' }
+        { path: '/collaborator/listas', icon: 'fa-shopping-cart', label: 'Minhas Listas', ariaLabel: 'Minhas Listas' },
+        { path: '/collaborator/submissions', icon: 'fa-clipboard-list', label: 'Minhas Submissões', ariaLabel: 'Minhas Submissões' }
       ]
     },
     {
@@ -125,6 +116,49 @@ const Layout: React.FC = () => {
     const newCollapsed = !isCollapsed;
     setIsCollapsed(newCollapsed);
     localStorage.setItem('sidebarCollapsed', newCollapsed.toString());
+  };
+
+  // Carregar preferências da navbar do backend
+  React.useEffect(() => {
+    const loadNavbarPreferences = async () => {
+      if (!user) return;
+      
+      try {
+        const response = await api.get('/auth/navbar-preferences');
+        const { categorias_estado } = response.data;
+        setExpandedGroups(categorias_estado || {});
+        setPreferencesLoaded(true);
+      } catch (error) {
+        console.error('[NAVBAR] Erro ao carregar preferências:', error);
+        setExpandedGroups({});
+        setPreferencesLoaded(true);
+      }
+    };
+
+    loadNavbarPreferences();
+  }, [user]);
+
+  // Salvar preferências da navbar no backend
+  const saveNavbarPreferences = async (newExpandedGroups: { [key: string]: boolean }) => {
+    if (!user || !preferencesLoaded) return;
+
+    try {
+      await api.post('/auth/navbar-preferences', {
+        categorias_estado: newExpandedGroups
+      });
+    } catch (error) {
+      console.error('[NAVBAR] Erro ao salvar preferências:', error);
+    }
+  };
+
+  // Toggle de categoria (expandir/colapsar)
+  const toggleGroup = (groupTitle: string) => {
+    const newExpandedGroups = {
+      ...expandedGroups,
+      [groupTitle]: !expandedGroups[groupTitle]
+    };
+    setExpandedGroups(newExpandedGroups);
+    saveNavbarPreferences(newExpandedGroups);
   };
 
   const handleOverlayClick = () => {
@@ -270,7 +304,7 @@ const Layout: React.FC = () => {
             </div>
             {!isCollapsed && (
               <div className={styles.userInfo}>
-                <div className={styles.userName}>Usuário ID: {user.id}</div>
+                <div className={styles.userName}>{user.nome}</div>
                 <div className={styles.userRole}>
                   {user.role === 'ADMIN' ? 'Administrador' : 'Colaborador'}
                 </div>
@@ -307,61 +341,78 @@ const Layout: React.FC = () => {
 
         {/* Menu groups */}
         <div className={styles.menuContainer}>
-          {filteredGroups.map((group, groupIndex) => (
-            <div key={groupIndex} className={styles.menuGroup}>
-              {!isCollapsed && (
-                <div className={styles.menuGroupTitle}>{group.title}</div>
-              )}
-              {isCollapsed && groupIndex > 0 && (
-                <div className={styles.menuDivider}></div>
-              )}
-              <div className={styles.menuGroupItems}>
-                {group.items.map((item, itemIndex) => {
-                  // Tratamento especial para o item "Sair" (logout)
-                  if (item.path === '/logout') {
-                    return (
-                      <button
-                        key={itemIndex}
-                        className={styles.listGroupItem}
-                        onClick={() => {
-                          handleLinkClick();
-                          handleLogout();
-                        }}
-                        aria-label={item.ariaLabel}
-                        title={isCollapsed ? item.label : undefined}
-                        style={{ width: '100%', textAlign: 'left', border: 'none', background: 'none' }}
-                      >
-                        <i className={`fas ${item.icon}`} aria-hidden="true"></i>
-                        {!isCollapsed && <span className={styles.menuItemText}>{item.label}</span>}
-                      </button>
-                    );
-                  }
+          {filteredGroups.map((group, groupIndex) => {
+            const isExpanded = expandedGroups[group.title];
+            
+            return (
+              <div key={groupIndex} className={styles.menuGroup}>
+                {!isCollapsed && (
+                  <div 
+                    className={styles.menuGroupTitle}
+                    onClick={() => toggleGroup(group.title)}
+                    style={{ cursor: 'pointer', userSelect: 'none' }}
+                  >
+                    <i 
+                      className={`fas fa-chevron-${isExpanded ? 'down' : 'right'}`} 
+                      style={{ marginRight: '8px', fontSize: '0.8rem' }}
+                      aria-hidden="true"
+                    ></i>
+                    {group.title}
+                  </div>
+                )}
+                {isCollapsed && groupIndex > 0 && (
+                  <div className={styles.menuDivider}></div>
+                )}
+                {(isCollapsed || isExpanded) && (
+                  <div className={styles.menuGroupItems}>
+                    {group.items.map((item, itemIndex) => {
+                      // Tratamento especial para o item "Sair" (logout)
+                      if (item.path === '/logout') {
+                        return (
+                          <button
+                            key={itemIndex}
+                            className={styles.listGroupItem}
+                            onClick={() => {
+                              handleLinkClick();
+                              handleLogout();
+                            }}
+                            aria-label={item.ariaLabel}
+                            title={isCollapsed ? item.label : undefined}
+                            style={{ width: '100%', textAlign: 'left', border: 'none', background: 'none' }}
+                          >
+                            <i className={`fas ${item.icon}`} aria-hidden="true"></i>
+                            {!isCollapsed && <span className={styles.menuItemText}>{item.label}</span>}
+                          </button>
+                        );
+                      }
 
-                  // Renderização normal para outros itens
-                  return (
-                    <Link
-                      key={itemIndex}
-                      to={item.path}
-                      className={getLinkClass(item.path)}
-                      onClick={handleLinkClick}
-                      aria-label={item.ariaLabel}
-                      title={isCollapsed ? item.label : undefined}
-                    >
-                      <i className={`fas ${item.icon}`} aria-hidden="true"></i>
-                      {!isCollapsed && <span className={styles.menuItemText}>{item.label}</span>}
-                    </Link>
-                  );
-                })}
+                      // Renderização normal para outros itens
+                      return (
+                        <Link
+                          key={itemIndex}
+                          to={item.path}
+                          className={getLinkClass(item.path)}
+                          onClick={handleLinkClick}
+                          aria-label={item.ariaLabel}
+                          title={isCollapsed ? item.label : undefined}
+                        >
+                          <i className={`fas ${item.icon}`} aria-hidden="true"></i>
+                          {!isCollapsed && <span className={styles.menuItemText}>{item.label}</span>}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Footer */}
         <div className={styles.sidebarFooter}>
           {!isCollapsed ? (
             <>
-              <div className={styles.footerVersion}>v1.0.0</div>
+              <div className={styles.footerVersion}>v2.1.0</div>
               <a href="#!" className={styles.footerLink}>
                 <i className="fas fa-question-circle me-2" aria-hidden="true"></i>
                 Ajuda & Suporte

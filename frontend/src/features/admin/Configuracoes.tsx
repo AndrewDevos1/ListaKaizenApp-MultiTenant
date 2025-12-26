@@ -32,6 +32,7 @@ import {
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
+import InstallPWA from '../../components/InstallPWA';
 import styles from './Configuracoes.module.css';
 
 const Configuracoes: React.FC = () => {
@@ -328,6 +329,9 @@ const Configuracoes: React.FC = () => {
                         </Button>
                     </div>
                 </div>
+
+                {/* Card de Instalação do PWA */}
+                <InstallPWA />
 
                 {/* Card de Timeout de Sessão */}
                 <div className={styles.configCard}>

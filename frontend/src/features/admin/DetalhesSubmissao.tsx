@@ -14,7 +14,9 @@ import {
     faEdit,
     faSave,
     faUndo,
+    faCopy,
 } from '@fortawesome/free-solid-svg-icons';
+import { faWhatsapp } from '@fortawesome/free-brands-svg-icons';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import api from '../../services/api';
 import styles from './DetalhesSubmissao.module.css';
@@ -349,6 +351,60 @@ const DetalhesSubmissao: React.FC = () => {
         });
     };
 
+    // Formatar mensagem para WhatsApp/Copiar
+    const formatarMensagem = () => {
+        if (!submissao) return '';
+
+        // Filtrar apenas itens com pedido > 0
+        const itensFiltrados = itensEstoque.filter(item => item.pedido > 0);
+
+        if (itensFiltrados.length === 0) {
+            return 'Nenhum item com pedido para enviar.';
+        }
+
+        // Montar mensagem formatada
+        let mensagem = `📋 *Solicitação ${submissao.status} - ${submissao.lista_nome}*\n\n`;
+        mensagem += `*Lista:* ${submissao.lista_nome}\n`;
+        mensagem += `*Status:* ${submissao.status}\n`;
+        mensagem += `*Solicitante:* ${submissao.usuario_nome}\n`;
+        mensagem += `*Data:* ${formatarData(submissao.criado_em)}\n\n`;
+        mensagem += `*Itens Solicitados:*\n\n`;
+
+        itensFiltrados.forEach(item => {
+            mensagem += `• ${item.item.nome} - *Pedido: ${item.pedido} ${item.item.unidade_medida}*\n`;
+        });
+
+        mensagem += `\n*Total:* ${itensFiltrados.length} ${itensFiltrados.length === 1 ? 'item' : 'itens'}\n\n`;
+        mensagem += `---\n`;
+        mensagem += `Sistema Kaizen - Lista de Reposição`;
+
+        return mensagem;
+    };
+
+    // Copiar mensagem para clipboard
+    const handleCopiar = async () => {
+        try {
+            const mensagem = formatarMensagem();
+            await navigator.clipboard.writeText(mensagem);
+            setModalMessage('✅ Texto copiado para a área de transferência!');
+            setModalType('success');
+            setShowModal(true);
+        } catch (err) {
+            console.error('Erro ao copiar:', err);
+            setModalMessage('❌ Erro ao copiar texto. Tente novamente.');
+            setModalType('warning');
+            setShowModal(true);
+        }
+    };
+
+    // Abrir WhatsApp com mensagem
+    const handleWhatsApp = () => {
+        const mensagem = formatarMensagem();
+        const mensagemCodificada = encodeURIComponent(mensagem);
+        const urlWhatsApp = `https://wa.me/?text=${mensagemCodificada}`;
+        window.open(urlWhatsApp, '_blank');
+    };
+
     if (loading) {
         return (
             <Container className="mt-4">
@@ -501,8 +557,25 @@ const DetalhesSubmissao: React.FC = () => {
                     )}
                 </div>
             ) : (
-                // Botão para reverter submissão APROVADA ou REJEITADA
+                // Botões para submissão APROVADA ou REJEITADA
                 <div className={styles.actions}>
+                    <Button
+                        variant="secondary"
+                        onClick={handleCopiar}
+                        disabled={actionLoading}
+                        title="Copiar lista de itens"
+                    >
+                        <FontAwesomeIcon icon={faCopy} /> Copiar
+                    </Button>
+                    <Button
+                        variant="success"
+                        onClick={handleWhatsApp}
+                        disabled={actionLoading}
+                        title="Enviar lista via WhatsApp"
+                        style={{ backgroundColor: '#25D366', borderColor: '#25D366' }}
+                    >
+                        <FontAwesomeIcon icon={faWhatsapp} /> Enviar via WhatsApp
+                    </Button>
                     <Button
                         variant="info"
                         onClick={handleReverterParaPendente}
