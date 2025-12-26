@@ -76,8 +76,12 @@ const ListaMaeConsolidada: React.FC = () => {
     const [editandoId, setEditandoId] = useState<number | null>(null);
     const [itemEditando, setItemEditando] = useState<ListaMaeItem | null>(null);
     
-    // Refs para navegação com Enter entre campos de quantidade
-    const quantidadeRefs = useRef<{ [key: number]: { atual: HTMLInputElement | null, minima: HTMLInputElement | null } }>({});
+    // Estado para modo de edição em lote de quantidades mínimas
+    const [modoEdicaoQtdMin, setModoEdicaoQtdMin] = useState(false);
+    const [quantidadesMinimasEditando, setQuantidadesMinimasEditando] = useState<{ [key: number]: number }>({});
+    
+    // Refs para navegação com Enter entre campos de quantidade mínima
+    const quantidadeMinimaRefs = useRef<{ [key: number]: HTMLInputElement | null }>({});
 
     // Estado para seleção e atribuição de fornecedor
     const [itensSelecionados, setItensSelecionados] = useState<Set<number>>(new Set());
@@ -130,8 +134,26 @@ const ListaMaeConsolidada: React.FC = () => {
     };
 
     const handleAdicionarItem = async () => {
-        if (!novoItem.nome || !novoItem.unidade) {
-            setError('Preencha nome e unidade do item');
+        // Validações do nome
+        const nomeTrimmed = novoItem.nome.trim();
+        
+        if (!nomeTrimmed) {
+            setError('O nome do item não pode ser vazio');
+            return;
+        }
+        
+        if (/^\d/.test(nomeTrimmed)) {
+            setError('O nome do item não pode começar com número');
+            return;
+        }
+        
+        if (/^\s/.test(novoItem.nome)) {
+            setError('O nome do item não pode começar com espaço');
+            return;
+        }
+        
+        if (!novoItem.unidade) {
+            setError('Selecione a unidade do item');
             return;
         }
 
@@ -293,42 +315,78 @@ const ListaMaeConsolidada: React.FC = () => {
         return Math.max(0, qtdMin - qtdAtual);
     };
 
-    // Função para navegar entre campos com Enter
-    const handleKeyDownQuantidade = async (e: React.KeyboardEvent<HTMLInputElement>, itemId: number, campo: 'atual' | 'minima') => {
+    // Ativar modo de edição em lote de quantidades mínimas
+    const ativarModoEdicaoQtdMin = () => {
+        const qtdMinimas: { [key: number]: number } = {};
+        listaMae?.itens.forEach(item => {
+            if (item.id) {
+                qtdMinimas[item.id] = item.quantidade_minima;
+            }
+        });
+        setQuantidadesMinimasEditando(qtdMinimas);
+        setModoEdicaoQtdMin(true);
+    };
+
+    // Cancelar modo de edição em lote
+    const cancelarModoEdicaoQtdMin = () => {
+        setModoEdicaoQtdMin(false);
+        setQuantidadesMinimasEditando({});
+    };
+
+    // Salvar quantidades mínimas em lote
+    const salvarQuantidadesMinimasEmLote = async () => {
+        try {
+            setError(null);
+            
+            // Atualiza cada item que foi modificado
+            const promises = Object.entries(quantidadesMinimasEditando).map(async ([itemIdStr, qtdMinima]) => {
+                const itemId = parseInt(itemIdStr);
+                const itemOriginal = listaMae?.itens.find(i => i.id === itemId);
+                
+                if (itemOriginal && itemOriginal.quantidade_minima !== qtdMinima) {
+                    const dataToSend = {
+                        nome: itemOriginal.nome,
+                        unidade: itemOriginal.unidade,
+                        quantidade_atual: itemOriginal.quantidade_atual,
+                        quantidade_minima: qtdMinima
+                    };
+                    
+                    return api.put(`/admin/listas/${listaId}/mae-itens/${itemId}`, dataToSend);
+                }
+            });
+            
+            await Promise.all(promises.filter(p => p !== undefined));
+            
+            // Recarrega a lista
+            await fetchListaMae();
+            
+            setModoEdicaoQtdMin(false);
+            setQuantidadesMinimasEditando({});
+            setSuccess('Quantidades mínimas atualizadas com sucesso!');
+            setTimeout(() => setSuccess(null), 3000);
+        } catch (err: any) {
+            setError(err.response?.data?.error || 'Erro ao salvar quantidades mínimas');
+        }
+    };
+
+    // Navegação com Enter entre campos de quantidade mínima
+    const handleKeyDownQtdMin = (e: React.KeyboardEvent<HTMLInputElement>, itemId: number) => {
         if (e.key === 'Enter') {
             e.preventDefault();
-            
-            // Salva o item atual antes de navegar
-            if (itemEditando) {
-                await handleEditarItem(itemEditando);
-            }
             
             const itensFiltrados = getItensFiltrados();
             const indexAtual = itensFiltrados.findIndex(item => item.id === itemId);
             
             if (indexAtual === -1) return;
             
-            // Se está no campo 'atual', vai para o campo 'minima' do mesmo item
-            if (campo === 'atual') {
-                quantidadeRefs.current[itemId]?.minima?.focus();
-                quantidadeRefs.current[itemId]?.minima?.select();
-            } 
-            // Se está no campo 'minima', vai para o campo 'atual' do próximo item
-            else if (campo === 'minima') {
-                const proximoIndex = indexAtual + 1;
-                if (proximoIndex < itensFiltrados.length) {
-                    const proximoItem = itensFiltrados[proximoIndex];
-                    if (proximoItem.id) {
-                        // Inicia edição do próximo item
-                        setEditandoId(proximoItem.id);
-                        setItemEditando({ ...proximoItem });
-                        
-                        // Aguarda um frame para o componente renderizar
-                        setTimeout(() => {
-                            quantidadeRefs.current[proximoItem.id!]?.atual?.focus();
-                            quantidadeRefs.current[proximoItem.id!]?.atual?.select();
-                        }, 50);
-                    }
+            const proximoIndex = indexAtual + 1;
+            if (proximoIndex < itensFiltrados.length) {
+                const proximoItem = itensFiltrados[proximoIndex];
+                if (proximoItem.id) {
+                    setTimeout(() => {
+                        quantidadeMinimaRefs.current[proximoItem.id!]?.focus();
+                        quantidadeMinimaRefs.current[proximoItem.id!]?.select();
+                    }, 10);
                 }
             }
         }
@@ -720,7 +778,41 @@ const ListaMaeConsolidada: React.FC = () => {
                             <th>Nome</th>
                             <th className="text-center" style={{ width: '100px' }}>Unidade</th>
                             <th className="text-center" style={{ width: '120px' }}>Qtd Atual</th>
-                            <th className="text-center" style={{ width: '120px' }}>Qtd Mín</th>
+                            <th className="text-center" style={{ width: '120px' }}>
+                                Qtd Mín
+                                {!modoEdicaoQtdMin ? (
+                                    <Button
+                                        variant="outline-light"
+                                        size="sm"
+                                        className="ms-2"
+                                        onClick={ativarModoEdicaoQtdMin}
+                                        title="Editar quantidades mínimas em lote"
+                                    >
+                                        <FontAwesomeIcon icon={faEdit} />
+                                    </Button>
+                                ) : (
+                                    <div className="d-inline">
+                                        <Button
+                                            variant="success"
+                                            size="sm"
+                                            className="ms-1"
+                                            onClick={salvarQuantidadesMinimasEmLote}
+                                            title="Salvar alterações"
+                                        >
+                                            ✓
+                                        </Button>
+                                        <Button
+                                            variant="secondary"
+                                            size="sm"
+                                            className="ms-1"
+                                            onClick={cancelarModoEdicaoQtdMin}
+                                            title="Cancelar edição"
+                                        >
+                                            ✕
+                                        </Button>
+                                    </div>
+                                )}
+                            </th>
                             <th className="text-center" style={{ width: '100px' }}>Pedido</th>
                             <th className="text-center" style={{ width: '100px' }}>Ações</th>
                         </tr>
@@ -797,151 +889,55 @@ const ListaMaeConsolidada: React.FC = () => {
                                             onChange={() => toggleItemSelecionado(item.id)}
                                         />
                                     </td>
-                                    {editandoId === item.id && itemEditando ? (
-                                        <>
-                                            <td>
-                                                <input
-                                                    type="text"
-                                                    className="form-control form-control-sm"
-                                                    value={itemEditando.nome}
-                                                    onChange={(e) => setItemEditando({ ...itemEditando, nome: e.target.value })}
-                                                />
-                                            </td>
-                                            <td>
-                                                <select
-                                                    className="form-select form-select-sm"
-                                                    value={itemEditando.unidade}
-                                                    onChange={(e) => setItemEditando({ ...itemEditando, unidade: e.target.value as 'Kg' | 'Litro' | 'Unidade' })}
-                                                >
-                                                    <option value="Kg">Kg</option>
-                                                    <option value="Litro">Litro</option>
-                                                    <option value="Unidade">Unidade</option>
-                                                </select>
-                                            </td>
-                                            <td>
-                                                <input
-                                                    ref={(el) => {
-                                                        if (item.id && !quantidadeRefs.current[item.id]) {
-                                                            quantidadeRefs.current[item.id] = { atual: null, minima: null };
-                                                        }
-                                                        if (item.id) {
-                                                            quantidadeRefs.current[item.id].atual = el;
-                                                        }
-                                                    }}
-                                                    type="number"
-                                                    step="0.01"
-                                                    className="form-control form-control-sm"
-                                                    value={itemEditando.quantidade_atual}
-                                                    onChange={(e) => setItemEditando({ ...itemEditando, quantidade_atual: parseFloat(e.target.value) || 0 })}
-                                                    onKeyDown={(e) => item.id && handleKeyDownQuantidade(e, item.id, 'atual')}
-                                                />
-                                            </td>
-                                            <td>
-                                                <input
-                                                    ref={(el) => {
-                                                        if (item.id && !quantidadeRefs.current[item.id]) {
-                                                            quantidadeRefs.current[item.id] = { atual: null, minima: null };
-                                                        }
-                                                        if (item.id) {
-                                                            quantidadeRefs.current[item.id].minima = el;
-                                                        }
-                                                    }}
-                                                    type="number"
-                                                    step="0.01"
-                                                    className="form-control form-control-sm"
-                                                    value={itemEditando.quantidade_minima}
-                                                    onChange={(e) => setItemEditando({ ...itemEditando, quantidade_minima: parseFloat(e.target.value) || 0 })}
-                                                    onKeyDown={(e) => item.id && handleKeyDownQuantidade(e, item.id, 'minima')}
-                                                />
-                                            </td>
-                                            <td className="text-center">
-                                                <Badge bg="info">
-                                                    {calcularPedido(itemEditando.quantidade_minima, itemEditando.quantidade_atual)}
-                                                </Badge>
-                                            </td>
-                                            <td className="text-center">
-                                                <Button
-                                                    variant="success"
-                                                    size="sm"
-                                                    onClick={() => handleEditarItem(itemEditando)}
-                                                    title="Salvar"
-                                                    className="me-1"
-                                                >
-                                                    ✓
-                                                </Button>
-                                                <Button
-                                                    variant="secondary"
-                                                    size="sm"
-                                                    onClick={() => {
-                                                        setEditandoId(null);
-                                                        setItemEditando(null);
-                                                    }}
-                                                    title="Cancelar"
-                                                >
-                                                    ✕
-                                                </Button>
-                                            </td>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <td>{item.nome}</td>
-                                            <td className="text-center">
-                                                <Badge bg="light" text="dark">{item.unidade}</Badge>
-                                            </td>
-                                            <td 
-                                                className={`text-center ${styles.editableCell}`}
-                                                onClick={() => {
-                                                    setEditandoId(item.id || null);
-                                                    setItemEditando({ ...item });
-                                                    setTimeout(() => {
-                                                        if (item.id) {
-                                                            quantidadeRefs.current[item.id]?.atual?.focus();
-                                                            quantidadeRefs.current[item.id]?.atual?.select();
-                                                        }
-                                                    }, 50);
+                                    <td>{item.nome}</td>
+                                    <td className="text-center">
+                                        <Badge bg="light" text="dark">{item.unidade}</Badge>
+                                    </td>
+                                    <td className="text-center">{item.quantidade_atual.toFixed(2)}</td>
+                                    <td className="text-center">
+                                        {modoEdicaoQtdMin && item.id ? (
+                                            <input
+                                                ref={(el) => {
+                                                    if (item.id) {
+                                                        quantidadeMinimaRefs.current[item.id] = el;
+                                                    }
                                                 }}
-                                                title="Clique para editar"
-                                            >
-                                                {item.quantidade_atual.toFixed(2)}
-                                            </td>
-                                            <td 
-                                                className={`text-center ${styles.editableCell}`}
-                                                onClick={() => {
-                                                    setEditandoId(item.id || null);
-                                                    setItemEditando({ ...item });
-                                                    setTimeout(() => {
-                                                        if (item.id) {
-                                                            quantidadeRefs.current[item.id]?.minima?.focus();
-                                                            quantidadeRefs.current[item.id]?.minima?.select();
-                                                        }
-                                                    }, 50);
+                                                type="number"
+                                                step="0.01"
+                                                min="0"
+                                                className="form-control form-control-sm"
+                                                value={quantidadesMinimasEditando[item.id] ?? item.quantidade_minima}
+                                                onChange={(e) => {
+                                                    if (item.id) {
+                                                        setQuantidadesMinimasEditando({
+                                                            ...quantidadesMinimasEditando,
+                                                            [item.id]: parseFloat(e.target.value) || 0
+                                                        });
+                                                    }
                                                 }}
-                                                title="Clique para editar"
-                                            >
-                                                <Badge bg="secondary">{item.quantidade_minima.toFixed(2)}</Badge>
-                                            </td>
-                                            <td className="text-center">
-                                                {item.pedido && item.pedido > 0 ? (
-                                                    <Badge bg="danger">{item.pedido.toFixed(2)}</Badge>
-                                                ) : (
-                                                    <Badge bg="success">0</Badge>
-                                                )}
-                                            </td>
-                                            <td className="text-center">
-                                                <Button
-                                                    variant="outline-primary"
-                                                    size="sm"
-                                                    onClick={() => {
-                                                        setEditandoId(item.id || null);
-                                                        setItemEditando({ ...item });
-                                                    }}
-                                                    title="Editar"
-                                                >
-                                                    <FontAwesomeIcon icon={faEdit} />
-                                                </Button>
-                                            </td>
-                                        </>
-                                    )}
+                                                onKeyDown={(e) => item.id && handleKeyDownQtdMin(e, item.id)}
+                                            />
+                                        ) : (
+                                            <Badge bg="secondary">{item.quantidade_minima.toFixed(2)}</Badge>
+                                        )}
+                                    </td>
+                                    <td className="text-center">
+                                        {item.pedido && item.pedido > 0 ? (
+                                            <Badge bg="danger">{item.pedido.toFixed(2)}</Badge>
+                                        ) : (
+                                            <Badge bg="success">0</Badge>
+                                        )}
+                                    </td>
+                                    <td className="text-center">
+                                        <Button
+                                            variant="outline-danger"
+                                            size="sm"
+                                            onClick={() => item.id && handleDeletarItem(item.id)}
+                                            title="Remover item da lista"
+                                        >
+                                            <FontAwesomeIcon icon={faTrash} />
+                                        </Button>
+                                    </td>
                                 </tr>
                             ))
                         ) : (
