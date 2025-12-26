@@ -667,6 +667,83 @@ def get_submissoes_by_user(user_id):
     return resultado, 200
 
 
+def get_all_submissoes(status_filter=None):
+    """
+    Retorna todas as submissões (admin) com pedidos agrupados.
+    
+    Args:
+        status_filter: PENDENTE, APROVADO, REJEITADO, PARCIALMENTE_APROVADO ou None
+    """
+    query = Submissao.query.options(
+        db.joinedload(Submissao.lista),
+        db.joinedload(Submissao.usuario),
+        db.joinedload(Submissao.pedidos).joinedload(Pedido.item)
+    )
+    
+    if status_filter:
+        query = query.filter_by(status=status_filter)
+    
+    submissoes = query.order_by(Submissao.data_submissao.desc()).all()
+    
+    resultado = []
+    for sub in submissoes:
+        sub_dict = {
+            "id": sub.id,
+            "lista_id": sub.lista_id,
+            "lista_nome": sub.lista.nome if sub.lista else "N/A",
+            "usuario_id": sub.usuario_id,
+            "usuario_nome": sub.usuario.nome if sub.usuario else "N/A",
+            "data_submissao": sub.data_submissao.isoformat(),
+            "status": sub.status.value,
+            "total_pedidos": sub.total_pedidos,
+            "pedidos": [
+                {
+                    "id": p.id,
+                    "item_nome": p.item.nome if p.item else "N/A",
+                    "quantidade_solicitada": float(p.quantidade_solicitada),
+                    "status": p.status.value,
+                    "unidade": p.item.unidade if p.item else ""
+                }
+                for p in sub.pedidos
+            ]
+        }
+        resultado.append(sub_dict)
+    
+    return resultado, 200
+
+
+def aprovar_submissao(submissao_id):
+    """Aprova todos os pedidos de uma submissão."""
+    submissao = repositories.get_by_id(Submissao, submissao_id)
+    if not submissao:
+        return {"error": "Submissão não encontrada."}, 404
+    
+    # Aprovar todos os pedidos
+    for pedido in submissao.pedidos:
+        pedido.status = PedidoStatus.APROVADO
+    
+    submissao.status = SubmissaoStatus.APROVADO
+    db.session.commit()
+    
+    return {"message": f"Submissão #{submissao_id} aprovada com sucesso!"}, 200
+
+
+def rejeitar_submissao(submissao_id):
+    """Rejeita todos os pedidos de uma submissão."""
+    submissao = repositories.get_by_id(Submissao, submissao_id)
+    if not submissao:
+        return {"error": "Submissão não encontrada."}, 404
+    
+    # Rejeitar todos os pedidos
+    for pedido in submissao.pedidos:
+        pedido.status = PedidoStatus.REJEITADO
+    
+    submissao.status = SubmissaoStatus.REJEITADO
+    db.session.commit()
+    
+    return {"message": f"Submissão #{submissao_id} rejeitada."}, 200
+
+
 def submit_pedidos(user_id):
     """Cria registros de Pedido para todos os itens que estão abaixo do estoque mínimo."""
     itens_a_pedir = db.session.query(Estoque, Item).join(Item).filter(Estoque.quantidade_atual < Estoque.quantidade_minima).all()

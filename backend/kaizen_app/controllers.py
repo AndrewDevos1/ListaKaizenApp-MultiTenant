@@ -499,6 +499,31 @@ def get_all_pedidos_route():
 
     return jsonify([p.to_dict() for p in pedidos])
 
+
+@admin_bp.route('/submissoes', methods=['GET'])
+@admin_required()
+def get_all_submissoes_route():
+    """Retorna todas as submissões com filtro opcional por status."""
+    status_filter = request.args.get('status')  # PENDENTE, APROVADO, REJEITADO
+    submissoes, _ = services.get_all_submissoes(status_filter)
+    return jsonify(submissoes)
+
+
+@admin_bp.route('/submissoes/<int:submissao_id>/aprovar', methods=['POST'])
+@admin_required()
+def aprovar_submissao_route(submissao_id):
+    """Aprova todos os pedidos de uma submissão."""
+    response, status = services.aprovar_submissao(submissao_id)
+    return jsonify(response), status
+
+
+@admin_bp.route('/submissoes/<int:submissao_id>/rejeitar', methods=['POST'])
+@admin_required()
+def rejeitar_submissao_route(submissao_id):
+    """Rejeita todos os pedidos de uma submissão."""
+    response, status = services.rejeitar_submissao(submissao_id)
+    return jsonify(response), status
+
 @admin_bp.route('/pedidos/<int:pedido_id>/aprovar', methods=['POST'])
 @admin_required()
 def aprovar_pedido_route(pedido_id):

@@ -371,9 +371,9 @@ const AdminDashboard: React.FC = () => {
             link: '/admin/fornecedores',
         },
         {
-            title: 'Gerenciar Pedidos',
+            title: 'Gerenciar Submissões',
             icon: faBox,
-            link: '/admin/gerenciar-pedidos',
+            link: '/admin/submissoes',
         },
         {
             title: 'Cotações',

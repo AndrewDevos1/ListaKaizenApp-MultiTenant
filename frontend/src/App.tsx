@@ -22,6 +22,8 @@ import ListaMaeConsolidada from './features/admin/ListaMaeConsolidada';
 import GerenciarItensLista from './features/admin/GerenciarItensLista';
 import GerenciarUsuarios from './features/admin/GerenciarUsuarios';
 import GerenciarPedidos from './features/admin/GerenciarPedidos';
+import GerenciarSubmissoes from './features/admin/GerenciarSubmissoes';
+import DetalhesSubmissao from './features/admin/DetalhesSubmissao';
 import Configuracoes from './features/admin/Configuracoes';
 import MudarSenha from './features/admin/MudarSenha';
 import EditarPerfil from './features/admin/EditarPerfil';
@@ -51,6 +53,8 @@ function App() {
               <Route index element={<AdminDashboard />} />
               <Route path="gerenciar-usuarios" element={<GerenciarUsuarios />} />
               <Route path="gerenciar-pedidos" element={<GerenciarPedidos />} />
+              <Route path="submissoes" element={<GerenciarSubmissoes />} />
+              <Route path="submissoes/:id" element={<DetalhesSubmissao />} />
               <Route path="configuracoes" element={<Configuracoes />} />
               <Route path="mudar-senha" element={<MudarSenha />} />
               <Route path="editar-perfil" element={<EditarPerfil />} />
