@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Button, Table, Alert, Badge, Card, Form } from 'react-bootstrap';
+import { Container, Button, Table, Alert, Badge, Card, Form, Modal } from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faArrowLeft,
