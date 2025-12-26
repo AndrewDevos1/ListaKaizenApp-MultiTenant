@@ -67,6 +67,8 @@ const DetalhesSubmissao: React.FC = () => {
     const [quantidadesAtuais, setQuantidadesAtuais] = useState<{ [key: number]: number }>({});
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [pedidosCriados, setPedidosCriados] = useState(0);
+    const [modalMessage, setModalMessage] = useState('');
+    const [modalType, setModalType] = useState<'success' | 'info' | 'warning'>('success');
 
     useEffect(() => {
         fetchSubmissao();
@@ -119,8 +121,17 @@ const DetalhesSubmissao: React.FC = () => {
             setActionLoading(true);
             setError('');
             await api.post(`/admin/submissoes/${submissao.id}/aprovar`);
-            setSuccessMessage('✅ Submissão aprovada com sucesso!');
-            setTimeout(() => navigate('/admin/submissoes'), 2000);
+            
+            // Mostrar modal de sucesso
+            setModalType('success');
+            setModalMessage(`${submissao.total_pedidos} pedido(s) aprovado(s)`);
+            setPedidosCriados(submissao.total_pedidos);
+            setShowSuccessModal(true);
+            
+            setTimeout(() => {
+                setShowSuccessModal(false);
+                navigate('/admin/submissoes');
+            }, 2000);
         } catch (err: any) {
             setError(err.response?.data?.error || 'Erro ao aprovar submissão');
         } finally {
@@ -139,8 +150,17 @@ const DetalhesSubmissao: React.FC = () => {
             setActionLoading(true);
             setError('');
             await api.post(`/admin/submissoes/${submissao.id}/rejeitar`);
-            setSuccessMessage('Submissão rejeitada.');
-            setTimeout(() => navigate('/admin/submissoes'), 2000);
+            
+            // Mostrar modal de aviso
+            setModalType('warning');
+            setModalMessage(`${submissao.total_pedidos} pedido(s) rejeitado(s)`);
+            setPedidosCriados(submissao.total_pedidos);
+            setShowSuccessModal(true);
+            
+            setTimeout(() => {
+                setShowSuccessModal(false);
+                navigate('/admin/submissoes');
+            }, 2000);
         } catch (err: any) {
             setError(err.response?.data?.error || 'Erro ao rejeitar submissão');
         } finally {
@@ -163,9 +183,17 @@ const DetalhesSubmissao: React.FC = () => {
                 selectedIds.map(pedidoId => api.post(`/admin/pedidos/${pedidoId}/aprovar`))
             );
             
-            setSuccessMessage(`✅ ${selectedIds.length} item(ns) aprovado(s)!`);
+            // Mostrar modal de sucesso
+            setModalType('success');
+            setModalMessage(`${selectedIds.length} item(ns) aprovado(s)`);
+            setPedidosCriados(selectedIds.length);
+            setShowSuccessModal(true);
             setSelectedIds([]);
-            setTimeout(() => fetchSubmissao(), 1000);
+            
+            setTimeout(() => {
+                setShowSuccessModal(false);
+                fetchSubmissao();
+            }, 2000);
         } catch (err: any) {
             setError(err.response?.data?.error || 'Erro ao aprovar itens');
         } finally {
@@ -249,6 +277,8 @@ const DetalhesSubmissao: React.FC = () => {
             const response = await api.put(`/admin/submissoes/${submissao.id}/editar`, { items });
             
             // Mostrar modal de sucesso
+            setModalType('info');
+            setModalMessage('Submissão atualizada');
             setPedidosCriados(response.data.pedidos_criados || 0);
             setShowSuccessModal(true);
             setModoEdicao(false);
@@ -333,22 +363,29 @@ const DetalhesSubmissao: React.FC = () => {
             {error && <Alert variant="danger" dismissible onClose={() => setError('')}>{error}</Alert>}
             {successMessage && <Alert variant="success" dismissible onClose={() => setSuccessMessage('')}>{successMessage}</Alert>}
 
-            {/* Modal de Sucesso */}
+            {/* Modal de Sucesso/Avisos */}
             <Modal show={showSuccessModal} centered backdrop="static" keyboard={false}>
                 <Modal.Body className="text-center py-5">
                     <div className="mb-4">
                         <FontAwesomeIcon 
-                            icon={faCheckCircle} 
+                            icon={modalType === 'warning' ? faTimesCircle : faCheckCircle} 
                             size="4x" 
-                            className="text-success"
+                            className={modalType === 'warning' ? 'text-danger' : 'text-success'}
                             style={{ animation: 'pulse 0.5s ease-in-out 4' }}
                         />
                     </div>
-                    <h3 className="text-success mb-3">Submissão Atualizada!</h3>
+                    <h3 className={modalType === 'warning' ? 'text-danger mb-3' : 'text-success mb-3'}>
+                        {modalType === 'warning' ? 'Submissão Rejeitada' : 
+                         modalType === 'info' ? 'Submissão Atualizada!' : 
+                         'Submissão Aprovada!'}
+                    </h3>
                     <p className="mb-2">
-                        <strong>{pedidosCriados} pedido(s)</strong> gerado(s) com sucesso
+                        <strong>{pedidosCriados} {modalMessage ? '' : 'pedido(s)'}</strong> 
+                        {modalMessage || 'gerado(s) com sucesso'}
                     </p>
-                    <p className="text-muted small mt-3">Recarregando dados...</p>
+                    <p className="text-muted small mt-3">
+                        {modalType === 'warning' ? 'Redirecionando...' : 'Recarregando dados...'}
+                    </p>
                 </Modal.Body>
             </Modal>
 
