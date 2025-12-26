@@ -17,7 +17,6 @@ import {
     faExclamationTriangle,
     faClipboardList,
     faPlus,
-    faEdit,
     faTrash,
     faCheck,
     faTruck,
@@ -178,37 +177,6 @@ const ListaMaeConsolidada: React.FC = () => {
         } catch (err: any) {
             console.error('[LISTA MAE] Erro completo:', err);
             setError(err.response?.data?.error || err.message || 'Erro ao adicionar item');
-        }
-    };
-
-    const handleEditarItem = async (item: ListaMaeItem) => {
-        if (!item.id) return;
-
-        try {
-            const dataToSend = {
-                nome: item.nome,
-                unidade: item.unidade,
-                quantidade_atual: item.quantidade_atual,
-                quantidade_minima: item.quantidade_minima
-            };
-
-            const response = await api.put(`/admin/listas/${listaId}/mae-itens/${item.id}`, dataToSend);
-            const updatedItem = response.data;
-
-            if (listaMae) {
-                setListaMae({
-                    ...listaMae,
-                    itens: listaMae.itens.map(i => i.id === item.id ? updatedItem : i)
-                });
-            }
-
-            setEditandoId(null);
-            setItemEditando(null);
-            setError(null);
-            setSuccess('Item atualizado com sucesso!');
-            setTimeout(() => setSuccess(null), 3000);
-        } catch (err: any) {
-            setError(err.response?.data?.error || 'Erro ao editar item');
         }
     };
 
