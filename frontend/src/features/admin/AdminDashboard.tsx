@@ -329,7 +329,7 @@ const AdminDashboard: React.FC = () => {
                 value: stats.orders_today,
                 icon: faClipboardList,
                 color: styles.widgetRed,
-                link: '/admin/gerenciar-pedidos',
+                link: '/admin/submissoes',
                 trend: '+7',
                 trendType: 'positive',
             },
