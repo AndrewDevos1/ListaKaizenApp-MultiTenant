@@ -2,7 +2,7 @@
 
 **Data de Implementação**: 26/12/2024 - 04:14 BRT  
 **Branch**: `atualizando-navbar`  
-**Versão**: 1.0.0
+**Versão**: 2.1.0
 
 ---
 
@@ -339,15 +339,55 @@ NAVBAR_PERSONALIZAVEL.md                        (este arquivo)
 
 ## 📝 Changelog
 
-### v1.0.0 - 26/12/2024
-- ✅ Model NavbarPreference criado
-- ✅ Migration aplicada
-- ✅ Endpoints API implementados
-- ✅ Frontend com expand/collapse
-- ✅ Persistência no banco de dados
-- ✅ Áreas movida para Gestão
-- ✅ Menu admin reorganizado
-- ✅ Documentação completa
+### v2.1.0 - 26/12/2024
+
+**🎉 Novidades**
+- ✅ Sistema de navbar personalizável com preferências por usuário
+- ✅ Categorias expansíveis/colapsáveis (▶/▼)
+- ✅ Persistência no banco de dados PostgreSQL
+- ✅ Responsividade mobile para tabelas (cards adaptativos)
+- ✅ Nome do usuário visível na navbar
+
+**✨ Melhorias**
+- ✅ Menu admin reorganizado e otimizado
+- ✅ "Itens Cadastrados" (antes Catálogo Global)
+- ✅ "Áreas" movida para categoria Gestão
+- ✅ "Submissões" em Listas & Estoque
+- ✅ Links duplicados removidos
+
+**🗄️ Backend**
+- ✅ Nova tabela `navbar_preferences`
+- ✅ Endpoints GET/POST `/auth/navbar-preferences`
+- ✅ Model NavbarPreference com JSON
+- ✅ Serviços de get/save preferences
+
+**📱 Frontend**
+- ✅ Cards mobile para 3 componentes principais
+- ✅ CSS Modules responsivos (breakpoint 768px)
+- ✅ Lógica expand/collapse com React state
+- ✅ Integração automática com API
+
+**🐛 Correções**
+- ✅ Rota botão "Voltar" corrigida
+- ✅ Import não utilizado removido
+- ✅ Compilação sem erros
+
+**📚 Documentação**
+- ✅ NAVBAR_PERSONALIZAVEL.md (guia completo)
+- ✅ TESTE_RESPONSIVIDADE_MOBILE.md
+- ✅ Exemplos de uso e troubleshooting
+
+---
+
+### v2.0.0 - Dezembro/2024
+- Sistema de submissões completo
+- Gerenciamento de pedidos
+- Dashboard colaborador e admin
+
+### v1.0.0 - Versão Inicial
+- Sistema base de listas
+- Autenticação e usuários
+- Catálogo de itens
 
 ---
 
