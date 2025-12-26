@@ -7,7 +7,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Table, Button, Form, Spinner, Alert, Row, Col, Card, Badge } from 'react-bootstrap';
+import { Table, Button, Form, Spinner, Alert, Row, Col, Card, Badge, Modal } from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faArrowLeft,
@@ -157,14 +157,16 @@ const EstoqueListaCompras: React.FC = () => {
                 { items: itemsParaSubmeter }
             );
 
+            // Mostra modal de sucesso animado
+            setShowSuccessModal(true);
             setSuccess(
-                `✅ Lista submetida com sucesso! ${response.data.pedidos_criados} pedido(s) criado(s).`
+                `Lista submetida com sucesso! ${response.data.pedidos_criados} pedido(s) criado(s).`
             );
 
-            // Aguarda 4 segundos para usuário ler mensagem, depois volta
+            // Aguarda 5 segundos para usuário ler mensagem, depois volta
             setTimeout(() => {
                 navigate('/collaborator/listas');
-            }, 4000);  // Aumentado de 2s para 4s
+            }, 5000);
         } catch (err: any) {
             setError(
                 err.response?.data?.error || 'Erro ao submeter a lista.'
@@ -216,11 +218,35 @@ const EstoqueListaCompras: React.FC = () => {
                     <FontAwesomeIcon icon={faExclamationTriangle} /> {error}
                 </Alert>
             )}
-            {success && (
-                <Alert variant="success" onClose={() => setSuccess('')} dismissible>
-                    <FontAwesomeIcon icon={faCheckCircle} /> {success}
-                </Alert>
-            )}
+
+            {/* Modal de Sucesso Animado */}
+            <Modal 
+                show={showSuccessModal} 
+                centered 
+                backdrop="static"
+                keyboard={false}
+            >
+                <Modal.Body className="text-center py-5">
+                    <div className="mb-4">
+                        <FontAwesomeIcon 
+                            icon={faCheckCircle} 
+                            size="4x" 
+                            className="text-success"
+                            style={{ animation: 'pulse 1.5s infinite' }}
+                        />
+                    </div>
+                    <h3 className="mb-3 text-success">
+                        ✅ Lista Submetida com Sucesso!
+                    </h3>
+                    <p className="text-muted mb-0">
+                        {success}
+                    </p>
+                    <p className="text-muted mt-3 small">
+                        Redirecionando em 5 segundos...
+                    </p>
+                    <Spinner animation="border" size="sm" className="mt-2" />
+                </Modal.Body>
+            </Modal>
 
             {/* Search e Summary */}
             <Row className="mb-4 g-3">
