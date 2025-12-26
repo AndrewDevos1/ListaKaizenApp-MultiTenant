@@ -860,31 +860,26 @@ def submit_estoque_lista(lista_id, usuario_id, items_data):
         if float(quantidade_atual) < float(ref.quantidade_minima):
             quantidade_a_pedir = float(ref.quantidade_minima) - float(quantidade_atual)
             
-            # PROBLEMA 1: Pedido.item_id referencia tabela 'itens' (Item), não ListaMaeItem
-            # PROBLEMA 2: Pedido.fornecedor_id é NOT NULL
-            # SOLUÇÃO TEMPORÁRIA: Pular criação de pedidos até resolver arquitetura
-            current_app.logger.warning(
-                f"[SUBMIT] Pedido não criado para item {ref.item_id} - "
-                f"Arquitetura de Pedidos precisa ser refatorada para usar ListaMaeItem"
-            )
-            # TODO: Refatorar modelo Pedido para usar lista_mae_itens
-            
-            """
-            # Código original (não funciona com ListaMaeItem):
+            # ✅ REFATORADO: Agora usa lista_mae_item_id
             novo_pedido = Pedido(
-                item_id=ref.item_id,  # FK aponta para 'itens', não 'lista_mae_itens'
-                fornecedor_id=None,  # NOT NULL - causaria erro
+                lista_mae_item_id=ref.item_id,  # FK para lista_mae_itens
+                fornecedor_id=None,  # Nullable agora, pode adicionar lógica depois
                 quantidade_solicitada=quantidade_a_pedir,
-                usuario_id=usuario_id
+                usuario_id=usuario_id,
+                status=PedidoStatus.PENDENTE
             )
             db.session.add(novo_pedido)
             pedidos_criados.append(novo_pedido)
-            """
+            
+            current_app.logger.info(
+                f"[SUBMIT] Pedido criado: item {ref.item.nome}, "
+                f"qtd={quantidade_a_pedir}, usuario={usuario_id}"
+            )
 
     db.session.commit()
 
     return {
-        "message": f"Lista submetida com sucesso! (Pedidos automáticos desabilitados temporariamente)",
+        "message": f"Lista submetida com sucesso! {len(pedidos_criados)} pedido(s) criado(s).",
         "estoques_atualizados": len(refs_atualizados),
         "pedidos_criados": len(pedidos_criados)
     }, 201

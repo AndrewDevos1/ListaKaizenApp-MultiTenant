@@ -138,15 +138,25 @@ class PedidoStatus(enum.Enum):
     REJEITADO = "REJEITADO"
 
 class Pedido(db.Model, SerializerMixin):
+    """
+    Pedido de compra gerado automaticamente quando qtd_atual < qtd_minima.
+    Refatorado para usar ListaMaeItem (catálogo global).
+    """
     __tablename__ = "pedidos"
     id = db.Column(db.Integer, primary_key=True)
-    item_id = db.Column(db.Integer, db.ForeignKey('itens.id'), nullable=False)
-    fornecedor_id = db.Column(db.Integer, db.ForeignKey('fornecedores.id'), nullable=False)
+    lista_mae_item_id = db.Column(db.Integer, 
+                                   db.ForeignKey('lista_mae_itens.id', ondelete='CASCADE'), 
+                                   nullable=False)
+    fornecedor_id = db.Column(db.Integer, 
+                              db.ForeignKey('fornecedores.id'), 
+                              nullable=True)
     quantidade_solicitada = db.Column(db.Numeric(10, 2), nullable=False)
     data_pedido = db.Column(db.DateTime, nullable=False, default=utc_now)
     usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False)
     status = db.Column(db.Enum(PedidoStatus), nullable=False, default=PedidoStatus.PENDENTE)
-    item = db.relationship('Item', backref=db.backref('pedidos', lazy=True))
+    
+    # Relacionamentos
+    item = db.relationship('ListaMaeItem', backref=db.backref('pedidos', lazy=True))
     fornecedor = db.relationship('Fornecedor', backref=db.backref('pedidos', lazy=True))
     usuario = db.relationship('Usuario', backref=db.backref('pedidos', lazy=True))
 
