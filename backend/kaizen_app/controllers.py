@@ -534,12 +534,24 @@ def rejeitar_submissao_route(submissao_id):
 @admin_required()
 def editar_quantidades_submissao_route(submissao_id):
     """
-    Permite que admin edite as quantidades dos pedidos de uma submissão PENDENTE.
-    Espera JSON: [{"pedido_id": 1, "quantidade_solicitada": 10}, ...]
+    Permite que admin edite as quantidades ATUAIS do estoque de uma submissão PENDENTE.
+    Similar ao comportamento do colaborador: edita quantidade_atual, sistema recalcula pedidos.
+    Espera JSON: {"items": [{"item_id": 1, "quantidade_atual": 10}, ...]}
     """
     data = request.get_json()
-    pedidos_data = data.get('pedidos', [])
-    response, status = services.editar_quantidades_submissao(submissao_id, pedidos_data)
+    items_data = data.get('items', [])
+    response, status = services.editar_quantidades_submissao(submissao_id, items_data)
+    return jsonify(response), status
+
+
+@admin_bp.route('/listas/<int:lista_id>/estoque', methods=['GET'])
+@admin_required()
+def get_estoque_lista_admin_route(lista_id):
+    """
+    Retorna os itens do estoque de uma lista (para admin editar submissões).
+    Mesmo formato usado pelo colaborador.
+    """
+    response, status = services.get_estoque_lista_admin(lista_id)
     return jsonify(response), status
 
 

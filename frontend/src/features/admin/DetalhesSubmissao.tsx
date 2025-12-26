@@ -20,10 +20,25 @@ import styles from './DetalhesSubmissao.module.css';
 
 interface Pedido {
     id: number;
+    item_id: number;
     item_nome: string;
     quantidade_solicitada: number;
     unidade: string;
     status: 'PENDENTE' | 'APROVADO' | 'REJEITADO';
+}
+
+interface ItemEstoque {
+    id: number;
+    item_id: number;
+    lista_id: number;
+    quantidade_atual: number;
+    quantidade_minima: number;
+    pedido: number;
+    item: {
+        id: number;
+        nome: string;
+        unidade_medida: string;
+    };
 }
 
 interface Submissao {
@@ -42,13 +57,14 @@ const DetalhesSubmissao: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const [submissao, setSubmissao] = useState<Submissao | null>(null);
+    const [itensEstoque, setItensEstoque] = useState<ItemEstoque[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
     const [actionLoading, setActionLoading] = useState(false);
     const [selectedIds, setSelectedIds] = useState<number[]>([]);
     const [modoEdicao, setModoEdicao] = useState(false);
-    const [quantidadesEditadas, setQuantidadesEditadas] = useState<{ [key: number]: number }>({});
+    const [quantidadesAtuais, setQuantidadesAtuais] = useState<{ [key: number]: number }>({});
 
     useEffect(() => {
         fetchSubmissao();
@@ -69,12 +85,20 @@ const DetalhesSubmissao: React.FC = () => {
             
             setSubmissao(sub);
             
-            // Inicializa quantidades editadas com valores atuais
-            const qtds: { [key: number]: number } = {};
-            sub.pedidos.forEach((p: Pedido) => {
-                qtds[p.id] = p.quantidade_solicitada;
-            });
-            setQuantidadesEditadas(qtds);
+            // Buscar dados do estoque da lista (para edição)
+            try {
+                const responseEstoque = await api.get(`/admin/listas/${sub.lista_id}/estoque`);
+                setItensEstoque(responseEstoque.data);
+                
+                // Inicializar quantidades atuais
+                const qtds: { [key: number]: number } = {};
+                responseEstoque.data.forEach((item: ItemEstoque) => {
+                    qtds[item.item_id] = item.quantidade_atual;
+                });
+                setQuantidadesAtuais(qtds);
+            } catch (err) {
+                console.warn('Não foi possível carregar estoque para edição:', err);
+            }
         } catch (err: any) {
             setError(err.response?.data?.error || 'Erro ao carregar submissão');
         } finally {
@@ -165,11 +189,34 @@ const DetalhesSubmissao: React.FC = () => {
         }
     };
 
-    const handleAlterarQuantidade = (pedidoId: number, novaQuantidade: number) => {
-        setQuantidadesEditadas(prev => ({
+    const handleAlterarQuantidade = (itemId: number, novaQuantidade: number) => {
+        setQuantidadesAtuais(prev => ({
             ...prev,
-            [pedidoId]: novaQuantidade
+            [itemId]: novaQuantidade
         }));
+    };
+
+    const calcularPedido = (itemId: number): number => {
+        const item = itensEstoque.find(i => i.item_id === itemId);
+        if (!item) return 0;
+        
+        const qtdAtual = quantidadesAtuais[itemId] || 0;
+        const qtdMinima = item.quantidade_minima || 0;
+        
+        return Math.max(0, qtdMinima - qtdAtual);
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent, currentIndex: number) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            const nextIndex = currentIndex + 1;
+            const nextInput = document.getElementById(`qtd-input-${nextIndex}`);
+            if (nextInput) {
+                nextInput.focus();
+            } else {
+                document.getElementById('btn-salvar')?.focus();
+            }
+        }
     };
 
     const handleIniciarEdicao = () => {
@@ -181,13 +228,7 @@ const DetalhesSubmissao: React.FC = () => {
     const handleCancelarEdicao = () => {
         setModoEdicao(false);
         // Resetar para valores originais
-        if (submissao) {
-            const qtds: { [key: number]: number } = {};
-            submissao.pedidos.forEach((p: Pedido) => {
-                qtds[p.id] = p.quantidade_solicitada;
-            });
-            setQuantidadesEditadas(qtds);
-        }
+        fetchSubmissao();
     };
 
     const handleSalvarEdicao = async () => {
@@ -197,15 +238,15 @@ const DetalhesSubmissao: React.FC = () => {
             setActionLoading(true);
             setError('');
             
-            // Preparar payload
-            const pedidos = Object.entries(quantidadesEditadas).map(([pedidoId, quantidade]) => ({
-                pedido_id: Number(pedidoId),
-                quantidade_solicitada: quantidade
+            // Preparar payload (similar ao colaborador)
+            const items = itensEstoque.map(item => ({
+                item_id: item.item_id,
+                quantidade_atual: quantidadesAtuais[item.item_id] || 0
             }));
 
-            await api.put(`/admin/submissoes/${submissao.id}/editar`, { pedidos });
+            const response = await api.put(`/admin/submissoes/${submissao.id}/editar`, { items });
             
-            setSuccessMessage('✅ Quantidades atualizadas com sucesso!');
+            setSuccessMessage(`✅ ${response.data.message}`);
             setModoEdicao(false);
             
             // Recarregar dados
@@ -394,50 +435,91 @@ const DetalhesSubmissao: React.FC = () => {
                                 )}
                                 <th>#</th>
                                 <th>Item</th>
-                                <th className="text-center">Quantidade</th>
+                                <th className="text-center">Qtd Atual</th>
+                                <th className="text-center">Qtd Mínima</th>
+                                <th className="text-center">Pedido</th>
                                 <th className="text-center">Status</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {submissao.pedidos.map((pedido, idx) => (
-                                <tr key={pedido.id}>
-                                    {submissao.status === 'PENDENTE' && !modoEdicao && (
-                                        <td className="text-center">
-                                            <Form.Check
-                                                type="checkbox"
-                                                checked={selectedIds.includes(pedido.id)}
-                                                onChange={() => toggleSelect(pedido.id)}
-                                                disabled={pedido.status !== 'PENDENTE'}
-                                            />
-                                        </td>
-                                    )}
-                                    <td>{idx + 1}</td>
-                                    <td><strong>{pedido.item_nome}</strong></td>
-                                    <td className="text-center">
-                                        {modoEdicao ? (
-                                            <Form.Control
-                                                type="number"
-                                                min="0"
-                                                step="0.01"
-                                                value={quantidadesEditadas[pedido.id] || 0}
-                                                onChange={(e) => handleAlterarQuantidade(
-                                                    pedido.id,
-                                                    parseFloat(e.target.value) || 0
-                                                )}
-                                                style={{ width: '120px', display: 'inline-block' }}
-                                            />
-                                        ) : (
-                                            `${pedido.quantidade_solicitada}`
+                            {modoEdicao ? (
+                                // Modo Edição: mostra estoque editável
+                                itensEstoque.map((item, idx) => {
+                                    const pedido = calcularPedido(item.item_id);
+                                    return (
+                                        <tr key={item.item_id}>
+                                            <td>{idx + 1}</td>
+                                            <td><strong>{item.item.nome}</strong></td>
+                                            <td className="text-center">
+                                                <Form.Control
+                                                    id={`qtd-input-${idx}`}
+                                                    type="number"
+                                                    step="0.01"
+                                                    min="0"
+                                                    value={quantidadesAtuais[item.item_id] || 0}
+                                                    onChange={(e) => handleAlterarQuantidade(
+                                                        item.item_id,
+                                                        parseFloat(e.target.value) || 0
+                                                    )}
+                                                    onKeyDown={(e) => handleKeyDown(e, idx)}
+                                                    style={{ width: '120px', display: 'inline-block' }}
+                                                    autoFocus={idx === 0}
+                                                />
+                                                <span className="ms-2">{item.item.unidade_medida}</span>
+                                            </td>
+                                            <td className="text-center">
+                                                {item.quantidade_minima} {item.item.unidade_medida}
+                                            </td>
+                                            <td className="text-center">
+                                                <Badge bg={pedido > 0 ? 'warning' : 'success'}>
+                                                    {pedido.toFixed(2)} {item.item.unidade_medida}
+                                                </Badge>
+                                            </td>
+                                            <td className="text-center">
+                                                <Badge bg={pedido > 0 ? 'warning' : 'success'}>
+                                                    {pedido > 0 ? 'NECESSÁRIO' : 'OK'}
+                                                </Badge>
+                                            </td>
+                                        </tr>
+                                    );
+                                })
+                            ) : (
+                                // Modo Visualização: mostra pedidos da submissão
+                                submissao.pedidos.map((pedido, idx) => (
+                                    <tr key={pedido.id}>
+                                        {submissao.status === 'PENDENTE' && (
+                                            <td className="text-center">
+                                                <Form.Check
+                                                    type="checkbox"
+                                                    checked={selectedIds.includes(pedido.id)}
+                                                    onChange={() => toggleSelect(pedido.id)}
+                                                    disabled={pedido.status !== 'PENDENTE'}
+                                                />
+                                            </td>
                                         )}
-                                        {' '}{pedido.unidade}
-                                    </td>
-                                    <td className="text-center">
-                                        {getStatusBadge(pedido.status)}
-                                    </td>
-                                </tr>
-                            ))}
+                                        <td>{idx + 1}</td>
+                                        <td><strong>{pedido.item_nome}</strong></td>
+                                        <td className="text-center" colSpan={2}>
+                                            <em className="text-muted">Clique em "Editar" para ver</em>
+                                        </td>
+                                        <td className="text-center">
+                                            <strong>{pedido.quantidade_solicitada} {pedido.unidade}</strong>
+                                        </td>
+                                        <td className="text-center">
+                                            {getStatusBadge(pedido.status)}
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
                         </tbody>
                     </Table>
+                    {modoEdicao && (
+                        <div className="p-3 bg-light border-top">
+                            <small className="text-muted">
+                                💡 <strong>Dica:</strong> Pressione <kbd>Enter</kbd> para ir ao próximo item
+                            </small>
+                        </div>
+                    )}
                 </Card.Body>
             </Card>
         </Container>

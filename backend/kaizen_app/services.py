@@ -699,6 +699,7 @@ def get_all_submissoes(status_filter=None):
             "pedidos": [
                 {
                     "id": p.id,
+                    "item_id": p.lista_mae_item_id,
                     "item_nome": p.item.nome if p.item else "N/A",
                     "quantidade_solicitada": float(p.quantidade_solicitada),
                     "status": p.status.value,
@@ -747,10 +748,12 @@ def rejeitar_submissao(submissao_id):
 def editar_quantidades_submissao(submissao_id, pedidos_data):
     """
     Permite que admin edite as quantidades dos pedidos de uma submissão.
+    NOTA: Agora recebe quantidades ATUAIS do estoque, não quantidades dos pedidos.
+    Comportamento similar ao colaborador.
     
     Args:
         submissao_id: ID da submissão
-        pedidos_data: Lista de dict com formato [{pedido_id: int, quantidade_solicitada: float}, ...]
+        pedidos_data: Lista de dict com formato [{item_id: int, quantidade_atual: float}, ...]
     
     Returns:
         tuple: (response_dict, status_code)
@@ -765,37 +768,60 @@ def editar_quantidades_submissao(submissao_id, pedidos_data):
     
     # Validar dados recebidos
     if not pedidos_data or not isinstance(pedidos_data, list):
-        return {"error": "Dados inválidos. Esperado: lista de pedidos."}, 400
+        return {"error": "Dados inválidos. Esperado: lista de itens."}, 400
     
-    # Criar mapa de pedidos da submissão para validação
-    pedidos_map = {p.id: p for p in submissao.pedidos}
+    # Buscar todos os itens da lista
+    refs = ListaItemRef.query.filter_by(lista_id=submissao.lista_id).all()
+    refs_map = {ref.item_id: ref for ref in refs}
     
-    # Atualizar cada pedido
-    pedidos_atualizados = 0
+    # Atualizar quantidade_atual de cada item
+    itens_atualizados = 0
     for item in pedidos_data:
-        pedido_id = item.get('pedido_id')
-        nova_quantidade = item.get('quantidade_solicitada')
+        item_id = item.get('item_id')
+        nova_quantidade_atual = item.get('quantidade_atual')
         
         # Validações
-        if not pedido_id or nova_quantidade is None:
+        if not item_id or nova_quantidade_atual is None:
             continue
         
-        if pedido_id not in pedidos_map:
-            return {"error": f"Pedido #{pedido_id} não pertence a esta submissão."}, 400
+        if item_id not in refs_map:
+            return {"error": f"Item #{item_id} não pertence a esta lista."}, 400
         
-        if nova_quantidade < 0:
-            return {"error": f"Quantidade não pode ser negativa (Pedido #{pedido_id})."}, 400
+        if nova_quantidade_atual < 0:
+            return {"error": f"Quantidade não pode ser negativa (Item #{item_id})."}, 400
         
-        # Atualizar quantidade
-        pedido = pedidos_map[pedido_id]
-        pedido.quantidade_solicitada = nova_quantidade
-        pedidos_atualizados += 1
+        # Atualizar quantidade_atual no ListaItemRef
+        ref = refs_map[item_id]
+        ref.quantidade_atual = nova_quantidade_atual
+        itens_atualizados += 1
+    
+    # Deletar pedidos antigos desta submissão
+    Pedido.query.filter_by(submissao_id=submissao_id).delete()
+    
+    # Recriar pedidos com base nas novas quantidades
+    pedidos_criados = 0
+    for ref in refs:
+        pedido_qtd = ref.get_pedido()  # Calcula: max(0, minimo - atual)
+        
+        if pedido_qtd > 0:
+            novo_pedido = Pedido(
+                submissao_id=submissao_id,
+                lista_mae_item_id=ref.item_id,
+                quantidade_solicitada=pedido_qtd,
+                status=PedidoStatus.PENDENTE
+            )
+            db.session.add(novo_pedido)
+            pedidos_criados += 1
+    
+    # Atualizar total de pedidos da submissão
+    submissao.total_pedidos = pedidos_criados
     
     db.session.commit()
     
     return {
-        "message": f"{pedidos_atualizados} pedido(s) atualizado(s) com sucesso!",
-        "submissao_id": submissao_id
+        "message": f"{itens_atualizados} item(ns) atualizado(s), {pedidos_criados} pedido(s) gerado(s)!",
+        "submissao_id": submissao_id,
+        "pedidos_criados": pedidos_criados
     }, 200
 
 
@@ -2343,6 +2369,45 @@ def get_estoque_lista_colaborador(user_id, lista_id):
                 "id": ref.item.id,
                 "nome": ref.item.nome,
                 "unidade_medida": ref.item.unidade  # ListaMaeItem usa 'unidade', não 'unidade_medida'
+            }
+        }
+        itens_data.append(item_dict)
+
+    return itens_data, 200
+
+
+def get_estoque_lista_admin(lista_id):
+    """
+    Retorna itens da lista via ListaItemRef para admin (sem verificação de atribuição).
+    Mesmo formato do colaborador, usado para editar submissões.
+    """
+    lista = repositories.get_by_id(Lista, lista_id)
+    if not lista:
+        return {"error": "Lista não encontrada."}, 404
+
+    # Buscar itens da lista via ListaItemRef com EAGER LOADING
+    refs = ListaItemRef.query.options(
+        db.joinedload(ListaItemRef.item)
+    ).filter_by(lista_id=lista_id).all()
+
+    # Preparar resposta com dados do item
+    itens_data = []
+    for ref in refs:
+        # Pular itens sem quantidade mínima definida
+        if ref.quantidade_minima <= 0:
+            continue
+        
+        item_dict = {
+            "id": ref.item_id,
+            "item_id": ref.item_id,
+            "lista_id": ref.lista_id,
+            "quantidade_atual": float(ref.quantidade_atual),
+            "quantidade_minima": float(ref.quantidade_minima),
+            "pedido": float(ref.get_pedido()),
+            "item": {
+                "id": ref.item.id,
+                "nome": ref.item.nome,
+                "unidade_medida": ref.item.unidade
             }
         }
         itens_data.append(item_dict)
