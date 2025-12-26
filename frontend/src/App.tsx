@@ -7,6 +7,7 @@ import Register from './features/auth/Register';
 import GlobalDashboard from './features/dashboard/GlobalDashboard';
 import EstoqueLista from './features/inventory/EstoqueLista';
 import MinhasSubmissoes from './features/inventory/MinhasSubmissoes';
+import DetalhesSubmissaoColaborador from './features/inventory/DetalhesSubmissaoColaborador';
 import GerarCotacao from './features/admin/GerarCotacao';
 import CotacaoList from './features/admin/CotacaoList';
 import CotacaoDetail from './features/admin/CotacaoDetail';
@@ -79,6 +80,7 @@ function App() {
               <Route index element={<CollaboratorDashboard />} />
               <Route path="areas" element={<MinhasSubmissoes />} />
               <Route path="submissions" element={<MinhasSubmissoes />} />
+              <Route path="submissions/:id" element={<DetalhesSubmissaoColaborador />} />
               <Route path="areas/:areaId/estoque" element={<EstoqueLista />} />
               <Route path="listas" element={<MinhasListasCompras />} />
               <Route path="listas/:listaId/estoque" element={<EstoqueListaCompras />} />

@@ -147,6 +147,7 @@ const MinhasSubmissoes: React.FC = () => {
                             <th>Data/Hora</th>
                             <th className="text-center">Total Itens</th>
                             <th className="text-center">Status</th>
+                            <th className="text-center">Ações</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -168,6 +169,15 @@ const MinhasSubmissoes: React.FC = () => {
                                         <FontAwesomeIcon icon={getStatusIcon(submissao.status)} className="me-1" />
                                         {submissao.status}
                                     </Badge>
+                                </td>
+                                <td className="text-center">
+                                    <Button
+                                        size="sm"
+                                        variant="primary"
+                                        onClick={() => navigate(`/collaborator/submissions/${submissao.id}`)}
+                                    >
+                                        <FontAwesomeIcon icon={faClipboardList} /> Ver Detalhes
+                                    </Button>
                                 </td>
                             </tr>
                         ))}
