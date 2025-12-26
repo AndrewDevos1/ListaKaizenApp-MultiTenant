@@ -940,7 +940,6 @@ const ListaMaeConsolidada: React.FC = () => {
                                                     <FontAwesomeIcon icon={faEdit} />
                                                 </Button>
                                             </td>
-                                            </td>
                                         </>
                                     )}
                                 </tr>
