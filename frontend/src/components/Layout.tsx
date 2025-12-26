@@ -1,7 +1,7 @@
-
 import React from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import api from '../services/api';
 import styles from './Layout.module.css';
 
 interface MenuItem {
@@ -22,6 +22,8 @@ const Layout: React.FC = () => {
     localStorage.getItem('sidebarCollapsed') === 'true'
   );
   const [searchTerm, setSearchTerm] = React.useState('');
+  const [expandedGroups, setExpandedGroups] = React.useState<{ [key: string]: boolean }>({});
+  const [preferencesLoaded, setPreferencesLoaded] = React.useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const { logout, user } = useAuth();
@@ -114,6 +116,49 @@ const Layout: React.FC = () => {
     const newCollapsed = !isCollapsed;
     setIsCollapsed(newCollapsed);
     localStorage.setItem('sidebarCollapsed', newCollapsed.toString());
+  };
+
+  // Carregar preferências da navbar do backend
+  React.useEffect(() => {
+    const loadNavbarPreferences = async () => {
+      if (!user) return;
+      
+      try {
+        const response = await api.get('/auth/navbar-preferences');
+        const { categorias_estado } = response.data;
+        setExpandedGroups(categorias_estado || {});
+        setPreferencesLoaded(true);
+      } catch (error) {
+        console.error('[NAVBAR] Erro ao carregar preferências:', error);
+        setExpandedGroups({});
+        setPreferencesLoaded(true);
+      }
+    };
+
+    loadNavbarPreferences();
+  }, [user]);
+
+  // Salvar preferências da navbar no backend
+  const saveNavbarPreferences = async (newExpandedGroups: { [key: string]: boolean }) => {
+    if (!user || !preferencesLoaded) return;
+
+    try {
+      await api.post('/auth/navbar-preferences', {
+        categorias_estado: newExpandedGroups
+      });
+    } catch (error) {
+      console.error('[NAVBAR] Erro ao salvar preferências:', error);
+    }
+  };
+
+  // Toggle de categoria (expandir/colapsar)
+  const toggleGroup = (groupTitle: string) => {
+    const newExpandedGroups = {
+      ...expandedGroups,
+      [groupTitle]: !expandedGroups[groupTitle]
+    };
+    setExpandedGroups(newExpandedGroups);
+    saveNavbarPreferences(newExpandedGroups);
   };
 
   const handleOverlayClick = () => {
@@ -296,54 +341,71 @@ const Layout: React.FC = () => {
 
         {/* Menu groups */}
         <div className={styles.menuContainer}>
-          {filteredGroups.map((group, groupIndex) => (
-            <div key={groupIndex} className={styles.menuGroup}>
-              {!isCollapsed && (
-                <div className={styles.menuGroupTitle}>{group.title}</div>
-              )}
-              {isCollapsed && groupIndex > 0 && (
-                <div className={styles.menuDivider}></div>
-              )}
-              <div className={styles.menuGroupItems}>
-                {group.items.map((item, itemIndex) => {
-                  // Tratamento especial para o item "Sair" (logout)
-                  if (item.path === '/logout') {
-                    return (
-                      <button
-                        key={itemIndex}
-                        className={styles.listGroupItem}
-                        onClick={() => {
-                          handleLinkClick();
-                          handleLogout();
-                        }}
-                        aria-label={item.ariaLabel}
-                        title={isCollapsed ? item.label : undefined}
-                        style={{ width: '100%', textAlign: 'left', border: 'none', background: 'none' }}
-                      >
-                        <i className={`fas ${item.icon}`} aria-hidden="true"></i>
-                        {!isCollapsed && <span className={styles.menuItemText}>{item.label}</span>}
-                      </button>
-                    );
-                  }
+          {filteredGroups.map((group, groupIndex) => {
+            const isExpanded = expandedGroups[group.title];
+            
+            return (
+              <div key={groupIndex} className={styles.menuGroup}>
+                {!isCollapsed && (
+                  <div 
+                    className={styles.menuGroupTitle}
+                    onClick={() => toggleGroup(group.title)}
+                    style={{ cursor: 'pointer', userSelect: 'none' }}
+                  >
+                    <i 
+                      className={`fas fa-chevron-${isExpanded ? 'down' : 'right'}`} 
+                      style={{ marginRight: '8px', fontSize: '0.8rem' }}
+                      aria-hidden="true"
+                    ></i>
+                    {group.title}
+                  </div>
+                )}
+                {isCollapsed && groupIndex > 0 && (
+                  <div className={styles.menuDivider}></div>
+                )}
+                {(isCollapsed || isExpanded) && (
+                  <div className={styles.menuGroupItems}>
+                    {group.items.map((item, itemIndex) => {
+                      // Tratamento especial para o item "Sair" (logout)
+                      if (item.path === '/logout') {
+                        return (
+                          <button
+                            key={itemIndex}
+                            className={styles.listGroupItem}
+                            onClick={() => {
+                              handleLinkClick();
+                              handleLogout();
+                            }}
+                            aria-label={item.ariaLabel}
+                            title={isCollapsed ? item.label : undefined}
+                            style={{ width: '100%', textAlign: 'left', border: 'none', background: 'none' }}
+                          >
+                            <i className={`fas ${item.icon}`} aria-hidden="true"></i>
+                            {!isCollapsed && <span className={styles.menuItemText}>{item.label}</span>}
+                          </button>
+                        );
+                      }
 
-                  // Renderização normal para outros itens
-                  return (
-                    <Link
-                      key={itemIndex}
-                      to={item.path}
-                      className={getLinkClass(item.path)}
-                      onClick={handleLinkClick}
-                      aria-label={item.ariaLabel}
-                      title={isCollapsed ? item.label : undefined}
-                    >
-                      <i className={`fas ${item.icon}`} aria-hidden="true"></i>
-                      {!isCollapsed && <span className={styles.menuItemText}>{item.label}</span>}
-                    </Link>
-                  );
-                })}
+                      // Renderização normal para outros itens
+                      return (
+                        <Link
+                          key={itemIndex}
+                          to={item.path}
+                          className={getLinkClass(item.path)}
+                          onClick={handleLinkClick}
+                          aria-label={item.ariaLabel}
+                          title={isCollapsed ? item.label : undefined}
+                        >
+                          <i className={`fas ${item.icon}`} aria-hidden="true"></i>
+                          {!isCollapsed && <span className={styles.menuItemText}>{item.label}</span>}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Footer */}
