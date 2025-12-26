@@ -1,19 +1,26 @@
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
 import { jwtDecode } from 'jwt-decode'; // precisaremos instalar jwt-decode
 
+interface User {
+    id: string;
+    role: string;
+    nome: string;
+    email: string;
+}
+
 interface AuthContextType {
     isAuthenticated: boolean;
-    user: any; // Você pode definir uma interface mais específica para o usuário
+    user: User | null;
     login: (token: string) => void;
     logout: () => void;
-    loading: boolean; // Novo: indica se ainda está verificando o token
+    loading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-    const [user, setUser] = useState<any>(null);
-    const [loading, setLoading] = useState(true); // Começa como true
+    const [user, setUser] = useState<User | null>(null);
+    const [loading, setLoading] = useState(true);
 
     // Verifica se o token existe e se a sessão ainda é válida
     useEffect(() => {
@@ -39,10 +46,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 const decodedUser: any = jwtDecode(token);
                 console.log('[AUTH] Sessao restaurada do localStorage');
                 console.log('[DEBUG] Decoded user:', decodedUser);
-                // Monta o objeto user com id e role
+                // Monta o objeto user com id, role, nome e email
                 setUser({
-                    id: decodedUser.sub,      // ID do usuário
-                    role: decodedUser.role    // Role está no payload agora
+                    id: decodedUser.sub,
+                    role: decodedUser.role,
+                    nome: decodedUser.nome,
+                    email: decodedUser.email
                 });
             } catch (error) {
                 console.error("[AUTH] Token invalido ao restaurar sessao", error);
@@ -83,10 +92,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             console.log('[AUTH] Login Called:', decodedUser);
             console.log('[USER] ID (sub):', decodedUser.sub);
             console.log('[USER] Role:', decodedUser.role);
-            // Monta o objeto user com id e role
+            console.log('[USER] Nome:', decodedUser.nome);
+            // Monta o objeto user com todos os dados
             setUser({
-                id: decodedUser.sub,      // ID do usuário
-                role: decodedUser.role    // Role está no payload agora
+                id: decodedUser.sub,
+                role: decodedUser.role,
+                nome: decodedUser.nome,
+                email: decodedUser.email
             });
         } catch (error) {
             console.error("Erro ao decodificar token", error);

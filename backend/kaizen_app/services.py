@@ -70,11 +70,15 @@ def authenticate_user(data):
 
     # O identity deve ser uma STRING (Flask-JWT-Extended espera string no campo 'sub')
     # Dados adicionais vão em additional_claims
-    additional_claims = {"role": user.role.value}
+    additional_claims = {
+        "role": user.role.value,
+        "nome": user.nome,
+        "email": user.email
+    }
     expires = timedelta(days=1)
     access_token = create_access_token(
         identity=str(user.id),  # Converte ID para string
-        additional_claims=additional_claims,  # Role e outros dados extras
+        additional_claims=additional_claims,  # Role, nome e outros dados extras
         expires_delta=expires
     )
 

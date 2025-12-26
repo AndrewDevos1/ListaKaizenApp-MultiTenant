@@ -40,23 +40,19 @@ const Layout: React.FC = () => {
       title: 'LISTAS & ESTOQUE',
       items: [
         { path: '/admin/listas-compras', icon: 'fa-shopping-cart', label: 'Listas de Compras', ariaLabel: 'Listas de Compras' },
+        { path: '/admin/catalogo-global', icon: 'fa-book', label: 'Catálogo Global', ariaLabel: 'Catálogo Global de Itens' },
         { path: '/admin/items', icon: 'fa-boxes', label: 'Itens', ariaLabel: 'Itens' },
         { path: '/admin/areas', icon: 'fa-map-marker-alt', label: 'Áreas', ariaLabel: 'Áreas' }
       ]
     },
     {
-      title: 'FORNECEDORES & COTAÇÕES',
+      title: 'GESTÃO',
       items: [
+        { path: '/admin/gerenciar-usuarios', icon: 'fa-users-cog', label: 'Gerenciar Usuários', ariaLabel: 'Gerenciar Usuários' },
+        { path: '/admin/submissoes', icon: 'fa-clipboard-check', label: 'Submissões', ariaLabel: 'Gerenciar Submissões' },
         { path: '/admin/fornecedores', icon: 'fa-truck', label: 'Fornecedores', ariaLabel: 'Fornecedores' },
         { path: '/admin/gerar-cotacao', icon: 'fa-file-invoice-dollar', label: 'Gerar Cotação', ariaLabel: 'Gerar Cotação' },
         { path: '/admin/cotacoes', icon: 'fa-chart-pie', label: 'Cotações', ariaLabel: 'Cotações' }
-      ]
-    },
-    {
-      title: 'GESTÃO',
-      items: [
-        { path: '/admin/users', icon: 'fa-users-cog', label: 'Usuários', ariaLabel: 'Gestão de Usuários' },
-        { path: '/admin/gerenciar-usuarios', icon: 'fa-user-shield', label: 'Gerenciar Usuários', ariaLabel: 'Gerenciar Usuários' }
       ]
     },
     {
@@ -78,16 +74,10 @@ const Layout: React.FC = () => {
       ]
     },
     {
-      title: 'MINHAS ÁREAS',
+      title: 'MINHAS ATIVIDADES',
       items: [
-        { path: '/collaborator/areas', icon: 'fa-map-marker-alt', label: 'Áreas', ariaLabel: 'Áreas' },
-        { path: '/collaborator/submissions', icon: 'fa-clipboard-list', label: 'Submissões', ariaLabel: 'Submissões' }
-      ]
-    },
-    {
-      title: 'LISTAS DE COMPRAS',
-      items: [
-        { path: '/collaborator/listas', icon: 'fa-shopping-cart', label: 'Minhas Listas', ariaLabel: 'Minhas Listas' }
+        { path: '/collaborator/listas', icon: 'fa-shopping-cart', label: 'Minhas Listas', ariaLabel: 'Minhas Listas' },
+        { path: '/collaborator/submissions', icon: 'fa-clipboard-list', label: 'Minhas Submissões', ariaLabel: 'Minhas Submissões' }
       ]
     },
     {
@@ -270,7 +260,7 @@ const Layout: React.FC = () => {
             </div>
             {!isCollapsed && (
               <div className={styles.userInfo}>
-                <div className={styles.userName}>Usuário ID: {user.id}</div>
+                <div className={styles.userName}>{user.nome}</div>
                 <div className={styles.userRole}>
                   {user.role === 'ADMIN' ? 'Administrador' : 'Colaborador'}
                 </div>
