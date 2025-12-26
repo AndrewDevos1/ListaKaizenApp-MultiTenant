@@ -470,7 +470,12 @@ def get_my_submissoes_route():
     """Retorna submissões agrupadas do usuário."""
     user_id = get_user_id_from_jwt()
     submissoes, _ = services.get_submissoes_by_user(user_id)
-    return jsonify(submissoes)
+    
+    response = jsonify(submissoes)
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    return response
 
 
 @api_bp.route('/pedidos/submit', methods=['POST'])
