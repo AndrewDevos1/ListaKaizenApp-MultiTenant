@@ -70,6 +70,20 @@ interface ListaFormData {
     telefone_whatsapp: string;
 }
 
+interface ItemSelecionado {
+    item_id: number;
+    nome: string;
+    unidade: string;
+    quantidade_atual: number;
+    quantidade_minima: number;
+}
+
+interface CatalogoItem {
+    id: number;
+    nome: string;
+    unidade: string;
+}
+
 interface Usuario {
     id: number;
     nome: string;
@@ -120,6 +134,12 @@ const ListasCompras: React.FC = () => {
     });
 
     const [formData, setFormData] = useState<ListaFormData>(resetFormData());
+
+    // Estados para seleção de itens do catálogo
+    const [catalogoItens, setCatalogoItens] = useState<CatalogoItem[]>([]);
+    const [itensSelecionados, setItensSelecionados] = useState<ItemSelecionado[]>([]);
+    const [loadingCatalogo, setLoadingCatalogo] = useState(false);
+    const [showItensTab, setShowItensTab] = useState(false);
 
     // Estados para atribuição de colaboradores
     const [allUsers, setAllUsers] = useState<Usuario[]>([]);
@@ -174,10 +194,48 @@ const ListasCompras: React.FC = () => {
     }, []);
 
     // Funções do modal de criar/editar
-    const handleOpenCreateModal = () => {
+    const handleOpenCreateModal = async () => {
         setEditingLista(null);
         setFormData(resetFormData());
+        setItensSelecionados([]);
+        setShowItensTab(false);
         setShowModal(true);
+        
+        // Buscar catálogo global
+        await fetchCatalogo();
+    };
+    
+    const fetchCatalogo = async () => {
+        try {
+            setLoadingCatalogo(true);
+            const response = await api.get('/admin/catalogo-global');
+            setCatalogoItens(response.data.itens || []);
+        } catch (err) {
+            console.error('Erro ao buscar catálogo:', err);
+        } finally {
+            setLoadingCatalogo(false);
+        }
+    };
+    
+    const handleToggleItem = (item: CatalogoItem) => {
+        const exists = itensSelecionados.find(i => i.item_id === item.id);
+        if (exists) {
+            setItensSelecionados(prev => prev.filter(i => i.item_id !== item.id));
+        } else {
+            setItensSelecionados(prev => [...prev, {
+                item_id: item.id,
+                nome: item.nome,
+                unidade: item.unidade,
+                quantidade_atual: 0,
+                quantidade_minima: 1.0
+            }]);
+        }
+    };
+    
+    const handleUpdateQuantidade = (itemId: number, field: 'quantidade_atual' | 'quantidade_minima', value: number) => {
+        setItensSelecionados(prev => prev.map(item => 
+            item.item_id === itemId ? {...item, [field]: value} : item
+        ));
     };
 
     const handleOpenEditModal = (lista: Lista) => {
@@ -196,6 +254,8 @@ const ListasCompras: React.FC = () => {
         setShowModal(false);
         setEditingLista(null);
         setFormData(resetFormData());
+        setItensSelecionados([]);
+        setShowItensTab(false);
         setError(null);
     };
 
@@ -211,8 +271,12 @@ const ListasCompras: React.FC = () => {
                 await api.put(`/v1/listas/${editingLista.id}`, formData);
                 setSuccessMessage('Lista atualizada com sucesso!');
             } else {
-                // CREATE
-                await api.post('/v1/listas', formData);
+                // CREATE - Incluir itens selecionados
+                const payload = {
+                    ...formData,
+                    itens: itensSelecionados
+                };
+                await api.post('/v1/listas', payload);
                 setSuccessMessage('Lista criada com sucesso!');
             }
 
@@ -805,7 +869,7 @@ const ListasCompras: React.FC = () => {
                 )}
 
                 {/* Modal Criar/Editar */}
-                <Modal show={showModal} onHide={handleCloseModal}>
+                <Modal show={showModal} onHide={handleCloseModal} size="lg">
                     <Modal.Header closeButton>
                         <Modal.Title>
                             {editingLista ? 'Editar Lista' : 'Nova Lista'}
@@ -817,18 +881,126 @@ const ListasCompras: React.FC = () => {
                                 {error}
                             </Alert>
                         )}
-                        <Form>
-                            <Form.Group className="mb-3">
-                                <Form.Label>Nome da Lista *</Form.Label>
-                                <Form.Control
-                                    type="text"
-                                    placeholder="Ex: Lista Semanal"
-                                    value={formData.nome}
-                                    onChange={(e) => setFormData({...formData, nome: e.target.value})}
-                                    required
-                                />
-                            </Form.Group>
-                        </Form>
+                        
+                        {/* Abas - apenas ao criar nova lista */}
+                        {!editingLista && (
+                            <div className="mb-3">
+                                <div className="btn-group w-100" role="group">
+                                    <button
+                                        type="button"
+                                        className={`btn ${!showItensTab ? 'btn-primary' : 'btn-outline-secondary'}`}
+                                        onClick={() => setShowItensTab(false)}
+                                    >
+                                        <FontAwesomeIcon icon={faInfoCircle} /> Informações
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className={`btn ${showItensTab ? 'btn-primary' : 'btn-outline-secondary'}`}
+                                        onClick={() => setShowItensTab(true)}
+                                    >
+                                        <FontAwesomeIcon icon={faBoxOpen} /> Itens ({itensSelecionados.length})
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                        
+                        {/* Aba de Informações */}
+                        {(!editingLista && !showItensTab) || editingLista ? (
+                            <Form>
+                                <Form.Group className="mb-3">
+                                    <Form.Label>Nome da Lista *</Form.Label>
+                                    <Form.Control
+                                        type="text"
+                                        placeholder="Ex: Lista Semanal"
+                                        value={formData.nome}
+                                        onChange={(e) => setFormData({...formData, nome: e.target.value})}
+                                        required
+                                    />
+                                </Form.Group>
+                                <Form.Group className="mb-3">
+                                    <Form.Label>Descrição</Form.Label>
+                                    <Form.Control
+                                        as="textarea"
+                                        rows={3}
+                                        placeholder="Descrição da lista (opcional)"
+                                        value={formData.descricao}
+                                        onChange={(e) => setFormData({...formData, descricao: e.target.value})}
+                                    />
+                                </Form.Group>
+                            </Form>
+                        ) : null}
+                        
+                        {/* Aba de Itens - apenas ao criar */}
+                        {!editingLista && showItensTab && (
+                            <div>
+                                {loadingCatalogo ? (
+                                    <div className="text-center py-4">
+                                        <div className="spinner-border text-primary" role="status">
+                                            <span className="visually-hidden">Carregando catálogo...</span>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <Alert variant="info">
+                                            <FontAwesomeIcon icon={faInfoCircle} /> Selecione os itens que deseja adicionar à lista
+                                        </Alert>
+                                        
+                                        {/* Lista de itens do catálogo */}
+                                        <div style={{maxHeight: '400px', overflowY: 'auto'}}>
+                                            {catalogoItens.map(item => {
+                                                const selecionado = itensSelecionados.find(i => i.item_id === item.id);
+                                                return (
+                                                    <div key={item.id} className="border rounded p-2 mb-2" style={{backgroundColor: selecionado ? '#e7f3ff' : 'white'}}>
+                                                        <div className="d-flex align-items-center justify-content-between">
+                                                            <Form.Check
+                                                                type="checkbox"
+                                                                id={`item-${item.id}`}
+                                                                label={
+                                                                    <span>
+                                                                        <strong>{item.nome}</strong>
+                                                                        <span className="badge bg-secondary ms-2">{item.unidade}</span>
+                                                                    </span>
+                                                                }
+                                                                checked={!!selecionado}
+                                                                onChange={() => handleToggleItem(item)}
+                                                            />
+                                                        </div>
+                                                        
+                                                        {/* Campos de quantidade - apenas se selecionado */}
+                                                        {selecionado && (
+                                                            <div className="row mt-2">
+                                                                <div className="col-6">
+                                                                    <Form.Label style={{fontSize: '0.85rem'}}>Qtd. Atual</Form.Label>
+                                                                    <Form.Control
+                                                                        type="number"
+                                                                        size="sm"
+                                                                        min="0"
+                                                                        step="0.1"
+                                                                        value={selecionado.quantidade_atual}
+                                                                        onChange={(e) => handleUpdateQuantidade(item.id, 'quantidade_atual', parseFloat(e.target.value) || 0)}
+                                                                    />
+                                                                </div>
+                                                                <div className="col-6">
+                                                                    <Form.Label style={{fontSize: '0.85rem'}}>Qtd. Mínima</Form.Label>
+                                                                    <Form.Control
+                                                                        type="number"
+                                                                        size="sm"
+                                                                        min="0"
+                                                                        step="0.1"
+                                                                        value={selecionado.quantidade_minima}
+                                                                        onChange={(e) => handleUpdateQuantidade(item.id, 'quantidade_minima', parseFloat(e.target.value) || 1.0)}
+                                                                    />
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+                        )}
                     </Modal.Body>
                     <Modal.Footer>
                         <Button variant="secondary" onClick={handleCloseModal}>
