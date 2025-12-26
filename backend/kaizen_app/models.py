@@ -347,3 +347,29 @@ class ListaItemRef(db.Model, SerializerMixin):
                 "unidade": self.item.unidade
             }
         return d
+
+
+class NavbarPreference(db.Model, SerializerMixin):
+    """
+    Armazena preferências de visualização da navbar para cada usuário.
+    Estado de expansão/colapso das categorias do menu.
+    """
+    __tablename__ = "navbar_preferences"
+    
+    id = db.Column(db.Integer, primary_key=True)
+    usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id', ondelete='CASCADE'), nullable=False, unique=True)
+    categorias_estado = db.Column(db.JSON, nullable=False, default=dict)
+    criado_em = db.Column(db.DateTime, default=brasilia_now)
+    atualizado_em = db.Column(db.DateTime, default=brasilia_now, onupdate=brasilia_now)
+    
+    # Relacionamento
+    usuario = db.relationship('Usuario', backref=db.backref('navbar_preference', uselist=False, cascade='all, delete-orphan'))
+    
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "usuario_id": self.usuario_id,
+            "categorias_estado": self.categorias_estado or {},
+            "criado_em": self.criado_em.isoformat() if self.criado_em else None,
+            "atualizado_em": self.atualizado_em.isoformat() if self.atualizado_em else None
+        }

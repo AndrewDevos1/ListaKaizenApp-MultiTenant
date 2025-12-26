@@ -3618,3 +3618,45 @@ def executar_importacao_estoque(data):
         import traceback
         traceback.print_exc()
         return {"error": f"Erro ao executar importação: {str(e)}"}, 500
+
+
+def get_navbar_preferences(user_id):
+    """Busca preferências de navbar do usuário."""
+    from .models import NavbarPreference
+    
+    pref = NavbarPreference.query.filter_by(usuario_id=user_id).first()
+    
+    if not pref:
+        # Retorna estado padrão (todas categorias recolhidas)
+        return {
+            "categorias_estado": {},
+            "usuario_id": user_id
+        }, 200
+    
+    return pref.to_dict(), 200
+
+
+def save_navbar_preferences(user_id, data):
+    """Salva ou atualiza preferências de navbar do usuário."""
+    from .models import NavbarPreference
+    from .extensions import db
+    
+    categorias_estado = data.get('categorias_estado', {})
+    
+    pref = NavbarPreference.query.filter_by(usuario_id=user_id).first()
+    
+    if pref:
+        # Atualizar existente
+        pref.categorias_estado = categorias_estado
+        pref.atualizado_em = brasilia_now()
+    else:
+        # Criar novo
+        pref = NavbarPreference(
+            usuario_id=user_id,
+            categorias_estado=categorias_estado
+        )
+        db.session.add(pref)
+    
+    db.session.commit()
+    
+    return {"message": "Preferências salvas com sucesso", "data": pref.to_dict()}, 200

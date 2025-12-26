@@ -41,13 +41,13 @@ const Layout: React.FC = () => {
       items: [
         { path: '/admin/listas-compras', icon: 'fa-shopping-cart', label: 'Listas de Compras', ariaLabel: 'Listas de Compras' },
         { path: '/admin/catalogo-global', icon: 'fa-book', label: 'Itens Cadastrados', ariaLabel: 'Itens Cadastrados no Sistema' },
-        { path: '/admin/submissoes', icon: 'fa-clipboard-check', label: 'Submissões', ariaLabel: 'Gerenciar Submissões' },
-        { path: '/admin/areas', icon: 'fa-map-marker-alt', label: 'Áreas', ariaLabel: 'Áreas' }
+        { path: '/admin/submissoes', icon: 'fa-clipboard-check', label: 'Submissões', ariaLabel: 'Gerenciar Submissões' }
       ]
     },
     {
       title: 'GESTÃO',
       items: [
+        { path: '/admin/areas', icon: 'fa-map-marker-alt', label: 'Áreas', ariaLabel: 'Áreas' },
         { path: '/admin/gerenciar-usuarios', icon: 'fa-users-cog', label: 'Gerenciar Usuários', ariaLabel: 'Gerenciar Usuários' },
         { path: '/admin/fornecedores', icon: 'fa-truck', label: 'Fornecedores', ariaLabel: 'Fornecedores' },
         { path: '/admin/gerar-cotacao', icon: 'fa-file-invoice-dollar', label: 'Gerar Cotação', ariaLabel: 'Gerar Cotação' },
