@@ -864,8 +864,8 @@ const ListaMaeConsolidada: React.FC = () => {
                                                     variant="success"
                                                     size="sm"
                                                     onClick={() => handleEditarItem(itemEditando)}
-                                                    className="me-2"
                                                     title="Salvar"
+                                                    className="me-1"
                                                 >
                                                     ✓
                                                 </Button>
@@ -935,19 +935,11 @@ const ListaMaeConsolidada: React.FC = () => {
                                                         setEditandoId(item.id || null);
                                                         setItemEditando({ ...item });
                                                     }}
-                                                    className="me-2"
                                                     title="Editar"
                                                 >
                                                     <FontAwesomeIcon icon={faEdit} />
                                                 </Button>
-                                                <Button
-                                                    variant="outline-danger"
-                                                    size="sm"
-                                                    onClick={() => item.id && handleDeletarItem(item.id)}
-                                                    title="Deletar"
-                                                >
-                                                    <FontAwesomeIcon icon={faTrash} />
-                                                </Button>
+                                            </td>
                                             </td>
                                         </>
                                     )}
