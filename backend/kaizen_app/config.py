@@ -17,6 +17,9 @@ class Config:
     JWT_ERROR_MESSAGE_KEY = 'msg'
 
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    
+    # Timezone da aplicação (Horário de Brasília)
+    TIMEZONE = 'America/Sao_Paulo'  # BRT/BRST (UTC-3/-2)
 
 
 class DevelopmentConfig(Config):
