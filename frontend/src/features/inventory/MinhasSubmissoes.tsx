@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Table, Alert, Form, Badge, Card, Container, Button } from 'react-bootstrap';
+import { Table, Alert, Form, Badge, Container, Button } from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faArrowLeft, faClipboardList, faCheckCircle, faTimesCircle, faClock } from '@fortawesome/free-solid-svg-icons';
 import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import CustomSpinner from '../../components/Spinner';
+import styles from './MinhasSubmissoes.module.css';
 
 interface Pedido {
     id: number;
@@ -93,9 +94,9 @@ const MinhasSubmissoes: React.FC = () => {
     }
 
     return (
-        <Container fluid className="py-4">
+        <Container fluid className={styles.container}>
             {/* Header */}
-            <div className="mb-4">
+            <div className={styles.header}>
                 <Button
                     variant="outline-secondary"
                     size="sm"
@@ -116,12 +117,12 @@ const MinhasSubmissoes: React.FC = () => {
             {error && <Alert variant="danger">{error}</Alert>}
 
             {/* Filtro */}
-            <Form.Group className="mb-4">
+            <Form.Group className={styles.filterGroup}>
                 <Form.Label>Filtrar por Status:</Form.Label>
                 <Form.Select 
                     value={filterStatus} 
                     onChange={(e) => setFilterStatus(e.target.value)}
-                    style={{ maxWidth: '250px' }}
+                    className={styles.filterSelect}
                 >
                     <option value="TODOS">Todos</option>
                     <option value="PENDENTE">Pendente</option>
@@ -131,58 +132,102 @@ const MinhasSubmissoes: React.FC = () => {
                 </Form.Select>
             </Form.Group>
 
-            {/* Tabela de Submissões (LISTA, não cards) */}
+            {/* Tabela Desktop */}
             {filteredSubmissoes.length === 0 ? (
-                <Alert variant="info" className="text-center py-5">
+                <Alert variant="info" className={`text-center py-5 ${styles.emptyState}`}>
                     <FontAwesomeIcon icon={faClipboardList} size="3x" className="mb-3 d-block" />
                     <h5>Nenhuma submissão encontrada</h5>
                     <p className="text-muted">Você ainda não submeteu nenhuma lista.</p>
                 </Alert>
             ) : (
-                <Table striped bordered hover responsive>
-                    <thead className="table-dark">
-                        <tr>
-                            <th>#</th>
-                            <th>Lista</th>
-                            <th>Data/Hora</th>
-                            <th className="text-center">Total Itens</th>
-                            <th className="text-center">Status</th>
-                            <th className="text-center">Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody>
+                <>
+                    <Table striped bordered hover responsive className={styles.tableDesktop}>
+                        <thead className="table-dark">
+                            <tr>
+                                <th>#</th>
+                                <th>Lista</th>
+                                <th>Data/Hora</th>
+                                <th className="text-center">Total Itens</th>
+                                <th className="text-center">Status</th>
+                                <th className="text-center">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {filteredSubmissoes.map((submissao) => (
+                                <tr key={submissao.id}>
+                                    <td>{submissao.id}</td>
+                                    <td>
+                                        <strong>{submissao.lista_nome}</strong>
+                                    </td>
+                                    <td>{formatarData(submissao.data_submissao)}</td>
+                                    <td className="text-center">
+                                        <Badge bg="secondary">{submissao.total_pedidos}</Badge>
+                                    </td>
+                                    <td className="text-center">
+                                        <Badge 
+                                            bg={getStatusVariant(submissao.status)}
+                                            style={{ fontSize: '0.9rem', padding: '0.5rem 1rem' }}
+                                        >
+                                            <FontAwesomeIcon icon={getStatusIcon(submissao.status)} className="me-1" />
+                                            {submissao.status}
+                                        </Badge>
+                                    </td>
+                                    <td className="text-center">
+                                        <Button
+                                            size="sm"
+                                            variant="primary"
+                                            onClick={() => navigate(`/collaborator/submissions/${submissao.id}`)}
+                                        >
+                                            <FontAwesomeIcon icon={faClipboardList} /> Ver Detalhes
+                                        </Button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </Table>
+
+                    {/* Cards Mobile */}
+                    <div className={styles.cardsMobile}>
                         {filteredSubmissoes.map((submissao) => (
-                            <tr key={submissao.id}>
-                                <td>{submissao.id}</td>
-                                <td>
-                                    <strong>{submissao.lista_nome}</strong>
-                                </td>
-                                <td>{formatarData(submissao.data_submissao)}</td>
-                                <td className="text-center">
-                                    <Badge bg="secondary">{submissao.total_pedidos}</Badge>
-                                </td>
-                                <td className="text-center">
-                                    <Badge 
-                                        bg={getStatusVariant(submissao.status)}
-                                        style={{ fontSize: '0.9rem', padding: '0.5rem 1rem' }}
-                                    >
-                                        <FontAwesomeIcon icon={getStatusIcon(submissao.status)} className="me-1" />
-                                        {submissao.status}
-                                    </Badge>
-                                </td>
-                                <td className="text-center">
+                            <div key={submissao.id} className={styles.submissaoCard}>
+                                <div className={styles.cardHeader}>
+                                    <h5 className={styles.cardTitle}>{submissao.lista_nome}</h5>
+                                    <span className={styles.cardId}>#{submissao.id}</span>
+                                </div>
+                                <div className={styles.cardRow}>
+                                    <span className={styles.cardLabel}>Data/Hora</span>
+                                    <span className={styles.cardValue}>{formatarData(submissao.data_submissao)}</span>
+                                </div>
+                                <div className={styles.cardRow}>
+                                    <span className={styles.cardLabel}>Total Itens</span>
+                                    <span className={styles.cardValue}>
+                                        <Badge bg="secondary">{submissao.total_pedidos}</Badge>
+                                    </span>
+                                </div>
+                                <div className={styles.cardRow}>
+                                    <span className={styles.cardLabel}>Status</span>
+                                    <span className={styles.cardValue}>
+                                        <Badge 
+                                            bg={getStatusVariant(submissao.status)}
+                                            style={{ fontSize: '0.9rem', padding: '0.5rem 1rem' }}
+                                        >
+                                            <FontAwesomeIcon icon={getStatusIcon(submissao.status)} className="me-1" />
+                                            {submissao.status}
+                                        </Badge>
+                                    </span>
+                                </div>
+                                <div className={styles.cardActions}>
                                     <Button
-                                        size="sm"
                                         variant="primary"
                                         onClick={() => navigate(`/collaborator/submissions/${submissao.id}`)}
                                     >
                                         <FontAwesomeIcon icon={faClipboardList} /> Ver Detalhes
                                     </Button>
-                                </td>
-                            </tr>
+                                </div>
+                            </div>
                         ))}
-                    </tbody>
-                </Table>
+                    </div>
+                </>
             )}
         </Container>
     );

@@ -145,8 +145,8 @@ const GerenciarSubmissoes: React.FC = () => {
                 </ButtonGroup>
             </div>
 
-            {/* Tabela de Submissões */}
-            <Table striped bordered hover responsive className={styles.table}>
+            {/* Tabela Desktop */}
+            <Table striped bordered hover responsive className={`${styles.table} ${styles.tableDesktop}`}>
                 <thead>
                     <tr>
                         <th>#</th>
@@ -192,6 +192,52 @@ const GerenciarSubmissoes: React.FC = () => {
                     )}
                 </tbody>
             </Table>
+
+            {/* Cards Mobile */}
+            <div className={styles.cardsMobile}>
+                {submissoes.length === 0 ? (
+                    <Alert variant="info" className="text-center">
+                        Nenhuma submissão encontrada
+                    </Alert>
+                ) : (
+                    submissoes.map((sub) => (
+                        <div key={sub.id} className={styles.submissaoCard}>
+                            <div className={styles.cardHeader}>
+                                <h5 className={styles.cardTitle}>{sub.lista_nome}</h5>
+                                <span className={styles.cardId}>#{sub.id}</span>
+                            </div>
+                            <div className={styles.cardRow}>
+                                <span className={styles.cardLabel}>Colaborador</span>
+                                <span className={styles.cardValue}>{sub.usuario_nome}</span>
+                            </div>
+                            <div className={styles.cardRow}>
+                                <span className={styles.cardLabel}>Data/Hora</span>
+                                <span className={styles.cardValue}>{formatarData(sub.data_submissao)}</span>
+                            </div>
+                            <div className={styles.cardRow}>
+                                <span className={styles.cardLabel}>Total Itens</span>
+                                <span className={styles.cardValue}>
+                                    <Badge bg="secondary">{sub.total_pedidos}</Badge>
+                                </span>
+                            </div>
+                            <div className={styles.cardRow}>
+                                <span className={styles.cardLabel}>Status</span>
+                                <span className={styles.cardValue}>
+                                    {getStatusBadge(sub.status)}
+                                </span>
+                            </div>
+                            <div className={styles.cardActions}>
+                                <Button
+                                    variant="primary"
+                                    onClick={() => navigate(`/admin/submissoes/${sub.id}`)}
+                                >
+                                    <FontAwesomeIcon icon={faEye} /> Ver Detalhes
+                                </Button>
+                            </div>
+                        </div>
+                    ))
+                )}
+            </div>
         </Container>
     );
 };

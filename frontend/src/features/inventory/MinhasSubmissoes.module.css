@@ -1,36 +1,19 @@
+/* MinhasSubmissoes - Responsivo Mobile-First */
+
 .container {
-    padding: 2rem;
-    max-width: 1400px;
+    padding: 1.5rem;
 }
 
 .header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 2rem;
-}
-
-.header h2 {
-    margin-bottom: 0.5rem;
-}
-
-.filters {
     margin-bottom: 1.5rem;
 }
 
-.table {
-    background: white;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+.filterGroup {
+    margin-bottom: 1.5rem;
 }
 
-.table thead {
-    background-color: #f8f9fa;
-}
-
-.table tbody tr:hover {
-    background-color: #f8f9fa;
-    cursor: pointer;
+.filterSelect {
+    max-width: 250px;
 }
 
 /* Tabela Desktop (padrão) */
@@ -62,7 +45,7 @@
 .cardHeader {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
     margin-bottom: 0.75rem;
     padding-bottom: 0.75rem;
     border-bottom: 2px solid #e9ecef;
@@ -73,12 +56,14 @@
     font-size: 1.1rem;
     color: #212529;
     margin: 0;
+    flex: 1;
 }
 
 .cardId {
     font-weight: 600;
     color: #6c757d;
     font-size: 0.9rem;
+    margin-left: 0.5rem;
 }
 
 .cardRow {
@@ -91,7 +76,6 @@
 
 .cardRow:last-child {
     border-bottom: none;
-    padding-bottom: 0;
 }
 
 .cardLabel {
@@ -117,38 +101,33 @@
     width: 100%;
 }
 
+.emptyState {
+    text-align: center;
+    padding: 3rem 1rem;
+}
+
+.emptyState svg {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
 /* Mobile: < 768px */
 @media (max-width: 767px) {
     .container {
         padding: 0.5rem;
     }
 
-    .header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 1rem;
-    }
-
     .header h2 {
         font-size: 1.5rem;
     }
 
-    .filters {
-        overflow-x: auto;
-        margin: 0 -0.5rem 1.5rem -0.5rem;
-        padding: 0 0.5rem;
+    .header p {
+        font-size: 0.9rem;
     }
 
-    .filters .btn-group {
-        display: flex;
-        flex-wrap: nowrap;
-        min-width: max-content;
-    }
-
-    .filters button {
-        font-size: 0.85rem;
-        padding: 0.4rem 0.8rem;
-        white-space: nowrap;
+    .filterSelect {
+        max-width: 100%;
     }
 
     .tableDesktop {
@@ -158,15 +137,21 @@
     .cardsMobile {
         display: block;
     }
+
+    .cardHeader {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .cardId {
+        margin-left: 0;
+        margin-top: 0.25rem;
+    }
 }
 
 /* Tablet: 768px - 991px */
 @media (min-width: 768px) and (max-width: 991px) {
     .container {
-        padding: 1.5rem;
-    }
-
-    .filters button {
-        font-size: 0.9rem;
+        padding: 1rem;
     }
 }

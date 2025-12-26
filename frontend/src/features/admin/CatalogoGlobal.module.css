@@ -1,0 +1,113 @@
+/* CatalogoGlobal - Responsivo Mobile-First */
+
+.container {
+    padding: 1rem;
+}
+
+.header {
+    margin-bottom: 1.5rem;
+}
+
+.searchBox {
+    margin-bottom: 1rem;
+    max-width: 400px;
+}
+
+.badges {
+    margin-bottom: 1rem;
+}
+
+/* Tabela Desktop (padrão) */
+.tableDesktop {
+    display: table;
+    width: 100%;
+}
+
+/* Cards Mobile (oculto por padrão) */
+.cardsMobile {
+    display: none;
+}
+
+.itemCard {
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    background: white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.itemCard:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.cardRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.cardRow:last-child {
+    border-bottom: none;
+}
+
+.cardLabel {
+    font-weight: 600;
+    color: #6c757d;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+}
+
+.cardValue {
+    font-size: 1rem;
+    color: #212529;
+}
+
+.loadingState {
+    text-align: center;
+    padding: 3rem 0;
+}
+
+.emptyState {
+    text-align: center;
+    padding: 3rem 0;
+    color: #6c757d;
+}
+
+/* Mobile: < 768px */
+@media (max-width: 767px) {
+    .container {
+        padding: 0.5rem;
+    }
+
+    .tableDesktop {
+        display: none;
+    }
+
+    .cardsMobile {
+        display: block;
+    }
+
+    .searchBox {
+        max-width: 100%;
+    }
+
+    .header h2 {
+        font-size: 1.5rem;
+    }
+
+    .header p {
+        font-size: 0.9rem;
+    }
+}
+
+/* Tablet: 768px - 991px */
+@media (min-width: 768px) and (max-width: 991px) {
+    .container {
+        padding: 1.5rem;
+    }
+}
