@@ -456,7 +456,7 @@ def save_estoque_draft_route():
 
 # --- Rotas de Pedidos ---
 
-@api_bp.route('/v1/pedidos/me', methods=['GET'])
+@api_bp.route('/pedidos/me', methods=['GET'])
 @jwt_required()
 def get_my_pedidos_route():
     user_id = get_user_id_from_jwt()
@@ -464,7 +464,7 @@ def get_my_pedidos_route():
     return jsonify([p.to_dict() for p in pedidos])
 
 
-@api_bp.route('/v1/submissoes/me', methods=['GET'])
+@api_bp.route('/submissoes/me', methods=['GET'])
 @jwt_required()
 def get_my_submissoes_route():
     """Retorna submissões agrupadas do usuário."""
