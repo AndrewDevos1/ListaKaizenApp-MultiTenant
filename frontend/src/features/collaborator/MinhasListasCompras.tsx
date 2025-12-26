@@ -94,7 +94,7 @@ const MinhasListasCompras: React.FC = () => {
                     <Button
                         variant="outline-secondary"
                         size="sm"
-                        onClick={() => navigate('/collaborator/dashboard')}
+                        onClick={() => navigate('/collaborator')}
                         className="mb-3"
                     >
                         <FontAwesomeIcon icon={faArrowLeft} /> Voltar ao Dashboard
