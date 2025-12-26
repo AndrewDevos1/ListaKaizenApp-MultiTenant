@@ -1,4 +1,4 @@
-from .models import Usuario, UserRoles, Item, Area, Fornecedor, Estoque, Cotacao, CotacaoStatus, CotacaoItem, Pedido, PedidoStatus, Lista, ListaMaeItem
+from .models import Usuario, UserRoles, Item, Area, Fornecedor, Estoque, Cotacao, CotacaoStatus, CotacaoItem, Pedido, PedidoStatus, Lista, ListaMaeItem, ListaItemRef
 from .extensions import db
 from . import repositories
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -1135,6 +1135,31 @@ def get_activity_summary():
 
     return {"labels": labels, "data": activity_data}, 200
 
+
+def get_catalogo_global():
+    """
+    Retorna todos os itens do catálogo global.
+    Usado pelo admin no card "Itens e Insumos".
+    """
+    itens = ListaMaeItem.query.order_by(ListaMaeItem.nome).all()
+
+    itens_data = []
+    for item in itens:
+        # Contar quantas listas usam este item
+        total_listas = ListaItemRef.query.filter_by(item_id=item.id).count()
+
+        itens_data.append({
+            "id": item.id,
+            "nome": item.nome,
+            "unidade": item.unidade,
+            "total_listas": total_listas,
+            "criado_em": item.criado_em.isoformat() if item.criado_em else None,
+            "atualizado_em": item.atualizado_em.isoformat() if item.atualizado_em else None
+        })
+
+    return {"itens": itens_data, "total": len(itens_data)}, 200
+
+
 def get_listas_status_submissoes():
     """
     Retorna o status das submissões de listas com pedidos pendentes.
@@ -1508,13 +1533,15 @@ def normalize_item_nome(value):
 
 def sync_lista_mae_itens_para_estoque(lista_id):
     """
-    Sincroniza itens da Lista Mãe com o estoque da lista.
+    Sincroniza itens da lista (via ListaItemRef) com o estoque.
     Apenas cria estoque para itens com quantidade_minima > 0.
     """
-    itens_lista_mae = ListaMaeItem.query.filter_by(lista_mae_id=lista_id).all()
-    if not itens_lista_mae:
+    # Buscar referências de itens para esta lista
+    refs = ListaItemRef.query.filter_by(lista_id=lista_id).all()
+    if not refs:
         return {"criados": 0, "atualizados": 0, "ignorados": 0}
 
+    # Carregar itens cadastrados para matching por nome
     itens_cadastrados = Item.query.all()
     itens_por_nome = {}
     for item in itens_cadastrados:
@@ -1527,8 +1554,8 @@ def sync_lista_mae_itens_para_estoque(lista_id):
     atualizados = 0
     ignorados = 0
 
-    for item_mae in itens_lista_mae:
-        nome_normalizado = normalize_item_nome(item_mae.nome)
+    for ref in refs:
+        nome_normalizado = normalize_item_nome(ref.item.nome)
         if not nome_normalizado:
             ignorados += 1
             continue
@@ -1539,8 +1566,8 @@ def sync_lista_mae_itens_para_estoque(lista_id):
             continue
 
         estoque = Estoque.query.filter_by(lista_id=lista_id, item_id=item.id).first()
-        quantidade_minima = float(item_mae.quantidade_minima or 0)
-        quantidade_atual = float(item_mae.quantidade_atual or 0)
+        quantidade_minima = float(ref.quantidade_minima or 0)
+        quantidade_atual = float(ref.quantidade_atual or 0)
 
         if not estoque:
             if quantidade_minima <= 0:
@@ -1570,31 +1597,60 @@ def sync_lista_mae_itens_para_estoque(lista_id):
     return {"criados": criados, "atualizados": atualizados, "ignorados": ignorados}
 
 def adicionar_item_lista_mae(lista_id, data):
-    """Adiciona um novo item à Lista Mãe."""
+    """
+    Adiciona um item ao catálogo global e vincula à lista.
+    Se o item já existe no catálogo, apenas cria/atualiza a referência.
+    """
     try:
         lista = db.session.get(Lista, lista_id)
         if not lista:
             return {"error": "Lista não encontrada"}, 404
 
-        novo_item = ListaMaeItem(
-            lista_mae_id=lista_id,
-            nome=data.get('nome'),
-            unidade=data.get('unidade', 'un'),  # Fallback para 'un'
-            quantidade_atual=data.get('quantidade_atual', 0),
-            quantidade_minima=data.get('quantidade_minima', 0)
-        )
+        nome = data.get('nome', '').strip()
+        if not nome:
+            return {"error": "Nome do item é obrigatório"}, 400
 
-        db.session.add(novo_item)
+        # Buscar ou criar item no catálogo global (por nome, case-insensitive)
+        item = ListaMaeItem.query.filter(
+            func.lower(ListaMaeItem.nome) == func.lower(nome)
+        ).first()
+
+        if not item:
+            # Criar novo item no catálogo global
+            item = ListaMaeItem(
+                nome=nome,
+                unidade=data.get('unidade', 'un')
+            )
+            db.session.add(item)
+            db.session.flush()  # Para obter o ID
+
+        # Verificar se já existe referência para esta lista
+        ref = ListaItemRef.query.filter_by(lista_id=lista_id, item_id=item.id).first()
+
+        if ref:
+            # Atualizar quantidades existentes
+            ref.quantidade_atual = data.get('quantidade_atual', ref.quantidade_atual)
+            ref.quantidade_minima = data.get('quantidade_minima', ref.quantidade_minima)
+            ref.atualizado_em = datetime.now(timezone.utc)
+        else:
+            # Criar nova referência
+            ref = ListaItemRef(
+                lista_id=lista_id,
+                item_id=item.id,
+                quantidade_atual=data.get('quantidade_atual', 0),
+                quantidade_minima=data.get('quantidade_minima', 1.0)
+            )
+            db.session.add(ref)
+
         db.session.commit()
-
         sync_lista_mae_itens_para_estoque(lista_id)
 
-        return novo_item.to_dict(), 201
+        # Retornar dados combinados (item + referência)
+        return ref.to_dict(), 201
     except Exception as e:
         import traceback
         from flask import current_app
 
-        # Log detalhado do erro
         current_app.logger.error(f"[adicionar_item_lista_mae] Erro ao criar item:")
         current_app.logger.error(f"  Tipo: {type(e).__name__}")
         current_app.logger.error(f"  Mensagem: {str(e)}")
@@ -1605,25 +1661,35 @@ def adicionar_item_lista_mae(lista_id, data):
 
 
 def editar_item_lista_mae(lista_id, item_id, data):
-    """Edita um item da Lista Mãe."""
+    """
+    Edita a referência de um item em uma lista específica.
+    Atualiza quantidades na referência e opcionalmente unidade no item global.
+    """
     try:
-        item = ListaMaeItem.query.filter_by(
-            id=item_id,
-            lista_mae_id=lista_id
+        # Buscar a referência (item_id é o ID do item global)
+        ref = ListaItemRef.query.filter_by(
+            lista_id=lista_id,
+            item_id=item_id
         ).first()
 
-        if not item:
-            return {"error": "Item não encontrado"}, 404
+        if not ref:
+            return {"error": "Item não encontrado nesta lista"}, 404
 
-        item.nome = data.get('nome', item.nome)
-        item.unidade = data.get('unidade', item.unidade) if data.get('unidade') else item.unidade
-        item.quantidade_atual = data.get('quantidade_atual', item.quantidade_atual)
-        item.quantidade_minima = data.get('quantidade_minima', item.quantidade_minima)
-        item.atualizado_em = datetime.now(timezone.utc)
+        # Atualizar quantidades na referência
+        if 'quantidade_atual' in data:
+            ref.quantidade_atual = data['quantidade_atual']
+        if 'quantidade_minima' in data:
+            ref.quantidade_minima = data['quantidade_minima']
+        ref.atualizado_em = datetime.now(timezone.utc)
+
+        # Se unidade foi fornecida, atualizar no item global
+        if data.get('unidade'):
+            ref.item.unidade = data['unidade']
+            ref.item.atualizado_em = datetime.now(timezone.utc)
 
         db.session.commit()
         sync_lista_mae_itens_para_estoque(lista_id)
-        return item.to_dict(), 200
+        return ref.to_dict(), 200
     except Exception as e:
         import traceback
         from flask import current_app
@@ -1638,48 +1704,58 @@ def editar_item_lista_mae(lista_id, item_id, data):
 
 
 def deletar_item_lista_mae(lista_id, item_id):
-    """Deleta um item da Lista Mãe."""
+    """
+    Remove a referência de um item de uma lista específica.
+    O item permanece no catálogo global para uso em outras listas.
+    """
     try:
-        item = ListaMaeItem.query.filter_by(
-            id=item_id,
-            lista_mae_id=lista_id
+        ref = ListaItemRef.query.filter_by(
+            lista_id=lista_id,
+            item_id=item_id
         ).first()
 
-        if not item:
-            return {"error": "Item não encontrado"}, 404
+        if not ref:
+            return {"error": "Item não encontrado nesta lista"}, 404
 
-        db.session.delete(item)
+        db.session.delete(ref)
         db.session.commit()
-        return {"message": "Item removido com sucesso"}, 200
+        return {"message": "Item removido da lista com sucesso"}, 200
     except Exception as e:
         db.session.rollback()
         return {"error": str(e)}, 500
 
 
 def obter_lista_mae(lista_id):
-    """Retorna a Lista Mãe com todos os seus itens."""
+    """
+    Retorna a lista com todos os seus itens via tabela de referência.
+    Os itens vêm do catálogo global com quantidades específicas desta lista.
+    """
     from flask import current_app
-    import sys
 
     try:
-        print(f"\n[obter_lista_mae] INICIANDO - lista_id={lista_id}", flush=True, file=sys.stdout)
-        print(f"[obter_lista_mae] Database URI: {current_app.config['SQLALCHEMY_DATABASE_URI']}", flush=True, file=sys.stdout)
-
-        # Busca a lista
         lista = Lista.query.filter(Lista.id == lista_id).first()
-        print(f"[obter_lista_mae] Lista encontrada: {lista is not None}, ID={lista.id if lista else 'N/A'}", flush=True, file=sys.stdout)
-
         if not lista:
             return {"error": "Lista não encontrada"}, 404
 
-        # Busca itens diretamente do banco de dados (não da relação)
-        # Isso evita problemas de lazy loading em contexto HTTP
-        itens = ListaMaeItem.query.filter(ListaMaeItem.lista_mae_id == lista_id).all()
-        print(f"[obter_lista_mae] Itens encontrados: {len(itens)}", flush=True, file=sys.stdout)
-        for idx, item in enumerate(itens[:3]):
-            print(f"  [{idx}] ID={item.id}, Nome={item.nome}, lista_mae_id={item.lista_mae_id}", flush=True, file=sys.stdout)
+        # Buscar referências de itens para esta lista
+        refs = ListaItemRef.query.filter_by(lista_id=lista_id).all()
 
-        # Busca os fornecedores atribuídos à lista
+        # Montar dados dos itens com quantidades
+        itens_data = []
+        for ref in refs:
+            item_dict = {
+                "id": ref.item.id,
+                "nome": ref.item.nome,
+                "unidade": ref.item.unidade,
+                "quantidade_atual": ref.quantidade_atual,
+                "quantidade_minima": ref.quantidade_minima,
+                "pedido": ref.get_pedido(),
+                "criado_em": ref.criado_em.isoformat() if ref.criado_em else None,
+                "atualizado_em": ref.atualizado_em.isoformat() if ref.atualizado_em else None
+            }
+            itens_data.append(item_dict)
+
+        # Buscar fornecedores atribuídos à lista
         fornecedores_data = []
         for fornecedor in lista.fornecedores:
             fornecedores_data.append({
@@ -1697,14 +1773,13 @@ def obter_lista_mae(lista_id):
             "lista_descricao": lista.descricao,
             "data_criacao": lista.data_criacao.isoformat(),
             "fornecedores": fornecedores_data,
-            "itens": [item.to_dict() for item in itens],
-            "total_itens": len(itens)
+            "itens": itens_data,
+            "total_itens": len(itens_data)
         }
 
-        print(f"[obter_lista_mae] Retornando resultado com {result['total_itens']} itens", flush=True, file=sys.stdout)
         return result, 200
     except Exception as e:
-        current_app.logger.error(f"[LISTA MAE GET] ERRO: {type(e).__name__}: {str(e)}")
+        current_app.logger.error(f"[obter_lista_mae] ERRO: {type(e).__name__}: {str(e)}")
         import traceback
         traceback.print_exc()
         return {"error": str(e)}, 500
@@ -1712,12 +1787,12 @@ def obter_lista_mae(lista_id):
 
 def atribuir_fornecedor_lista_mae(lista_id, data):
     """
-    Atribui um fornecedor a múltiplos itens da Lista Mãe e gera Pedidos.
+    Atribui um fornecedor a múltiplos itens de uma lista e gera Pedidos.
 
     Recebe:
-        lista_id: ID da Lista Mãe
+        lista_id: ID da Lista
         data: {
-            "item_ids": [1, 2, 3],  # IDs dos itens
+            "item_ids": [1, 2, 3],  # IDs dos itens globais
             "fornecedor_id": 5      # ID do fornecedor
         }
 
@@ -1725,51 +1800,46 @@ def atribuir_fornecedor_lista_mae(lista_id, data):
         Lista de pedidos criados
     """
     try:
-        # Validar entrada
         item_ids = data.get('item_ids', [])
         fornecedor_id = data.get('fornecedor_id')
 
         if not item_ids or not fornecedor_id:
             return {"error": "item_ids e fornecedor_id são obrigatórios"}, 400
 
-        # Validar que lista existe
         lista = db.session.get(Lista, lista_id)
         if not lista:
             return {"error": "Lista não encontrada"}, 404
 
-        # Validar que fornecedor existe
         fornecedor = db.session.get(Fornecedor, fornecedor_id)
         if not fornecedor:
             return {"error": "Fornecedor não encontrado"}, 404
 
-        # Validar que itens existem e pertencem a esta lista
-        itens = ListaMaeItem.query.filter(
-            ListaMaeItem.id.in_(item_ids),
-            ListaMaeItem.lista_mae_id == lista_id
+        # Buscar referências de itens vinculados a esta lista
+        refs = ListaItemRef.query.filter(
+            ListaItemRef.lista_id == lista_id,
+            ListaItemRef.item_id.in_(item_ids)
         ).all()
 
-        if len(itens) != len(item_ids):
+        if len(refs) != len(item_ids):
             return {"error": "Um ou mais itens não encontrados na lista"}, 404
 
-        # Criar pedidos para cada item
         pedidos_criados = []
         usuario_id = get_current_user_id()
 
-        for item in itens:
-            # Calcular quantidade do pedido
-            quantidade_pedido = max(0, item.quantidade_minima - item.quantidade_atual)
+        for ref in refs:
+            # Calcular quantidade do pedido a partir da referência
+            quantidade_pedido = ref.get_pedido()
 
             if quantidade_pedido > 0:
-                # Verificar se já existe pedido pendente para este item/fornecedor
                 pedido_existe = Pedido.query.filter_by(
-                    item_id=item.id,
+                    item_id=ref.item_id,
                     fornecedor_id=fornecedor_id,
                     status=PedidoStatus.PENDENTE
                 ).first()
 
                 if not pedido_existe:
                     novo_pedido = Pedido(
-                        item_id=item.id,
+                        item_id=ref.item_id,
                         fornecedor_id=fornecedor_id,
                         quantidade_solicitada=quantidade_pedido,
                         usuario_id=usuario_id,
@@ -1779,7 +1849,6 @@ def atribuir_fornecedor_lista_mae(lista_id, data):
                     db.session.add(novo_pedido)
                     pedidos_criados.append(novo_pedido)
 
-        # Commit de todos os pedidos
         db.session.commit()
 
         return {
@@ -1797,10 +1866,11 @@ def atribuir_fornecedor_lista_mae(lista_id, data):
 
 def importar_items_em_lote(lista_id, data):
     """
-    Importa múltiplos itens em lote para uma Lista Mãe.
+    Importa múltiplos itens em lote para uma lista.
+    Itens são adicionados ao catálogo global e vinculados à lista.
 
     Recebe:
-        lista_id: ID da Lista Mãe
+        lista_id: ID da Lista
         data: {
             "nomes": ["Alga Nori", "Arroz Grao Curto", "BAO com vegetais", ...]
         }
@@ -1814,47 +1884,60 @@ def importar_items_em_lote(lista_id, data):
         if not nomes or not isinstance(nomes, list):
             return {"error": "nomes deve ser um array de strings"}, 400
 
-        # Validar que lista existe
         lista = db.session.get(Lista, lista_id)
         if not lista:
             return {"error": "Lista não encontrada"}, 404
 
         items_criados = 0
+        items_vinculados = 0
         items_duplicados = 0
 
         for nome in nomes:
             nome_limpo = nome.strip()
 
-            # Ignorar nomes muito curtos ou vazios
             if len(nome_limpo) < 2:
                 continue
 
-            # Verificar se item com esse nome já existe nesta lista
-            item_existe = ListaMaeItem.query.filter_by(
-                lista_mae_id=lista_id,
-                nome=nome_limpo
+            # Buscar item no catálogo global (case-insensitive)
+            item = ListaMaeItem.query.filter(
+                func.lower(ListaMaeItem.nome) == func.lower(nome_limpo)
             ).first()
 
-            if item_existe:
+            if not item:
+                # Criar novo item no catálogo global
+                item = ListaMaeItem(
+                    nome=nome_limpo,
+                    unidade='un'
+                )
+                db.session.add(item)
+                db.session.flush()
+                items_criados += 1
+
+            # Verificar se já está vinculado a esta lista
+            ref_existe = ListaItemRef.query.filter_by(
+                lista_id=lista_id,
+                item_id=item.id
+            ).first()
+
+            if ref_existe:
                 items_duplicados += 1
                 continue
 
-            # Criar novo item
-            novo_item = ListaMaeItem(
-                lista_mae_id=lista_id,
-                nome=nome_limpo,
-                unidade='Unidade',  # Padrão - usuário pode editar depois
+            # Criar referência
+            ref = ListaItemRef(
+                lista_id=lista_id,
+                item_id=item.id,
                 quantidade_atual=0,
                 quantidade_minima=1.0
             )
-            db.session.add(novo_item)
-            items_criados += 1
+            db.session.add(ref)
+            items_vinculados += 1
 
-        # Commit de todos os itens
         db.session.commit()
 
         return {
-            "message": f"{items_criados} item(ns) criado(s)",
+            "message": f"{items_vinculados} item(ns) vinculado(s) à lista, {items_criados} novo(s) no catálogo",
+            "items_vinculados": items_vinculados,
             "items_criados": items_criados,
             "items_duplicados": items_duplicados
         }, 201
@@ -2294,7 +2377,7 @@ def populate_database_with_mock_data():
         print(f"✅ {len(listas)} listas no banco (colaboradores NÃO vinculados)")
 
         # 5. Criar itens da Lista Mãe
-        print("📝 Criando itens da lista mãe...")
+        print("📝 Criando itens no catálogo global e vinculando às listas...")
         lista_mae_itens_data = [
             # Lista Mensal - Alimentos
             {"lista_nome": "Lista Mensal - Alimentos", "nome": "Arroz Tipo 1", "unidade": "Kg", "qtd_atual": 50, "qtd_min": 100},
@@ -2307,30 +2390,45 @@ def populate_database_with_mock_data():
             {"lista_nome": "Lista Escritório", "nome": "Papel Sulfite A4", "unidade": "Resma", "qtd_atual": 10, "qtd_min": 30},
         ]
 
-        lista_mae_count = 0
+        itens_criados = 0
+        refs_criadas = 0
         for item_data in lista_mae_itens_data:
             lista = Lista.query.filter_by(nome=item_data["lista_nome"]).first()
             if lista:
-                # Verifica se já existe
-                existe = ListaMaeItem.query.filter_by(
-                    lista_mae_id=lista.id,
-                    nome=item_data["nome"]
+                # Buscar ou criar item no catálogo global
+                item = ListaMaeItem.query.filter(
+                    func.lower(ListaMaeItem.nome) == func.lower(item_data["nome"])
                 ).first()
 
-                if not existe:
+                if not item:
                     item = ListaMaeItem(
-                        lista_mae_id=lista.id,
                         nome=item_data["nome"],
-                        unidade=item_data["unidade"],
+                        unidade=item_data["unidade"]
+                    )
+                    db.session.add(item)
+                    db.session.flush()
+                    itens_criados += 1
+
+                # Verificar se referência já existe
+                ref_existe = ListaItemRef.query.filter_by(
+                    lista_id=lista.id,
+                    item_id=item.id
+                ).first()
+
+                if not ref_existe:
+                    ref = ListaItemRef(
+                        lista_id=lista.id,
+                        item_id=item.id,
                         quantidade_atual=item_data["qtd_atual"],
                         quantidade_minima=item_data["qtd_min"]
                     )
-                    db.session.add(item)
-                    lista_mae_count += 1
+                    db.session.add(ref)
+                    refs_criadas += 1
 
         db.session.commit()
         total_lista_mae = ListaMaeItem.query.count()
-        print(f"✅ {total_lista_mae} itens da lista mãe no banco")
+        total_refs = ListaItemRef.query.count()
+        print(f"✅ {total_lista_mae} itens no catálogo global, {total_refs} vínculos com listas")
 
         # 6. Criar Estoques
         print("📊 Criando registros de estoque...")
@@ -2435,25 +2533,23 @@ def populate_database_with_mock_data():
 
 def export_lista_to_csv(lista_id):
     """
-    Exporta os itens da lista mãe para formato CSV.
-    Retorna o conteúdo CSV como string e o nome do arquivo.
+    Exporta os itens da lista para formato CSV.
+    Usa a tabela de referência ListaItemRef para obter quantidades.
     """
     try:
-        # Buscar a lista
         lista = db.session.get(Lista, lista_id)
         if not lista:
             return {"error": "Lista não encontrada."}, 404
 
-        # Buscar os itens da lista mãe
-        itens = ListaMaeItem.query.filter_by(lista_mae_id=lista_id).all()
+        # Buscar referências de itens para esta lista
+        refs = ListaItemRef.query.filter_by(lista_id=lista_id).all()
 
-        if not itens:
+        if not refs:
             return {"error": "Lista não possui itens para exportar."}, 400
 
         # Gerar nome do arquivo com nome da lista e data
         from datetime import datetime
         data_atual = datetime.now().strftime("%Y-%m-%d")
-        # Remover caracteres especiais do nome da lista
         nome_limpo = "".join(c for c in lista.nome if c.isalnum() or c in (' ', '-', '_')).strip()
         nome_limpo = nome_limpo.replace(' ', '_')
         filename = f"{nome_limpo}_{data_atual}.csv"
@@ -2468,13 +2564,13 @@ def export_lista_to_csv(lista_id):
         # Cabeçalho
         writer.writerow(['nome', 'unidade', 'quantidade_atual', 'quantidade_minima'])
 
-        # Dados
-        for item in itens:
+        # Dados (item global + quantidades da referência)
+        for ref in refs:
             writer.writerow([
-                item.nome,
-                item.unidade,
-                float(item.quantidade_atual) if item.quantidade_atual else 0,
-                float(item.quantidade_minima) if item.quantidade_minima else 0
+                ref.item.nome,
+                ref.item.unidade,
+                float(ref.quantidade_atual) if ref.quantidade_atual else 0,
+                float(ref.quantidade_minima) if ref.quantidade_minima else 0
             ])
 
         csv_content = output.getvalue()
@@ -2492,20 +2588,18 @@ def export_lista_to_csv(lista_id):
 
 def import_lista_from_csv(lista_id, csv_file):
     """
-    Importa itens da lista mãe a partir de um arquivo CSV.
-    Substitui todos os itens existentes da lista pelos itens do CSV.
+    Importa itens para uma lista a partir de um arquivo CSV.
+    Itens são adicionados ao catálogo global e vinculados à lista.
+    Substitui os vínculos existentes pelos do CSV.
     """
     try:
-        # Buscar a lista
         lista = db.session.get(Lista, lista_id)
         if not lista:
             return {"error": "Lista não encontrada."}, 404
 
-        # Ler o arquivo CSV
         import csv
-        from io import StringIO, TextIOWrapper
+        from io import StringIO
 
-        # Converter para texto se necessário
         if hasattr(csv_file, 'read'):
             content = csv_file.read()
             if isinstance(content, bytes):
@@ -2513,10 +2607,8 @@ def import_lista_from_csv(lista_id, csv_file):
         else:
             content = csv_file
 
-        # Parse CSV
         csv_reader = csv.DictReader(StringIO(content))
 
-        # Validar cabeçalhos
         required_headers = {'nome', 'unidade', 'quantidade_atual', 'quantidade_minima'}
         headers = set(csv_reader.fieldnames or [])
 
@@ -2525,23 +2617,42 @@ def import_lista_from_csv(lista_id, csv_file):
                 "error": f"CSV deve conter os cabeçalhos: {', '.join(required_headers)}"
             }, 400
 
-        # Remover itens existentes da lista
-        ListaMaeItem.query.filter_by(lista_mae_id=lista_id).delete()
+        # Remover vínculos existentes da lista (não os itens globais)
+        ListaItemRef.query.filter_by(lista_id=lista_id).delete()
 
-        # Importar novos itens
         itens_importados = 0
+        itens_criados = 0
+
         for row in csv_reader:
             try:
-                # Criar novo item
-                novo_item = ListaMaeItem(
-                    lista_mae_id=lista_id,
-                    nome=row['nome'].strip(),
-                    unidade=row['unidade'].strip(),
+                nome = row['nome'].strip()
+                if not nome:
+                    continue
+
+                # Buscar ou criar item no catálogo global
+                item = ListaMaeItem.query.filter(
+                    func.lower(ListaMaeItem.nome) == func.lower(nome)
+                ).first()
+
+                if not item:
+                    item = ListaMaeItem(
+                        nome=nome,
+                        unidade=row['unidade'].strip() if row['unidade'] else 'un'
+                    )
+                    db.session.add(item)
+                    db.session.flush()
+                    itens_criados += 1
+
+                # Criar referência
+                ref = ListaItemRef(
+                    lista_id=lista_id,
+                    item_id=item.id,
                     quantidade_atual=float(row['quantidade_atual']) if row['quantidade_atual'] else 0,
                     quantidade_minima=float(row['quantidade_minima']) if row['quantidade_minima'] else 1.0
                 )
-                db.session.add(novo_item)
+                db.session.add(ref)
                 itens_importados += 1
+
             except (ValueError, KeyError) as e:
                 db.session.rollback()
                 return {
@@ -2551,8 +2662,9 @@ def import_lista_from_csv(lista_id, csv_file):
         db.session.commit()
 
         return {
-            "message": f"Lista importada com sucesso! {itens_importados} itens importados.",
-            "itens_importados": itens_importados
+            "message": f"Lista importada com sucesso! {itens_importados} itens vinculados, {itens_criados} novos no catálogo.",
+            "itens_importados": itens_importados,
+            "itens_criados": itens_criados
         }, 200
 
     except Exception as e:
@@ -2563,32 +2675,28 @@ def import_lista_from_csv(lista_id, csv_file):
 
 def create_lista_from_csv(nome, descricao, csv_file):
     """
-    Cria uma nova lista e importa itens da lista mãe a partir de um arquivo CSV.
+    Cria uma nova lista e importa itens a partir de um arquivo CSV.
+    Itens são adicionados ao catálogo global e vinculados à nova lista.
     """
     try:
-        # Validar nome
         if not nome or not nome.strip():
             return {"error": "Nome da lista é obrigatório."}, 400
 
-        # Validar se já existe uma lista com esse nome
         nome_limpo = nome.strip()
         lista_existente = Lista.query.filter(func.lower(Lista.nome) == func.lower(nome_limpo)).first()
         if lista_existente:
             return {"error": f"Já existe uma lista com o nome '{nome_limpo}'."}, 409
 
-        # Criar nova lista
         nova_lista = Lista(
             nome=nome_limpo,
             descricao=descricao.strip() if descricao else None
         )
         db.session.add(nova_lista)
-        db.session.flush()  # Para obter o ID
+        db.session.flush()
 
-        # Ler o arquivo CSV
         import csv
         from io import StringIO
 
-        # Converter para texto se necessário
         if hasattr(csv_file, 'read'):
             content = csv_file.read()
             if isinstance(content, bytes):
@@ -2596,26 +2704,45 @@ def create_lista_from_csv(nome, descricao, csv_file):
         else:
             content = csv_file
 
-        # Detectar formato: simples (um nome por linha) ou CSV (com delimitadores)
         lines = content.strip().split('\n')
 
-        # Verificar se é formato CSV: a primeira linha deve ter 'nome' como campo
-        # Isso evita confusão com nomes que contêm vírgulas (ex: "3,6 kg")
         is_csv_format = False
         if lines and ',' in lines[0]:
-            # Primeira linha tem vírgula - pode ser CSV
-            # Verificar se contém 'nome' como header
             first_line_lower = lines[0].lower().strip()
             if 'nome' in first_line_lower.split(','):
                 is_csv_format = True
 
-        itens_importados = 0
+        itens_vinculados = 0
+        itens_criados = 0
+
+        def find_or_create_item_and_ref(nome_item, unidade='un', quantidade_atual=0, quantidade_minima=1.0):
+            """Helper para buscar/criar item global e criar referência"""
+            nonlocal itens_criados, itens_vinculados
+
+            # Buscar item no catálogo global
+            item = ListaMaeItem.query.filter(
+                func.lower(ListaMaeItem.nome) == func.lower(nome_item)
+            ).first()
+
+            if not item:
+                item = ListaMaeItem(nome=nome_item, unidade=unidade)
+                db.session.add(item)
+                db.session.flush()
+                itens_criados += 1
+
+            # Criar referência
+            ref = ListaItemRef(
+                lista_id=nova_lista.id,
+                item_id=item.id,
+                quantidade_atual=quantidade_atual,
+                quantidade_minima=quantidade_minima
+            )
+            db.session.add(ref)
+            itens_vinculados += 1
 
         if is_csv_format:
-            # Processar como CSV com DictReader
             csv_reader = csv.DictReader(StringIO(content))
 
-            # Validar cabeçalhos - apenas 'nome' é obrigatório
             required_headers = {'nome'}
             headers = set(csv_reader.fieldnames or [])
 
@@ -2625,28 +2752,20 @@ def create_lista_from_csv(nome, descricao, csv_file):
                     "error": "CSV deve conter no mínimo a coluna 'nome'. Opcionais: unidade, quantidade_atual, quantidade_minima"
                 }, 400
 
-            # Importar itens do CSV
             for row in csv_reader:
                 try:
-                    # Validar que o nome foi fornecido
                     nome_item = row.get('nome', '').strip()
                     if not nome_item:
-                        db.session.rollback()
-                        return {
-                            "error": "Encontrada linha vazia. Todas as linhas devem conter no mínimo o nome do item."
-                        }, 400
+                        continue
 
-                    # Criar novo item com valores padrão para campos opcionais
                     unidade = row.get('unidade', 'un').strip() if row.get('unidade') else 'un'
                     quantidade_atual = 0
                     quantidade_minima = 1.0
 
-                    # Tentar extrair quantidades se fornecidas
                     if row.get('quantidade_atual'):
                         try:
                             quantidade_atual = float(row['quantidade_atual'])
                         except ValueError:
-                            # Ignorar se não for número válido, usar 0
                             pass
 
                     if row.get('quantidade_minima'):
@@ -2655,60 +2774,32 @@ def create_lista_from_csv(nome, descricao, csv_file):
                             if valor > 0:
                                 quantidade_minima = valor
                         except ValueError:
-                            # Ignorar se não for número válido, usar 1.0
                             pass
 
-                    # Criar novo item
-                    novo_item = ListaMaeItem(
-                        lista_mae_id=nova_lista.id,
-                        nome=nome_item,
-                        unidade=unidade,
-                        quantidade_atual=quantidade_atual,
-                        quantidade_minima=quantidade_minima
-                    )
-                    db.session.add(novo_item)
-                    itens_importados += 1
+                    find_or_create_item_and_ref(nome_item, unidade, quantidade_atual, quantidade_minima)
+
                 except Exception as e:
                     db.session.rollback()
-                    return {
-                        "error": f"Erro ao processar linha do CSV: {str(e)}"
-                    }, 400
+                    return {"error": f"Erro ao processar linha do CSV: {str(e)}"}, 400
         else:
-            # Processar como lista simples (um nome por linha)
             for line in lines:
                 line = line.strip()
-                if not line:  # Ignorar linhas vazias
+                if not line:
                     continue
 
                 try:
-                    # Cada linha é apenas o nome do item
-                    nome_item = line.strip()
-
-                    if not nome_item:
-                        continue  # Ignorar linhas vazias
-
-                    # Criar novo item com valores padrão
-                    novo_item = ListaMaeItem(
-                        lista_mae_id=nova_lista.id,
-                        nome=nome_item,
-                        unidade='un',  # Padrão
-                        quantidade_atual=0,
-                        quantidade_minima=1.0
-                    )
-                    db.session.add(novo_item)
-                    itens_importados += 1
+                    find_or_create_item_and_ref(line, 'un', 0, 1.0)
                 except Exception as e:
                     db.session.rollback()
-                    return {
-                        "error": f"Erro ao processar linha: {str(e)}"
-                    }, 400
+                    return {"error": f"Erro ao processar linha: {str(e)}"}, 400
 
         db.session.commit()
 
         return {
-            "message": f"Lista '{nome}' criada com sucesso! {itens_importados} itens importados.",
+            "message": f"Lista '{nome}' criada com sucesso! {itens_vinculados} itens vinculados, {itens_criados} novos no catálogo.",
             "lista_id": nova_lista.id,
-            "itens_importados": itens_importados
+            "itens_vinculados": itens_vinculados,
+            "itens_criados": itens_criados
         }, 201
 
     except Exception as e:

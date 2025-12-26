@@ -815,7 +815,20 @@ def remover_item_da_lista_route(lista_id, item_id):
     return jsonify(response), status
 
 
-# ===== LISTA MAE ITENS ENDPOINTS (Nova Funcionalidade) =====
+# ===== CATÁLOGO GLOBAL DE ITENS =====
+
+@admin_bp.route('/catalogo-global', methods=['GET'])
+@admin_required()
+def get_catalogo_global_route():
+    """
+    Retorna todos os itens do catálogo global.
+    Usado pelo admin no card "Itens e Insumos".
+    """
+    response, status = services.get_catalogo_global()
+    return jsonify(response), status
+
+
+# ===== LISTA MAE ITENS ENDPOINTS =====
 
 @admin_bp.route('/listas/<int:lista_id>/lista-mae', methods=['GET'])
 @admin_required()
