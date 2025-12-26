@@ -139,14 +139,14 @@ const DetalhesSubmissaoColaborador: React.FC = () => {
             setLoading(true);
             setError('');
             
-            // Resubmeter com as quantidades atuais editadas
+            // ATUALIZAR submissão existente (não criar nova)
             const itemsParaSubmeter = itensEstoque.map(item => ({
                 estoque_id: item.item_id,
                 quantidade_atual: quantidadesAtuais[item.item_id] || 0
             }));
 
-            const response = await api.post(
-                `/v1/listas/${submissao.lista_id}/estoque/submit`,
+            const response = await api.put(
+                `/v1/submissoes/${submissao.id}`,
                 { items: itemsParaSubmeter }
             );
 

@@ -925,6 +925,97 @@ def atualizar_estoque_e_calcular_pedido(estoque_id, quantidade_atual, usuario_id
     db.session.commit()
     return estoque.to_dict(), 200
 
+def update_submissao(submissao_id, usuario_id, items_data):
+    """
+    Atualiza uma submissão existente PENDENTE.
+    - Atualiza quantidades atuais dos itens
+    - Recalcula pedidos
+    - Atualiza ou cria novos pedidos
+    - Marca submissao como atualizada
+    """
+    submissao = repositories.get_by_id(Submissao, submissao_id)
+    if not submissao:
+        return {"error": "Submissão não encontrada."}, 404
+    
+    # Validar que é do usuário
+    if submissao.usuario_id != usuario_id:
+        return {"error": "Você não pode editar esta submissão."}, 403
+    
+    # Validar que está PENDENTE
+    if submissao.status != SubmissaoStatus.PENDENTE:
+        return {"error": "Só é possível editar submissões PENDENTES."}, 400
+    
+    lista_id = submissao.lista_id
+    lista = repositories.get_by_id(Lista, lista_id)
+    if not lista:
+        return {"error": "Lista não encontrada."}, 404
+
+    # Buscar refs atuais
+    item_ids = [item.get('estoque_id') for item in items_data if item.get('estoque_id')]
+    refs_map = {}
+    if item_ids:
+        refs = ListaItemRef.query.options(
+            db.joinedload(ListaItemRef.item)
+        ).filter(
+            ListaItemRef.lista_id == lista_id,
+            ListaItemRef.item_id.in_(item_ids)
+        ).all()
+        refs_map = {ref.item_id: ref for ref in refs}
+
+    # Deletar pedidos antigos desta submissão
+    Pedido.query.filter_by(submissao_id=submissao_id).delete()
+
+    pedidos_criados = []
+    refs_atualizados = []
+    agora = datetime.now(timezone.utc)
+
+    for item_data in items_data:
+        estoque_id = item_data.get('estoque_id')  # item_id
+        quantidade_atual = item_data.get('quantidade_atual')
+
+        if not estoque_id or quantidade_atual is None:
+            continue
+
+        ref = refs_map.get(estoque_id)
+        if not ref:
+            continue
+
+        # Atualiza quantidade
+        ref.quantidade_atual = quantidade_atual
+        ref.atualizado_em = agora
+        refs_atualizados.append(ref)
+
+        # Recria Pedido se necessário
+        if float(quantidade_atual) < float(ref.quantidade_minima):
+            quantidade_a_pedir = float(ref.quantidade_minima) - float(quantidade_atual)
+            
+            novo_pedido = Pedido(
+                submissao_id=submissao.id,
+                lista_mae_item_id=ref.item_id,
+                fornecedor_id=None,
+                quantidade_solicitada=quantidade_a_pedir,
+                usuario_id=usuario_id,
+                status=PedidoStatus.PENDENTE
+            )
+            pedidos_criados.append(novo_pedido)
+
+    # Atualizar contador e data
+    submissao.total_pedidos = len(pedidos_criados)
+    submissao.data_submissao = agora  # Atualiza data da submissão
+
+    # Commit
+    if pedidos_criados:
+        db.session.add_all(pedidos_criados)
+    db.session.commit()
+
+    return {
+        "message": f"Submissão atualizada! {len(pedidos_criados)} pedido(s) criado(s).",
+        "submissao_id": submissao.id,
+        "estoques_atualizados": len(refs_atualizados),
+        "pedidos_criados": len(pedidos_criados)
+    }, 200
+
+
 def submit_estoque_lista(lista_id, usuario_id, items_data):
     """
     Submete múltiplos itens de estoque de uma lista.

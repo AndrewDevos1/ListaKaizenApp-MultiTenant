@@ -796,7 +796,7 @@ def get_lista_estoque_route(lista_id):
 @jwt_required()
 def submit_lista_estoque_route(lista_id):
     """
-    Submete múltiplos itens de estoque de uma lista.
+    Submete múltiplos itens de estoque de uma lista (CRIA nova submissão).
     Payload: {"items": [{"estoque_id": 1, "quantidade_atual": 5}, ...]}
     """
     user_id = get_user_id_from_jwt()
@@ -804,6 +804,17 @@ def submit_lista_estoque_route(lista_id):
     items_data = data.get('items', [])
 
     response, status = services.submit_estoque_lista(lista_id, user_id, items_data)
+    return jsonify(response), status
+
+
+@api_bp.route('/submissoes/<int:submissao_id>', methods=['PUT'])
+@jwt_required()
+def update_submissao_route(submissao_id):
+    """Atualiza submissão existente PENDENTE."""
+    user_id = get_user_id_from_jwt()
+    data = request.get_json()
+    items_data = data.get('items', [])
+    response, status = services.update_submissao(submissao_id, user_id, items_data)
     return jsonify(response), status
 
 @admin_bp.route('/listas/status-submissoes', methods=['GET'])
