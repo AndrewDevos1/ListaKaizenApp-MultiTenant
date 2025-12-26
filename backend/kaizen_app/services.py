@@ -816,9 +816,11 @@ def atualizar_estoque_e_calcular_pedido(estoque_id, quantidade_atual, usuario_id
 def submit_estoque_lista(lista_id, usuario_id, items_data):
     """
     Submete múltiplos itens de estoque de uma lista.
+    REFATORADO: Usa ListaItemRef em vez de Estoque.
     Calcula pedidos automaticamente e cria registros de Pedido se necessário.
 
     items_data: [{"estoque_id": 1, "quantidade_atual": 5}, ...]
+    NOTA: estoque_id é interpretado como item_id (compatibilidade)
     """
     lista = repositories.get_by_id(Lista, lista_id)
     if not lista:
@@ -829,45 +831,61 @@ def submit_estoque_lista(lista_id, usuario_id, items_data):
         return {"error": "Você não tem acesso a esta lista."}, 403
 
     pedidos_criados = []
-    estoques_atualizados = []
+    refs_atualizados = []
 
     for item_data in items_data:
-        estoque_id = item_data.get('estoque_id')
+        estoque_id = item_data.get('estoque_id')  # Na verdade é item_id
         quantidade_atual = item_data.get('quantidade_atual')
 
         if not estoque_id or quantidade_atual is None:
             continue
 
-        estoque = repositories.get_by_id(Estoque, estoque_id)
-        if not estoque or estoque.lista_id != lista_id:
+        # Buscar ListaItemRef
+        ref = ListaItemRef.query.filter_by(
+            lista_id=lista_id,
+            item_id=estoque_id  # estoque_id = item_id
+        ).first()
+        
+        if not ref:
             continue
 
-        # Atualiza quantidade e calcula pedido
-        estoque.quantidade_atual = quantidade_atual
-        estoque.pedido = estoque.calcular_pedido()
-        estoque.data_ultima_submissao = datetime.now(timezone.utc)
-        estoque.usuario_ultima_submissao_id = usuario_id
+        # Atualiza quantidade
+        ref.quantidade_atual = quantidade_atual
+        ref.atualizado_em = datetime.now(timezone.utc)
 
-        db.session.add(estoque)
-        estoques_atualizados.append(estoque)
+        db.session.add(ref)
+        refs_atualizados.append(ref)
 
         # Cria Pedido se quantidade está abaixo do mínimo
-        if float(quantidade_atual) < float(estoque.quantidade_minima):
-            quantidade_a_pedir = float(estoque.quantidade_minima) - float(quantidade_atual)
+        if float(quantidade_atual) < float(ref.quantidade_minima):
+            quantidade_a_pedir = float(ref.quantidade_minima) - float(quantidade_atual)
+            
+            # PROBLEMA 1: Pedido.item_id referencia tabela 'itens' (Item), não ListaMaeItem
+            # PROBLEMA 2: Pedido.fornecedor_id é NOT NULL
+            # SOLUÇÃO TEMPORÁRIA: Pular criação de pedidos até resolver arquitetura
+            current_app.logger.warning(
+                f"[SUBMIT] Pedido não criado para item {ref.item_id} - "
+                f"Arquitetura de Pedidos precisa ser refatorada para usar ListaMaeItem"
+            )
+            # TODO: Refatorar modelo Pedido para usar lista_mae_itens
+            
+            """
+            # Código original (não funciona com ListaMaeItem):
             novo_pedido = Pedido(
-                item_id=estoque.item_id,
-                fornecedor_id=estoque.item.fornecedor_id,
+                item_id=ref.item_id,  # FK aponta para 'itens', não 'lista_mae_itens'
+                fornecedor_id=None,  # NOT NULL - causaria erro
                 quantidade_solicitada=quantidade_a_pedir,
                 usuario_id=usuario_id
             )
             db.session.add(novo_pedido)
             pedidos_criados.append(novo_pedido)
+            """
 
     db.session.commit()
 
     return {
-        "message": f"Lista submetida com sucesso! {len(pedidos_criados)} pedido(s) criado(s).",
-        "estoques_atualizados": len(estoques_atualizados),
+        "message": f"Lista submetida com sucesso! (Pedidos automáticos desabilitados temporariamente)",
+        "estoques_atualizados": len(refs_atualizados),
         "pedidos_criados": len(pedidos_criados)
     }, 201
 
@@ -1558,8 +1576,24 @@ def normalize_item_nome(value):
 
 def sync_lista_mae_itens_para_estoque(lista_id):
     """
+    FUNÇÃO LEGADA - DEPRECADA
+    
+    Esta função foi substituída pela arquitetura ListaItemRef.
+    Mantida apenas para compatibilidade temporária.
+    
+    TODO: Remover esta função após garantir que nenhum código a chama.
+    
     Sincroniza itens da lista (via ListaItemRef) com o estoque.
     Apenas cria estoque para itens com quantidade_minima > 0.
+    """
+    # FUNÇÃO DESABILITADA - Retorna imediatamente
+    current_app.logger.warning(
+        f"[DEPRECADO] sync_lista_mae_itens_para_estoque() foi chamada para lista {lista_id}. "
+        "Esta função não é mais necessária com a arquitetura ListaItemRef."
+    )
+    return {"criados": 0, "atualizados": 0, "ignorados": 0, "warning": "Função deprecada"}
+    
+    # Código original comentado abaixo (para referência)
     """
     # Buscar referências de itens para esta lista
     refs = ListaItemRef.query.filter_by(lista_id=lista_id).all()
@@ -1620,6 +1654,7 @@ def sync_lista_mae_itens_para_estoque(lista_id):
     db.session.commit()
 
     return {"criados": criados, "atualizados": atualizados, "ignorados": ignorados}
+    """
 
 def adicionar_item_lista_mae(lista_id, data):
     """
@@ -1668,7 +1703,7 @@ def adicionar_item_lista_mae(lista_id, data):
             db.session.add(ref)
 
         db.session.commit()
-        sync_lista_mae_itens_para_estoque(lista_id)
+        # sync_lista_mae_itens_para_estoque(lista_id)  # REMOVIDO - Não mais necessário
 
         # Retornar dados combinados (item + referência)
         return ref.to_dict(), 201
@@ -1713,7 +1748,7 @@ def editar_item_lista_mae(lista_id, item_id, data):
             ref.item.atualizado_em = datetime.now(timezone.utc)
 
         db.session.commit()
-        sync_lista_mae_itens_para_estoque(lista_id)
+        # sync_lista_mae_itens_para_estoque(lista_id)  # REMOVIDO - Não mais necessário
         return ref.to_dict(), 200
     except Exception as e:
         import traceback
