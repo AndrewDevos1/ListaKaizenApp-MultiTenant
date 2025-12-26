@@ -85,7 +85,11 @@ const MinhasSubmissoes: React.FC = () => {
     }, [submissoes, filterStatus]);
 
     if (isLoading) {
-        return <CustomSpinner />;
+        return (
+            <Container className="py-4">
+                <CustomSpinner />
+            </Container>
+        );
     }
 
     return (
@@ -127,73 +131,48 @@ const MinhasSubmissoes: React.FC = () => {
                 </Form.Select>
             </Form.Group>
 
-            {/* Submissões */}
+            {/* Tabela de Submissões (LISTA, não cards) */}
             {filteredSubmissoes.length === 0 ? (
-                <Alert variant="info" className="text-center">
-                    <FontAwesomeIcon icon={faClipboardList} size="2x" className="mb-3" />
-                    <p>Você ainda não fez nenhuma submissão.</p>
+                <Alert variant="info" className="text-center py-5">
+                    <FontAwesomeIcon icon={faClipboardList} size="3x" className="mb-3 d-block" />
+                    <h5>Nenhuma submissão encontrada</h5>
+                    <p className="text-muted">Você ainda não submeteu nenhuma lista.</p>
                 </Alert>
             ) : (
-                filteredSubmissoes.map((submissao) => (
-                    <Card key={submissao.id} className="mb-4 shadow-sm">
-                        <Card.Header className="bg-light">
-                            <div className="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <h5 className="mb-1">
-                                        <FontAwesomeIcon icon={faClipboardList} className="me-2" />
-                                        {submissao.lista_nome}
-                                    </h5>
-                                    <small className="text-muted">
-                                        Submetido em: {formatarData(submissao.data_submissao)}
-                                    </small>
-                                </div>
-                                <div className="text-end">
+                <Table striped bordered hover responsive>
+                    <thead className="table-dark">
+                        <tr>
+                            <th>#</th>
+                            <th>Lista</th>
+                            <th>Data/Hora</th>
+                            <th className="text-center">Total Itens</th>
+                            <th className="text-center">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {filteredSubmissoes.map((submissao) => (
+                            <tr key={submissao.id}>
+                                <td>{submissao.id}</td>
+                                <td>
+                                    <strong>{submissao.lista_nome}</strong>
+                                </td>
+                                <td>{formatarData(submissao.data_submissao)}</td>
+                                <td className="text-center">
+                                    <Badge bg="secondary">{submissao.total_pedidos}</Badge>
+                                </td>
+                                <td className="text-center">
                                     <Badge 
-                                        bg={getStatusVariant(submissao.status)} 
-                                        className="mb-2"
-                                        style={{ fontSize: '1rem' }}
+                                        bg={getStatusVariant(submissao.status)}
+                                        style={{ fontSize: '0.9rem', padding: '0.5rem 1rem' }}
                                     >
                                         <FontAwesomeIcon icon={getStatusIcon(submissao.status)} className="me-1" />
                                         {submissao.status}
                                     </Badge>
-                                    <div>
-                                        <small className="text-muted">
-                                            {submissao.total_pedidos} item(ns) solicitado(s)
-                                        </small>
-                                    </div>
-                                </div>
-                            </div>
-                        </Card.Header>
-                        <Card.Body>
-                            <Table striped bordered hover responsive size="sm" className="mb-0">
-                                <thead>
-                                    <tr>
-                                        <th>#</th>
-                                        <th>Item</th>
-                                        <th className="text-center">Quantidade</th>
-                                        <th className="text-center">Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {submissao.pedidos.map((pedido, idx) => (
-                                        <tr key={pedido.id}>
-                                            <td>{idx + 1}</td>
-                                            <td>{pedido.item_nome}</td>
-                                            <td className="text-center">
-                                                {pedido.quantidade_solicitada} {pedido.unidade}
-                                            </td>
-                                            <td className="text-center">
-                                                <Badge bg={getStatusVariant(pedido.status)}>
-                                                    {pedido.status}
-                                                </Badge>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </Table>
-                        </Card.Body>
-                    </Card>
-                ))
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </Table>
             )}
         </Container>
     );
