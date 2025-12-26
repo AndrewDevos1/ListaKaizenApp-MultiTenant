@@ -32,7 +32,8 @@
     "web-vitals": "^2.1.4"
   },
   "scripts": {
-    "start": "concurrently \"react-scripts start\" \"node scripts/wait-and-open.js\"",
+    "start": "BROWSER=none NODE_OPTIONS=--max_old_space_size=4096 react-scripts start",
+    "start:with-open": "concurrently \"react-scripts start\" \"node scripts/wait-and-open.js\"",
     "start:no-browser": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
