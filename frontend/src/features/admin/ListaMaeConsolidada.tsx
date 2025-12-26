@@ -857,7 +857,7 @@ const ListaMaeConsolidada: React.FC = () => {
                                         style={{ cursor: 'pointer' }}
                                         title="Duplo clique para editar"
                                     >
-                                        {editandoCampo?.itemId === item.id && editandoCampo.campo === 'nome' ? (
+                                        {(editandoCampo && editandoCampo.itemId === item.id && editandoCampo.campo === 'nome') ? (
                                             <input
                                                 ref={campoEditavelRef}
                                                 type="text"
@@ -881,7 +881,7 @@ const ListaMaeConsolidada: React.FC = () => {
                                         style={{ cursor: 'pointer' }}
                                         title="Duplo clique para editar"
                                     >
-                                        {editandoCampo?.itemId === item.id && editandoCampo.campo === 'quantidade_minima' ? (
+                                        {(editandoCampo && editandoCampo.itemId === item.id && editandoCampo.campo === 'quantidade_minima') ? (
                                             <input
                                                 ref={campoEditavelRef}
                                                 type="number"
