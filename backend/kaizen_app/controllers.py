@@ -1207,6 +1207,27 @@ def export_bulk_data_route():
     )
 
 
+# ===== NAVBAR PREFERENCES =====
+
+@auth_bp.route('/navbar-preferences', methods=['GET'])
+@jwt_required()
+def get_navbar_preferences_route():
+    """Busca preferências de navbar do usuário."""
+    user_id = get_jwt_identity()
+    response, status = services.get_navbar_preferences(user_id)
+    return jsonify(response), status
+
+
+@auth_bp.route('/navbar-preferences', methods=['POST'])
+@jwt_required()
+def save_navbar_preferences_route():
+    """Salva preferências de navbar do usuário."""
+    user_id = get_jwt_identity()
+    data = request.get_json()
+    response, status = services.save_navbar_preferences(user_id, data)
+    return jsonify(response), status
+
+
 # ===== SUGESTÕES DE ITENS =====
 
 @auth_bp.route('/sugestoes', methods=['POST'])

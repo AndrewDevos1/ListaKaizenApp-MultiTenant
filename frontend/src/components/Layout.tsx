@@ -1,6 +1,10 @@
 import React from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
+import { useSugestoesPendentes } from '../hooks/useSugestoesPendentes';
+import UserAvatar from './UserAvatar';
+import Breadcrumbs from './Breadcrumbs';
 import api from '../services/api';
 import styles from './Layout.module.css';
 
@@ -27,6 +31,8 @@ const Layout: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { logout, user } = useAuth();
+  const { isDarkMode, toggleDarkMode } = useTheme();
+  const { count: sugestoesPendentes } = useSugestoesPendentes(user?.role);
   const searchInputRef = React.useRef<HTMLInputElement>(null);
 
   // Admin menu structure
@@ -100,7 +106,7 @@ const Layout: React.FC = () => {
   const filteredGroups = React.useMemo(() => {
     if (!searchTerm) return menuGroups;
 
-    return menuGroups
+    const filtered = menuGroups
       .map(group => ({
         ...group,
         items: group.items.filter(item =>
@@ -108,7 +114,20 @@ const Layout: React.FC = () => {
         )
       }))
       .filter(group => group.items.length > 0);
-  }, [searchTerm, menuGroups]);
+    
+    // Expandir automaticamente categorias com resultados
+    if (searchTerm && filtered.length > 0) {
+      const newExpandedGroups = { ...expandedGroups };
+      filtered.forEach(group => {
+        newExpandedGroups[group.title] = true;
+      });
+      if (JSON.stringify(newExpandedGroups) !== JSON.stringify(expandedGroups)) {
+        setExpandedGroups(newExpandedGroups);
+      }
+    }
+
+    return filtered;
+  }, [searchTerm, menuGroups, expandedGroups]);
 
   const handleToggle = () => {
     setIsToggled(!isToggled);
@@ -299,19 +318,15 @@ const Layout: React.FC = () => {
         </div>
 
         {/* User Profile Section */}
-        {user && (
+        {user && !isCollapsed && (
+          <UserAvatar nome={user.nome} role={user.role} size="medium" />
+        )}
+        
+        {user && isCollapsed && (
           <div className={styles.userProfileSection}>
             <div className={styles.userAvatar}>
               <i className={`fas ${user.role === 'ADMIN' ? 'fa-user-shield' : 'fa-user'}`} aria-hidden="true"></i>
             </div>
-            {!isCollapsed && (
-              <div className={styles.userInfo}>
-                <div className={styles.userName}>{user.nome}</div>
-                <div className={styles.userRole}>
-                  {user.role === 'ADMIN' ? 'Administrador' : 'Colaborador'}
-                </div>
-              </div>
-            )}
           </div>
         )}
 
@@ -399,7 +414,17 @@ const Layout: React.FC = () => {
                           title={isCollapsed ? item.label : undefined}
                         >
                           <i className={`fas ${item.icon}`} aria-hidden="true"></i>
-                          {!isCollapsed && <span className={styles.menuItemText}>{item.label}</span>}
+                          {!isCollapsed && (
+                            <>
+                              <span className={styles.menuItemText}>{item.label}</span>
+                              {item.path === '/admin/sugestoes' && sugestoesPendentes > 0 && (
+                                <span className={styles.badge}>{sugestoesPendentes}</span>
+                              )}
+                            </>
+                          )}
+                          {isCollapsed && item.path === '/admin/sugestoes' && sugestoesPendentes > 0 && (
+                            <span className={styles.badgeDot}></span>
+                          )}
                         </Link>
                       );
                     })}
@@ -414,6 +439,14 @@ const Layout: React.FC = () => {
         <div className={styles.sidebarFooter}>
           {!isCollapsed ? (
             <>
+              <button 
+                className={styles.darkModeToggle}
+                onClick={toggleDarkMode}
+                title={isDarkMode ? 'Modo Claro' : 'Modo Escuro'}
+              >
+                <i className={`fas ${isDarkMode ? 'fa-sun' : 'fa-moon'} me-2`} aria-hidden="true"></i>
+                {isDarkMode ? 'Modo Claro' : 'Modo Escuro'}
+              </button>
               <div className={styles.footerVersion}>v2.1.0</div>
               <a href="#!" className={styles.footerLink}>
                 <i className="fas fa-question-circle me-2" aria-hidden="true"></i>
@@ -426,6 +459,13 @@ const Layout: React.FC = () => {
             </>
           ) : (
             <>
+              <button 
+                className={styles.footerIconLink}
+                onClick={toggleDarkMode}
+                title={isDarkMode ? 'Modo Claro' : 'Modo Escuro'}
+              >
+                <i className={`fas ${isDarkMode ? 'fa-sun' : 'fa-moon'}`} aria-hidden="true"></i>
+              </button>
               <a href="#!" className={styles.footerIconLink} title="Ajuda & Suporte">
                 <i className="fas fa-question-circle" aria-hidden="true"></i>
               </a>
@@ -439,6 +479,7 @@ const Layout: React.FC = () => {
 
       {/* Page Content */}
       <div className={styles.pageContentWrapper}>
+        <Breadcrumbs />
         <div className="container-fluid px-4">
           <Outlet />
         </div>
