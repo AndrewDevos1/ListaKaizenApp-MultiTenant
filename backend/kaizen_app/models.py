@@ -399,7 +399,7 @@ class SugestaoItem(db.Model, SerializerMixin):
     unidade = db.Column(db.String(50), nullable=False)
     quantidade = db.Column(db.Float, nullable=False)
     mensagem_usuario = db.Column(db.Text, nullable=True)
-    status = db.Column(db.Enum(SugestaoStatus), nullable=False, default=SugestaoStatus.PENDENTE)
+    status = db.Column(db.Enum(SugestaoStatus, values_callable=lambda x: [e.value for e in x]), nullable=False, default=SugestaoStatus.PENDENTE)
     admin_id = db.Column(db.Integer, db.ForeignKey('usuarios.id', ondelete='SET NULL'), nullable=True)
     mensagem_admin = db.Column(db.Text, nullable=True)
     item_global_id = db.Column(db.Integer, db.ForeignKey('lista_mae_itens.id', ondelete='SET NULL'), nullable=True)
