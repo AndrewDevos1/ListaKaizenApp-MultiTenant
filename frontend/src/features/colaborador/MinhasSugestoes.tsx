@@ -29,7 +29,7 @@ const MinhasSugestoes: React.FC = () => {
         setIsLoading(true);
         setError('');
         try {
-            const response = await api.get('/sugestoes/minhas');
+            const response = await api.get('/auth/sugestoes/minhas');
             setSugestoes(response.data.sugestoes || []);
         } catch (err: any) {
             console.error('[MinhasSugestoes] Erro:', err);

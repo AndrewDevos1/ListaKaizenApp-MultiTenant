@@ -52,7 +52,7 @@ const SugerirItemModal: React.FC<SugerirItemModalProps> = ({
 
         setIsSubmitting(true);
         try {
-            await api.post('/sugestoes', {
+            await api.post('/auth/sugestoes', {
                 lista_id: listaId,
                 nome_item: nomeItem.trim(),
                 unidade: unidade.trim(),
