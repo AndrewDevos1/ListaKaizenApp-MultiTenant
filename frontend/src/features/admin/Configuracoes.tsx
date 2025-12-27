@@ -351,38 +351,39 @@ const Configuracoes: React.FC = () => {
                         <Form.Group className={styles.formGroup}>
                             <Form.Label className={styles.formLabel}>
                                 <FontAwesomeIcon icon={faClock} />
-                                Tempo de Sessão (minutos)
+                                Tempo de Sessão
                             </Form.Label>
 
-                            <div className={styles.rangeContainer}>
-                                <div className={styles.rangeValue}>
-                                    {sessionTimeout} minutos
-                                </div>
+                            <Form.Select
+                                value={sessionTimeout}
+                                onChange={(e) => setSessionTimeout(parseInt(e.target.value, 10))}
+                                className={styles.timeoutSelect}
+                            >
+                                <option value={5}>5 minutos - Alta segurança</option>
+                                <option value={10}>10 minutos - Alta segurança</option>
+                                <option value={15}>15 minutos - Alta segurança</option>
+                                <option value={30}>30 minutos - Padrão (recomendado)</option>
+                                <option value={45}>45 minutos - Balanceado</option>
+                                <option value={60}>60 minutos - Conveniência</option>
+                                <option value={90}>90 minutos - Conveniência</option>
+                                <option value={120}>120 minutos - Máximo</option>
+                            </Form.Select>
 
-                                <Form.Range
-                                    min={5}
-                                    max={120}
-                                    step={5}
-                                    value={sessionTimeout}
-                                    onChange={(e) => setSessionTimeout(parseInt(e.target.value, 10))}
-                                />
-
-                                <div className={styles.helpText}>
-                                    <FontAwesomeIcon icon={faInfoCircle} />
-                                    Após {sessionTimeout} minutos de inatividade, o usuário será desconectado automaticamente.
-                                </div>
+                            <div className={styles.helpText}>
+                                <FontAwesomeIcon icon={faInfoCircle} />
+                                Após {sessionTimeout} minutos de inatividade, o usuário será desconectado automaticamente.
                             </div>
                         </Form.Group>
 
                         {/* Informações adicionais */}
-                        <div className={styles.helpText}>
-                            <FontAwesomeIcon icon={faInfoCircle} />
+                        <div className={styles.infoBox}>
+                            <FontAwesomeIcon icon={faInfoCircle} className={styles.infoIcon} />
                             <div>
-                                <strong>Valores recomendados:</strong>
-                                <ul style={{ marginTop: '0.5rem', marginBottom: 0 }}>
-                                    <li>5-15 minutos: Alta segurança (áreas sensíveis)</li>
-                                    <li>30 minutos: Padrão (balanceado)</li>
-                                    <li>60-120 minutos: Conveniência (ambiente confiável)</li>
+                                <strong>Recomendações de Segurança:</strong>
+                                <ul style={{ marginTop: '0.5rem', marginBottom: 0, paddingLeft: '1.2rem' }}>
+                                    <li><strong>5-15 minutos:</strong> Ambientes com dados sensíveis ou acesso compartilhado</li>
+                                    <li><strong>30 minutos:</strong> Uso corporativo padrão (balanceado)</li>
+                                    <li><strong>60-120 minutos:</strong> Ambientes seguros e privados</li>
                                 </ul>
                             </div>
                         </div>

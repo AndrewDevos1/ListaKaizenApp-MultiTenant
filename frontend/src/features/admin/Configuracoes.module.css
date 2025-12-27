@@ -167,6 +167,66 @@
   color: #95a5a6;
 }
 
+/* Dropdown de timeout */
+.timeoutSelect {
+  border: 2px solid #e9ecef;
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  font-weight: 500;
+  color: #2c3e50;
+  background-color: white;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.timeoutSelect:focus {
+  border-color: #95a5a6;
+  box-shadow: 0 0 0 0.2rem rgba(149, 165, 166, 0.25);
+  outline: none;
+}
+
+.timeoutSelect:hover {
+  border-color: #bdc3c7;
+}
+
+/* Caixa de informações */
+.infoBox {
+  background: linear-gradient(135deg, #e8f4fd 0%, #d6eaf8 100%);
+  border-left: 4px solid #3498db;
+  border-radius: 10px;
+  padding: 1rem 1.25rem;
+  margin-top: 1.5rem;
+  display: flex;
+  gap: 1rem;
+}
+
+.infoIcon {
+  color: #3498db;
+  font-size: 1.25rem;
+  flex-shrink: 0;
+  margin-top: 0.15rem;
+}
+
+.infoBox strong {
+  color: #2c3e50;
+  font-size: 0.95rem;
+}
+
+.infoBox ul {
+  color: #34495e;
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+
+.infoBox li {
+  margin-bottom: 0.5rem;
+}
+
+.infoBox li:last-child {
+  margin-bottom: 0;
+}
+
 /* Botões de ação */
 .actionButtons {
   display: flex;
