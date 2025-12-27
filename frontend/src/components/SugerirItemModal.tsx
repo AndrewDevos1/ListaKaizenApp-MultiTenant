@@ -41,22 +41,14 @@ const SugerirItemModal: React.FC<SugerirItemModalProps> = ({
             setError('Nome do item é obrigatório.');
             return;
         }
-        if (!unidade.trim()) {
-            setError('Unidade é obrigatória.');
-            return;
-        }
-        if (!quantidade || parseFloat(quantidade) <= 0) {
-            setError('Quantidade deve ser maior que zero.');
-            return;
-        }
 
         setIsSubmitting(true);
         try {
             await api.post('/auth/sugestoes', {
                 lista_id: listaId,
                 nome_item: nomeItem.trim(),
-                unidade: unidade.trim(),
-                quantidade: parseFloat(quantidade),
+                unidade: unidade.trim() || 'un',
+                quantidade: quantidade ? parseFloat(quantidade) : 1,
                 mensagem_usuario: mensagem.trim()
             });
 
@@ -98,28 +90,32 @@ const SugerirItemModal: React.FC<SugerirItemModalProps> = ({
                     </Form.Group>
 
                     <Form.Group className="mb-3">
-                        <Form.Label>Unidade *</Form.Label>
+                        <Form.Label>Unidade (opcional)</Form.Label>
                         <Form.Control
                             type="text"
                             value={unidade}
                             onChange={(e) => setUnidade(e.target.value)}
-                            placeholder="Ex: kg, un, litro, pacote"
+                            placeholder="Ex: kg, un, litro, pacote (opcional)"
                             disabled={isSubmitting}
-                            required
                         />
+                        <Form.Text className="text-muted">
+                            Se não informar, o admin definirá a unidade.
+                        </Form.Text>
                     </Form.Group>
 
                     <Form.Group className="mb-3">
-                        <Form.Label>Quantidade Desejada *</Form.Label>
+                        <Form.Label>Quantidade Desejada (opcional)</Form.Label>
                         <Form.Control
                             type="number"
                             step="0.01"
                             value={quantidade}
                             onChange={(e) => setQuantidade(e.target.value)}
-                            placeholder="Ex: 5"
+                            placeholder="Ex: 5 (opcional)"
                             disabled={isSubmitting}
-                            required
                         />
+                        <Form.Text className="text-muted">
+                            Se não informar, o admin definirá a quantidade.
+                        </Form.Text>
                     </Form.Group>
 
                     <Form.Group className="mb-3">

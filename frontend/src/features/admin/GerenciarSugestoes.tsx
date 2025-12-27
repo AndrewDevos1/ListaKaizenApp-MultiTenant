@@ -22,6 +22,8 @@ const GerenciarSugestoes: React.FC = () => {
     const [showAprovarModal, setShowAprovarModal] = useState(false);
     const [showRejeitarModal, setShowRejeitarModal] = useState(false);
     const [mensagemAdmin, setMensagemAdmin] = useState('');
+    const [unidadeEdit, setUnidadeEdit] = useState('');
+    const [quantidadeEdit, setQuantidadeEdit] = useState('');
     const [isProcessing, setIsProcessing] = useState(false);
 
     useEffect(() => {
@@ -45,6 +47,8 @@ const GerenciarSugestoes: React.FC = () => {
     const handleAprovar = (sugestao: Sugestao) => {
         setSugestaoSelecionada(sugestao);
         setMensagemAdmin('');
+        setUnidadeEdit(sugestao.unidade || '');
+        setQuantidadeEdit(sugestao.quantidade?.toString() || '1');
         setShowAprovarModal(true);
     };
 
@@ -57,16 +61,29 @@ const GerenciarSugestoes: React.FC = () => {
     const confirmarAprovacao = async () => {
         if (!sugestaoSelecionada) return;
 
+        if (!unidadeEdit.trim()) {
+            setError('Unidade é obrigatória.');
+            return;
+        }
+        if (!quantidadeEdit || parseFloat(quantidadeEdit) <= 0) {
+            setError('Quantidade deve ser maior que zero.');
+            return;
+        }
+
         setIsProcessing(true);
         setError('');
         try {
             await api.put(`/admin/sugestoes/${sugestaoSelecionada.id}/aprovar`, {
-                mensagem_admin: mensagemAdmin.trim() || undefined
+                mensagem_admin: mensagemAdmin.trim() || undefined,
+                unidade: unidadeEdit.trim(),
+                quantidade: parseFloat(quantidadeEdit)
             });
 
             setShowAprovarModal(false);
             setSugestaoSelecionada(null);
             setMensagemAdmin('');
+            setUnidadeEdit('');
+            setQuantidadeEdit('');
             fetchSugestoes(); // Recarrega lista
         } catch (err: any) {
             console.error('[GerenciarSugestoes] Erro ao aprovar:', err);
@@ -203,6 +220,32 @@ const GerenciarSugestoes: React.FC = () => {
                             <Alert variant="info">
                                 Você está aprovando a adição do item <strong>{sugestaoSelecionada.nome_item}</strong> ao catálogo global.
                             </Alert>
+                            
+                            <Form.Group className="mb-3">
+                                <Form.Label>Unidade *</Form.Label>
+                                <Form.Control
+                                    type="text"
+                                    value={unidadeEdit}
+                                    onChange={(e) => setUnidadeEdit(e.target.value)}
+                                    placeholder="Ex: kg, un, litro, pacote"
+                                    disabled={isProcessing}
+                                    required
+                                />
+                            </Form.Group>
+
+                            <Form.Group className="mb-3">
+                                <Form.Label>Quantidade *</Form.Label>
+                                <Form.Control
+                                    type="number"
+                                    step="0.01"
+                                    value={quantidadeEdit}
+                                    onChange={(e) => setQuantidadeEdit(e.target.value)}
+                                    placeholder="Ex: 5"
+                                    disabled={isProcessing}
+                                    required
+                                />
+                            </Form.Group>
+
                             <Form.Group>
                                 <Form.Label>Mensagem ao usuário (opcional)</Form.Label>
                                 <Form.Control

@@ -3975,18 +3975,14 @@ def criar_sugestao_item(user_id, data):
     """
     lista_id = data.get('lista_id')
     nome_item = data.get('nome_item', '').strip()
-    unidade = data.get('unidade', '').strip()
-    quantidade = data.get('quantidade')
+    unidade = data.get('unidade', '').strip() or 'un'  # Padrão 'un' se não informar
+    quantidade = data.get('quantidade') or 1  # Padrão 1 se não informar
     mensagem_usuario = data.get('mensagem_usuario', '').strip()
 
     if not lista_id:
         return {"error": "ID da lista é obrigatório."}, 400
     if not nome_item:
         return {"error": "Nome do item é obrigatório."}, 400
-    if not unidade:
-        return {"error": "Unidade é obrigatória."}, 400
-    if not quantidade or quantidade <= 0:
-        return {"error": "Quantidade deve ser maior que zero."}, 400
 
     # Verifica se a lista existe e pertence ao usuário
     lista = Lista.query.get(lista_id)
@@ -4004,7 +4000,7 @@ def criar_sugestao_item(user_id, data):
         lista_id=lista_id,
         nome_item=nome_item,
         unidade=unidade,
-        quantidade=quantidade,
+        quantidade=float(quantidade),
         mensagem_usuario=mensagem_usuario if mensagem_usuario else None,
         status=SugestaoStatus.PENDENTE
     )
@@ -4065,12 +4061,19 @@ def aprovar_sugestao(sugestao_id, admin_id, data):
         return {"error": "Sugestão já foi respondida."}, 400
 
     mensagem_admin = data.get('mensagem_admin', '').strip()
+    unidade = data.get('unidade', '').strip() or sugestao.unidade
+    quantidade = data.get('quantidade') or sugestao.quantidade
+
+    if not unidade:
+        return {"error": "Unidade é obrigatória."}, 400
+    if not quantidade or quantidade <= 0:
+        return {"error": "Quantidade deve ser maior que zero."}, 400
 
     try:
         # 1. Cria item no catálogo global
         item_global = ListaMaeItem(
             nome=sugestao.nome_item,
-            unidade=sugestao.unidade
+            unidade=unidade
         )
         db.session.add(item_global)
         db.session.flush()  # Para obter o ID
@@ -4080,7 +4083,7 @@ def aprovar_sugestao(sugestao_id, admin_id, data):
             lista_id=sugestao.lista_id,
             item_id=item_global.id,
             quantidade_atual=0,
-            quantidade_minima=sugestao.quantidade
+            quantidade_minima=float(quantidade)
         )
         db.session.add(item_ref)
 
@@ -4089,6 +4092,8 @@ def aprovar_sugestao(sugestao_id, admin_id, data):
         sugestao.admin_id = admin_id
         sugestao.mensagem_admin = mensagem_admin if mensagem_admin else None
         sugestao.item_global_id = item_global.id
+        sugestao.unidade = unidade
+        sugestao.quantidade = float(quantidade)
         sugestao.respondido_em = datetime.now(timezone.utc)
 
         db.session.commit()
