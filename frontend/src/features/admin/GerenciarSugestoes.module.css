@@ -1,0 +1,51 @@
+.container {
+    padding: 20px;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.badge {
+    font-size: 1rem;
+    padding: 8px 15px;
+}
+
+.mensagem {
+    max-width: 250px;
+    padding: 8px;
+    background-color: #f8f9fa;
+    border-left: 3px solid #0d6efd;
+    border-radius: 4px;
+    font-size: 0.9rem;
+}
+
+.actionButtons {
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+    .container {
+        padding: 10px;
+    }
+
+    .header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .actionButtons {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .actionButtons button {
+        width: 100%;
+    }
+}
