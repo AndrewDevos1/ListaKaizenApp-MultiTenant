@@ -1539,6 +1539,49 @@ def get_catalogo_global():
     return {"itens": itens_data, "total": len(itens_data)}, 200
 
 
+def editar_item_catalogo_global(item_id, data):
+    """
+    Edita um item do catálogo global (ListaMaeItem).
+    Permite alterar nome e unidade.
+    """
+    item = ListaMaeItem.query.get(item_id)
+    if not item:
+        return {"error": "Item não encontrado."}, 404
+
+    nome = data.get('nome', '').strip()
+    unidade = data.get('unidade', '').strip()
+
+    if not nome:
+        return {"error": "Nome do item é obrigatório."}, 400
+    if not unidade:
+        return {"error": "Unidade é obrigatória."}, 400
+
+    # Verifica se já existe outro item com o mesmo nome
+    item_existente = ListaMaeItem.query.filter(
+        ListaMaeItem.nome == nome,
+        ListaMaeItem.id != item_id
+    ).first()
+    
+    if item_existente:
+        return {"error": f"Já existe um item com o nome '{nome}'."}, 409
+
+    item.nome = nome
+    item.unidade = unidade
+    item.atualizado_em = datetime.now(timezone.utc)
+
+    db.session.commit()
+
+    return {
+        "message": "Item atualizado com sucesso.",
+        "item": {
+            "id": item.id,
+            "nome": item.nome,
+            "unidade": item.unidade,
+            "atualizado_em": item.atualizado_em.isoformat()
+        }
+    }, 200
+
+
 def get_listas_status_submissoes():
     """
     Retorna o status das submissões de listas com pedidos pendentes.

@@ -924,6 +924,15 @@ def get_catalogo_global_route():
     return jsonify(response), status
 
 
+@admin_bp.route('/catalogo-global/<int:item_id>', methods=['PUT'])
+@admin_required()
+def editar_item_catalogo_global_route(item_id):
+    """Edita um item do catálogo global"""
+    data = request.get_json()
+    response, status = services.editar_item_catalogo_global(item_id, data)
+    return jsonify(response), status
+
+
 # ===== LISTA MAE ITENS ENDPOINTS =====
 
 @admin_bp.route('/listas/<int:lista_id>/lista-mae', methods=['GET'])
