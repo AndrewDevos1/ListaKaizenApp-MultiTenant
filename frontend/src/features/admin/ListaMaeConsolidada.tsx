@@ -21,7 +21,9 @@ import {
     faTrash,
     faCheck,
     faTruck,
-    faArrowRight
+    faArrowRight,
+    faCopy,
+    faExchangeAlt as faExchange
 } from '@fortawesome/free-solid-svg-icons';
 import api from '../../services/api';
 import styles from './ListaMaeConsolidada.module.css';
@@ -96,6 +98,19 @@ const ListaMaeConsolidada: React.FC = () => {
     const [mostrarModalImportacao, setMostrarModalImportacao] = useState(false);
     const [textoImportacao, setTextoImportacao] = useState('');
     const [carregandoImportacao, setCarregandoImportacao] = useState(false);
+
+    // Estados para Copiar/Mover itens
+    const [mostrarModalCopiar, setMostrarModalCopiar] = useState(false);
+    const [mostrarModalMover, setMostrarModalMover] = useState(false);
+    const [mostrarModalResultado, setMostrarModalResultado] = useState(false);
+    const [tipoOperacao, setTipoOperacao] = useState<'existente' | 'nova'>('existente');
+    const [listaDestinoId, setListaDestinoId] = useState<number | null>(null);
+    const [nomeNovaLista, setNomeNovaLista] = useState('');
+    const [areaIdNova, setAreaIdNova] = useState<number | null>(null);
+    const [listas, setListas] = useState<any[]>([]);
+    const [areas, setAreas] = useState<any[]>([]);
+    const [resultado, setResultado] = useState<any>(null);
+    const [carregandoOperacao, setCarregandoOperacao] = useState(false);
 
     // Estados para filtros e busca
     const [buscaNome, setBuscaNome] = useState('');
@@ -234,6 +249,76 @@ const ListaMaeConsolidada: React.FC = () => {
             const todosIds = new Set(listaMae?.itens.map(item => item.id).filter(id => id !== undefined) as number[]);
             setItensSelecionados(todosIds);
             setTodosVerificados(true);
+        }
+    };
+
+    // Handlers para Copiar/Mover
+    const handleAbrirCopiar = async () => {
+        setMostrarModalCopiar(true);
+        await carregarListasEAreas();
+    };
+
+    const handleAbrirMover = async () => {
+        setMostrarModalMover(true);
+        await carregarListasEAreas();
+    };
+
+    const carregarListasEAreas = async () => {
+        try {
+            const [listasRes, areasRes] = await Promise.all([
+                api.get('/v1/listas'),
+                api.get('/v1/areas')
+            ]);
+            setListas(listasRes.data);
+            setAreas(areasRes.data);
+        } catch (err) {
+            console.error('Erro ao carregar listas/áreas:', err);
+            setError('Erro ao carregar listas e áreas');
+        }
+    };
+
+    const handleFecharModal = () => {
+        setMostrarModalCopiar(false);
+        setMostrarModalMover(false);
+        setTipoOperacao('existente');
+        setListaDestinoId(null);
+        setNomeNovaLista('');
+        setAreaIdNova(null);
+    };
+
+    const handleConfirmarOperacao = async () => {
+        try {
+            setCarregandoOperacao(true);
+            setError(null);
+
+            const payload = {
+                item_ids: Array.from(itensSelecionados),
+                lista_destino_id: tipoOperacao === 'existente' ? listaDestinoId : null,
+                nome_nova_lista: tipoOperacao === 'nova' ? nomeNovaLista : null,
+                area_id: tipoOperacao === 'nova' ? areaIdNova : null
+            };
+
+            const endpoint = mostrarModalCopiar ? 'copiar' : 'mover';
+            const response = await api.post(
+                `/admin/listas/${listaId}/itens/${endpoint}`,
+                payload
+            );
+
+            setResultado(response.data);
+            setMostrarModalResultado(true);
+            setMostrarModalCopiar(false);
+            setMostrarModalMover(false);
+            setItensSelecionados(new Set());
+            setTodosVerificados(false);
+
+            // Recarregar lista se foi mover
+            if (endpoint === 'mover') {
+                await fetchListaMae();
+            }
+        } catch (err: any) {
+            setError(err.response?.data?.error || 'Erro na operação');
+        } finally {
+            setCarregandoOperacao(false);
         }
     };
 
@@ -710,9 +795,26 @@ const ListaMaeConsolidada: React.FC = () => {
                                     </Col>
                                     <Col className="text-end">
                                         <Button
+                                            variant="info"
+                                            size="sm"
+                                            onClick={handleAbrirCopiar}
+                                            className="me-2"
+                                        >
+                                            <FontAwesomeIcon icon={faCopy} /> Copiar para Lista
+                                        </Button>
+                                        <Button
+                                            variant="warning"
+                                            size="sm"
+                                            onClick={handleAbrirMover}
+                                            className="me-2"
+                                        >
+                                            <FontAwesomeIcon icon={faExchange} /> Mover para Lista
+                                        </Button>
+                                        <Button
                                             variant="primary"
                                             size="sm"
                                             onClick={() => setMostrarModalFornecedor(true)}
+                                            className="me-2"
                                         >
                                             <FontAwesomeIcon icon={faTruck} /> Atribuir Fornecedor
                                         </Button>
@@ -723,7 +825,6 @@ const ListaMaeConsolidada: React.FC = () => {
                                                 setItensSelecionados(new Set());
                                                 setTodosVerificados(false);
                                             }}
-                                            className="ms-2"
                                         >
                                             Limpar Seleção
                                         </Button>
@@ -1189,6 +1290,142 @@ Gergelim branco
                                 <FontAwesomeIcon icon={faPlus} /> Importar
                             </>
                         )}
+                    </Button>
+                </Modal.Footer>
+            </Modal>
+
+            {/* Modal de Copiar/Mover */}
+            <Modal show={mostrarModalCopiar || mostrarModalMover} onHide={handleFecharModal} size="lg">
+                <Modal.Header closeButton>
+                    <Modal.Title>
+                        {mostrarModalCopiar ? 'Copiar' : 'Mover'} Itens para Outra Lista
+                    </Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <Alert variant="info">
+                        <strong>{itensSelecionados.size} item(ns) selecionado(s)</strong>
+                    </Alert>
+
+                    <Form.Group className="mb-3">
+                        <Form.Label><strong>Destino</strong></Form.Label>
+                        <div>
+                            <Form.Check
+                                type="radio"
+                                id="radio-existente"
+                                label="Lista Existente"
+                                checked={tipoOperacao === 'existente'}
+                                onChange={() => setTipoOperacao('existente')}
+                                className="mb-2"
+                            />
+                            <Form.Check
+                                type="radio"
+                                id="radio-nova"
+                                label="Criar Nova Lista"
+                                checked={tipoOperacao === 'nova'}
+                                onChange={() => setTipoOperacao('nova')}
+                            />
+                        </div>
+                    </Form.Group>
+
+                    {tipoOperacao === 'existente' ? (
+                        <Form.Group>
+                            <Form.Label>Selecione a Lista</Form.Label>
+                            <Form.Select
+                                value={listaDestinoId || ''}
+                                onChange={(e) => setListaDestinoId(Number(e.target.value))}
+                            >
+                                <option value="">Escolha uma lista...</option>
+                                {listas
+                                    .filter(l => l.id !== Number(listaId))
+                                    .map((lista: any) => (
+                                        <option key={lista.id} value={lista.id}>
+                                            {lista.nome}
+                                        </option>
+                                    ))}
+                            </Form.Select>
+                        </Form.Group>
+                    ) : (
+                        <>
+                            <Form.Group className="mb-3">
+                                <Form.Label>Nome da Nova Lista</Form.Label>
+                                <Form.Control
+                                    type="text"
+                                    value={nomeNovaLista}
+                                    onChange={(e) => setNomeNovaLista(e.target.value)}
+                                    placeholder="Ex: Lista Cozinha"
+                                />
+                            </Form.Group>
+                            <Form.Group>
+                                <Form.Label>Área</Form.Label>
+                                <Form.Select
+                                    value={areaIdNova || ''}
+                                    onChange={(e) => setAreaIdNova(Number(e.target.value))}
+                                >
+                                    <option value="">Escolha uma área...</option>
+                                    {areas.map((area: any) => (
+                                        <option key={area.id} value={area.id}>
+                                            {area.nome}
+                                        </option>
+                                    ))}
+                                </Form.Select>
+                            </Form.Group>
+                        </>
+                    )}
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="secondary" onClick={handleFecharModal}>
+                        Cancelar
+                    </Button>
+                    <Button
+                        variant={mostrarModalCopiar ? 'info' : 'warning'}
+                        onClick={handleConfirmarOperacao}
+                        disabled={
+                            carregandoOperacao ||
+                            (tipoOperacao === 'existente' ? !listaDestinoId : (!nomeNovaLista || !areaIdNova))
+                        }
+                    >
+                        {carregandoOperacao ? (
+                            <><Spinner size="sm" /> Processando...</>
+                        ) : (
+                            <>{mostrarModalCopiar ? 'Copiar' : 'Mover'} Itens</>
+                        )}
+                    </Button>
+                </Modal.Footer>
+            </Modal>
+
+            {/* Modal de Resultado */}
+            <Modal show={mostrarModalResultado} onHide={() => setMostrarModalResultado(false)}>
+                <Modal.Header closeButton>
+                    <Modal.Title>
+                        <FontAwesomeIcon
+                            icon={resultado?.itens_ignorados > 0 ? faExclamationTriangle : faCheck}
+                            className="me-2"
+                        />
+                        Operação Concluída
+                    </Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <Alert variant="success">
+                        {resultado?.message}
+                    </Alert>
+
+                    {resultado?.itens_ignorados > 0 && (
+                        <Alert variant="warning">
+                            <strong>⚠️ Itens Ignorados ({resultado.itens_ignorados}):</strong>
+                            <p className="mb-2 mt-2">
+                                Os seguintes itens já existiam na lista de destino e foram ignorados:
+                            </p>
+                            <ul className="mb-0">
+                                {resultado.itens_ignorados_lista?.map((nome: string, idx: number) => (
+                                    <li key={idx}>{nome}</li>
+                                ))}
+                            </ul>
+                        </Alert>
+                    )}
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="primary" onClick={() => setMostrarModalResultado(false)}>
+                        Fechar
                     </Button>
                 </Modal.Footer>
             </Modal>

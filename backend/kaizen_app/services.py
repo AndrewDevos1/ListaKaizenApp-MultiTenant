@@ -2298,6 +2298,212 @@ def atribuir_fornecedor_lista_mae(lista_id, data):
         traceback.print_exc()
         return {"error": str(e)}, 500
 
+def copiar_itens_entre_listas(lista_origem_id, data):
+    """
+    Copia itens de uma lista para outra (ou cria nova lista).
+    Mantém os itens na lista origem e cria referências na lista destino.
+    """
+    try:
+        print(f"[copiar_itens_entre_listas] Iniciando cópia da lista #{lista_origem_id}")
+        
+        item_ids = data.get('item_ids', [])
+        lista_destino_id = data.get('lista_destino_id')
+        nome_nova_lista = data.get('nome_nova_lista')
+        area_id = data.get('area_id')
+        
+        if not item_ids:
+            return {"error": "Nenhum item selecionado"}, 400
+        
+        # Validar lista origem
+        lista_origem = repositories.get_by_id(Lista, lista_origem_id)
+        if not lista_origem:
+            return {"error": "Lista de origem não encontrada"}, 404
+        
+        # Determinar lista destino (existente ou criar nova)
+        if lista_destino_id:
+            lista_destino = repositories.get_by_id(Lista, lista_destino_id)
+            if not lista_destino:
+                return {"error": "Lista de destino não encontrada"}, 404
+        elif nome_nova_lista and area_id:
+            # Criar nova lista
+            nova_lista = Lista(nome=nome_nova_lista, area_id=area_id)
+            db.session.add(nova_lista)
+            db.session.flush()
+            lista_destino = nova_lista
+            print(f"[copiar_itens_entre_listas] Nova lista criada: #{lista_destino.id}")
+        else:
+            return {"error": "Forneça lista_destino_id ou (nome_nova_lista + area_id)"}, 400
+        
+        # Buscar itens da lista origem
+        refs_origem = ListaItemRef.query.filter(
+            ListaItemRef.lista_id == lista_origem_id,
+            ListaItemRef.item_id.in_(item_ids)
+        ).all()
+        
+        if not refs_origem:
+            return {"error": "Nenhum item encontrado na lista de origem"}, 404
+        
+        print(f"[copiar_itens_entre_listas] Encontrados {len(refs_origem)} itens na origem")
+        
+        # Buscar itens já existentes na lista destino
+        refs_destino_existentes = ListaItemRef.query.filter_by(
+            lista_id=lista_destino.id
+        ).all()
+        itens_existentes_ids = {ref.item_id for ref in refs_destino_existentes}
+        
+        itens_copiados = 0
+        itens_ignorados = 0
+        itens_ignorados_lista = []
+        
+        for ref_origem in refs_origem:
+            if ref_origem.item_id in itens_existentes_ids:
+                # Item já existe na lista destino - ignorar
+                item = repositories.get_by_id(ListaMaeItem, ref_origem.item_id)
+                itens_ignorados += 1
+                if item:
+                    itens_ignorados_lista.append(item.nome)
+                print(f"[copiar_itens_entre_listas] Item #{ref_origem.item_id} ignorado (já existe)")
+                continue
+            
+            # Copiar item (criar nova referência)
+            nova_ref = ListaItemRef(
+                lista_id=lista_destino.id,
+                item_id=ref_origem.item_id,
+                quantidade_minima=ref_origem.quantidade_minima,
+                quantidade_atual=ref_origem.quantidade_atual
+            )
+            db.session.add(nova_ref)
+            itens_copiados += 1
+            print(f"[copiar_itens_entre_listas] Item #{ref_origem.item_id} copiado")
+        
+        db.session.commit()
+        
+        print(f"[copiar_itens_entre_listas] Cópia concluída: {itens_copiados} copiados, {itens_ignorados} ignorados")
+        
+        message = f"{itens_copiados} item(ns) copiado(s) com sucesso"
+        if itens_ignorados > 0:
+            message += f". {itens_ignorados} item(ns) ignorado(s) por já existirem"
+        
+        return {
+            "message": message,
+            "itens_copiados": itens_copiados,
+            "itens_ignorados": itens_ignorados,
+            "itens_ignorados_lista": itens_ignorados_lista,
+            "lista_destino_id": lista_destino.id,
+            "lista_destino_nome": lista_destino.nome
+        }, 200
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"[copiar_itens_entre_listas] EXCEÇÃO: {type(e).__name__}: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return {"error": f"Erro ao copiar itens: {str(e)}"}, 500
+
+
+def mover_itens_entre_listas(lista_origem_id, data):
+    """
+    Move itens de uma lista para outra (ou cria nova lista).
+    Remove os itens da lista origem e cria referências na lista destino.
+    """
+    try:
+        print(f"[mover_itens_entre_listas] Iniciando movimentação da lista #{lista_origem_id}")
+        
+        item_ids = data.get('item_ids', [])
+        lista_destino_id = data.get('lista_destino_id')
+        nome_nova_lista = data.get('nome_nova_lista')
+        area_id = data.get('area_id')
+        
+        if not item_ids:
+            return {"error": "Nenhum item selecionado"}, 400
+        
+        # Validar lista origem
+        lista_origem = repositories.get_by_id(Lista, lista_origem_id)
+        if not lista_origem:
+            return {"error": "Lista de origem não encontrada"}, 404
+        
+        # Determinar lista destino (existente ou criar nova)
+        if lista_destino_id:
+            lista_destino = repositories.get_by_id(Lista, lista_destino_id)
+            if not lista_destino:
+                return {"error": "Lista de destino não encontrada"}, 404
+        elif nome_nova_lista and area_id:
+            # Criar nova lista
+            nova_lista = Lista(nome=nome_nova_lista, area_id=area_id)
+            db.session.add(nova_lista)
+            db.session.flush()
+            lista_destino = nova_lista
+            print(f"[mover_itens_entre_listas] Nova lista criada: #{lista_destino.id}")
+        else:
+            return {"error": "Forneça lista_destino_id ou (nome_nova_lista + area_id)"}, 400
+        
+        # Buscar itens da lista origem
+        refs_origem = ListaItemRef.query.filter(
+            ListaItemRef.lista_id == lista_origem_id,
+            ListaItemRef.item_id.in_(item_ids)
+        ).all()
+        
+        if not refs_origem:
+            return {"error": "Nenhum item encontrado na lista de origem"}, 404
+        
+        print(f"[mover_itens_entre_listas] Encontrados {len(refs_origem)} itens na origem")
+        
+        # Buscar itens já existentes na lista destino
+        refs_destino_existentes = ListaItemRef.query.filter_by(
+            lista_id=lista_destino.id
+        ).all()
+        itens_existentes_ids = {ref.item_id for ref in refs_destino_existentes}
+        
+        itens_movidos = 0
+        itens_ignorados = 0
+        itens_ignorados_lista = []
+        
+        for ref_origem in refs_origem:
+            if ref_origem.item_id in itens_existentes_ids:
+                # Item já existe na lista destino - ignorar
+                item = repositories.get_by_id(ListaMaeItem, ref_origem.item_id)
+                itens_ignorados += 1
+                if item:
+                    itens_ignorados_lista.append(item.nome)
+                print(f"[mover_itens_entre_listas] Item #{ref_origem.item_id} ignorado (já existe)")
+                continue
+            
+            # Mover item (criar nova referência e deletar antiga)
+            nova_ref = ListaItemRef(
+                lista_id=lista_destino.id,
+                item_id=ref_origem.item_id,
+                quantidade_minima=ref_origem.quantidade_minima,
+                quantidade_atual=ref_origem.quantidade_atual
+            )
+            db.session.add(nova_ref)
+            db.session.delete(ref_origem)
+            itens_movidos += 1
+            print(f"[mover_itens_entre_listas] Item #{ref_origem.item_id} movido")
+        
+        db.session.commit()
+        
+        print(f"[mover_itens_entre_listas] Movimentação concluída: {itens_movidos} movidos, {itens_ignorados} ignorados")
+        
+        message = f"{itens_movidos} item(ns) movido(s) com sucesso"
+        if itens_ignorados > 0:
+            message += f". {itens_ignorados} item(ns) ignorado(s) por já existirem"
+        
+        return {
+            "message": message,
+            "itens_movidos": itens_movidos,
+            "itens_ignorados": itens_ignorados,
+            "itens_ignorados_lista": itens_ignorados_lista,
+            "lista_destino_id": lista_destino.id,
+            "lista_destino_nome": lista_destino.nome
+        }, 200
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"[mover_itens_entre_listas] EXCEÇÃO: {type(e).__name__}: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return {"error": f"Erro ao mover itens: {str(e)}"}, 500
+
 def importar_items_em_lote(lista_id, data):
     """
     Importa múltiplos itens em lote para uma lista.
