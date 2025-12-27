@@ -1205,3 +1205,60 @@ def export_bulk_data_route():
         as_attachment=True,
         download_name=filename
     )
+
+
+# ===== SUGESTÕES DE ITENS =====
+
+@auth_bp.route('/sugestoes', methods=['POST'])
+@jwt_required()
+def criar_sugestao_route():
+    """Usuário cria uma sugestão de novo item."""
+    user_id = get_jwt_identity()
+    data = request.get_json()
+    response, status = services.criar_sugestao_item(user_id, data)
+    return jsonify(response), status
+
+
+@auth_bp.route('/sugestoes/minhas', methods=['GET'])
+@jwt_required()
+def listar_minhas_sugestoes_route():
+    """Usuário lista suas próprias sugestões."""
+    user_id = get_jwt_identity()
+    response, status = services.listar_minhas_sugestoes(user_id)
+    return jsonify(response), status
+
+
+@admin_bp.route('/sugestoes/pendentes', methods=['GET'])
+@admin_required()
+def listar_sugestoes_pendentes_route():
+    """Admin lista todas as sugestões pendentes."""
+    response, status = services.listar_sugestoes_pendentes()
+    return jsonify(response), status
+
+
+@admin_bp.route('/sugestoes/pendentes/count', methods=['GET'])
+@admin_required()
+def contar_sugestoes_pendentes_route():
+    """Retorna contagem de sugestões pendentes para notificação."""
+    response, status = services.contar_sugestoes_pendentes()
+    return jsonify(response), status
+
+
+@admin_bp.route('/sugestoes/<int:sugestao_id>/aprovar', methods=['PUT'])
+@admin_required()
+def aprovar_sugestao_route(sugestao_id):
+    """Admin aprova uma sugestão."""
+    admin_id = get_jwt_identity()
+    data = request.get_json() or {}
+    response, status = services.aprovar_sugestao(sugestao_id, admin_id, data)
+    return jsonify(response), status
+
+
+@admin_bp.route('/sugestoes/<int:sugestao_id>/rejeitar', methods=['PUT'])
+@admin_required()
+def rejeitar_sugestao_route(sugestao_id):
+    """Admin rejeita uma sugestão."""
+    admin_id = get_jwt_identity()
+    data = request.get_json() or {}
+    response, status = services.rejeitar_sugestao(sugestao_id, admin_id, data)
+    return jsonify(response), status

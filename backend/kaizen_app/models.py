@@ -377,3 +377,57 @@ class NavbarPreference(db.Model, SerializerMixin):
             "criado_em": self.criado_em.isoformat() if self.criado_em else None,
             "atualizado_em": self.atualizado_em.isoformat() if self.atualizado_em else None
         }
+
+
+class SugestaoStatus(enum.Enum):
+    PENDENTE = "pendente"
+    APROVADA = "aprovada"
+    REJEITADA = "rejeitada"
+
+
+class SugestaoItem(db.Model, SerializerMixin):
+    """
+    Armazena sugestões de novos itens feitas pelos usuários.
+    Admin pode aprovar (adiciona ao catálogo global) ou rejeitar.
+    """
+    __tablename__ = "sugestoes_itens"
+    
+    id = db.Column(db.Integer, primary_key=True)
+    usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id', ondelete='CASCADE'), nullable=False)
+    lista_id = db.Column(db.Integer, db.ForeignKey('listas.id', ondelete='CASCADE'), nullable=False)
+    nome_item = db.Column(db.String(200), nullable=False)
+    unidade = db.Column(db.String(50), nullable=False)
+    quantidade = db.Column(db.Float, nullable=False)
+    mensagem_usuario = db.Column(db.Text, nullable=True)
+    status = db.Column(db.Enum(SugestaoStatus), nullable=False, default=SugestaoStatus.PENDENTE)
+    admin_id = db.Column(db.Integer, db.ForeignKey('usuarios.id', ondelete='SET NULL'), nullable=True)
+    mensagem_admin = db.Column(db.Text, nullable=True)
+    item_global_id = db.Column(db.Integer, db.ForeignKey('lista_mae_itens.id', ondelete='SET NULL'), nullable=True)
+    criado_em = db.Column(db.DateTime, default=brasilia_now, nullable=False)
+    respondido_em = db.Column(db.DateTime, nullable=True)
+    
+    # Relacionamentos
+    usuario = db.relationship('Usuario', foreign_keys=[usuario_id], backref=db.backref('sugestoes', lazy='dynamic'))
+    admin = db.relationship('Usuario', foreign_keys=[admin_id])
+    lista = db.relationship('Lista', backref=db.backref('sugestoes_itens', lazy='dynamic'))
+    item_global = db.relationship('ListaMaeItem', backref=db.backref('sugestoes', lazy='dynamic'))
+    
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "usuario_id": self.usuario_id,
+            "usuario_nome": self.usuario.nome if self.usuario else None,
+            "lista_id": self.lista_id,
+            "lista_nome": self.lista.nome if self.lista else None,
+            "nome_item": self.nome_item,
+            "unidade": self.unidade,
+            "quantidade": self.quantidade,
+            "mensagem_usuario": self.mensagem_usuario,
+            "status": self.status.value,
+            "admin_id": self.admin_id,
+            "admin_nome": self.admin.nome if self.admin else None,
+            "mensagem_admin": self.mensagem_admin,
+            "item_global_id": self.item_global_id,
+            "criado_em": self.criado_em.isoformat() if self.criado_em else None,
+            "respondido_em": self.respondido_em.isoformat() if self.respondido_em else None
+        }
