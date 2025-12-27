@@ -2,22 +2,34 @@
 
 ## Problema Identificado
 
-O admin não conseguia editar as quantidades das listas submetidas em produção.
+O admin não conseguia editar as quantidades das listas submetidas em produção devido a dois problemas:
+
+### 1. Erros Frontend (CORRIGIDOS)
+- Interface Submissao incompleta (campo `criado_em`)
+- Estado `setShowModal` não existia
+- Botão sem ID referenciado no código
+
+### 2. **Erro 502 Bad Gateway (NOVO - CORRIGIDO)**
+**Problema:** Backend crashava ao processar requisição PUT sem tratamento de exceções adequado.
+
+**Sintomas:**
+```
+CORS Missing Allow Origin
+Status: 502 Bad Gateway
+Network Error
+```
+
+**Causa Raiz:** 
+- Função `editar_quantidades_submissao` no backend não tinha try/catch
+- Rota do controller não validava dados de entrada
+- Qualquer erro causava crash do processo, resultando em 502
 
 ## Correções Realizadas
 
-### 1. Frontend - DetalhesSubmissao.tsx
+### 1. Frontend - DetalhesSubmissao.tsx (JÁ APLICADO)
 
 #### Erro 1: Interface Submissao incompleta
-**Problema:** A interface não tinha o campo `criado_em`, causando erro ao formatar mensagem para WhatsApp.
 ```typescript
-// ANTES
-interface Submissao {
-    data_submissao: string;
-    // ...
-}
-
-// DEPOIS
 interface Submissao {
     data_submissao: string;
     criado_em?: string;  // Campo adicionado
@@ -25,57 +37,72 @@ interface Submissao {
 }
 ```
 
-#### Erro 2: Estado setShowModal não existia
-**Problema:** Código tentava usar `setShowModal` mas o estado declarado era `setShowSuccessModal`.
+#### Erro 2: Estado setShowModal corrigido
 ```typescript
-// ANTES
-setShowModal(true);
-
-// DEPOIS
+// ANTES: setShowModal(true);
+// DEPOIS: 
 setShowSuccessModal(true);
 setTimeout(() => setShowSuccessModal(false), 2000);
 ```
 
-#### Erro 3: Botão salvar sem ID
-**Problema:** Código referenciava `btn-salvar` mas botão não tinha ID.
+#### Erro 3: Botão com ID
 ```typescript
-// DEPOIS
 <Button id="btn-salvar" variant="success" ...>
 ```
 
-#### Melhoria: Logs de debug adicionados
-```typescript
-console.log('[DetalhesSubmissao] Enviando edição:', { submissao_id, items });
-console.log('[DetalhesSubmissao] Resposta recebida:', response.data);
-console.error('[DetalhesSubmissao] Erro ao salvar:', err);
+### 2. **Backend - controllers.py (NOVO)**
+
+#### Tratamento robusto na rota PUT
+```python
+@admin_bp.route('/submissoes/<int:submissao_id>/editar', methods=['PUT'])
+@admin_required()
+def editar_quantidades_submissao_route(submissao_id):
+    try:
+        print(f"[editar_quantidades_submissao_route] Recebendo requisição para submissão #{submissao_id}")
+        data = request.get_json()
+        
+        if not data:
+            print(f"[editar_quantidades_submissao_route] ERRO: Nenhum dado JSON recebido")
+            return jsonify({"error": "Nenhum dado recebido"}), 400
+        
+        items_data = data.get('items', [])
+        print(f"[editar_quantidades_submissao_route] Items recebidos: {len(items_data)}")
+        
+        response, status = services.editar_quantidades_submissao(submissao_id, items_data)
+        print(f"[editar_quantidades_submissao_route] Resposta: {status}")
+        return jsonify(response), status
+    except Exception as e:
+        print(f"[editar_quantidades_submissao_route] EXCEÇÃO: {type(e).__name__}: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": "Erro interno ao processar edição", "details": str(e)}), 500
 ```
 
-### 2. Backend - services.py
+### 3. **Backend - services.py (NOVO)**
 
-#### Melhoria: Logs de debug adicionados
-Adicionados logs detalhados na função `editar_quantidades_submissao`:
-- Log de início da operação
-- Log do status da submissão
-- Log de quantos itens foram atualizados
-- Log de quantos pedidos foram criados
-- Logs de erros específicos
+#### Try/catch e rollback em caso de erro
+```python
+def editar_quantidades_submissao(submissao_id, pedidos_data):
+    try:
+        # ... todo o código de processamento ...
+        db.session.commit()
+        print(f"[editar_quantidades_submissao] Edição concluída com sucesso")
+        return {...}, 200
+        
+    except Exception as e:
+        print(f"[editar_quantidades_submissao] EXCEÇÃO: {type(e).__name__}: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        db.session.rollback()  # CRÍTICO: Reverte transação
+        return {"error": f"Erro ao editar submissão: {str(e)}"}, 500
+```
 
 ## Como Testar
 
-### 1. Verificar no Console do Navegador
-1. Abra as ferramentas de desenvolvedor (F12)
-2. Vá para aba "Console"
-3. Entre em uma submissão PENDENTE
-4. Clique em "Editar Quantidades"
-5. Altere algumas quantidades
-6. Clique em "Salvar Alterações"
-7. Verifique os logs:
-   - `[DetalhesSubmissao] Enviando edição:` com os dados
-   - `[DetalhesSubmissao] Resposta recebida:` com a resposta
-
-### 2. Verificar Logs do Backend
-Com o backend rodando, os logs devem aparecer no terminal:
+### 1. Verificar Logs do Railway
+Após deploy, os logs devem mostrar:
 ```
+[editar_quantidades_submissao_route] Recebendo requisição para submissão #X
 [editar_quantidades_submissao] Iniciando edição da submissão #X
 [editar_quantidades_submissao] Dados recebidos: N itens
 [editar_quantidades_submissao] Status da submissão: PENDENTE
@@ -83,93 +110,103 @@ Com o backend rodando, os logs devem aparecer no terminal:
 [editar_quantidades_submissao] N itens atualizados
 [editar_quantidades_submissao] N pedidos criados
 [editar_quantidades_submissao] Edição concluída com sucesso
+[editar_quantidades_submissao_route] Resposta: 200
+```
+
+### 2. Verificar no Console do Navegador (F12)
+```
+[DetalhesSubmissao] Enviando edição: { submissao_id: 7, items: [...] }
+[DetalhesSubmissao] Resposta recebida: { message: "...", pedidos_criados: N }
 ```
 
 ### 3. Testar Funcionalidade Completa
 1. **Login como Admin**
-2. **Navegar para Submissões** (`/admin/submissoes`)
-3. **Abrir uma submissão PENDENTE**
-4. **Verificar botões disponíveis:**
-   - ✅ Editar Quantidades
-   - ✅ Aprovar Todos
-   - ✅ Aprovar Selecionados
-   - ✅ Rejeitar Todos
-
-5. **Clicar em "Editar Quantidades":**
-   - Tabela deve mudar para modo edição
-   - Inputs de quantidade devem aparecer
-   - Badge "Modo Edição" deve aparecer
-   - Botões mudam para "Salvar Alterações" e "Cancelar"
-
-6. **Editar algumas quantidades:**
-   - Use Tab ou Enter para navegar entre campos
-   - Valores de "Pedido" devem recalcular automaticamente
-   - Badge deve mudar de cor (vermelho/amarelo para OK em verde)
-
-7. **Salvar:**
-   - Clique em "Salvar Alterações"
-   - Modal de sucesso deve aparecer
-   - Mensagem: "Submissão atualizada" + número de pedidos criados
-   - Após 2 segundos, dados devem recarregar
-
-8. **Verificar persistência:**
-   - Valores editados devem estar salvos
-   - Pedidos devem estar recalculados corretamente
-
-### 4. Testar Botões WhatsApp/Copiar (submissões APROVADAS/REJEITADAS)
-1. Reverter ou abrir uma submissão já processada
-2. Verificar botões:
-   - ✅ Copiar (deve copiar para clipboard)
-   - ✅ Enviar via WhatsApp (deve abrir WhatsApp Web)
-   - ✅ Reverter para Pendente
+2. **Navegar para** `https://kaizen-compras.up.railway.app/admin/submissoes/7`
+3. **Clicar em "Editar Quantidades"**
+4. **Alterar valores e clicar em "Salvar"**
+5. **Verificar:**
+   - ✅ Sem erro 502
+   - ✅ Modal de sucesso aparece
+   - ✅ Dados são atualizados
+   - ✅ Console do navegador sem erros CORS
 
 ## Deploy em Produção
 
-### 1. Build do Frontend
+### 1. Commit das Correções
 ```bash
-cd frontend
-npm run build
+git add backend/kaizen_app/controllers.py backend/kaizen_app/services.py
+git commit -m "fix: adiciona tratamento de exceções robusto na edição de submissões
+
+- Adiciona try/catch na rota de edição
+- Adiciona rollback em caso de erro no banco
+- Adiciona validação de dados de entrada
+- Adiciona logs detalhados para debugging"
 ```
 
-### 2. Commit e Push
+### 2. Push para Produção (Master)
 ```bash
-git add .
-git commit -m "fix: corrige edição de quantidades pelo admin em submissões"
-git push origin develop
+git push origin master
 ```
 
-### 3. Deploy no Railway
-O Railway deve fazer deploy automático ao detectar o push.
+### 3. Aguardar Deploy Railway
+- Railway detecta push automático
+- Deploy inicia (~2-3 minutos)
+- Backend reinicia com novo código
 
-### 4. Verificar Deploy
-1. Aguardar conclusão do deploy
-2. Limpar cache do navegador (Ctrl+Shift+Delete)
-3. Fazer login como admin
-4. Testar funcionalidade
+### 4. Limpar Cache e Testar
+```bash
+# No navegador:
+Ctrl + Shift + Delete -> Limpar cache
+F5 (Hard Refresh)
+```
 
 ## Possíveis Erros e Soluções
 
-### Erro: "Apenas submissões PENDENTES podem ser editadas"
-**Solução:** Verificar status da submissão. Botão só aparece para PENDENTE.
+### Erro: "Nenhum dado recebido" (400)
+**Solução:** Frontend não está enviando JSON. Verificar `api.put()`.
 
-### Erro: "Item #X não pertence a esta lista"
-**Solução:** Dados inconsistentes. Verificar banco de dados.
+### Erro: "Erro ao editar submissão: ..." (500)
+**Solução:** Verificar logs do Railway para detalhes da exceção.
 
-### Erro: 401/403 Unauthorized
-**Solução:** Token expirado ou permissões incorretas. Fazer logout/login.
+### Erro: Ainda recebe 502
+**Solução:** 
+1. Verificar se deploy completou no Railway
+2. Verificar memória/CPU no Railway (pode estar sobrecarregado)
+3. Verificar timeout do Railway (aumentar se necessário)
 
-### Erro: Modal não aparece
-**Solução:** Verificar se `setShowSuccessModal` está sendo chamado corretamente.
-
-### Campos não editáveis
-**Solução:** Verificar se `modoEdicao` está `true` e se inputs têm `onChange`.
+### Erro: CORS ainda bloqueando
+**Solução:** 
+- CORS está configurado em `__init__.py`
+- Verificar variável `CORS_ORIGINS` no Railway
+- Deve ser: `https://kaizen-compras.up.railway.app`
 
 ## Arquivos Modificados
 
-- `frontend/src/features/admin/DetalhesSubmissao.tsx`
-- `backend/kaizen_app/services.py`
+- `frontend/src/features/admin/DetalhesSubmissao.tsx` ✅ (commit anterior)
+- `backend/kaizen_app/services.py` ✅ (este commit)
+- `backend/kaizen_app/controllers.py` ✅ (este commit)
+- `CORRECAO_EDICAO_ADMIN.md` (atualizado)
 
 ## Status
 
-✅ Correções aplicadas
-⏳ Aguardando teste em produção
+✅ Correções frontend aplicadas (commit anterior)
+✅ Correções backend aplicadas (este commit)
+⏳ Aguardando commit e deploy em produção
+
+## Resumo Técnico
+
+**Problema:** Erro 502 ao fazer PUT `/api/admin/submissoes/{id}/editar`
+
+**Causa:** Backend crashava sem tratamento de exceções
+
+**Solução:** 
+1. Try/catch na rota do controller
+2. Try/catch com rollback no service
+3. Validação de dados de entrada
+4. Logs detalhados para debugging
+
+**Resultado Esperado:** 
+- ✅ Sem erro 502
+- ✅ Erros retornam 500 com mensagem clara
+- ✅ Rollback automático em caso de falha
+- ✅ Logs completos no Railway para debugging

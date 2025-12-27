@@ -543,10 +543,25 @@ def editar_quantidades_submissao_route(submissao_id):
     Similar ao comportamento do colaborador: edita quantidade_atual, sistema recalcula pedidos.
     Espera JSON: {"items": [{"item_id": 1, "quantidade_atual": 10}, ...]}
     """
-    data = request.get_json()
-    items_data = data.get('items', [])
-    response, status = services.editar_quantidades_submissao(submissao_id, items_data)
-    return jsonify(response), status
+    try:
+        print(f"[editar_quantidades_submissao_route] Recebendo requisição para submissão #{submissao_id}")
+        data = request.get_json()
+        
+        if not data:
+            print(f"[editar_quantidades_submissao_route] ERRO: Nenhum dado JSON recebido")
+            return jsonify({"error": "Nenhum dado recebido"}), 400
+        
+        items_data = data.get('items', [])
+        print(f"[editar_quantidades_submissao_route] Items recebidos: {len(items_data)}")
+        
+        response, status = services.editar_quantidades_submissao(submissao_id, items_data)
+        print(f"[editar_quantidades_submissao_route] Resposta: {status}")
+        return jsonify(response), status
+    except Exception as e:
+        print(f"[editar_quantidades_submissao_route] EXCEÇÃO: {type(e).__name__}: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": "Erro interno ao processar edição", "details": str(e)}), 500
 
 
 @admin_bp.route('/listas/<int:lista_id>/estoque', methods=['GET'])

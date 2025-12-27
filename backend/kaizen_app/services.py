@@ -764,89 +764,97 @@ def editar_quantidades_submissao(submissao_id, pedidos_data):
     Returns:
         tuple: (response_dict, status_code)
     """
-    print(f"[editar_quantidades_submissao] Iniciando edição da submissão #{submissao_id}")
-    print(f"[editar_quantidades_submissao] Dados recebidos: {len(pedidos_data) if pedidos_data else 0} itens")
-    
-    submissao = repositories.get_by_id(Submissao, submissao_id)
-    if not submissao:
-        print(f"[editar_quantidades_submissao] ERRO: Submissão não encontrada")
-        return {"error": "Submissão não encontrada."}, 404
-    
-    print(f"[editar_quantidades_submissao] Status da submissão: {submissao.status}")
-    
-    # Validar que submissão está PENDENTE
-    if submissao.status != SubmissaoStatus.PENDENTE:
-        print(f"[editar_quantidades_submissao] ERRO: Submissão não está PENDENTE")
-        return {"error": "Apenas submissões PENDENTES podem ser editadas."}, 400
-    
-    # Validar dados recebidos
-    if not pedidos_data or not isinstance(pedidos_data, list):
-        print(f"[editar_quantidades_submissao] ERRO: Dados inválidos")
-        return {"error": "Dados inválidos. Esperado: lista de itens."}, 400
-    
-    # Buscar todos os itens da lista
-    refs = ListaItemRef.query.filter_by(lista_id=submissao.lista_id).all()
-    refs_map = {ref.item_id: ref for ref in refs}
-    
-    print(f"[editar_quantidades_submissao] Lista tem {len(refs)} itens")
-    
-    # Atualizar quantidade_atual de cada item
-    itens_atualizados = 0
-    for item in pedidos_data:
-        item_id = item.get('item_id')
-        nova_quantidade_atual = item.get('quantidade_atual')
+    try:
+        print(f"[editar_quantidades_submissao] Iniciando edição da submissão #{submissao_id}")
+        print(f"[editar_quantidades_submissao] Dados recebidos: {len(pedidos_data) if pedidos_data else 0} itens")
         
-        # Validações
-        if not item_id or nova_quantidade_atual is None:
-            continue
+        submissao = repositories.get_by_id(Submissao, submissao_id)
+        if not submissao:
+            print(f"[editar_quantidades_submissao] ERRO: Submissão não encontrada")
+            return {"error": "Submissão não encontrada."}, 404
         
-        if item_id not in refs_map:
-            print(f"[editar_quantidades_submissao] ERRO: Item #{item_id} não pertence à lista")
-            return {"error": f"Item #{item_id} não pertence a esta lista."}, 400
+        print(f"[editar_quantidades_submissao] Status da submissão: {submissao.status}")
         
-        if nova_quantidade_atual < 0:
-            print(f"[editar_quantidades_submissao] ERRO: Quantidade negativa para item #{item_id}")
-            return {"error": f"Quantidade não pode ser negativa (Item #{item_id})."}, 400
+        # Validar que submissão está PENDENTE
+        if submissao.status != SubmissaoStatus.PENDENTE:
+            print(f"[editar_quantidades_submissao] ERRO: Submissão não está PENDENTE")
+            return {"error": "Apenas submissões PENDENTES podem ser editadas."}, 400
         
-        # Atualizar quantidade_atual no ListaItemRef
-        ref = refs_map[item_id]
-        ref.quantidade_atual = nova_quantidade_atual
-        itens_atualizados += 1
-    
-    print(f"[editar_quantidades_submissao] {itens_atualizados} itens atualizados")
-    
-    # Deletar pedidos antigos desta submissão
-    Pedido.query.filter_by(submissao_id=submissao_id).delete()
-    
-    # Recriar pedidos com base nas novas quantidades
-    pedidos_criados = 0
-    for ref in refs:
-        pedido_qtd = ref.get_pedido()  # Calcula: max(0, minimo - atual)
+        # Validar dados recebidos
+        if not pedidos_data or not isinstance(pedidos_data, list):
+            print(f"[editar_quantidades_submissao] ERRO: Dados inválidos")
+            return {"error": "Dados inválidos. Esperado: lista de itens."}, 400
         
-        if pedido_qtd > 0:
-            novo_pedido = Pedido(
-                submissao_id=submissao_id,
-                lista_mae_item_id=ref.item_id,
-                quantidade_solicitada=pedido_qtd,
-                status=PedidoStatus.PENDENTE
-            )
-            db.session.add(novo_pedido)
-            pedidos_criados += 1
-    
-    print(f"[editar_quantidades_submissao] {pedidos_criados} pedidos criados")
-    
-    # Atualizar total de pedidos da submissão
-    submissao.total_pedidos = pedidos_criados
-    
-    db.session.commit()
-    
-    print(f"[editar_quantidades_submissao] Edição concluída com sucesso")
-    
-    return {
-        "message": f"{itens_atualizados} item(ns) atualizado(s), {pedidos_criados} pedido(s) gerado(s)!",
-        "submissao_id": submissao_id,
-        "pedidos_criados": pedidos_criados
-    }, 200
+        # Buscar todos os itens da lista
+        refs = ListaItemRef.query.filter_by(lista_id=submissao.lista_id).all()
+        refs_map = {ref.item_id: ref for ref in refs}
+        
+        print(f"[editar_quantidades_submissao] Lista tem {len(refs)} itens")
+        
+        # Atualizar quantidade_atual de cada item
+        itens_atualizados = 0
+        for item in pedidos_data:
+            item_id = item.get('item_id')
+            nova_quantidade_atual = item.get('quantidade_atual')
+            
+            # Validações
+            if not item_id or nova_quantidade_atual is None:
+                continue
+            
+            if item_id not in refs_map:
+                print(f"[editar_quantidades_submissao] ERRO: Item #{item_id} não pertence à lista")
+                return {"error": f"Item #{item_id} não pertence a esta lista."}, 400
+            
+            if nova_quantidade_atual < 0:
+                print(f"[editar_quantidades_submissao] ERRO: Quantidade negativa para item #{item_id}")
+                return {"error": f"Quantidade não pode ser negativa (Item #{item_id})."}, 400
+            
+            # Atualizar quantidade_atual no ListaItemRef
+            ref = refs_map[item_id]
+            ref.quantidade_atual = nova_quantidade_atual
+            itens_atualizados += 1
+        
+        print(f"[editar_quantidades_submissao] {itens_atualizados} itens atualizados")
+        
+        # Deletar pedidos antigos desta submissão
+        Pedido.query.filter_by(submissao_id=submissao_id).delete()
+        
+        # Recriar pedidos com base nas novas quantidades
+        pedidos_criados = 0
+        for ref in refs:
+            pedido_qtd = ref.get_pedido()  # Calcula: max(0, minimo - atual)
+            
+            if pedido_qtd > 0:
+                novo_pedido = Pedido(
+                    submissao_id=submissao_id,
+                    lista_mae_item_id=ref.item_id,
+                    quantidade_solicitada=pedido_qtd,
+                    status=PedidoStatus.PENDENTE
+                )
+                db.session.add(novo_pedido)
+                pedidos_criados += 1
+        
+        print(f"[editar_quantidades_submissao] {pedidos_criados} pedidos criados")
+        
+        # Atualizar total de pedidos da submissão
+        submissao.total_pedidos = pedidos_criados
+        
+        db.session.commit()
+        
+        print(f"[editar_quantidades_submissao] Edição concluída com sucesso")
+        
+        return {
+            "message": f"{itens_atualizados} item(ns) atualizado(s), {pedidos_criados} pedido(s) gerado(s)!",
+            "submissao_id": submissao_id,
+            "pedidos_criados": pedidos_criados
+        }, 200
+        
+    except Exception as e:
+        print(f"[editar_quantidades_submissao] EXCEÇÃO: {type(e).__name__}: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        db.session.rollback()
+        return {"error": f"Erro ao editar submissão: {str(e)}"}, 500
 
 
 def submit_pedidos(user_id):
