@@ -21,7 +21,9 @@ import {
     faTrash,
     faCheck,
     faTruck,
-    faArrowRight
+    faArrowRight,
+    faCopy,
+    faExchangeAlt as faExchange
 } from '@fortawesome/free-solid-svg-icons';
 import api from '../../services/api';
 import styles from './ListaMaeConsolidada.module.css';
@@ -710,9 +712,26 @@ const ListaMaeConsolidada: React.FC = () => {
                                     </Col>
                                     <Col className="text-end">
                                         <Button
+                                            variant="info"
+                                            size="sm"
+                                            onClick={() => alert('Funcionalidade de Copiar em desenvolvimento')}
+                                            className="me-2"
+                                        >
+                                            <FontAwesomeIcon icon={faCopy} /> Copiar para Lista
+                                        </Button>
+                                        <Button
+                                            variant="warning"
+                                            size="sm"
+                                            onClick={() => alert('Funcionalidade de Mover em desenvolvimento')}
+                                            className="me-2"
+                                        >
+                                            <FontAwesomeIcon icon={faExchange} /> Mover para Lista
+                                        </Button>
+                                        <Button
                                             variant="primary"
                                             size="sm"
                                             onClick={() => setMostrarModalFornecedor(true)}
+                                            className="me-2"
                                         >
                                             <FontAwesomeIcon icon={faTruck} /> Atribuir Fornecedor
                                         </Button>
@@ -723,7 +742,6 @@ const ListaMaeConsolidada: React.FC = () => {
                                                 setItensSelecionados(new Set());
                                                 setTodosVerificados(false);
                                             }}
-                                            className="ms-2"
                                         >
                                             Limpar Seleção
                                         </Button>
