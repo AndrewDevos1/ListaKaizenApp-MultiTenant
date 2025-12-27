@@ -500,42 +500,6 @@ const Configuracoes: React.FC = () => {
                     </div>
                 </div>
 
-                {/* Card de informações adicionais */}
-                <div className={styles.configCard}>
-                    <div className={styles.cardHeader}>
-                        <div className={styles.cardIcon}>
-                            <FontAwesomeIcon icon={faInfoCircle} />
-                        </div>
-                        <div>
-                            <h3 className={styles.cardTitle}>Como Funciona</h3>
-                            <p className={styles.cardDescription}>
-                                Entenda o sistema de timeout de sessão
-                            </p>
-                        </div>
-                    </div>
-
-                    <div style={{ color: '#7f8c8d', lineHeight: '1.8' }}>
-                        <p>
-                            <strong>O que acontece quando o tempo expira?</strong>
-                        </p>
-                        <ul>
-                            <li>O sistema verifica automaticamente a expiração da sessão a cada 1 minuto</li>
-                            <li>Quando o tempo configurado é atingido, o usuário é desconectado automaticamente</li>
-                            <li>O token de autenticação é removido do navegador</li>
-                            <li>O usuário é redirecionado para a página de login</li>
-                        </ul>
-
-                        <p style={{ marginTop: '1rem' }}>
-                            <strong>Funcionalidade "Lembrar-me":</strong>
-                        </p>
-                        <ul>
-                            <li>Se o usuário marcou "Lembrar-me" no login, o email ficará preenchido automaticamente</li>
-                            <li>A senha NUNCA é armazenada por questões de segurança</li>
-                            <li>O usuário precisará digitar apenas a senha novamente</li>
-                        </ul>
-                    </div>
-                </div>
-
                 {/* Modal de Confirmação para Limpar Banco de Dados */}
                 <Modal show={showClearDbModal} onHide={handleCloseClearDbModal} centered>
                     <Modal.Header closeButton style={{ borderBottom: '2px solid #e74c3c' }}>

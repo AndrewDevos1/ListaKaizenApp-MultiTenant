@@ -417,19 +417,19 @@ const Layout: React.FC = () => {
                 <i className="fas fa-question-circle me-2" aria-hidden="true"></i>
                 Ajuda & Suporte
               </a>
-              <a href="#!" className={styles.footerLink}>
+              <Link to="/admin/configuracoes" className={styles.footerLink}>
                 <i className="fas fa-cog me-2" aria-hidden="true"></i>
                 Configurações
-              </a>
+              </Link>
             </>
           ) : (
             <>
               <a href="#!" className={styles.footerIconLink} title="Ajuda & Suporte">
                 <i className="fas fa-question-circle" aria-hidden="true"></i>
               </a>
-              <a href="#!" className={styles.footerIconLink} title="Configurações">
+              <Link to="/admin/configuracoes" className={styles.footerIconLink} title="Configurações">
                 <i className="fas fa-cog" aria-hidden="true"></i>
-              </a>
+              </Link>
             </>
           )}
         </div>
