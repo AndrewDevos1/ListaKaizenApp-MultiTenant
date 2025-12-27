@@ -1529,7 +1529,7 @@ def get_catalogo_global():
         ListaMaeItem.unidade,
         ListaMaeItem.criado_em,
         ListaMaeItem.atualizado_em,
-        sql_func.count(ListaItemRef.id).label('total_listas')
+        sql_func.count(ListaItemRef.lista_id).label('total_listas')
     ).outerjoin(
         ListaItemRef, ListaMaeItem.id == ListaItemRef.item_id
     ).group_by(
