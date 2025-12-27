@@ -1520,23 +1520,77 @@ def get_catalogo_global():
     Retorna todos os itens do catálogo global.
     Usado pelo admin no card "Itens e Insumos".
     """
-    itens = ListaMaeItem.query.order_by(ListaMaeItem.nome).all()
+    # Query otimizada: uma única consulta com agregação
+    from sqlalchemy import func as sql_func
+    
+    itens_query = db.session.query(
+        ListaMaeItem.id,
+        ListaMaeItem.nome,
+        ListaMaeItem.unidade,
+        ListaMaeItem.criado_em,
+        ListaMaeItem.atualizado_em,
+        sql_func.count(ListaItemRef.lista_id).label('total_listas')
+    ).outerjoin(
+        ListaItemRef, ListaMaeItem.id == ListaItemRef.item_id
+    ).group_by(
+        ListaMaeItem.id
+    ).order_by(
+        ListaMaeItem.nome
+    ).all()
 
-    itens_data = []
-    for item in itens:
-        # Contar quantas listas usam este item
-        total_listas = ListaItemRef.query.filter_by(item_id=item.id).count()
+    itens_data = [{
+        "id": item.id,
+        "nome": item.nome,
+        "unidade": item.unidade,
+        "total_listas": item.total_listas,
+        "criado_em": item.criado_em.isoformat() if item.criado_em else None,
+        "atualizado_em": item.atualizado_em.isoformat() if item.atualizado_em else None
+    } for item in itens_query]
 
-        itens_data.append({
+    return {"itens": itens_data, "total": len(itens_data)}, 200
+
+
+def editar_item_catalogo_global(item_id, data):
+    """
+    Edita um item do catálogo global (ListaMaeItem).
+    Permite alterar nome e unidade.
+    """
+    item = ListaMaeItem.query.get(item_id)
+    if not item:
+        return {"error": "Item não encontrado."}, 404
+
+    nome = data.get('nome', '').strip()
+    unidade = data.get('unidade', '').strip()
+
+    if not nome:
+        return {"error": "Nome do item é obrigatório."}, 400
+    if not unidade:
+        return {"error": "Unidade é obrigatória."}, 400
+
+    # Verifica se já existe outro item com o mesmo nome
+    item_existente = ListaMaeItem.query.filter(
+        ListaMaeItem.nome == nome,
+        ListaMaeItem.id != item_id
+    ).first()
+    
+    if item_existente:
+        return {"error": f"Já existe um item com o nome '{nome}'."}, 409
+
+    item.nome = nome
+    item.unidade = unidade
+    item.atualizado_em = datetime.now(timezone.utc)
+
+    db.session.commit()
+
+    return {
+        "message": "Item atualizado com sucesso.",
+        "item": {
             "id": item.id,
             "nome": item.nome,
             "unidade": item.unidade,
-            "total_listas": total_listas,
-            "criado_em": item.criado_em.isoformat() if item.criado_em else None,
-            "atualizado_em": item.atualizado_em.isoformat() if item.atualizado_em else None
-        })
-
-    return {"itens": itens_data, "total": len(itens_data)}, 200
+            "atualizado_em": item.atualizado_em.isoformat()
+        }
+    }, 200
 
 
 def get_listas_status_submissoes():
