@@ -690,3 +690,127 @@
     display: none !important;
   }
 }
+
+/* ===== BADGE DE NOTIFICAÇÕES ===== */
+.badge {
+  background-color: #dc3545;
+  color: white;
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 10px;
+  margin-left: auto;
+  font-weight: 600;
+  min-width: 18px;
+  text-align: center;
+}
+
+.badgeDot {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 8px;
+  height: 8px;
+  background-color: #dc3545;
+  border-radius: 50%;
+  border: 2px solid white;
+}
+
+/* ===== DARK MODE TOGGLE ===== */
+.darkModeToggle {
+  width: 100%;
+  padding: 10px 16px;
+  background: transparent;
+  border: none;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+}
+
+.darkModeToggle:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+/* ===== DARK MODE STYLES ===== */
+[data-theme='dark'] {
+  --bg-primary: #1a1d23;
+  --bg-secondary: #2b3035;
+  --text-primary: #f8f9fa;
+  --text-secondary: #adb5bd;
+  --text-muted: #6c757d;
+  --border-color: #495057;
+  --link-color: #66b3ff;
+  --link-hover-color: #4d9fff;
+}
+
+[data-theme='dark'] .sidebarWrapper {
+  background-color: var(--bg-secondary);
+  border-right-color: var(--border-color);
+}
+
+[data-theme='dark'] .sidebarHeader {
+  border-bottom-color: var(--border-color);
+  color: var(--text-primary);
+}
+
+[data-theme='dark'] .searchContainer {
+  background-color: rgba(255, 255, 255, 0.05);
+  border-color: var(--border-color);
+}
+
+[data-theme='dark'] .searchContainer input {
+  background-color: transparent;
+  color: var(--text-primary);
+}
+
+[data-theme='dark'] .searchContainer input::placeholder {
+  color: var(--text-muted);
+}
+
+[data-theme='dark'] .menuGroup {
+  border-bottom-color: var(--border-color);
+}
+
+[data-theme='dark'] .groupTitle {
+  color: var(--text-muted);
+}
+
+[data-theme='dark'] .menuItem {
+  color: var(--text-secondary);
+}
+
+[data-theme='dark'] .menuItem:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+}
+
+[data-theme='dark'] .menuItemActive {
+  background-color: rgba(102, 179, 255, 0.1);
+  color: var(--link-color);
+}
+
+[data-theme='dark'] .sidebarFooter {
+  border-top-color: var(--border-color);
+  color: var(--text-secondary);
+}
+
+[data-theme='dark'] .footerLink {
+  color: var(--text-secondary);
+}
+
+[data-theme='dark'] .footerLink:hover {
+  color: var(--text-primary);
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+[data-theme='dark'] .pageContentWrapper {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+[data-theme='dark'] .darkModeToggle:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}

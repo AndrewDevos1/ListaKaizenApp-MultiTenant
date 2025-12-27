@@ -1,0 +1,76 @@
+.container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    border-bottom: 1px solid var(--border-color, #dee2e6);
+}
+
+.avatar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-weight: 600;
+    color: white;
+    flex-shrink: 0;
+}
+
+.small .avatar {
+    width: 32px;
+    height: 32px;
+    font-size: 12px;
+}
+
+.medium .avatar {
+    width: 40px;
+    height: 40px;
+    font-size: 16px;
+}
+
+.large .avatar {
+    width: 56px;
+    height: 56px;
+    font-size: 20px;
+}
+
+.admin {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.collaborator {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+.info {
+    flex: 1;
+    min-width: 0;
+}
+
+.name {
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--text-primary, #212529);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.role {
+    font-size: 12px;
+    color: var(--text-secondary, #6c757d);
+    margin-top: 2px;
+}
+
+/* Dark mode */
+[data-theme='dark'] .container {
+    border-bottom-color: #495057;
+}
+
+[data-theme='dark'] .name {
+    color: #f8f9fa;
+}
+
+[data-theme='dark'] .role {
+    color: #adb5bd;
+}
