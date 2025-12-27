@@ -1520,21 +1520,32 @@ def get_catalogo_global():
     Retorna todos os itens do catálogo global.
     Usado pelo admin no card "Itens e Insumos".
     """
-    itens = ListaMaeItem.query.order_by(ListaMaeItem.nome).all()
+    # Query otimizada: uma única consulta com agregação
+    from sqlalchemy import func as sql_func
+    
+    itens_query = db.session.query(
+        ListaMaeItem.id,
+        ListaMaeItem.nome,
+        ListaMaeItem.unidade,
+        ListaMaeItem.criado_em,
+        ListaMaeItem.atualizado_em,
+        sql_func.count(ListaItemRef.id).label('total_listas')
+    ).outerjoin(
+        ListaItemRef, ListaMaeItem.id == ListaItemRef.item_id
+    ).group_by(
+        ListaMaeItem.id
+    ).order_by(
+        ListaMaeItem.nome
+    ).all()
 
-    itens_data = []
-    for item in itens:
-        # Contar quantas listas usam este item
-        total_listas = ListaItemRef.query.filter_by(item_id=item.id).count()
-
-        itens_data.append({
-            "id": item.id,
-            "nome": item.nome,
-            "unidade": item.unidade,
-            "total_listas": total_listas,
-            "criado_em": item.criado_em.isoformat() if item.criado_em else None,
-            "atualizado_em": item.atualizado_em.isoformat() if item.atualizado_em else None
-        })
+    itens_data = [{
+        "id": item.id,
+        "nome": item.nome,
+        "unidade": item.unidade,
+        "total_listas": item.total_listas,
+        "criado_em": item.criado_em.isoformat() if item.criado_em else None,
+        "atualizado_em": item.atualizado_em.isoformat() if item.atualizado_em else None
+    } for item in itens_query]
 
     return {"itens": itens_data, "total": len(itens_data)}, 200
 
