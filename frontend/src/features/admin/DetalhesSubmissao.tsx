@@ -51,6 +51,7 @@ interface Submissao {
     usuario_id: number;
     usuario_nome: string;
     data_submissao: string;
+    criado_em?: string;
     status: 'PENDENTE' | 'APROVADO' | 'REJEITADO' | 'PARCIALMENTE_APROVADO';
     total_pedidos: number;
     pedidos: Pedido[];
@@ -277,7 +278,11 @@ const DetalhesSubmissao: React.FC = () => {
                 quantidade_atual: quantidadesAtuais[item.item_id] || 0
             }));
 
+            console.log('[DetalhesSubmissao] Enviando edição:', { submissao_id: submissao.id, items });
+            
             const response = await api.put(`/admin/submissoes/${submissao.id}/editar`, { items });
+            
+            console.log('[DetalhesSubmissao] Resposta recebida:', response.data);
             
             // Mostrar modal de sucesso
             setModalType('info');
@@ -292,6 +297,7 @@ const DetalhesSubmissao: React.FC = () => {
                 setShowSuccessModal(false);
             }, 2000);
         } catch (err: any) {
+            console.error('[DetalhesSubmissao] Erro ao salvar:', err);
             setError(err.response?.data?.error || 'Erro ao atualizar quantidades');
         } finally {
             setActionLoading(false);
@@ -367,7 +373,7 @@ const DetalhesSubmissao: React.FC = () => {
         mensagem += `*Lista:* ${submissao.lista_nome}\n`;
         mensagem += `*Status:* ${submissao.status}\n`;
         mensagem += `*Solicitante:* ${submissao.usuario_nome}\n`;
-        mensagem += `*Data:* ${formatarData(submissao.criado_em)}\n\n`;
+        mensagem += `*Data:* ${formatarData(submissao.criado_em || submissao.data_submissao)}\n\n`;
         mensagem += `*Itens Solicitados:*\n\n`;
 
         itensFiltrados.forEach(item => {
@@ -388,12 +394,14 @@ const DetalhesSubmissao: React.FC = () => {
             await navigator.clipboard.writeText(mensagem);
             setModalMessage('✅ Texto copiado para a área de transferência!');
             setModalType('success');
-            setShowModal(true);
+            setShowSuccessModal(true);
+            setTimeout(() => setShowSuccessModal(false), 2000);
         } catch (err) {
             console.error('Erro ao copiar:', err);
             setModalMessage('❌ Erro ao copiar texto. Tente novamente.');
             setModalType('warning');
-            setShowModal(true);
+            setShowSuccessModal(true);
+            setTimeout(() => setShowSuccessModal(false), 2000);
         }
     };
 
@@ -540,6 +548,7 @@ const DetalhesSubmissao: React.FC = () => {
                     ) : (
                         <>
                             <Button
+                                id="btn-salvar"
                                 variant="success"
                                 onClick={handleSalvarEdicao}
                                 disabled={actionLoading}
