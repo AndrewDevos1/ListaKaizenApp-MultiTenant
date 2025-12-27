@@ -829,6 +829,7 @@ def editar_quantidades_submissao(submissao_id, pedidos_data):
                     submissao_id=submissao_id,
                     lista_mae_item_id=ref.item_id,
                     quantidade_solicitada=pedido_qtd,
+                    usuario_id=submissao.usuario_id,  # CRÍTICO: pega da submissão
                     status=PedidoStatus.PENDENTE
                 )
                 db.session.add(novo_pedido)
