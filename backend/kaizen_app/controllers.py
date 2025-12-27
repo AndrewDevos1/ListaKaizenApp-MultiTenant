@@ -968,6 +968,58 @@ def atribuir_fornecedor_lista_mae_route(lista_id):
     response, status = services.atribuir_fornecedor_lista_mae(lista_id, data)
     return jsonify(response), status
 
+
+@admin_bp.route('/listas/<int:lista_id>/itens/copiar', methods=['POST'])
+@admin_required()
+def copiar_itens_lista_route(lista_id):
+    """
+    Copia itens de uma lista para outra (ou cria nova lista).
+    Body: {
+        "item_ids": [1, 2, 3],
+        "lista_destino_id": 5,  // ou null
+        "nome_nova_lista": "Nova Lista",  // se criar nova
+        "area_id": 2  // se criar nova
+    }
+    """
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "Nenhum dado recebido"}), 400
+        
+        response, status = services.copiar_itens_entre_listas(lista_id, data)
+        return jsonify(response), status
+    except Exception as e:
+        print(f"[copiar_itens_lista_route] ERRO: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": f"Erro ao copiar itens: {str(e)}"}), 500
+
+
+@admin_bp.route('/listas/<int:lista_id>/itens/mover', methods=['POST'])
+@admin_required()
+def mover_itens_lista_route(lista_id):
+    """
+    Move itens de uma lista para outra (ou cria nova lista).
+    Body: {
+        "item_ids": [1, 2, 3],
+        "lista_destino_id": 5,  // ou null
+        "nome_nova_lista": "Nova Lista",  // se criar nova
+        "area_id": 2  // se criar nova
+    }
+    """
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "Nenhum dado recebido"}), 400
+        
+        response, status = services.mover_itens_entre_listas(lista_id, data)
+        return jsonify(response), status
+    except Exception as e:
+        print(f"[mover_itens_lista_route] ERRO: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": f"Erro ao mover itens: {str(e)}"}), 500
+
 @api_bp.route('/listas/<int:lista_id>/items-import', methods=['POST'])
 @admin_required()
 def importar_items_em_lote_route(lista_id):
