@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Spinner, Alert, Badge, Form, InputGroup } from 'react-bootstrap';
+import { Table, Spinner, Alert, Badge, Form, InputGroup, Button, Modal } from 'react-bootstrap';
 import api from '../../services/api';
 import styles from './CatalogoGlobal.module.css';
 
@@ -23,6 +23,11 @@ const CatalogoGlobal: React.FC = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
     const [searchTerm, setSearchTerm] = useState('');
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [itemEditando, setItemEditando] = useState<CatalogoItem | null>(null);
+    const [nomeEdit, setNomeEdit] = useState('');
+    const [unidadeEdit, setUnidadeEdit] = useState('');
+    const [isSaving, setIsSaving] = useState(false);
 
     const fetchData = async () => {
         setIsLoading(true);
@@ -72,6 +77,62 @@ const CatalogoGlobal: React.FC = () => {
         return date.toLocaleDateString('pt-BR');
     };
 
+    const handleEditClick = (item: CatalogoItem) => {
+        setItemEditando(item);
+        setNomeEdit(item.nome);
+        setUnidadeEdit(item.unidade);
+        setShowEditModal(true);
+    };
+
+    const handleCloseModal = () => {
+        setShowEditModal(false);
+        setItemEditando(null);
+        setNomeEdit('');
+        setUnidadeEdit('');
+        setError('');
+    };
+
+    const handleSaveEdit = async () => {
+        if (!itemEditando) return;
+
+        if (!nomeEdit.trim()) {
+            setError('Nome do item é obrigatório.');
+            return;
+        }
+        if (!unidadeEdit.trim()) {
+            setError('Unidade é obrigatória.');
+            return;
+        }
+
+        setIsSaving(true);
+        setError('');
+        try {
+            await api.put(`/admin/catalogo-global/${itemEditando.id}`, {
+                nome: nomeEdit.trim(),
+                unidade: unidadeEdit.trim()
+            });
+
+            // Atualiza a lista local
+            const updatedItens = itens.map(item =>
+                item.id === itemEditando.id
+                    ? { ...item, nome: nomeEdit.trim(), unidade: unidadeEdit.trim() }
+                    : item
+            );
+            setItens(updatedItens);
+            setFilteredItens(updatedItens.filter(item =>
+                item.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                item.unidade.toLowerCase().includes(searchTerm.toLowerCase())
+            ));
+
+            handleCloseModal();
+        } catch (err: any) {
+            console.error('[CatalogoGlobal] Erro ao salvar:', err);
+            setError(err.response?.data?.error || 'Erro ao atualizar item.');
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
     return (
         <div className={styles.container}>
             <div className={styles.header}>
@@ -116,19 +177,20 @@ const CatalogoGlobal: React.FC = () => {
                         <th>Unidade</th>
                         <th>Listas Vinculadas</th>
                         <th>Cadastrado em</th>
+                        <th>Ações</th>
                     </tr>
                 </thead>
                 <tbody>
                     {isLoading ? (
                         <tr>
-                            <td colSpan={5} className="text-center py-4">
+                            <td colSpan={6} className="text-center py-4">
                                 <Spinner animation="border" />
                                 <p className="mt-2 mb-0">Carregando catálogo...</p>
                             </td>
                         </tr>
                     ) : filteredItens.length === 0 ? (
                         <tr>
-                            <td colSpan={5} className="text-center py-4 text-muted">
+                            <td colSpan={6} className="text-center py-4 text-muted">
                                 {searchTerm ? 'Nenhum item encontrado com esse termo.' : 'Nenhum item no catálogo.'}
                             </td>
                         </tr>
@@ -143,6 +205,16 @@ const CatalogoGlobal: React.FC = () => {
                                 </Badge>
                             </td>
                             <td>{formatDate(item.criado_em)}</td>
+                            <td>
+                                <Button
+                                    variant="primary"
+                                    size="sm"
+                                    onClick={() => handleEditClick(item)}
+                                >
+                                    <i className="fas fa-edit me-1"></i>
+                                    Editar
+                                </Button>
+                            </td>
                         </tr>
                     ))}
                 </tbody>
@@ -185,9 +257,70 @@ const CatalogoGlobal: React.FC = () => {
                             <span className={styles.cardLabel}>Cadastrado</span>
                             <span className={styles.cardValue}>{formatDate(item.criado_em)}</span>
                         </div>
+                        <div className={styles.cardRow}>
+                            <Button
+                                variant="primary"
+                                size="sm"
+                                onClick={() => handleEditClick(item)}
+                                className="w-100"
+                            >
+                                <i className="fas fa-edit me-1"></i>
+                                Editar Item
+                            </Button>
+                        </div>
                     </div>
                 ))}
             </div>
+
+            {/* Modal de Edição */}
+            <Modal show={showEditModal} onHide={handleCloseModal}>
+                <Modal.Header closeButton>
+                    <Modal.Title>Editar Item do Catálogo</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    {error && <Alert variant="danger">{error}</Alert>}
+                    <Form>
+                        <Form.Group className="mb-3">
+                            <Form.Label>Nome do Item</Form.Label>
+                            <Form.Control
+                                type="text"
+                                value={nomeEdit}
+                                onChange={(e) => setNomeEdit(e.target.value)}
+                                placeholder="Ex: Arroz Integral"
+                                disabled={isSaving}
+                            />
+                        </Form.Group>
+                        <Form.Group className="mb-3">
+                            <Form.Label>Unidade</Form.Label>
+                            <Form.Control
+                                type="text"
+                                value={unidadeEdit}
+                                onChange={(e) => setUnidadeEdit(e.target.value)}
+                                placeholder="Ex: kg, un, litro"
+                                disabled={isSaving}
+                            />
+                        </Form.Group>
+                    </Form>
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="secondary" onClick={handleCloseModal} disabled={isSaving}>
+                        Cancelar
+                    </Button>
+                    <Button variant="primary" onClick={handleSaveEdit} disabled={isSaving}>
+                        {isSaving ? (
+                            <>
+                                <Spinner as="span" animation="border" size="sm" className="me-2" />
+                                Salvando...
+                            </>
+                        ) : (
+                            <>
+                                <i className="fas fa-save me-1"></i>
+                                Salvar
+                            </>
+                        )}
+                    </Button>
+                </Modal.Footer>
+            </Modal>
         </div>
     );
 };

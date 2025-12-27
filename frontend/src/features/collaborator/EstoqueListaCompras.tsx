@@ -15,9 +15,11 @@ import {
     faExclamationTriangle,
     faSave,
     faPaperPlane,
-    faShoppingCart
+    faShoppingCart,
+    faLightbulb
 } from '@fortawesome/free-solid-svg-icons';
 import CustomSpinner from '../../components/Spinner';
+import SugerirItemModal from '../../components/SugerirItemModal';
 import api from '../../services/api';
 import styles from './EstoqueListaCompras.module.css';
 
@@ -56,6 +58,8 @@ const EstoqueListaCompras: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
+    const [showSugerirModal, setShowSugerirModal] = useState(false);
+    const [successSugestao, setSuccessSugestao] = useState('');
 
     // Carregar estoque da lista
     useEffect(() => {
@@ -192,6 +196,11 @@ const EstoqueListaCompras: React.FC = () => {
         return { totalItems, itemsToRequest, changedItems };
     }, [estoque]);
 
+    const handleSucessoSugestao = () => {
+        setSuccessSugestao('✅ Sugestão enviada com sucesso! O administrador irá analisá-la.');
+        setTimeout(() => setSuccessSugestao(''), 5000);
+    };
+
     return (
         <div className={styles.container}>
             {/* Header */}
@@ -205,15 +214,32 @@ const EstoqueListaCompras: React.FC = () => {
                     <FontAwesomeIcon icon={faArrowLeft} /> Voltar
                 </Button>
 
-                <h2 className={`fs-2 mb-2 ${styles.title}`}>
-                    <FontAwesomeIcon icon={faShoppingCart} /> Preenchimento: {listaName}
-                </h2>
+                <div className="d-flex justify-content-between align-items-center mb-2">
+                    <h2 className={`fs-2 mb-0 ${styles.title}`}>
+                        <FontAwesomeIcon icon={faShoppingCart} /> Preenchimento: {listaName}
+                    </h2>
+                    <Button 
+                        variant="warning"
+                        onClick={() => setShowSugerirModal(true)}
+                        className="d-flex align-items-center gap-2"
+                    >
+                        <FontAwesomeIcon icon={faLightbulb} />
+                        Sugerir Novo Item
+                    </Button>
+                </div>
+                
                 <p className="text-muted">
                     Atualize as quantidades atuais de cada item e clique em "Submeter Lista"
                 </p>
             </div>
 
             {/* Alertas */}
+            {successSugestao && (
+                <Alert variant="success" onClose={() => setSuccessSugestao('')} dismissible>
+                    {successSugestao}
+                </Alert>
+            )}
+            
             {error && (
                 <Alert variant="danger" onClose={() => setError('')} dismissible>
                     <FontAwesomeIcon icon={faExclamationTriangle} /> {error}
@@ -395,6 +421,15 @@ const EstoqueListaCompras: React.FC = () => {
                     </Button>
                 </div>
             </Form>
+
+            {/* Modal de Sugestão de Item */}
+            <SugerirItemModal
+                show={showSugerirModal}
+                onHide={() => setShowSugerirModal(false)}
+                listaId={parseInt(listaId || '0')}
+                listaNome={listaName}
+                onSucessoEnvio={handleSucessoSugestao}
+            />
         </div>
     );
 };

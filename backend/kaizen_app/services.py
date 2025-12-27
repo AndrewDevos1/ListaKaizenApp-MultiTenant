@@ -1,4 +1,4 @@
-from .models import Usuario, UserRoles, Item, Area, Fornecedor, Estoque, Cotacao, CotacaoStatus, CotacaoItem, Pedido, PedidoStatus, Lista, ListaMaeItem, ListaItemRef, Submissao, SubmissaoStatus
+from .models import Usuario, UserRoles, Item, Area, Fornecedor, Estoque, Cotacao, CotacaoStatus, CotacaoItem, Pedido, PedidoStatus, Lista, ListaMaeItem, ListaItemRef, Submissao, SubmissaoStatus, SugestaoItem, SugestaoStatus
 from .extensions import db
 from . import repositories
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -1520,23 +1520,77 @@ def get_catalogo_global():
     Retorna todos os itens do catálogo global.
     Usado pelo admin no card "Itens e Insumos".
     """
-    itens = ListaMaeItem.query.order_by(ListaMaeItem.nome).all()
+    # Query otimizada: uma única consulta com agregação
+    from sqlalchemy import func as sql_func
+    
+    itens_query = db.session.query(
+        ListaMaeItem.id,
+        ListaMaeItem.nome,
+        ListaMaeItem.unidade,
+        ListaMaeItem.criado_em,
+        ListaMaeItem.atualizado_em,
+        sql_func.count(ListaItemRef.lista_id).label('total_listas')
+    ).outerjoin(
+        ListaItemRef, ListaMaeItem.id == ListaItemRef.item_id
+    ).group_by(
+        ListaMaeItem.id
+    ).order_by(
+        ListaMaeItem.nome
+    ).all()
 
-    itens_data = []
-    for item in itens:
-        # Contar quantas listas usam este item
-        total_listas = ListaItemRef.query.filter_by(item_id=item.id).count()
+    itens_data = [{
+        "id": item.id,
+        "nome": item.nome,
+        "unidade": item.unidade,
+        "total_listas": item.total_listas,
+        "criado_em": item.criado_em.isoformat() if item.criado_em else None,
+        "atualizado_em": item.atualizado_em.isoformat() if item.atualizado_em else None
+    } for item in itens_query]
 
-        itens_data.append({
+    return {"itens": itens_data, "total": len(itens_data)}, 200
+
+
+def editar_item_catalogo_global(item_id, data):
+    """
+    Edita um item do catálogo global (ListaMaeItem).
+    Permite alterar nome e unidade.
+    """
+    item = ListaMaeItem.query.get(item_id)
+    if not item:
+        return {"error": "Item não encontrado."}, 404
+
+    nome = data.get('nome', '').strip()
+    unidade = data.get('unidade', '').strip()
+
+    if not nome:
+        return {"error": "Nome do item é obrigatório."}, 400
+    if not unidade:
+        return {"error": "Unidade é obrigatória."}, 400
+
+    # Verifica se já existe outro item com o mesmo nome
+    item_existente = ListaMaeItem.query.filter(
+        ListaMaeItem.nome == nome,
+        ListaMaeItem.id != item_id
+    ).first()
+    
+    if item_existente:
+        return {"error": f"Já existe um item com o nome '{nome}'."}, 409
+
+    item.nome = nome
+    item.unidade = unidade
+    item.atualizado_em = datetime.now(timezone.utc)
+
+    db.session.commit()
+
+    return {
+        "message": "Item atualizado com sucesso.",
+        "item": {
             "id": item.id,
             "nome": item.nome,
             "unidade": item.unidade,
-            "total_listas": total_listas,
-            "criado_em": item.criado_em.isoformat() if item.criado_em else None,
-            "atualizado_em": item.atualizado_em.isoformat() if item.atualizado_em else None
-        })
-
-    return {"itens": itens_data, "total": len(itens_data)}, 200
+            "atualizado_em": item.atualizado_em.isoformat()
+        }
+    }, 200
 
 
 def get_listas_status_submissoes():
@@ -3910,3 +3964,179 @@ def save_navbar_preferences(user_id, data):
     db.session.commit()
     
     return {"message": "Preferências salvas com sucesso", "data": pref.to_dict()}, 200
+
+
+# ===== SUGESTÕES DE ITENS =====
+
+def criar_sugestao_item(user_id, data):
+    """
+    Cria uma sugestão de novo item para o catálogo global.
+    Usuário sugere item que será adicionado temporariamente à sua lista.
+    """
+    lista_id = data.get('lista_id')
+    nome_item = data.get('nome_item', '').strip()
+    unidade = data.get('unidade', '').strip() or 'un'  # Padrão 'un' se não informar
+    quantidade = data.get('quantidade') or 1  # Padrão 1 se não informar
+    mensagem_usuario = data.get('mensagem_usuario', '').strip()
+
+    if not lista_id:
+        return {"error": "ID da lista é obrigatório."}, 400
+    if not nome_item:
+        return {"error": "Nome do item é obrigatório."}, 400
+
+    # Verifica se a lista existe e pertence ao usuário
+    lista = Lista.query.get(lista_id)
+    if not lista:
+        return {"error": "Lista não encontrada."}, 404
+    
+    # Verifica se item já existe no catálogo global
+    item_existente = ListaMaeItem.query.filter_by(nome=nome_item).first()
+    if item_existente:
+        return {"error": f"Item '{nome_item}' já existe no catálogo global."}, 409
+
+    # Cria a sugestão
+    sugestao = SugestaoItem(
+        usuario_id=user_id,
+        lista_id=lista_id,
+        nome_item=nome_item,
+        unidade=unidade,
+        quantidade=float(quantidade),
+        mensagem_usuario=mensagem_usuario if mensagem_usuario else None,
+        status=SugestaoStatus.PENDENTE
+    )
+    
+    db.session.add(sugestao)
+    db.session.commit()
+
+    return {
+        "message": "Sugestão enviada com sucesso! Aguarde aprovação do administrador.",
+        "sugestao": sugestao.to_dict()
+    }, 201
+
+
+def listar_minhas_sugestoes(user_id):
+    """Lista todas as sugestões do usuário logado."""
+    sugestoes = SugestaoItem.query.filter_by(usuario_id=user_id).order_by(
+        SugestaoItem.criado_em.desc()
+    ).all()
+    
+    return {
+        "sugestoes": [s.to_dict() for s in sugestoes],
+        "total": len(sugestoes)
+    }, 200
+
+
+def listar_sugestoes_pendentes():
+    """Lista todas as sugestões pendentes para o admin."""
+    sugestoes = SugestaoItem.query.filter_by(
+        status=SugestaoStatus.PENDENTE
+    ).order_by(
+        SugestaoItem.criado_em.asc()
+    ).all()
+    
+    return {
+        "sugestoes": [s.to_dict() for s in sugestoes],
+        "total": len(sugestoes)
+    }, 200
+
+
+def contar_sugestoes_pendentes():
+    """Conta quantas sugestões estão pendentes."""
+    count = SugestaoItem.query.filter_by(status=SugestaoStatus.PENDENTE).count()
+    return {"count": count}, 200
+
+
+def aprovar_sugestao(sugestao_id, admin_id, data):
+    """
+    Admin aprova a sugestão:
+    1. Cria item no catálogo global
+    2. Adiciona item à lista do usuário via ListaItemRef
+    3. Atualiza status da sugestão
+    """
+    sugestao = SugestaoItem.query.get(sugestao_id)
+    if not sugestao:
+        return {"error": "Sugestão não encontrada."}, 404
+    
+    if sugestao.status != SugestaoStatus.PENDENTE:
+        return {"error": "Sugestão já foi respondida."}, 400
+
+    mensagem_admin = data.get('mensagem_admin', '').strip()
+    unidade = data.get('unidade', '').strip() or sugestao.unidade
+    quantidade = data.get('quantidade') or sugestao.quantidade
+
+    if not unidade:
+        return {"error": "Unidade é obrigatória."}, 400
+    if not quantidade or quantidade <= 0:
+        return {"error": "Quantidade deve ser maior que zero."}, 400
+
+    try:
+        # 1. Cria item no catálogo global
+        item_global = ListaMaeItem(
+            nome=sugestao.nome_item,
+            unidade=unidade
+        )
+        db.session.add(item_global)
+        db.session.flush()  # Para obter o ID
+
+        # 2. Adiciona à lista do usuário
+        item_ref = ListaItemRef(
+            lista_id=sugestao.lista_id,
+            item_id=item_global.id,
+            quantidade_atual=0,
+            quantidade_minima=float(quantidade)
+        )
+        db.session.add(item_ref)
+
+        # 3. Atualiza sugestão
+        sugestao.status = SugestaoStatus.APROVADA
+        sugestao.admin_id = admin_id
+        sugestao.mensagem_admin = mensagem_admin if mensagem_admin else None
+        sugestao.item_global_id = item_global.id
+        sugestao.unidade = unidade
+        sugestao.quantidade = float(quantidade)
+        sugestao.respondido_em = datetime.now(timezone.utc)
+
+        db.session.commit()
+
+        return {
+            "message": "Sugestão aprovada com sucesso!",
+            "sugestao": sugestao.to_dict(),
+            "item_global": {
+                "id": item_global.id,
+                "nome": item_global.nome,
+                "unidade": item_global.unidade
+            }
+        }, 200
+
+    except Exception as e:
+        db.session.rollback()
+        return {"error": f"Erro ao aprovar sugestão: {str(e)}"}, 500
+
+
+def rejeitar_sugestao(sugestao_id, admin_id, data):
+    """
+    Admin rejeita a sugestão.
+    Apenas atualiza o status e adiciona mensagem.
+    """
+    sugestao = SugestaoItem.query.get(sugestao_id)
+    if not sugestao:
+        return {"error": "Sugestão não encontrada."}, 404
+    
+    if sugestao.status != SugestaoStatus.PENDENTE:
+        return {"error": "Sugestão já foi respondida."}, 400
+
+    mensagem_admin = data.get('mensagem_admin', '').strip()
+    if not mensagem_admin:
+        return {"error": "Mensagem explicativa é obrigatória ao rejeitar."}, 400
+
+    sugestao.status = SugestaoStatus.REJEITADA
+    sugestao.admin_id = admin_id
+    sugestao.mensagem_admin = mensagem_admin
+    sugestao.respondido_em = datetime.now(timezone.utc)
+
+    db.session.commit()
+
+    return {
+        "message": "Sugestão rejeitada.",
+        "sugestao": sugestao.to_dict()
+    }, 200
