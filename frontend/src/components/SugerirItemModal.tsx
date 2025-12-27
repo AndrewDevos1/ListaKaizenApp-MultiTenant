@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Modal, Form, Button, Spinner, Alert } from 'react-bootstrap';
-import api from '../../services/api';
+import api from '../services/api';
 
 interface SugerirItemModalProps {
     show: boolean;
