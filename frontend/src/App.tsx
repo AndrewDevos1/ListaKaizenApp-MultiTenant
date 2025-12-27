@@ -25,6 +25,7 @@ import GerenciarUsuarios from './features/admin/GerenciarUsuarios';
 import GerenciarPedidos from './features/admin/GerenciarPedidos';
 import GerenciarSubmissoes from './features/admin/GerenciarSubmissoes';
 import DetalhesSubmissao from './features/admin/DetalhesSubmissao';
+import GerenciarSugestoes from './features/admin/GerenciarSugestoes';
 import Configuracoes from './features/admin/Configuracoes';
 import MudarSenha from './features/admin/MudarSenha';
 import EditarPerfil from './features/admin/EditarPerfil';
@@ -32,6 +33,7 @@ import CriarUsuario from './features/admin/CriarUsuario';
 import CollaboratorDashboard from './features/collaborator/CollaboratorDashboard';
 import MinhasListasCompras from './features/collaborator/MinhasListasCompras';
 import EstoqueListaCompras from './features/collaborator/EstoqueListaCompras';
+import MinhasSugestoes from './features/colaborador/MinhasSugestoes';
 import AdminRoute from './components/AdminRoute';
 import CollaboratorRoute from './components/CollaboratorRoute';
 import Layout from './components/Layout';
@@ -56,6 +58,7 @@ function App() {
               <Route path="gerenciar-pedidos" element={<GerenciarPedidos />} />
               <Route path="submissoes" element={<GerenciarSubmissoes />} />
               <Route path="submissoes/:id" element={<DetalhesSubmissao />} />
+              <Route path="sugestoes" element={<GerenciarSugestoes />} />
               <Route path="configuracoes" element={<Configuracoes />} />
               <Route path="mudar-senha" element={<MudarSenha />} />
               <Route path="editar-perfil" element={<EditarPerfil />} />
@@ -81,6 +84,7 @@ function App() {
               <Route path="areas" element={<MinhasSubmissoes />} />
               <Route path="submissions" element={<MinhasSubmissoes />} />
               <Route path="submissions/:id" element={<DetalhesSubmissaoColaborador />} />
+              <Route path="sugestoes" element={<MinhasSugestoes />} />
               <Route path="areas/:areaId/estoque" element={<EstoqueLista />} />
               <Route path="listas" element={<MinhasListasCompras />} />
               <Route path="listas/:listaId/estoque" element={<EstoqueListaCompras />} />

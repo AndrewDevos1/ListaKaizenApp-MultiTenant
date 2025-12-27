@@ -43,7 +43,8 @@ const Layout: React.FC = () => {
       items: [
         { path: '/admin/listas-compras', icon: 'fa-shopping-cart', label: 'Listas de Compras', ariaLabel: 'Listas de Compras' },
         { path: '/admin/catalogo-global', icon: 'fa-book', label: 'Itens Cadastrados', ariaLabel: 'Itens Cadastrados no Sistema' },
-        { path: '/admin/submissoes', icon: 'fa-clipboard-check', label: 'Submissões', ariaLabel: 'Gerenciar Submissões' }
+        { path: '/admin/submissoes', icon: 'fa-clipboard-check', label: 'Submissões', ariaLabel: 'Gerenciar Submissões' },
+        { path: '/admin/sugestoes', icon: 'fa-lightbulb', label: 'Sugestões de Itens', ariaLabel: 'Gerenciar Sugestões de Itens' }
       ]
     },
     {
@@ -78,7 +79,8 @@ const Layout: React.FC = () => {
       title: 'MINHAS ATIVIDADES',
       items: [
         { path: '/collaborator/listas', icon: 'fa-shopping-cart', label: 'Minhas Listas', ariaLabel: 'Minhas Listas' },
-        { path: '/collaborator/submissions', icon: 'fa-clipboard-list', label: 'Minhas Submissões', ariaLabel: 'Minhas Submissões' }
+        { path: '/collaborator/submissions', icon: 'fa-clipboard-list', label: 'Minhas Submissões', ariaLabel: 'Minhas Submissões' },
+        { path: '/collaborator/sugestoes', icon: 'fa-lightbulb', label: 'Minhas Sugestões', ariaLabel: 'Minhas Sugestões de Itens' }
       ]
     },
     {
