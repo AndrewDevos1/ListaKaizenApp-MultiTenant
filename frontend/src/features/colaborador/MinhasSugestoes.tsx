@@ -29,10 +29,13 @@ const MinhasSugestoes: React.FC = () => {
         setIsLoading(true);
         setError('');
         try {
+            console.log('[MinhasSugestoes] Buscando sugestões...');
             const response = await api.get('/auth/sugestoes/minhas');
+            console.log('[MinhasSugestoes] Resposta:', response.data);
             setSugestoes(response.data.sugestoes || []);
         } catch (err: any) {
             console.error('[MinhasSugestoes] Erro:', err);
+            console.error('[MinhasSugestoes] Erro detalhes:', err.response);
             setError('Erro ao carregar sugestões.');
         } finally {
             setIsLoading(false);
