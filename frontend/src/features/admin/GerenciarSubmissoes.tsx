@@ -14,8 +14,7 @@ import api from '../../services/api';
 import styles from './GerenciarSubmissoes.module.css';
 
 interface Submissao {
-    id: number | string; // pode ser "LR-X" para lista rápida
-    tipo?: 'lista_comum' | 'lista_rapida';
+    id: number;
     lista_id: number;
     lista_nome: string;
     usuario_id: number;
@@ -23,6 +22,7 @@ interface Submissao {
     data_submissao: string;
     status: 'PENDENTE' | 'APROVADO' | 'REJEITADO' | 'PARCIALMENTE_APROVADO';
     total_pedidos: number;
+    tipo_lista?: 'LISTA_TRADICIONAL' | 'LISTA_RAPIDA';
 }
 
 type StatusFilter = 'TODOS' | 'PENDENTE' | 'APROVADO' | 'REJEITADO';
@@ -49,9 +49,7 @@ const GerenciarSubmissoes: React.FC = () => {
                 : `/admin/submissoes?status=${statusFilter}`;
 
             const response = await api.get(url);
-            // Garantir que response.data é um array
-            const data = Array.isArray(response.data) ? response.data : [];
-            setSubmissoes(data);
+            setSubmissoes(response.data);
         } catch (err: any) {
             setError(err.response?.data?.error || 'Erro ao carregar submissões');
         } finally {
@@ -83,6 +81,15 @@ const GerenciarSubmissoes: React.FC = () => {
             hour: '2-digit',
             minute: '2-digit'
         });
+    };
+
+    const handleVerDetalhes = (submissao: Submissao) => {
+        // Rotear baseado no tipo de lista
+        if (submissao.tipo_lista === 'LISTA_RAPIDA') {
+            navigate(`/admin/listas-rapidas/${submissao.id}`);
+        } else {
+            navigate(`/admin/submissoes/${submissao.id}`);
+        }
     };
 
     if (loading) {
@@ -185,13 +192,7 @@ const GerenciarSubmissoes: React.FC = () => {
                                     <Button
                                         size="sm"
                                         variant="primary"
-                                        onClick={() => {
-                                            if (sub.tipo === 'lista_rapida') {
-                                                navigate(`/admin/listas-rapidas/${sub.lista_id}`);
-                                            } else {
-                                                navigate(`/admin/submissoes/${sub.id}`);
-                                            }
-                                        }}
+                                        onClick={() => handleVerDetalhes(sub)}
                                     >
                                         <FontAwesomeIcon icon={faEye} /> Ver Detalhes
                                     </Button>
@@ -238,13 +239,7 @@ const GerenciarSubmissoes: React.FC = () => {
                             <div className={styles.cardActions}>
                                 <Button
                                     variant="primary"
-                                    onClick={() => {
-                                        if (sub.tipo === 'lista_rapida') {
-                                            navigate(`/admin/listas-rapidas/${sub.lista_id}`);
-                                        } else {
-                                            navigate(`/admin/submissoes/${sub.id}`);
-                                        }
-                                    }}
+                                    onClick={() => handleVerDetalhes(sub)}
                                 >
                                     <FontAwesomeIcon icon={faEye} /> Ver Detalhes
                                 </Button>

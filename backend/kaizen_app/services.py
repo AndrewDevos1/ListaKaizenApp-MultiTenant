@@ -653,28 +653,30 @@ def get_submissoes_by_user(user_id):
 def get_all_submissoes(status_filter=None):
     """
     Retorna todas as submissões (admin) com pedidos agrupados.
-    Inclui listas comuns E listas rápidas.
-    
+    Inclui tanto listas tradicionais quanto listas rápidas.
+
     Args:
         status_filter: PENDENTE, APROVADO, REJEITADO, PARCIALMENTE_APROVADO ou None
     """
-    # Submissões de listas comuns
+    from .models import ListaRapida, StatusListaRapida, ListaRapidaItem
+
+    resultado = []
+
+    # 1. BUSCAR SUBMISSÕES TRADICIONAIS
     query = Submissao.query.options(
         db.joinedload(Submissao.lista),
         db.joinedload(Submissao.usuario),
         db.joinedload(Submissao.pedidos).joinedload(Pedido.item)
     )
-    
+
     if status_filter:
         query = query.filter_by(status=status_filter)
-    
-    submissoes = query.order_by(Submissao.data_submissao.desc()).all()
-    
-    resultado = []
+
+    submissoes = query.all()
+
     for sub in submissoes:
         sub_dict = {
             "id": sub.id,
-            "tipo": "lista_comum",
             "lista_id": sub.lista_id,
             "lista_nome": sub.lista.nome if sub.lista else "N/A",
             "usuario_id": sub.usuario_id,
@@ -682,6 +684,7 @@ def get_all_submissoes(status_filter=None):
             "data_submissao": sub.data_submissao.isoformat(),
             "status": sub.status.value,
             "total_pedidos": sub.total_pedidos,
+            "tipo_lista": "LISTA_TRADICIONAL",
             "pedidos": [
                 {
                     "id": p.id,
@@ -695,63 +698,108 @@ def get_all_submissoes(status_filter=None):
             ]
         }
         resultado.append(sub_dict)
-    
-    # Listas rápidas submetidas
-    query_rapidas = ListaRapida.query.options(
-        db.joinedload(ListaRapida.usuario),
-        db.joinedload(ListaRapida.itens)
-    ).filter(ListaRapida.deletado == False, ListaRapida.status != StatusListaRapida.RASCUNHO)
-    
+
+    # 2. BUSCAR LISTAS RÁPIDAS (exceto RASCUNHO)
+    query_rapidas = ListaRapida.query.filter(
+        ListaRapida.status != StatusListaRapida.RASCUNHO,
+        ListaRapida.deletado == False
+    ).options(
+        db.joinedload(ListaRapida.usuario)
+        # Nota: itens usa lazy='dynamic', não pode usar joinedload
+    )
+
+    # Aplicar filtro de status se fornecido
     if status_filter:
-        # Mapear status de SubmissaoStatus para StatusListaRapida
-        if status_filter == "PENDENTE":
-            query_rapidas = query_rapidas.filter_by(status=StatusListaRapida.PENDENTE)
-        elif status_filter == "APROVADO":
-            query_rapidas = query_rapidas.filter_by(status=StatusListaRapida.APROVADA)
-        elif status_filter == "REJEITADO":
-            query_rapidas = query_rapidas.filter_by(status=StatusListaRapida.REJEITADA)
-    
-    listas_rapidas = query_rapidas.order_by(ListaRapida.submetido_em.desc()).all()
-    
-    for lr in listas_rapidas:
-        # Mapear status da lista rápida para formato compatível com submissões
+        # Mapear status de submissão para status de lista rápida
         status_map = {
-            "pendente": "PENDENTE",
-            "aprovada": "APROVADO",
-            "rejeitada": "REJEITADO"
+            "PENDENTE": StatusListaRapida.PENDENTE,
+            "APROVADO": StatusListaRapida.APROVADA,
+            "REJEITADO": StatusListaRapida.REJEITADA
         }
-        status_formatado = status_map.get(lr.status.value, lr.status.value.upper())
-        
-        lr_dict = {
-            "id": f"LR-{lr.id}",
-            "tipo": "lista_rapida",
-            "lista_id": lr.id,
-            "lista_nome": lr.nome,
-            "usuario_id": lr.usuario_id,
-            "usuario_nome": lr.usuario.nome if lr.usuario else "N/A",
-            "data_submissao": lr.submetido_em.isoformat() if lr.submetido_em else lr.criado_em.isoformat(),
-            "status": status_formatado,
-            "total_pedidos": len(lr.itens),
+        if status_filter in status_map:
+            query_rapidas = query_rapidas.filter_by(status=status_map[status_filter])
+
+    listas_rapidas = query_rapidas.all()
+
+    # Mapear listas rápidas para formato de submissão
+    for lista in listas_rapidas:
+        # Mapear status de lista rápida para formato de submissão
+        status_normalizado = {
+            StatusListaRapida.PENDENTE: "PENDENTE",
+            StatusListaRapida.APROVADA: "APROVADO",
+            StatusListaRapida.REJEITADA: "REJEITADO"
+        }.get(lista.status, "PENDENTE")
+
+        # Buscar itens da lista rápida
+        itens_lista = lista.itens.all()
+
+        lista_dict = {
+            "id": lista.id,  # ID numérico da lista rápida
+            "lista_id": lista.id,
+            "lista_nome": lista.nome,
+            "usuario_id": lista.usuario_id,
+            "usuario_nome": lista.usuario.nome if lista.usuario else "N/A",
+            "data_submissao": lista.submetido_em.isoformat() if lista.submetido_em else lista.criado_em.isoformat(),
+            "status": status_normalizado,
+            "total_pedidos": len(itens_lista),
+            "tipo_lista": "LISTA_RAPIDA",
             "pedidos": [
                 {
                     "id": item.id,
                     "item_id": item.item_global_id,
                     "item_nome": item.item_global.nome if item.item_global else "N/A",
-                    "quantidade_solicitada": 1.0,
-                    "status": status_formatado,
-                    "unidade": item.item_global.unidade if item.item_global else "un",
-                    "prioridade": item.prioridade.value,
-                    "observacao": item.observacao or ""
+                    "quantidade_solicitada": 1.0,  # Listas rápidas não têm quantidade explícita
+                    "status": status_normalizado,
+                    "unidade": item.item_global.unidade if item.item_global else "",
+                    "prioridade": item.prioridade.value if item.prioridade else "precisa_comprar",
+                    "observacao": item.observacao
                 }
-                for item in lr.itens
+                for item in itens_lista
             ]
         }
-        resultado.append(lr_dict)
-    
-    # Ordenar tudo por data
-    resultado.sort(key=lambda x: x['data_submissao'], reverse=True)
-    
+        resultado.append(lista_dict)
+
+    # 3. ORDENAR POR DATA DE SUBMISSÃO (mais recentes primeiro)
+    resultado.sort(key=lambda x: x["data_submissao"], reverse=True)
+
     return resultado, 200
+
+
+def get_submissao_by_id(submissao_id):
+    """Retorna uma submissão tradicional específica por ID."""
+    submissao = Submissao.query.options(
+        db.joinedload(Submissao.lista),
+        db.joinedload(Submissao.usuario),
+        db.joinedload(Submissao.pedidos).joinedload(Pedido.item)
+    ).filter_by(id=submissao_id).first()
+
+    if not submissao:
+        return {"error": "Submissão não encontrada."}, 404
+
+    sub_dict = {
+        "id": submissao.id,
+        "lista_id": submissao.lista_id,
+        "lista_nome": submissao.lista.nome if submissao.lista else "N/A",
+        "usuario_id": submissao.usuario_id,
+        "usuario_nome": submissao.usuario.nome if submissao.usuario else "N/A",
+        "data_submissao": submissao.data_submissao.isoformat(),
+        "status": submissao.status.value,
+        "total_pedidos": submissao.total_pedidos,
+        "tipo_lista": "LISTA_TRADICIONAL",
+        "pedidos": [
+            {
+                "id": p.id,
+                "item_id": p.lista_mae_item_id,
+                "item_nome": p.item.nome if p.item else "N/A",
+                "quantidade_solicitada": float(p.quantidade_solicitada),
+                "status": p.status.value,
+                "unidade": p.item.unidade if p.item else ""
+            }
+            for p in submissao.pedidos
+        ]
+    }
+
+    return sub_dict, 200
 
 
 def aprovar_submissao(submissao_id):
@@ -4642,13 +4690,155 @@ def rejeitar_lista_rapida(lista_id, admin_id, data):
     return {"message": "Lista rejeitada.", "lista": lista.to_dict()}, 200
 
 
+def reverter_lista_rapida_para_pendente(lista_id):
+    """Reverte uma lista rápida APROVADA ou REJEITADA para PENDENTE."""
+    from .models import ListaRapida, StatusListaRapida
+    from .extensions import db
+
+    lista = ListaRapida.query.get(lista_id)
+
+    if not lista:
+        return {"error": "Lista não encontrada."}, 404
+
+    if lista.status == StatusListaRapida.PENDENTE:
+        return {"error": "Lista já está PENDENTE."}, 400
+
+    if lista.status == StatusListaRapida.RASCUNHO:
+        return {"error": "Não é possível reverter uma lista em rascunho."}, 400
+
+    # Reverter para PENDENTE
+    lista.status = StatusListaRapida.PENDENTE
+    lista.admin_id = None
+    lista.mensagem_admin = None
+    lista.respondido_em = None
+
+    db.session.commit()
+
+    return {"message": "Lista revertida para PENDENTE.", "lista": lista.to_dict()}, 200
+
+
 def contar_listas_rapidas_pendentes():
     """Conta quantas listas rápidas estão pendentes."""
     from .models import ListaRapida, StatusListaRapida
-    
+
     count = ListaRapida.query.filter_by(
         status=StatusListaRapida.PENDENTE,
         deletado=False
     ).count()
-    
+
     return {"count": count}, 200
+
+
+def adicionar_item_lista_rapida_admin(lista_id, data):
+    """Admin adiciona item à lista rápida PENDENTE."""
+    from .models import ListaRapida, ListaRapidaItem, ListaMaeItem, PrioridadeItem, StatusListaRapida
+    from .extensions import db
+
+    lista = ListaRapida.query.filter_by(id=lista_id, deletado=False).first()
+
+    if not lista:
+        return {"error": "Lista não encontrada."}, 404
+
+    if lista.status != StatusListaRapida.PENDENTE:
+        return {"error": "Apenas listas PENDENTES podem ser editadas."}, 400
+
+    item_global_id = data.get('item_global_id')
+    if not item_global_id:
+        return {"error": "item_global_id é obrigatório."}, 400
+
+    # Verificar se item global existe
+    item_global = ListaMaeItem.query.get(item_global_id)
+    if not item_global:
+        return {"error": "Item não encontrado no catálogo global."}, 404
+
+    # Verificar se já existe
+    item_existente = ListaRapidaItem.query.filter_by(
+        lista_rapida_id=lista_id,
+        item_global_id=item_global_id
+    ).first()
+
+    if item_existente:
+        return {"error": "Item já está na lista."}, 409
+
+    # Criar item
+    prioridade_str = data.get('prioridade', 'precisa_comprar')
+    try:
+        prioridade = PrioridadeItem(prioridade_str)
+    except ValueError:
+        prioridade = PrioridadeItem.PRECISA_COMPRAR
+
+    novo_item = ListaRapidaItem(
+        lista_rapida_id=lista_id,
+        item_global_id=item_global_id,
+        prioridade=prioridade,
+        observacao=data.get('observacao', '').strip() or None
+    )
+
+    db.session.add(novo_item)
+    db.session.commit()
+
+    return {"message": "Item adicionado.", "item": novo_item.to_dict()}, 201
+
+
+def remover_item_lista_rapida_admin(lista_id, item_id):
+    """Admin remove item da lista rápida PENDENTE."""
+    from .models import ListaRapida, ListaRapidaItem, StatusListaRapida
+    from .extensions import db
+
+    lista = ListaRapida.query.filter_by(id=lista_id, deletado=False).first()
+
+    if not lista:
+        return {"error": "Lista não encontrada."}, 404
+
+    if lista.status != StatusListaRapida.PENDENTE:
+        return {"error": "Apenas listas PENDENTES podem ser editadas."}, 400
+
+    item = ListaRapidaItem.query.filter_by(
+        id=item_id,
+        lista_rapida_id=lista_id
+    ).first()
+
+    if not item:
+        return {"error": "Item não encontrado na lista."}, 404
+
+    db.session.delete(item)
+    db.session.commit()
+
+    return {"message": "Item removido."}, 200
+
+
+def editar_item_lista_rapida_admin(lista_id, item_id, data):
+    """Admin edita observação e prioridade de item da lista rápida PENDENTE."""
+    from .models import ListaRapida, ListaRapidaItem, PrioridadeItem, StatusListaRapida
+    from .extensions import db
+
+    lista = ListaRapida.query.filter_by(id=lista_id, deletado=False).first()
+
+    if not lista:
+        return {"error": "Lista não encontrada."}, 404
+
+    if lista.status != StatusListaRapida.PENDENTE:
+        return {"error": "Apenas listas PENDENTES podem ser editadas."}, 400
+
+    item = ListaRapidaItem.query.filter_by(
+        id=item_id,
+        lista_rapida_id=lista_id
+    ).first()
+
+    if not item:
+        return {"error": "Item não encontrado na lista."}, 404
+
+    # Atualizar observação
+    if 'observacao' in data:
+        item.observacao = data['observacao'].strip() or None
+
+    # Atualizar prioridade
+    if 'prioridade' in data:
+        try:
+            item.prioridade = PrioridadeItem(data['prioridade'])
+        except ValueError:
+            return {"error": "Prioridade inválida."}, 400
+
+    db.session.commit()
+
+    return {"message": "Item atualizado.", "item": item.to_dict()}, 200

@@ -84,19 +84,13 @@ const DetalhesSubmissao: React.FC = () => {
         try {
             setLoading(true);
             setError('');
-            const response = await api.get(`/admin/submissoes`);
-            const sub = response.data.find((s: Submissao) => s.id === Number(id));
-            
-            if (!sub) {
-                setError('Submissão não encontrada');
-                return;
-            }
-            
-            setSubmissao(sub);
-            
+            const response = await api.get(`/admin/submissoes/${id}`);
+            const submissaoData = response.data;
+            setSubmissao(submissaoData);
+
             // Buscar dados do estoque da lista (para edição)
             try {
-                const responseEstoque = await api.get(`/admin/listas/${sub.lista_id}/estoque`);
+                const responseEstoque = await api.get(`/admin/listas/${submissaoData.lista_id}/estoque`);
                 setItensEstoque(responseEstoque.data);
                 
                 // Inicializar quantidades atuais

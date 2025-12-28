@@ -33,12 +33,11 @@ const CriarListaRapida: React.FC = () => {
     const carregarItensGlobais = async () => {
         try {
             const response = await api.get('/auth/itens-globais');
-            console.log('[CriarListaRapida] Itens carregados:', response.data);
-            const itens = Array.isArray(response.data) ? response.data : [];
+            const itens = response.data.itens || response.data;
+            console.log('[CriarListaRapida] Itens carregados:', itens.length);
             setItensGlobais(itens);
         } catch (error) {
             console.error('[CriarListaRapida] Erro ao carregar itens:', error);
-            setItensGlobais([]);
             alert('Erro ao carregar itens. Tente novamente.');
         }
     };
@@ -114,16 +113,8 @@ const CriarListaRapida: React.FC = () => {
         }
     };
 
-    // Função para normalizar string (remove acentos e converte para minúsculas)
-    const normalizarString = (str: string): string => {
-        return str
-            .toLowerCase()
-            .normalize('NFD')
-            .replace(/[\u0300-\u036f]/g, '');
-    };
-
     const itensFiltrados = itensGlobais.filter(item =>
-        normalizarString(item.nome).includes(normalizarString(busca))
+        item.nome.toLowerCase().includes(busca.toLowerCase())
     );
 
     return (

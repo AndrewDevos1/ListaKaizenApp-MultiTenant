@@ -508,6 +508,14 @@ def get_all_submissoes_route():
     return jsonify(submissoes)
 
 
+@admin_bp.route('/submissoes/<int:submissao_id>', methods=['GET'])
+@admin_required()
+def get_submissao_by_id_route(submissao_id):
+    """Retorna uma submissão específica por ID (apenas listas tradicionais)."""
+    response, status = services.get_submissao_by_id(submissao_id)
+    return jsonify(response), status
+
+
 @admin_bp.route('/submissoes/<int:submissao_id>/aprovar', methods=['POST'])
 @admin_required()
 def aprovar_submissao_route(submissao_id):
@@ -1441,3 +1449,54 @@ def rejeitar_lista_rapida_route(lista_id):
     data = request.get_json() or {}
     response, status = services.rejeitar_lista_rapida(lista_id, admin_id, data)
     return jsonify(response), status
+
+
+@admin_bp.route('/listas-rapidas/<int:lista_id>/reverter', methods=['POST'])
+@admin_required()
+def reverter_lista_rapida_route(lista_id):
+    """Admin reverte lista rápida APROVADA/REJEITADA para PENDENTE."""
+    response, status = services.reverter_lista_rapida_para_pendente(lista_id)
+    return jsonify(response), status
+
+
+@admin_bp.route('/listas-rapidas/<int:lista_id>/itens', methods=['POST'])
+@admin_required()
+def adicionar_item_lista_rapida_admin_route(lista_id):
+    """Admin adiciona item à lista rápida PENDENTE."""
+    data = request.get_json() or {}
+    response, status = services.adicionar_item_lista_rapida_admin(lista_id, data)
+    return jsonify(response), status
+
+
+@admin_bp.route('/listas-rapidas/<int:lista_id>/itens/<int:item_id>', methods=['DELETE'])
+@admin_required()
+def remover_item_lista_rapida_admin_route(lista_id, item_id):
+    """Admin remove item da lista rápida PENDENTE."""
+    response, status = services.remover_item_lista_rapida_admin(lista_id, item_id)
+    return jsonify(response), status
+
+
+@admin_bp.route('/listas-rapidas/<int:lista_id>/itens/<int:item_id>', methods=['PUT'])
+@admin_required()
+def editar_item_lista_rapida_admin_route(lista_id, item_id):
+    """Admin edita observação/prioridade de item da lista rápida PENDENTE."""
+    data = request.get_json() or {}
+    response, status = services.editar_item_lista_rapida_admin(lista_id, item_id, data)
+    return jsonify(response), status
+
+
+@admin_bp.route('/itens-globais', methods=['GET'])
+@admin_required()
+def listar_itens_globais_admin_route():
+    """Admin lista todos os itens do catálogo global."""
+    try:
+        itens = ListaMaeItem.query.order_by(ListaMaeItem.nome).all()
+        return jsonify({
+            'itens': [{
+                'id': item.id,
+                'nome': item.nome,
+                'unidade': item.unidade
+            } for item in itens]
+        }), 200
+    except Exception as e:
+        return jsonify({'error': 'Erro ao buscar itens', 'message': str(e)}), 500
