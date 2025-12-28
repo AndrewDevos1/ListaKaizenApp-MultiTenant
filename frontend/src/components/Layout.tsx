@@ -50,7 +50,8 @@ const Layout: React.FC = () => {
         { path: '/admin/listas-compras', icon: 'fa-shopping-cart', label: 'Listas de Compras', ariaLabel: 'Listas de Compras' },
         { path: '/admin/catalogo-global', icon: 'fa-book', label: 'Itens Cadastrados', ariaLabel: 'Itens Cadastrados no Sistema' },
         { path: '/admin/submissoes', icon: 'fa-clipboard-check', label: 'Submissões', ariaLabel: 'Gerenciar Submissões' },
-        { path: '/admin/sugestoes', icon: 'fa-lightbulb', label: 'Sugestões de Itens', ariaLabel: 'Gerenciar Sugestões de Itens' }
+        { path: '/admin/sugestoes', icon: 'fa-lightbulb', label: 'Sugestões de Itens', ariaLabel: 'Gerenciar Sugestões de Itens' },
+        { path: '/admin/listas-rapidas', icon: 'fa-bolt', label: 'Listas Rápidas', ariaLabel: 'Gerenciar Listas Rápidas' }
       ]
     },
     {

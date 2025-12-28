@@ -26,6 +26,7 @@ import GerenciarPedidos from './features/admin/GerenciarPedidos';
 import GerenciarSubmissoes from './features/admin/GerenciarSubmissoes';
 import DetalhesSubmissao from './features/admin/DetalhesSubmissao';
 import GerenciarSugestoes from './features/admin/GerenciarSugestoes';
+import GerenciarListasRapidas from './features/admin/GerenciarListasRapidas';
 import Configuracoes from './features/admin/Configuracoes';
 import MudarSenha from './features/admin/MudarSenha';
 import EditarPerfil from './features/admin/EditarPerfil';
@@ -61,6 +62,7 @@ function App() {
               <Route path="submissoes" element={<GerenciarSubmissoes />} />
               <Route path="submissoes/:id" element={<DetalhesSubmissao />} />
               <Route path="sugestoes" element={<GerenciarSugestoes />} />
+              <Route path="listas-rapidas" element={<GerenciarListasRapidas />} />
               <Route path="configuracoes" element={<Configuracoes />} />
               <Route path="mudar-senha" element={<MudarSenha />} />
               <Route path="editar-perfil" element={<EditarPerfil />} />
