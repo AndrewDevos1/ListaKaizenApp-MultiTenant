@@ -416,12 +416,12 @@ const DetalhesListaRapida: React.FC = () => {
                         />
                       </td>
                       <td className="text-center">
-                        <button
+                        <i
+                          className="fas fa-trash text-danger"
                           onClick={() => handleRemoverItem(item.id)}
-                          className={`${styles.btn} ${styles.btnDanger} ${styles.btnSmall}`}
-                        >
-                          <i className="fas fa-trash"></i>
-                        </button>
+                          style={{ cursor: 'pointer', fontSize: '1.2rem' }}
+                          title="Remover item"
+                        ></i>
                       </td>
                     </tr>
                   ))}
