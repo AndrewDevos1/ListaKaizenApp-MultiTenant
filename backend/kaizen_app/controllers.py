@@ -1302,14 +1302,12 @@ def criar_lista_rapida_route():
 def listar_itens_globais_route():
     """Lista todos os itens do catálogo global para colaboradores."""
     try:
-        itens = ListaMaeItem.query.order_by(ListaMaeItem.nome).all()
-        return jsonify({
-            'itens': [{
-                'id': item.id,
-                'nome': item.nome,
-                'unidade': item.unidade
-            } for item in itens]
-        }), 200
+        itens = ListaMaeItem.query.filter_by(deletado=False).order_by(ListaMaeItem.nome).all()
+        return jsonify([{
+            'id': item.id,
+            'nome': item.nome,
+            'unidade': item.unidade
+        } for item in itens]), 200
     except Exception as e:
         return jsonify({'error': 'Erro ao buscar itens', 'message': str(e)}), 500
 
