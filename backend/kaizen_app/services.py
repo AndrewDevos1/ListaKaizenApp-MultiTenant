@@ -704,16 +704,24 @@ def get_all_submissoes(status_filter=None):
     
     if status_filter:
         # Mapear status de SubmissaoStatus para StatusListaRapida
-        if status_filter == SubmissaoStatus.PENDENTE.value:
+        if status_filter == "PENDENTE":
             query_rapidas = query_rapidas.filter_by(status=StatusListaRapida.PENDENTE)
-        elif status_filter == SubmissaoStatus.APROVADO.value:
+        elif status_filter == "APROVADO":
             query_rapidas = query_rapidas.filter_by(status=StatusListaRapida.APROVADA)
-        elif status_filter == SubmissaoStatus.REJEITADO.value:
+        elif status_filter == "REJEITADO":
             query_rapidas = query_rapidas.filter_by(status=StatusListaRapida.REJEITADA)
     
     listas_rapidas = query_rapidas.order_by(ListaRapida.submetido_em.desc()).all()
     
     for lr in listas_rapidas:
+        # Mapear status da lista rápida para formato compatível com submissões
+        status_map = {
+            "pendente": "PENDENTE",
+            "aprovada": "APROVADO",
+            "rejeitada": "REJEITADO"
+        }
+        status_formatado = status_map.get(lr.status.value, lr.status.value.upper())
+        
         lr_dict = {
             "id": f"LR-{lr.id}",
             "tipo": "lista_rapida",
@@ -722,7 +730,7 @@ def get_all_submissoes(status_filter=None):
             "usuario_id": lr.usuario_id,
             "usuario_nome": lr.usuario.nome if lr.usuario else "N/A",
             "data_submissao": lr.submetido_em.isoformat() if lr.submetido_em else lr.criado_em.isoformat(),
-            "status": lr.status.value,
+            "status": status_formatado,
             "total_pedidos": len(lr.itens),
             "pedidos": [
                 {
@@ -730,7 +738,7 @@ def get_all_submissoes(status_filter=None):
                     "item_id": item.item_global_id,
                     "item_nome": item.nome,
                     "quantidade_solicitada": float(item.quantidade) if item.quantidade else 0,
-                    "status": lr.status.value,
+                    "status": status_formatado,
                     "unidade": item.unidade,
                     "prioridade": item.prioridade.value,
                     "observacao": item.observacao
