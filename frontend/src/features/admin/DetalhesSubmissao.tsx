@@ -45,14 +45,15 @@ interface ItemEstoque {
 }
 
 interface Submissao {
-    id: number;
+    id: number | string;
+    tipo?: 'lista_comum' | 'lista_rapida';
     lista_id: number;
     lista_nome: string;
     usuario_id: number;
     usuario_nome: string;
     data_submissao: string;
     criado_em?: string;
-    status: 'PENDENTE' | 'APROVADO' | 'REJEITADO' | 'PARCIALMENTE_APROVADO';
+    status: 'PENDENTE' | 'APROVADO' | 'REJEITADO' | 'PARCIALMENTE_APROVADO' | 'APROVADA' | 'REJEITADA';
     total_pedidos: number;
     pedidos: Pedido[];
 }
@@ -124,7 +125,16 @@ const DetalhesSubmissao: React.FC = () => {
         try {
             setActionLoading(true);
             setError('');
-            await api.post(`/admin/submissoes/${submissao.id}/aprovar`);
+            
+            // Detectar se é lista rápida
+            const isListaRapida = submissao.tipo === 'lista_rapida' || String(submissao.id).startsWith('LR-');
+            
+            if (isListaRapida) {
+                const listaId = String(submissao.id).replace('LR-', '');
+                await api.put(`/admin/listas-rapidas/${listaId}/aprovar`, {});
+            } else {
+                await api.post(`/admin/submissoes/${submissao.id}/aprovar`);
+            }
             
             // Mostrar modal de sucesso
             setModalType('success');
@@ -153,7 +163,16 @@ const DetalhesSubmissao: React.FC = () => {
         try {
             setActionLoading(true);
             setError('');
-            await api.post(`/admin/submissoes/${submissao.id}/rejeitar`);
+            
+            // Detectar se é lista rápida
+            const isListaRapida = submissao.tipo === 'lista_rapida' || String(submissao.id).startsWith('LR-');
+            
+            if (isListaRapida) {
+                const listaId = String(submissao.id).replace('LR-', '');
+                await api.put(`/admin/listas-rapidas/${listaId}/rejeitar`, {});
+            } else {
+                await api.post(`/admin/submissoes/${submissao.id}/rejeitar`);
+            }
             
             // Mostrar modal de aviso
             setModalType('warning');

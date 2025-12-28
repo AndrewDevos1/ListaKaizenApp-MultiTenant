@@ -653,10 +653,12 @@ def get_submissoes_by_user(user_id):
 def get_all_submissoes(status_filter=None):
     """
     Retorna todas as submissões (admin) com pedidos agrupados.
+    Inclui listas comuns E listas rápidas.
     
     Args:
         status_filter: PENDENTE, APROVADO, REJEITADO, PARCIALMENTE_APROVADO ou None
     """
+    # Submissões de listas comuns
     query = Submissao.query.options(
         db.joinedload(Submissao.lista),
         db.joinedload(Submissao.usuario),
@@ -672,6 +674,7 @@ def get_all_submissoes(status_filter=None):
     for sub in submissoes:
         sub_dict = {
             "id": sub.id,
+            "tipo": "lista_comum",
             "lista_id": sub.lista_id,
             "lista_nome": sub.lista.nome if sub.lista else "N/A",
             "usuario_id": sub.usuario_id,
@@ -692,6 +695,53 @@ def get_all_submissoes(status_filter=None):
             ]
         }
         resultado.append(sub_dict)
+    
+    # Listas rápidas submetidas
+    query_rapidas = ListaRapida.query.options(
+        db.joinedload(ListaRapida.usuario),
+        db.joinedload(ListaRapida.itens)
+    ).filter(ListaRapida.deletado == False, ListaRapida.status != StatusListaRapida.RASCUNHO)
+    
+    if status_filter:
+        # Mapear status de SubmissaoStatus para StatusListaRapida
+        if status_filter == SubmissaoStatus.PENDENTE.value:
+            query_rapidas = query_rapidas.filter_by(status=StatusListaRapida.PENDENTE)
+        elif status_filter == SubmissaoStatus.APROVADO.value:
+            query_rapidas = query_rapidas.filter_by(status=StatusListaRapida.APROVADA)
+        elif status_filter == SubmissaoStatus.REJEITADO.value:
+            query_rapidas = query_rapidas.filter_by(status=StatusListaRapida.REJEITADA)
+    
+    listas_rapidas = query_rapidas.order_by(ListaRapida.submetido_em.desc()).all()
+    
+    for lr in listas_rapidas:
+        lr_dict = {
+            "id": f"LR-{lr.id}",
+            "tipo": "lista_rapida",
+            "lista_id": lr.id,
+            "lista_nome": lr.nome,
+            "usuario_id": lr.usuario_id,
+            "usuario_nome": lr.usuario.nome if lr.usuario else "N/A",
+            "data_submissao": lr.submetido_em.isoformat() if lr.submetido_em else lr.criado_em.isoformat(),
+            "status": lr.status.value,
+            "total_pedidos": lr.itens.count(),
+            "pedidos": [
+                {
+                    "id": item.id,
+                    "item_id": item.item_global_id,
+                    "item_nome": item.nome,
+                    "quantidade_solicitada": float(item.quantidade) if item.quantidade else 0,
+                    "status": lr.status.value,
+                    "unidade": item.unidade,
+                    "prioridade": item.prioridade.value,
+                    "observacao": item.observacao
+                }
+                for item in lr.itens
+            ]
+        }
+        resultado.append(lr_dict)
+    
+    # Ordenar tudo por data
+    resultado.sort(key=lambda x: x['data_submissao'], reverse=True)
     
     return resultado, 200
 
