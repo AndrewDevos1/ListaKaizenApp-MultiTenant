@@ -429,18 +429,14 @@ const DetalhesListaRapida: React.FC = () => {
               </table>
             </div>
 
-            {/* Adicionar item */}
-            <div className={styles.adicionarItemSection}>
+            {/* Botões de ação do modo edição */}
+            <div className={styles.acoesBotoes}>
               <button
                 onClick={() => setMostrarModalBusca(true)}
                 className={`${styles.btn} ${styles.btnSuccess}`}
               >
                 <i className="fas fa-plus"></i> Adicionar Item
               </button>
-            </div>
-
-            {/* Botões de ação do modo edição */}
-            <div className={styles.acoesBotoes}>
               <button
                 onClick={handleSalvarEdicao}
                 disabled={submitting}
