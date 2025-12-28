@@ -6,8 +6,12 @@
     padding: 2rem 1rem;
 }
 
+[data-theme='dark'] .container {
+    background: var(--bg-primary, #1a1d23);
+}
+
 .header {
-    background: white;
+    background: var(--bg-secondary, #ffffff);
     border-radius: 12px;
     padding: 2rem;
     margin-bottom: 2rem;
@@ -15,7 +19,7 @@
 }
 
 .headerContent h1 {
-    color: #2c3e50;
+    color: var(--text-primary, #2c3e50);
     font-weight: 700;
     margin-bottom: 0.5rem;
     display: flex;
@@ -25,7 +29,7 @@
 
 .headerContent p {
     font-size: 0.95rem;
-    color: #7f8c8d;
+    color: var(--text-muted, #7f8c8d);
     margin: 0;
 }
 
@@ -68,14 +72,14 @@
 }
 
 .cardTitle {
-    color: #2c3e50;
+    color: var(--text-primary, #2c3e50);
     font-weight: 600;
     margin: 0;
     word-break: break-word;
 }
 
 .cardDescription {
-    color: #555;
+    color: var(--text-secondary, #555);
     font-size: 0.9rem;
     margin: 0.75rem 0 0 0;
     line-height: 1.5;
@@ -84,7 +88,7 @@
 .cardMeta {
     margin-top: auto;
     padding-top: 1rem;
-    border-top: 1px solid #ecf0f1;
+    border-top: 1px solid var(--border-color, #ecf0f1);
 }
 
 .cardMeta small {
@@ -93,9 +97,9 @@
 }
 
 .cardFooter {
-    background-color: #f8f9fa;
+    background-color: var(--surface-muted, #f8f9fa);
     padding: 1rem;
-    border-top: 1px solid #ecf0f1;
+    border-top: 1px solid var(--border-color, #ecf0f1);
 }
 
 .cardFooter a {

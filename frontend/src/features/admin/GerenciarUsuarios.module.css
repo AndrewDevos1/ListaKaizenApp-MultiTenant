@@ -4,7 +4,7 @@
 
 /* Container principal */
 .pageWrapper {
-  background: #f0f3f8;
+  background: var(--bg-primary, #f0f3f8);
   min-height: 100vh;
   padding: 2rem 0;
 }
@@ -48,12 +48,12 @@
 .pageTitle {
   font-size: 2.25rem;
   font-weight: 700;
-  color: #2c3e50;
+  color: var(--text-primary, #2c3e50);
   margin-bottom: 0.5rem;
 }
 
 .pageSubtitle {
-  color: #7f8c8d;
+  color: var(--text-muted, #7f8c8d);
   font-size: 1rem;
   margin-bottom: 0;
 }
@@ -69,7 +69,7 @@
 
 /* Card de opção */
 .opcaoCard {
-  background: white;
+  background: var(--bg-secondary, #ffffff);
   border-radius: 15px;
   padding: 2rem;
   border: none;
@@ -126,11 +126,11 @@
 }
 
 .cardYellow {
-  --card-color: #ffc107;
+  --card-color: var(--status-warning-accent, #ffc107);
 }
 
 .cardYellow .cardIcon {
-  background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
+  background: linear-gradient(135deg, var(--status-warning-accent, #ffc107) 0%, var(--status-warning-accent-strong, #ff9800) 100%);
 }
 
 .cardGreen {
@@ -178,7 +178,7 @@
 
 .quantidadeLabel {
   font-size: 0.875rem;
-  color: #7f8c8d;
+  color: var(--text-muted, #7f8c8d);
   text-transform: uppercase;
   font-weight: 600;
   letter-spacing: 0.5px;
@@ -192,12 +192,12 @@
 .cardTitulo {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #2c3e50;
+  color: var(--text-primary, #2c3e50);
   margin-bottom: 0.75rem;
 }
 
 .cardDescricao {
-  color: #7f8c8d;
+  color: var(--text-muted, #7f8c8d);
   font-size: 1rem;
   line-height: 1.6;
   margin-bottom: 0;
@@ -207,7 +207,7 @@
 .cardFooter {
   margin-top: 1.5rem;
   padding-top: 1rem;
-  border-top: 1px solid #e9ecef;
+  border-top: 1px solid var(--border-color, #e9ecef);
 }
 
 .cardAction {

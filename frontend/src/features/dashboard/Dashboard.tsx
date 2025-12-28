@@ -6,6 +6,7 @@ import WorkAreasList from './WorkAreasList';
 import RecentUserSubmissions from './RecentUserSubmissions';
 import api from '../../services/api';
 import Spinner from '../../components/Spinner';
+import './Dashboard.css';
 
 const Dashboard: React.FC = () => {
   const [stats, setStats] = useState<any>({});
@@ -26,39 +27,41 @@ const Dashboard: React.FC = () => {
   }, []);
 
   return (
-    <div>
-      <h1 className="h3 mb-4 text-gray-800">Meu Dashboard</h1>
+    <div className="dashboardShell">
+      <div className="container-fluid">
+        <h1 className="h3 mb-4 text-gray-800">Meu Dashboard</h1>
 
-      {loading ? (
-        <Spinner />
-      ) : (
-        <Row className="mb-4">
-          <Col sm={6} lg={3}>
-            <Widget 
-              title="Submissões Pendentes" 
-              value={String(stats.pending_submissions)} 
-              icon={faHourglassHalf} 
-              color="warning" 
-            />
-          </Col>
-          <Col sm={6} lg={3}>
-            <Widget 
-              title="Listas Concluídas" 
-              value={String(stats.completed_lists)} 
-              icon={faCheckDouble} 
-              color="success" 
-            />
-          </Col>
-        </Row>
-      )}
+        {loading ? (
+          <Spinner />
+        ) : (
+          <Row className="mb-4">
+            <Col sm={6} lg={3}>
+              <Widget 
+                title="Submissões Pendentes" 
+                value={String(stats.pending_submissions)} 
+                icon={faHourglassHalf} 
+                color="warning" 
+              />
+            </Col>
+            <Col sm={6} lg={3}>
+              <Widget 
+                title="Listas Concluídas" 
+                value={String(stats.completed_lists)} 
+                icon={faCheckDouble} 
+                color="success" 
+              />
+            </Col>
+          </Row>
+        )}
 
-      <hr className="my-4" />
+        <hr className="my-4" />
 
-      <WorkAreasList />
+        <WorkAreasList />
 
-      <hr className="my-4" />
+        <hr className="my-4" />
 
-      <RecentUserSubmissions />
+        <RecentUserSubmissions />
+      </div>
     </div>
   );
 };
