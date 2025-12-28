@@ -736,12 +736,12 @@ def get_all_submissoes(status_filter=None):
                 {
                     "id": item.id,
                     "item_id": item.item_global_id,
-                    "item_nome": item.nome,
-                    "quantidade_solicitada": float(item.quantidade) if item.quantidade else 0,
+                    "item_nome": item.item_global.nome if item.item_global else "N/A",
+                    "quantidade_solicitada": 1.0,
                     "status": status_formatado,
-                    "unidade": item.unidade,
+                    "unidade": item.item_global.unidade if item.item_global else "un",
                     "prioridade": item.prioridade.value,
-                    "observacao": item.observacao
+                    "observacao": item.observacao or ""
                 }
                 for item in lr.itens
             ]
