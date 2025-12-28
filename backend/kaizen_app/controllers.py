@@ -1297,6 +1297,21 @@ def criar_lista_rapida_route():
     return jsonify(response), status
 
 
+@auth_bp.route('/itens-globais', methods=['GET'])
+@jwt_required()
+def listar_itens_globais_route():
+    """Lista todos os itens do catálogo global para colaboradores."""
+    try:
+        itens = ItemGlobal.query.filter_by(deletado=False).order_by(ItemGlobal.nome).all()
+        return jsonify([{
+            'id': item.id,
+            'nome': item.nome,
+            'unidade': item.unidade
+        } for item in itens]), 200
+    except Exception as e:
+        return jsonify({'error': 'Erro ao buscar itens', 'message': str(e)}), 500
+
+
 @auth_bp.route('/listas-rapidas', methods=['GET'])
 @jwt_required()
 def listar_minhas_listas_rapidas_route():
