@@ -270,6 +270,16 @@ const CollaboratorDashboard: React.FC = () => {
                 trend: '',
                 trendType: 'positive',
             },
+            {
+                id: 'widget-lista-rapida',
+                title: 'Lista Rápida',
+                value: '⚡',
+                icon: faBolt,
+                color: styles.widgetOrange,
+                link: '/collaborator/lista-rapida/criar',
+                trend: 'Novo!',
+                trendType: 'positive',
+            },
         ];
 
         // Load saved order from localStorage

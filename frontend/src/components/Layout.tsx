@@ -84,6 +84,8 @@ const Layout: React.FC = () => {
     {
       title: 'MINHAS ATIVIDADES',
       items: [
+        { path: '/collaborator/lista-rapida/criar', icon: 'fa-bolt', label: 'Lista Rápida', ariaLabel: 'Criar Lista Rápida' },
+        { path: '/collaborator/minhas-listas-rapidas', icon: 'fa-th-list', label: 'Minhas Listas Rápidas', ariaLabel: 'Ver Minhas Listas Rápidas' },
         { path: '/collaborator/listas', icon: 'fa-shopping-cart', label: 'Minhas Listas', ariaLabel: 'Minhas Listas' },
         { path: '/collaborator/submissions', icon: 'fa-clipboard-list', label: 'Minhas Submissões', ariaLabel: 'Minhas Submissões' },
         { path: '/collaborator/sugestoes', icon: 'fa-lightbulb', label: 'Minhas Sugestões', ariaLabel: 'Minhas Sugestões de Itens' }

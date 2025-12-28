@@ -1,0 +1,260 @@
+.container {
+    padding: 20px;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.loading {
+    text-align: center;
+    padding: 60px;
+    font-size: 18px;
+    color: #666;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+}
+
+.header h1 {
+    font-size: 28px;
+    color: #333;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.btnNova {
+    padding: 12px 24px;
+    background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.btnNova:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(13, 110, 253, 0.4);
+}
+
+.vazio {
+    text-align: center;
+    padding: 80px 20px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.vazio i {
+    color: #ccc;
+    margin-bottom: 20px;
+}
+
+.vazio p {
+    font-size: 18px;
+    color: #666;
+    margin-bottom: 30px;
+}
+
+.btnCriar {
+    padding: 14px 32px;
+    background: #0d6efd;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.btnCriar:hover {
+    background: #0b5ed7;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(13, 110, 253, 0.3);
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 24px;
+}
+
+.card {
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    transition: all 0.3s;
+}
+
+.card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+}
+
+.cardHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 15px;
+    gap: 12px;
+}
+
+.cardHeader h3 {
+    font-size: 18px;
+    color: #333;
+    flex: 1;
+    margin: 0;
+}
+
+.badge {
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.badge.rascunho {
+    background: #e7f3ff;
+    color: #0d6efd;
+}
+
+.badge.pendente {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.badge.aprovada {
+    background: #d4edda;
+    color: #155724;
+}
+
+.badge.rejeitada {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.descricao {
+    color: #666;
+    font-size: 14px;
+    margin-bottom: 15px;
+    line-height: 1.5;
+}
+
+.stats {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 15px;
+}
+
+.stat {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #666;
+    font-size: 14px;
+}
+
+.stat i {
+    color: #0d6efd;
+}
+
+.stat.urgente {
+    color: #dc3545;
+    font-weight: 600;
+}
+
+.stat.urgente i {
+    color: #dc3545;
+}
+
+.datas {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding-top: 12px;
+    border-top: 1px solid #e9ecef;
+    margin-bottom: 15px;
+}
+
+.datas small {
+    color: #999;
+    font-size: 12px;
+}
+
+.mensagemAdmin {
+    background: #f8f9fa;
+    padding: 12px;
+    border-radius: 6px;
+    margin-bottom: 15px;
+}
+
+.mensagemAdmin strong {
+    display: block;
+    color: #333;
+    font-size: 13px;
+    margin-bottom: 6px;
+}
+
+.mensagemAdmin p {
+    color: #666;
+    font-size: 13px;
+    margin: 0;
+    line-height: 1.5;
+}
+
+.acoes {
+    display: flex;
+    gap: 10px;
+}
+
+.btnEditar,
+.btnVisualizar {
+    flex: 1;
+    padding: 10px;
+    background: #0d6efd;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.btnEditar:hover,
+.btnVisualizar:hover {
+    background: #0b5ed7;
+}
+
+.btnDeletar {
+    padding: 10px 16px;
+    background: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.btnDeletar:hover {
+    background: #c82333;
+}
+
+@media (max-width: 768px) {
+    .header {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .grid {
+        grid-template-columns: 1fr;
+    }
+}
