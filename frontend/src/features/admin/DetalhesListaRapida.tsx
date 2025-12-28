@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { Modal, Button } from 'react-bootstrap';
 import api from '../../services/api';
 import styles from './DetalhesListaRapida.module.css';
 
@@ -32,6 +33,8 @@ const DetalhesListaRapida: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [mensagemAdmin, setMensagemAdmin] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [modalMessage, setModalMessage] = useState('');
 
   useEffect(() => {
     carregarDados();
@@ -92,6 +95,72 @@ const DetalhesListaRapida: React.FC = () => {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleReverter = async () => {
+    if (!window.confirm('Reverter lista para PENDENTE? A lista voltará para análise.')) return;
+
+    try {
+      setSubmitting(true);
+      await api.post(`/admin/listas-rapidas/${id}/reverter`);
+      setModalMessage('✅ Lista revertida para PENDENTE!');
+      setShowModal(true);
+      setTimeout(() => {
+        setShowModal(false);
+        carregarDados();
+      }, 2000);
+    } catch (error: any) {
+      console.error('[DetalhesListaRapida] Erro ao reverter:', error);
+      alert(error.response?.data?.error || 'Erro ao reverter lista.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const formatarMensagem = () => {
+    if (!lista) return '';
+
+    let mensagem = `📋 *Lista Rápida - ${lista.nome}*\n\n`;
+    mensagem += `*Solicitante:* ${lista.usuario_nome}\n`;
+    mensagem += `*Data:* ${lista.submetido_em ? new Date(lista.submetido_em).toLocaleString('pt-BR') : '-'}\n`;
+    mensagem += `*Status:* ${lista.status.toUpperCase()}\n\n`;
+    mensagem += `*Itens Solicitados (${itens.length}):*\n\n`;
+
+    itens.forEach((item, index) => {
+      const emoji = item.prioridade === 'urgente' ? '🔴' :
+                    item.prioridade === 'precisa_comprar' ? '🟡' : '🟢';
+      mensagem += `${index + 1}. ${emoji} ${item.item_nome} (${item.item_unidade})\n`;
+      if (item.observacao) {
+        mensagem += `   Obs: ${item.observacao}\n`;
+      }
+    });
+
+    mensagem += `\n---\n`;
+    mensagem += `Sistema Kaizen - Lista Rápida`;
+
+    return mensagem;
+  };
+
+  const handleCopiar = async () => {
+    try {
+      const mensagem = formatarMensagem();
+      await navigator.clipboard.writeText(mensagem);
+      setModalMessage('✅ Texto copiado para a área de transferência!');
+      setShowModal(true);
+      setTimeout(() => setShowModal(false), 2000);
+    } catch (error) {
+      console.error('Erro ao copiar:', error);
+      setModalMessage('❌ Erro ao copiar texto. Tente novamente.');
+      setShowModal(true);
+      setTimeout(() => setShowModal(false), 2000);
+    }
+  };
+
+  const handleWhatsApp = () => {
+    const mensagem = formatarMensagem();
+    const mensagemCodificada = encodeURIComponent(mensagem);
+    const urlWhatsApp = `https://wa.me/?text=${mensagemCodificada}`;
+    window.open(urlWhatsApp, '_blank');
   };
 
   const getPrioridadeBadge = (prioridade: string) => {
@@ -190,6 +259,36 @@ const DetalhesListaRapida: React.FC = () => {
         </div>
       </div>
 
+      {/* Botões de ação de compartilhamento */}
+      <div className={styles.acaoSection}>
+        <h2>Ações</h2>
+        <div className={styles.acoesBotoes}>
+          <button
+            onClick={handleCopiar}
+            className={`${styles.btn} ${styles.btnSecondary}`}
+            title="Copiar lista de itens"
+          >
+            <i className="fas fa-copy"></i> Copiar
+          </button>
+          <button
+            onClick={handleWhatsApp}
+            className={`${styles.btn} ${styles.btnWhatsapp}`}
+            title="Enviar lista via WhatsApp"
+          >
+            <i className="fab fa-whatsapp"></i> Enviar via WhatsApp
+          </button>
+          {(lista.status === 'aprovada' || lista.status === 'rejeitada') && (
+            <button
+              onClick={handleReverter}
+              disabled={submitting}
+              className={`${styles.btn} ${styles.btnWarning}`}
+            >
+              <i className="fas fa-undo"></i> Reverter para Pendente
+            </button>
+          )}
+        </div>
+      </div>
+
       {lista.status === 'pendente' && (
         <div className={styles.acaoSection}>
           <h2>Resposta do Administrador</h2>
@@ -218,6 +317,13 @@ const DetalhesListaRapida: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Modal de feedback */}
+      <Modal show={showModal} onHide={() => setShowModal(false)} centered>
+        <Modal.Body className="text-center py-4">
+          <p className="mb-0">{modalMessage}</p>
+        </Modal.Body>
+      </Modal>
     </div>
   );
 };

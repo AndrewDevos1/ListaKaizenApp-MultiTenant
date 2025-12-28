@@ -4690,13 +4690,40 @@ def rejeitar_lista_rapida(lista_id, admin_id, data):
     return {"message": "Lista rejeitada.", "lista": lista.to_dict()}, 200
 
 
+def reverter_lista_rapida_para_pendente(lista_id):
+    """Reverte uma lista rápida APROVADA ou REJEITADA para PENDENTE."""
+    from .models import ListaRapida, StatusListaRapida
+    from .extensions import db
+
+    lista = ListaRapida.query.get(lista_id)
+
+    if not lista:
+        return {"error": "Lista não encontrada."}, 404
+
+    if lista.status == StatusListaRapida.PENDENTE:
+        return {"error": "Lista já está PENDENTE."}, 400
+
+    if lista.status == StatusListaRapida.RASCUNHO:
+        return {"error": "Não é possível reverter uma lista em rascunho."}, 400
+
+    # Reverter para PENDENTE
+    lista.status = StatusListaRapida.PENDENTE
+    lista.admin_id = None
+    lista.mensagem_admin = None
+    lista.respondido_em = None
+
+    db.session.commit()
+
+    return {"message": "Lista revertida para PENDENTE.", "lista": lista.to_dict()}, 200
+
+
 def contar_listas_rapidas_pendentes():
     """Conta quantas listas rápidas estão pendentes."""
     from .models import ListaRapida, StatusListaRapida
-    
+
     count = ListaRapida.query.filter_by(
         status=StatusListaRapida.PENDENTE,
         deletado=False
     ).count()
-    
+
     return {"count": count}, 200

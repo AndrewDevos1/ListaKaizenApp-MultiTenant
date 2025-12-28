@@ -1437,3 +1437,11 @@ def rejeitar_lista_rapida_route(lista_id):
     data = request.get_json() or {}
     response, status = services.rejeitar_lista_rapida(lista_id, admin_id, data)
     return jsonify(response), status
+
+
+@admin_bp.route('/listas-rapidas/<int:lista_id>/reverter', methods=['POST'])
+@admin_required()
+def reverter_lista_rapida_route(lista_id):
+    """Admin reverte lista rápida APROVADA/REJEITADA para PENDENTE."""
+    response, status = services.reverter_lista_rapida_para_pendente(lista_id)
+    return jsonify(response), status
