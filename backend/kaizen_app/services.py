@@ -4140,3 +4140,337 @@ def rejeitar_sugestao(sugestao_id, admin_id, data):
         "message": "Sugestão rejeitada.",
         "sugestao": sugestao.to_dict()
     }, 200
+
+
+# ===== LISTA RÁPIDA =====
+
+def criar_lista_rapida(user_id, data):
+    """Cria uma nova lista rápida."""
+    from .models import ListaRapida, StatusListaRapida
+    from .extensions import db
+    
+    nome = data.get('nome', '').strip()
+    descricao = data.get('descricao', '').strip()
+    
+    if not nome:
+        return {"error": "Nome da lista é obrigatório."}, 400
+    
+    lista = ListaRapida(
+        usuario_id=user_id,
+        nome=nome,
+        descricao=descricao if descricao else None,
+        status=StatusListaRapida.RASCUNHO
+    )
+    
+    db.session.add(lista)
+    db.session.commit()
+    
+    return {"message": "Lista rápida criada!", "lista": lista.to_dict()}, 201
+
+
+def listar_minhas_listas_rapidas(user_id):
+    """Lista todas as listas rápidas do usuário."""
+    from .models import ListaRapida
+    
+    listas = ListaRapida.query.filter_by(
+        usuario_id=user_id,
+        deletado=False
+    ).order_by(ListaRapida.criado_em.desc()).all()
+    
+    return {
+        "listas": [l.to_dict() for l in listas],
+        "total": len(listas)
+    }, 200
+
+
+def obter_lista_rapida(lista_id, user_id):
+    """Obtém detalhes de uma lista rápida com seus itens."""
+    from .models import ListaRapida
+    
+    lista = ListaRapida.query.filter_by(
+        id=lista_id,
+        usuario_id=user_id,
+        deletado=False
+    ).first()
+    
+    if not lista:
+        return {"error": "Lista não encontrada."}, 404
+    
+    lista_dict = lista.to_dict()
+    lista_dict['itens'] = [item.to_dict() for item in lista.itens.all()]
+    
+    return lista_dict, 200
+
+
+def adicionar_item_lista_rapida(lista_id, user_id, data):
+    """Adiciona item à lista rápida."""
+    from .models import ListaRapida, ListaRapidaItem, ListaMaeItem, PrioridadeItem, StatusListaRapida
+    from .extensions import db
+    
+    lista = ListaRapida.query.filter_by(
+        id=lista_id,
+        usuario_id=user_id,
+        deletado=False
+    ).first()
+    
+    if not lista:
+        return {"error": "Lista não encontrada."}, 404
+    
+    if lista.status != StatusListaRapida.RASCUNHO:
+        return {"error": "Não é possível adicionar itens a uma lista já submetida."}, 400
+    
+    item_global_id = data.get('item_global_id')
+    prioridade_str = data.get('prioridade', 'precisa_comprar')
+    observacao = data.get('observacao', '').strip()
+    
+    if not item_global_id:
+        return {"error": "ID do item é obrigatório."}, 400
+    
+    # Verifica se item existe
+    item_global = ListaMaeItem.query.get(item_global_id)
+    if not item_global:
+        return {"error": "Item não encontrado no catálogo."}, 404
+    
+    # Verifica se já foi adicionado
+    item_existente = ListaRapidaItem.query.filter_by(
+        lista_rapida_id=lista_id,
+        item_global_id=item_global_id
+    ).first()
+    
+    if item_existente:
+        return {"error": "Item já está na lista."}, 409
+    
+    # Converte string para enum
+    try:
+        prioridade = PrioridadeItem(prioridade_str)
+    except ValueError:
+        prioridade = PrioridadeItem.PRECISA_COMPRAR
+    
+    item = ListaRapidaItem(
+        lista_rapida_id=lista_id,
+        item_global_id=item_global_id,
+        prioridade=prioridade,
+        observacao=observacao if observacao else None
+    )
+    
+    db.session.add(item)
+    db.session.commit()
+    
+    return {"message": "Item adicionado!", "item": item.to_dict()}, 201
+
+
+def remover_item_lista_rapida(lista_id, item_id, user_id):
+    """Remove item da lista rápida."""
+    from .models import ListaRapida, ListaRapidaItem, StatusListaRapida
+    from .extensions import db
+    
+    lista = ListaRapida.query.filter_by(
+        id=lista_id,
+        usuario_id=user_id,
+        deletado=False
+    ).first()
+    
+    if not lista:
+        return {"error": "Lista não encontrada."}, 404
+    
+    if lista.status != StatusListaRapida.RASCUNHO:
+        return {"error": "Não é possível remover itens de uma lista já submetida."}, 400
+    
+    item = ListaRapidaItem.query.filter_by(
+        id=item_id,
+        lista_rapida_id=lista_id
+    ).first()
+    
+    if not item:
+        return {"error": "Item não encontrado na lista."}, 404
+    
+    db.session.delete(item)
+    db.session.commit()
+    
+    return {"message": "Item removido com sucesso."}, 200
+
+
+def atualizar_prioridade_item(lista_id, item_id, user_id, data):
+    """Atualiza a prioridade de um item."""
+    from .models import ListaRapida, ListaRapidaItem, PrioridadeItem, StatusListaRapida
+    from .extensions import db
+    
+    lista = ListaRapida.query.filter_by(
+        id=lista_id,
+        usuario_id=user_id,
+        deletado=False
+    ).first()
+    
+    if not lista:
+        return {"error": "Lista não encontrada."}, 404
+    
+    if lista.status != StatusListaRapida.RASCUNHO:
+        return {"error": "Não é possível editar uma lista já submetida."}, 400
+    
+    item = ListaRapidaItem.query.filter_by(
+        id=item_id,
+        lista_rapida_id=lista_id
+    ).first()
+    
+    if not item:
+        return {"error": "Item não encontrado na lista."}, 404
+    
+    prioridade_str = data.get('prioridade')
+    
+    try:
+        item.prioridade = PrioridadeItem(prioridade_str)
+        db.session.commit()
+        return {"message": "Prioridade atualizada!", "item": item.to_dict()}, 200
+    except ValueError:
+        return {"error": "Prioridade inválida."}, 400
+
+
+def submeter_lista_rapida(lista_id, user_id):
+    """Submete lista rápida para aprovação do admin."""
+    from .models import ListaRapida, StatusListaRapida
+    from .extensions import db
+    
+    lista = ListaRapida.query.filter_by(
+        id=lista_id,
+        usuario_id=user_id,
+        deletado=False
+    ).first()
+    
+    if not lista:
+        return {"error": "Lista não encontrada."}, 404
+    
+    if lista.status != StatusListaRapida.RASCUNHO:
+        return {"error": "Lista já foi submetida."}, 400
+    
+    if lista.itens.count() == 0:
+        return {"error": "Adicione pelo menos um item antes de submeter."}, 400
+    
+    lista.status = StatusListaRapida.PENDENTE
+    lista.submetido_em = brasilia_now()
+    
+    db.session.commit()
+    
+    return {"message": "Lista submetida com sucesso!", "lista": lista.to_dict()}, 200
+
+
+def deletar_lista_rapida(lista_id, user_id):
+    """Soft delete de lista rápida."""
+    from .models import ListaRapida, StatusListaRapida
+    from .extensions import db
+    
+    lista = ListaRapida.query.filter_by(
+        id=lista_id,
+        usuario_id=user_id,
+        deletado=False
+    ).first()
+    
+    if not lista:
+        return {"error": "Lista não encontrada."}, 404
+    
+    if lista.status == StatusListaRapida.PENDENTE:
+        return {"error": "Não é possível deletar uma lista pendente de aprovação."}, 400
+    
+    lista.deletado = True
+    db.session.commit()
+    
+    return {"message": "Lista deletada com sucesso."}, 200
+
+
+# Admin
+
+def listar_listas_rapidas_pendentes():
+    """Admin lista todas as listas rápidas pendentes."""
+    from .models import ListaRapida, StatusListaRapida
+    
+    listas = ListaRapida.query.filter_by(
+        status=StatusListaRapida.PENDENTE,
+        deletado=False
+    ).order_by(ListaRapida.submetido_em.asc()).all()
+    
+    return {
+        "listas": [l.to_dict() for l in listas],
+        "total": len(listas)
+    }, 200
+
+
+def obter_lista_rapida_admin(lista_id):
+    """Admin obtém detalhes de qualquer lista rápida."""
+    from .models import ListaRapida
+    
+    lista = ListaRapida.query.filter_by(
+        id=lista_id,
+        deletado=False
+    ).first()
+    
+    if not lista:
+        return {"error": "Lista não encontrada."}, 404
+    
+    lista_dict = lista.to_dict()
+    lista_dict['itens'] = [item.to_dict() for item in lista.itens.all()]
+    
+    return lista_dict, 200
+
+
+def aprovar_lista_rapida(lista_id, admin_id, data):
+    """Admin aprova lista rápida."""
+    from .models import ListaRapida, StatusListaRapida
+    from .extensions import db
+    
+    lista = ListaRapida.query.get(lista_id)
+    
+    if not lista:
+        return {"error": "Lista não encontrada."}, 404
+    
+    if lista.status != StatusListaRapida.PENDENTE:
+        return {"error": "Lista não está pendente."}, 400
+    
+    mensagem_admin = data.get('mensagem_admin', '').strip()
+    
+    lista.status = StatusListaRapida.APROVADA
+    lista.admin_id = admin_id
+    lista.mensagem_admin = mensagem_admin if mensagem_admin else None
+    lista.respondido_em = brasilia_now()
+    
+    db.session.commit()
+    
+    return {"message": "Lista aprovada com sucesso!", "lista": lista.to_dict()}, 200
+
+
+def rejeitar_lista_rapida(lista_id, admin_id, data):
+    """Admin rejeita lista rápida."""
+    from .models import ListaRapida, StatusListaRapida
+    from .extensions import db
+    
+    lista = ListaRapida.query.get(lista_id)
+    
+    if not lista:
+        return {"error": "Lista não encontrada."}, 404
+    
+    if lista.status != StatusListaRapida.PENDENTE:
+        return {"error": "Lista não está pendente."}, 400
+    
+    mensagem_admin = data.get('mensagem_admin', '').strip()
+    
+    if not mensagem_admin:
+        return {"error": "Mensagem de rejeição é obrigatória."}, 400
+    
+    lista.status = StatusListaRapida.REJEITADA
+    lista.admin_id = admin_id
+    lista.mensagem_admin = mensagem_admin
+    lista.respondido_em = brasilia_now()
+    
+    db.session.commit()
+    
+    return {"message": "Lista rejeitada.", "lista": lista.to_dict()}, 200
+
+
+def contar_listas_rapidas_pendentes():
+    """Conta quantas listas rápidas estão pendentes."""
+    from .models import ListaRapida, StatusListaRapida
+    
+    count = ListaRapida.query.filter_by(
+        status=StatusListaRapida.PENDENTE,
+        deletado=False
+    ).count()
+    
+    return {"count": count}, 200

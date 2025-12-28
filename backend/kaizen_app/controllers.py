@@ -1283,3 +1283,126 @@ def rejeitar_sugestao_route(sugestao_id):
     data = request.get_json() or {}
     response, status = services.rejeitar_sugestao(sugestao_id, admin_id, data)
     return jsonify(response), status
+
+
+# ===== LISTA RÁPIDA - COLABORADOR =====
+
+@auth_bp.route('/listas-rapidas', methods=['POST'])
+@jwt_required()
+def criar_lista_rapida_route():
+    """Cria uma nova lista rápida."""
+    user_id = get_jwt_identity()
+    data = request.get_json()
+    response, status = services.criar_lista_rapida(user_id, data)
+    return jsonify(response), status
+
+
+@auth_bp.route('/listas-rapidas', methods=['GET'])
+@jwt_required()
+def listar_minhas_listas_rapidas_route():
+    """Lista todas as listas rápidas do usuário."""
+    user_id = get_jwt_identity()
+    response, status = services.listar_minhas_listas_rapidas(user_id)
+    return jsonify(response), status
+
+
+@auth_bp.route('/listas-rapidas/<int:lista_id>', methods=['GET'])
+@jwt_required()
+def obter_lista_rapida_route(lista_id):
+    """Obtém detalhes de uma lista rápida."""
+    user_id = get_jwt_identity()
+    response, status = services.obter_lista_rapida(lista_id, user_id)
+    return jsonify(response), status
+
+
+@auth_bp.route('/listas-rapidas/<int:lista_id>', methods=['DELETE'])
+@jwt_required()
+def deletar_lista_rapida_route(lista_id):
+    """Deleta uma lista rápida."""
+    user_id = get_jwt_identity()
+    response, status = services.deletar_lista_rapida(lista_id, user_id)
+    return jsonify(response), status
+
+
+@auth_bp.route('/listas-rapidas/<int:lista_id>/itens', methods=['POST'])
+@jwt_required()
+def adicionar_item_lista_rapida_route(lista_id):
+    """Adiciona item à lista rápida."""
+    user_id = get_jwt_identity()
+    data = request.get_json()
+    response, status = services.adicionar_item_lista_rapida(lista_id, user_id, data)
+    return jsonify(response), status
+
+
+@auth_bp.route('/listas-rapidas/<int:lista_id>/itens/<int:item_id>', methods=['DELETE'])
+@jwt_required()
+def remover_item_lista_rapida_route(lista_id, item_id):
+    """Remove item da lista rápida."""
+    user_id = get_jwt_identity()
+    response, status = services.remover_item_lista_rapida(lista_id, item_id, user_id)
+    return jsonify(response), status
+
+
+@auth_bp.route('/listas-rapidas/<int:lista_id>/itens/<int:item_id>/prioridade', methods=['PUT'])
+@jwt_required()
+def atualizar_prioridade_item_route(lista_id, item_id):
+    """Atualiza prioridade de um item."""
+    user_id = get_jwt_identity()
+    data = request.get_json()
+    response, status = services.atualizar_prioridade_item(lista_id, item_id, user_id, data)
+    return jsonify(response), status
+
+
+@auth_bp.route('/listas-rapidas/<int:lista_id>/submeter', methods=['POST'])
+@jwt_required()
+def submeter_lista_rapida_route(lista_id):
+    """Submete lista rápida para aprovação."""
+    user_id = get_jwt_identity()
+    response, status = services.submeter_lista_rapida(lista_id, user_id)
+    return jsonify(response), status
+
+
+# ===== LISTA RÁPIDA - ADMIN =====
+
+@admin_bp.route('/listas-rapidas/pendentes', methods=['GET'])
+@admin_required()
+def listar_listas_rapidas_pendentes_route():
+    """Admin lista todas as listas rápidas pendentes."""
+    response, status = services.listar_listas_rapidas_pendentes()
+    return jsonify(response), status
+
+
+@admin_bp.route('/listas-rapidas/pendentes/count', methods=['GET'])
+@admin_required()
+def contar_listas_rapidas_pendentes_route():
+    """Conta listas rápidas pendentes."""
+    response, status = services.contar_listas_rapidas_pendentes()
+    return jsonify(response), status
+
+
+@admin_bp.route('/listas-rapidas/<int:lista_id>', methods=['GET'])
+@admin_required()
+def obter_lista_rapida_admin_route(lista_id):
+    """Admin obtém detalhes de qualquer lista rápida."""
+    response, status = services.obter_lista_rapida_admin(lista_id)
+    return jsonify(response), status
+
+
+@admin_bp.route('/listas-rapidas/<int:lista_id>/aprovar', methods=['PUT'])
+@admin_required()
+def aprovar_lista_rapida_route(lista_id):
+    """Admin aprova lista rápida."""
+    admin_id = get_jwt_identity()
+    data = request.get_json() or {}
+    response, status = services.aprovar_lista_rapida(lista_id, admin_id, data)
+    return jsonify(response), status
+
+
+@admin_bp.route('/listas-rapidas/<int:lista_id>/rejeitar', methods=['PUT'])
+@admin_required()
+def rejeitar_lista_rapida_route(lista_id):
+    """Admin rejeita lista rápida."""
+    admin_id = get_jwt_identity()
+    data = request.get_json() or {}
+    response, status = services.rejeitar_lista_rapida(lista_id, admin_id, data)
+    return jsonify(response), status

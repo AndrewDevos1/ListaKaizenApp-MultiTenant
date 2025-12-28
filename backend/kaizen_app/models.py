@@ -431,3 +431,97 @@ class SugestaoItem(db.Model, SerializerMixin):
             "criado_em": self.criado_em.isoformat() if self.criado_em else None,
             "respondido_em": self.respondido_em.isoformat() if self.respondido_em else None
         }
+
+
+# ===== LISTA RÁPIDA =====
+
+class PrioridadeItem(enum.Enum):
+    PREVENCAO = "prevencao"
+    PRECISA_COMPRAR = "precisa_comprar"
+    URGENTE = "urgente"
+
+
+class StatusListaRapida(enum.Enum):
+    RASCUNHO = "rascunho"
+    PENDENTE = "pendente"
+    APROVADA = "aprovada"
+    REJEITADA = "rejeitada"
+
+
+class ListaRapida(db.Model, SerializerMixin):
+    """
+    Lista rápida para compras emergenciais.
+    Colaborador seleciona itens do catálogo global com prioridades.
+    """
+    __tablename__ = 'listas_rapidas'
+    
+    serialize_rules = ('-itens.lista_rapida', '-usuario.listas_rapidas', '-admin.listas_rapidas_aprovadas')
+    
+    id = db.Column(db.Integer, primary_key=True)
+    usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id', ondelete='CASCADE'), nullable=False)
+    nome = db.Column(db.String(200), nullable=False)
+    descricao = db.Column(db.Text, nullable=True)
+    status = db.Column(db.Enum(StatusListaRapida, values_callable=lambda x: [e.value for e in x]), 
+                       nullable=False, default=StatusListaRapida.RASCUNHO)
+    admin_id = db.Column(db.Integer, db.ForeignKey('usuarios.id', ondelete='SET NULL'), nullable=True)
+    mensagem_admin = db.Column(db.Text, nullable=True)
+    criado_em = db.Column(db.DateTime, default=brasilia_now, nullable=False)
+    submetido_em = db.Column(db.DateTime, nullable=True)
+    respondido_em = db.Column(db.DateTime, nullable=True)
+    deletado = db.Column(db.Boolean, default=False, nullable=False)
+    
+    # Relacionamentos
+    usuario = db.relationship('Usuario', foreign_keys=[usuario_id], backref=db.backref('listas_rapidas', lazy='dynamic'))
+    admin = db.relationship('Usuario', foreign_keys=[admin_id], backref=db.backref('listas_rapidas_aprovadas', lazy='dynamic'))
+    itens = db.relationship('ListaRapidaItem', back_populates='lista_rapida', lazy='dynamic', cascade='all, delete-orphan')
+    
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "usuario_id": self.usuario_id,
+            "usuario_nome": self.usuario.nome if self.usuario else None,
+            "nome": self.nome,
+            "descricao": self.descricao,
+            "status": self.status.value,
+            "admin_id": self.admin_id,
+            "admin_nome": self.admin.nome if self.admin else None,
+            "mensagem_admin": self.mensagem_admin,
+            "total_itens": self.itens.count(),
+            "itens_urgentes": self.itens.filter_by(prioridade=PrioridadeItem.URGENTE).count(),
+            "criado_em": self.criado_em.isoformat() if self.criado_em else None,
+            "submetido_em": self.submetido_em.isoformat() if self.submetido_em else None,
+            "respondido_em": self.respondido_em.isoformat() if self.respondido_em else None
+        }
+
+
+class ListaRapidaItem(db.Model, SerializerMixin):
+    """
+    Item de uma lista rápida com prioridade.
+    """
+    __tablename__ = 'listas_rapidas_itens'
+    
+    serialize_rules = ('-lista_rapida.itens', '-item_global.listas_rapidas_refs')
+    
+    id = db.Column(db.Integer, primary_key=True)
+    lista_rapida_id = db.Column(db.Integer, db.ForeignKey('listas_rapidas.id', ondelete='CASCADE'), nullable=False)
+    item_global_id = db.Column(db.Integer, db.ForeignKey('lista_mae_itens.id', ondelete='CASCADE'), nullable=False)
+    prioridade = db.Column(db.Enum(PrioridadeItem, values_callable=lambda x: [e.value for e in x]), 
+                          nullable=False, default=PrioridadeItem.PRECISA_COMPRAR)
+    observacao = db.Column(db.Text, nullable=True)
+    criado_em = db.Column(db.DateTime, default=brasilia_now, nullable=False)
+    
+    # Relacionamentos
+    lista_rapida = db.relationship('ListaRapida', back_populates='itens')
+    item_global = db.relationship('ListaMaeItem', backref=db.backref('listas_rapidas_refs', lazy='dynamic'))
+    
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "lista_rapida_id": self.lista_rapida_id,
+            "item_global_id": self.item_global_id,
+            "item_nome": self.item_global.nome if self.item_global else None,
+            "item_unidade": self.item_global.unidade if self.item_global else None,
+            "prioridade": self.prioridade.value,
+            "observacao": self.observacao,
+            "criado_em": self.criado_em.isoformat() if self.criado_em else None
+        }
