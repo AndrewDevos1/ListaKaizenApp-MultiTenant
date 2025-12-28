@@ -120,23 +120,29 @@ const DetalhesListaRapida: React.FC = () => {
   const formatarMensagem = () => {
     if (!lista) return '';
 
-    let mensagem = `⚡ *Lista Rápida - ${lista.nome}*\n\n`;
-    mensagem += `*Solicitante:* ${lista.usuario_nome}\n`;
-    mensagem += `*Data:* ${lista.submetido_em ? new Date(lista.submetido_em).toLocaleString('pt-BR') : '-'}\n`;
-    mensagem += `*Status:* ${lista.status.toUpperCase()}\n\n`;
-    mensagem += `*Itens Solicitados (${itens.length}):*\n\n`;
+    let mensagem = `*LISTA RAPIDA - ${lista.nome}*\n\n`;
+    mensagem += `Solicitante: ${lista.usuario_nome}\n`;
+    mensagem += `Data: ${lista.submetido_em ? new Date(lista.submetido_em).toLocaleString('pt-BR') : '-'}\n`;
+    mensagem += `Status: ${lista.status.toUpperCase()}\n\n`;
+    mensagem += `Itens Solicitados (${itens.length}):\n\n`;
 
     itens.forEach((item) => {
-      const bolinha = item.prioridade === 'urgente' ? '🔴' :
-                      item.prioridade === 'precisa_comprar' ? '🟡' : '🟢';
-      mensagem += `${bolinha} ${item.item_nome} (${item.item_unidade})\n`;
+      let marcador = '';
+      if (item.prioridade === 'urgente') {
+        marcador = '[URGENTE]';
+      } else if (item.prioridade === 'precisa_comprar') {
+        marcador = '[COMPRAR]';
+      } else {
+        marcador = '[PREVENCAO]';
+      }
+      mensagem += `${marcador} ${item.item_nome} (${item.item_unidade})\n`;
       if (item.observacao) {
-        mensagem += `   Obs: ${item.observacao}\n`;
+        mensagem += `  Obs: ${item.observacao}\n`;
       }
     });
 
     mensagem += `\n---\n`;
-    mensagem += `Sistema Kaizen - Lista Rápida`;
+    mensagem += `Sistema Kaizen - Lista Rapida`;
 
     return mensagem;
   };
