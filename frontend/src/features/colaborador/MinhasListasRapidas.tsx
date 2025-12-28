@@ -142,7 +142,10 @@ const MinhasListasRapidas: React.FC = () => {
                                     </>
                                 )}
                                 {lista.status !== 'rascunho' && (
-                                    <button className={styles.btnVisualizar}>
+                                    <button 
+                                        className={styles.btnVisualizar}
+                                        onClick={() => navigate(`/collaborator/lista-rapida/${lista.id}/detalhes`)}
+                                    >
                                         <i className="fas fa-eye"></i> Visualizar
                                     </button>
                                 )}

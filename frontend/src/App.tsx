@@ -37,6 +37,7 @@ import EstoqueListaCompras from './features/collaborator/EstoqueListaCompras';
 import MinhasSugestoes from './features/colaborador/MinhasSugestoes';
 import CriarListaRapida from './features/colaborador/CriarListaRapida';
 import MinhasListasRapidas from './features/colaborador/MinhasListasRapidas';
+import DetalhesListaRapida from './features/colaborador/DetalhesListaRapida';
 import AdminRoute from './components/AdminRoute';
 import CollaboratorRoute from './components/CollaboratorRoute';
 import Layout from './components/Layout';
@@ -90,6 +91,7 @@ function App() {
               <Route path="submissions/:id" element={<DetalhesSubmissaoColaborador />} />
               <Route path="sugestoes" element={<MinhasSugestoes />} />
               <Route path="lista-rapida/criar" element={<CriarListaRapida />} />
+              <Route path="lista-rapida/:id/detalhes" element={<DetalhesListaRapida />} />
               <Route path="minhas-listas-rapidas" element={<MinhasListasRapidas />} />
               <Route path="areas/:areaId/estoque" element={<EstoqueLista />} />
               <Route path="listas" element={<MinhasListasCompras />} />

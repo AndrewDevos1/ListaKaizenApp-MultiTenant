@@ -47,13 +47,13 @@ const MinhasSubmissoes: React.FC = () => {
                 // Buscar listas rápidas submetidas
                 const responseListasRapidas = await api.get('/auth/listas-rapidas');
                 const listasRapidas = responseListasRapidas.data.listas
-                    .filter((l: any) => l.status !== 'RASCUNHO')
+                    .filter((l: any) => l.status !== 'rascunho')
                     .map((l: any) => ({
                         id: l.id,
                         lista_id: l.id,
-                        lista_nome: l.nome,
+                        lista_nome: `⚡ ${l.nome}`,
                         data_submissao: l.submetido_em || l.criado_em,
-                        status: l.status,
+                        status: l.status.toUpperCase(), // Normalizar para maiúsculas
                         total_pedidos: l.total_itens || 0,
                         pedidos: [],
                         tipo: 'rapida' as const
@@ -77,8 +77,10 @@ const MinhasSubmissoes: React.FC = () => {
     const getStatusVariant = (status: string) => {
         switch (status) {
             case 'PENDENTE': return 'warning';
-            case 'APROVADO': return 'success';
-            case 'REJEITADO': return 'danger';
+            case 'APROVADO':
+            case 'APROVADA': return 'success';
+            case 'REJEITADO':
+            case 'REJEITADA': return 'danger';
             case 'PARCIALMENTE_APROVADO': return 'info';
             default: return 'secondary';
         }
@@ -87,8 +89,10 @@ const MinhasSubmissoes: React.FC = () => {
     const getStatusIcon = (status: string) => {
         switch (status) {
             case 'PENDENTE': return faClock;
-            case 'APROVADO': return faCheckCircle;
-            case 'REJEITADO': return faTimesCircle;
+            case 'APROVADO':
+            case 'APROVADA': return faCheckCircle;
+            case 'REJEITADO':
+            case 'REJEITADA': return faTimesCircle;
             default: return faClipboardList;
         }
     };
@@ -209,7 +213,7 @@ const MinhasSubmissoes: React.FC = () => {
                                             variant="primary"
                                             onClick={() => {
                                                 if (submissao.tipo === 'rapida') {
-                                                    navigate(`/collaborator/lista-rapida/${submissao.id}`);
+                                                    navigate(`/collaborator/lista-rapida/${submissao.id}/detalhes`);
                                                 } else {
                                                     navigate(`/collaborator/submissions/${submissao.id}`);
                                                 }
@@ -265,7 +269,7 @@ const MinhasSubmissoes: React.FC = () => {
                                         variant="primary"
                                         onClick={() => {
                                             if (submissao.tipo === 'rapida') {
-                                                navigate(`/collaborator/lista-rapida/${submissao.id}`);
+                                                navigate(`/collaborator/lista-rapida/${submissao.id}/detalhes`);
                                             } else {
                                                 navigate(`/collaborator/submissions/${submissao.id}`);
                                             }
