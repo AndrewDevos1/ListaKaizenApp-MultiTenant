@@ -104,6 +104,84 @@
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
+.formSection {
+    margin-bottom: 40px;
+    padding-bottom: 30px;
+    border-bottom: 3px solid #e9ecef;
+}
+
+.formGroup {
+    margin-bottom: 20px;
+}
+
+.formGroup label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #555;
+    font-size: 14px;
+}
+
+.inputComBotao {
+    display: flex;
+    gap: 12px;
+}
+
+.inputComBotao input {
+    flex: 1;
+    padding: 12px;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    font-size: 14px;
+}
+
+.inputComBotao input:focus {
+    outline: none;
+    border-color: #0d6efd;
+}
+
+.btnAutoCompletar {
+    padding: 12px 20px;
+    background: linear-gradient(135deg, #6f42c1 0%, #5a32a3 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+    white-space: nowrap;
+}
+
+.btnAutoCompletar:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(111, 66, 193, 0.4);
+}
+
+.formGroup textarea {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: inherit;
+    resize: vertical;
+}
+
+.formGroup textarea:focus {
+    outline: none;
+    border-color: #0d6efd;
+}
+
+.selecaoSection {
+    margin-top: 20px;
+}
+
+.selecaoSection h3 {
+    font-size: 22px;
+    color: #333;
+    margin-bottom: 20px;
+}
+
 .listaInfo {
     margin-bottom: 30px;
     padding-bottom: 20px;
@@ -132,10 +210,67 @@
     flex-direction: column;
 }
 
-.painelItens h3,
-.painelSelecionados h3 {
+.painelItens h4,
+.painelSelecionados h4 {
     margin-bottom: 15px;
     color: #333;
+    font-size: 16px;
+}
+
+.listaItensCheckbox {
+    max-height: 500px;
+    overflow-y: auto;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    padding: 10px;
+}
+
+.itemCheckbox {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.itemCheckbox:hover {
+    background: #e9ecef;
+    transform: translateX(4px);
+}
+
+.itemCheckbox input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+}
+
+.itemCheckboxInfo {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+}
+
+.itemCheckboxInfo strong {
+    color: #333;
+    font-size: 14px;
+}
+
+.itemCheckboxInfo span {
+    color: #666;
+    font-size: 12px;
+}
+
+.listaComposta {
+    max-height: 500px;
+    overflow-y: auto;
+    padding: 10px;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
 }
 
 .busca {

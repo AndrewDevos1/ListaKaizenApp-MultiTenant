@@ -25,7 +25,6 @@ const CriarListaRapida: React.FC = () => {
     const [itensGlobais, setItensGlobais] = useState<ItemGlobal[]>([]);
     const [itensSelecionados, setItensSelecionados] = useState<ItemSelecionado[]>([]);
     const [loading, setLoading] = useState(false);
-    const [listaId, setListaId] = useState<number | null>(null);
 
     useEffect(() => {
         carregarItensGlobais();
@@ -33,31 +32,77 @@ const CriarListaRapida: React.FC = () => {
 
     const carregarItensGlobais = async () => {
         try {
-            const response = await api.get('/auth/lista-mae-itens');
+            const response = await api.get('/admin/catalogo-global');
             setItensGlobais(response.data);
         } catch (error) {
             console.error('[CriarListaRapida] Erro ao carregar itens:', error);
         }
     };
 
-    const itensGlobaisFiltrados = itensGlobais.filter(item =>
-        item.nome.toLowerCase().includes(busca.toLowerCase())
-    );
+    const autoCompletarNome = () => {
+        const hoje = new Date();
+        const diasSemana = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
+        const diaSemana = diasSemana[hoje.getDay()];
+        const data = hoje.toLocaleDateString('pt-BR');
+        
+        setNome(`Lista Rápida de ${diaSemana} ${data}`);
+    };
 
-    const criarLista = async () => {
+    const toggleItem = (item: ItemGlobal, checked: boolean) => {
+        if (checked) {
+            setItensSelecionados([...itensSelecionados, {
+                item_global_id: item.id,
+                nome: item.nome,
+                unidade: item.unidade,
+                prioridade: 'prevencao',
+                observacao: ''
+            }]);
+        } else {
+            setItensSelecionados(itensSelecionados.filter(i => i.item_global_id !== item.id));
+        }
+    };
+
+    const isItemSelecionado = (itemId: number) => {
+        return itensSelecionados.some(i => i.item_global_id === itemId);
+    };
+
+    const alterarPrioridade = (itemId: number, prioridade: 'prevencao' | 'precisa_comprar' | 'urgente') => {
+        setItensSelecionados(itensSelecionados.map(item =>
+            item.item_global_id === itemId ? { ...item, prioridade } : item
+        ));
+    };
+
+    const submeter = async () => {
         if (!nome.trim()) {
-            alert('Informe o nome da lista!');
+            alert('⚠️ Preencha o nome da lista!');
+            return;
+        }
+
+        if (itensSelecionados.length === 0) {
+            alert('⚠️ Selecione pelo menos um item!');
             return;
         }
 
         setLoading(true);
         try {
-            const response = await api.post('/auth/listas-rapidas', {
-                nome,
-                descricao
+            // Criar lista
+            const listaResponse = await api.post('/auth/listas-rapidas', {
+                nome: nome.trim(),
+                descricao: descricao.trim() || null
             });
-            setListaId(response.data.lista.id);
-            alert('Lista criada! Agora adicione os itens.');
+            
+            const novaListaId = listaResponse.data.id;
+
+            // Adicionar itens
+            await api.post(`/auth/listas-rapidas/${novaListaId}/itens`, {
+                itens: itensSelecionados
+            });
+
+            // Submeter
+            await api.put(`/auth/listas-rapidas/${novaListaId}/submeter`);
+            
+            alert('✅ Lista criada e submetida com sucesso! O administrador irá analisá-la.');
+            navigate('/collaborator/minhas-listas-rapidas');
         } catch (error: any) {
             alert(error.response?.data?.error || 'Erro ao criar lista');
         } finally {
@@ -65,213 +110,123 @@ const CriarListaRapida: React.FC = () => {
         }
     };
 
-    const adicionarItem = async (item: ItemGlobal) => {
-        if (!listaId) {
-            alert('Crie a lista primeiro!');
-            return;
-        }
-
-        if (itensSelecionados.find(i => i.item_global_id === item.id)) {
-            alert('Item já adicionado!');
-            return;
-        }
-
-        try {
-            await api.post(`/auth/listas-rapidas/${listaId}/itens`, {
-                item_global_id: item.id,
-                prioridade: 'precisa_comprar'
-            });
-
-            setItensSelecionados([...itensSelecionados, {
-                item_global_id: item.id,
-                nome: item.nome,
-                unidade: item.unidade,
-                prioridade: 'precisa_comprar',
-                observacao: ''
-            }]);
-        } catch (error: any) {
-            alert(error.response?.data?.error || 'Erro ao adicionar item');
-        }
-    };
-
-    const removerItem = async (itemId: number) => {
-        if (!listaId) return;
-
-        try {
-            // Buscar o ID do item na lista
-            const response = await api.get(`/auth/listas-rapidas/${listaId}`);
-            const itemNaLista = response.data.itens.find((i: any) => i.item_global_id === itemId);
-            
-            if (itemNaLista) {
-                await api.delete(`/auth/listas-rapidas/${listaId}/itens/${itemNaLista.id}`);
-                setItensSelecionados(itensSelecionados.filter(i => i.item_global_id !== itemId));
-            }
-        } catch (error: any) {
-            alert(error.response?.data?.error || 'Erro ao remover item');
-        }
-    };
-
-    const alterarPrioridade = async (itemId: number, novaPrioridade: 'prevencao' | 'precisa_comprar' | 'urgente') => {
-        if (!listaId) return;
-
-        try {
-            const response = await api.get(`/auth/listas-rapidas/${listaId}`);
-            const itemNaLista = response.data.itens.find((i: any) => i.item_global_id === itemId);
-            
-            if (itemNaLista) {
-                await api.put(`/auth/listas-rapidas/${listaId}/itens/${itemNaLista.id}/prioridade`, {
-                    prioridade: novaPrioridade
-                });
-
-                setItensSelecionados(itensSelecionados.map(i =>
-                    i.item_global_id === itemId ? { ...i, prioridade: novaPrioridade } : i
-                ));
-            }
-        } catch (error: any) {
-            alert(error.response?.data?.error || 'Erro ao alterar prioridade');
-        }
-    };
-
-    const submeterLista = async () => {
-        if (!listaId) return;
-
-        if (itensSelecionados.length === 0) {
-            alert('Adicione pelo menos um item!');
-            return;
-        }
-
-        setLoading(true);
-        try {
-            await api.post(`/auth/listas-rapidas/${listaId}/submeter`);
-            alert('✅ Lista submetida para aprovação!');
-            navigate('/collaborator/minhas-listas-rapidas');
-        } catch (error: any) {
-            alert(error.response?.data?.error || 'Erro ao submeter lista');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const getPrioridadeColor = (prioridade: string) => {
-        switch (prioridade) {
-            case 'urgente': return styles.urgente;
-            case 'precisa_comprar': return styles.precisaComprar;
-            case 'prevencao': return styles.prevencao;
-            default: return '';
-        }
-    };
-
-    const getPrioridadeLabel = (prioridade: string) => {
-        switch (prioridade) {
-            case 'urgente': return '🔴 Urgente';
-            case 'precisa_comprar': return '🟡 Precisa Comprar';
-            case 'prevencao': return '🟢 Prevenção';
-            default: return prioridade;
-        }
-    };
+    const itensFiltrados = itensGlobais.filter(item =>
+        item.nome.toLowerCase().includes(busca.toLowerCase())
+    );
 
     return (
         <div className={styles.container}>
             <div className={styles.header}>
                 <h1><i className="fas fa-bolt"></i> Criar Lista Rápida</h1>
-                <button className={styles.btnVoltar} onClick={() => navigate('/collaborator')}>
+                <button className={styles.btnVoltar} onClick={() => navigate(-1)}>
                     <i className="fas fa-arrow-left"></i> Voltar
                 </button>
             </div>
 
-            {!listaId ? (
-                <div className={styles.formLista}>
-                    <h3>1. Informações da Lista</h3>
+            <div className={styles.content}>
+                {/* Formulário no topo */}
+                <div className={styles.formSection}>
                     <div className={styles.formGroup}>
                         <label>Nome da Lista *</label>
-                        <input
-                            type="text"
-                            value={nome}
-                            onChange={(e) => setNome(e.target.value)}
-                            placeholder="Ex: Compras Urgentes - Dezembro"
-                        />
+                        <div className={styles.inputComBotao}>
+                            <input
+                                type="text"
+                                value={nome}
+                                onChange={(e) => setNome(e.target.value)}
+                                placeholder="Ex: Lista Rápida de Segunda-feira 30/12/2024"
+                            />
+                            <button
+                                type="button"
+                                className={styles.btnAutoCompletar}
+                                onClick={autoCompletarNome}
+                            >
+                                <i className="fas fa-magic"></i> Auto Completar
+                            </button>
+                        </div>
                     </div>
+
                     <div className={styles.formGroup}>
                         <label>Descrição (opcional)</label>
                         <textarea
                             value={descricao}
                             onChange={(e) => setDescricao(e.target.value)}
-                            placeholder="Motivo da lista rápida..."
+                            placeholder="Descreva o objetivo desta lista..."
                             rows={3}
                         />
                     </div>
-                    <button className={styles.btnCriar} onClick={criarLista} disabled={loading}>
-                        {loading ? 'Criando...' : 'Criar Lista'}
-                    </button>
                 </div>
-            ) : (
-                <div className={styles.content}>
-                    <div className={styles.listaInfo}>
-                        <h3>📋 {nome}</h3>
-                        {descricao && <p>{descricao}</p>}
-                    </div>
+
+                {/* Seleção de itens */}
+                <div className={styles.selecaoSection}>
+                    <h3>Selecione os Itens</h3>
+                    <input
+                        type="text"
+                        className={styles.busca}
+                        placeholder="🔍 Buscar item..."
+                        value={busca}
+                        onChange={(e) => setBusca(e.target.value)}
+                    />
 
                     <div className={styles.grid}>
+                        {/* Lista de todos os itens com checkbox */}
                         <div className={styles.painelItens}>
-                            <h3>2. Itens Disponíveis</h3>
-                            <input
-                                type="text"
-                                className={styles.busca}
-                                placeholder="🔍 Buscar item..."
-                                value={busca}
-                                onChange={(e) => setBusca(e.target.value)}
-                            />
-                            <div className={styles.listaItens}>
-                                {itensGlobaisFiltrados.map(item => (
-                                    <div key={item.id} className={styles.itemCard}>
-                                        <div className={styles.itemInfo}>
-                                            <strong>{item.nome}</strong>
-                                            <span>{item.unidade}</span>
-                                        </div>
-                                        <button
-                                            className={styles.btnAdicionar}
-                                            onClick={() => adicionarItem(item)}
-                                            disabled={itensSelecionados.some(i => i.item_global_id === item.id)}
-                                        >
-                                            {itensSelecionados.some(i => i.item_global_id === item.id) ? '✓' : '+'}
-                                        </button>
+                            <h4>Itens Disponíveis</h4>
+                            <div className={styles.listaItensCheckbox}>
+                                {itensFiltrados.length === 0 ? (
+                                    <div className={styles.vazio}>
+                                        Nenhum item encontrado
                                     </div>
-                                ))}
+                                ) : (
+                                    itensFiltrados.map(item => (
+                                        <label key={item.id} className={styles.itemCheckbox}>
+                                            <input
+                                                type="checkbox"
+                                                checked={isItemSelecionado(item.id)}
+                                                onChange={(e) => toggleItem(item, e.target.checked)}
+                                            />
+                                            <div className={styles.itemCheckboxInfo}>
+                                                <strong>{item.nome}</strong>
+                                                <span>{item.unidade}</span>
+                                            </div>
+                                        </label>
+                                    ))
+                                )}
                             </div>
                         </div>
 
+                        {/* Lista composta */}
                         <div className={styles.painelSelecionados}>
-                            <h3>3. Itens Selecionados ({itensSelecionados.length})</h3>
-                            {itensSelecionados.length === 0 ? (
-                                <p className={styles.vazio}>Nenhum item selecionado ainda.</p>
-                            ) : (
-                                <div className={styles.listaItens}>
-                                    {itensSelecionados.map(item => (
+                            <h4>Lista Composta ({itensSelecionados.length})</h4>
+                            <div className={styles.listaComposta}>
+                                {itensSelecionados.length === 0 ? (
+                                    <div className={styles.vazio}>
+                                        Nenhum item selecionado ainda
+                                    </div>
+                                ) : (
+                                    itensSelecionados.map(item => (
                                         <div key={item.item_global_id} className={styles.itemSelecionado}>
                                             <div className={styles.itemHeader}>
                                                 <strong>{item.nome}</strong>
-                                                <button
-                                                    className={styles.btnRemover}
-                                                    onClick={() => removerItem(item.item_global_id)}
-                                                >
-                                                    <i className="fas fa-times"></i>
-                                                </button>
+                                                <span className={styles.unidade}>{item.unidade}</span>
                                             </div>
-                                            <span className={styles.unidade}>{item.unidade}</span>
+                                            
                                             <div className={styles.prioridades}>
                                                 <button
+                                                    type="button"
                                                     className={`${styles.btnPrioridade} ${styles.prevencao} ${item.prioridade === 'prevencao' ? styles.ativo : ''}`}
                                                     onClick={() => alterarPrioridade(item.item_global_id, 'prevencao')}
                                                 >
                                                     🟢 Prevenção
                                                 </button>
                                                 <button
+                                                    type="button"
                                                     className={`${styles.btnPrioridade} ${styles.precisaComprar} ${item.prioridade === 'precisa_comprar' ? styles.ativo : ''}`}
                                                     onClick={() => alterarPrioridade(item.item_global_id, 'precisa_comprar')}
                                                 >
-                                                    🟡 Precisa Comprar
+                                                    🟡 Comprar
                                                 </button>
                                                 <button
+                                                    type="button"
                                                     className={`${styles.btnPrioridade} ${styles.urgente} ${item.prioridade === 'urgente' ? styles.ativo : ''}`}
                                                     onClick={() => alterarPrioridade(item.item_global_id, 'urgente')}
                                                 >
@@ -279,23 +234,23 @@ const CriarListaRapida: React.FC = () => {
                                                 </button>
                                             </div>
                                         </div>
-                                    ))}
-                                </div>
-                            )}
+                                    ))
+                                )}
+                            </div>
 
                             {itensSelecionados.length > 0 && (
                                 <button
                                     className={styles.btnSubmeter}
-                                    onClick={submeterLista}
+                                    onClick={submeter}
                                     disabled={loading}
                                 >
-                                    {loading ? 'Submetendo...' : '✓ Submeter para Aprovação'}
+                                    {loading ? 'Enviando...' : '✅ Submeter para Aprovação'}
                                 </button>
                             )}
                         </div>
                     </div>
                 </div>
-            )}
+            </div>
         </div>
     );
 };
