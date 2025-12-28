@@ -80,3 +80,50 @@
     1.  O arquivo `backend/run.py` foi alterado para `app.run(host='0.0.0.0')`, permitindo que o servidor aceite conexões da rede.
     2.  Um arquivo `.env.local` foi criado no frontend para que o ambiente de desenvolvimento aponte para o IP correto do backend na rede.
     3.  O arquivo `backend/kaizen_app/__init__.py` foi atualizado para incluir o IP da rede local na lista de `origins` permitidas pelo CORS.
+
+---
+
+## Bugs Pendentes
+
+### 🐛 Bug: Listas Rápidas não aparecem em Gerenciar Submissões do Admin
+
+**Data:** 28/12/2025  
+**Severidade:** 🔴 Alta  
+**Status:** 🔄 Aberto  
+**Branch:** lista-rapida
+
+#### Descrição
+As submissões de listas rápidas criadas pelos colaboradores não estão aparecendo na tela "Gerenciar Submissões" do administrador (`/admin/submissoes`). Atualmente, as listas rápidas aparecem em um botão separado no navbar, mas deveriam estar integradas com as demais submissões de listas.
+
+#### Comportamento Atual
+- ❌ Colaborador submete lista rápida
+- ❌ Lista rápida aparece em botão separado "Listas Rápidas" no navbar do admin
+- ❌ Tela "Gerenciar Submissões" mostra "Nenhuma submissão encontrada"
+
+#### Comportamento Esperado
+- ✅ Colaborador submete lista rápida
+- ✅ Lista rápida aparece junto com outras submissões em "Gerenciar Submissões"
+- ✅ Admin pode aprovar/rejeitar/editar pela interface unificada
+
+#### Erro Técnico
+Ao acessar `/admin/submissoes`, ocorre erro no console:
+```javascript
+submissoes.map is not a function
+GerenciarSubmissoes@http://localhost:3000/static/js/bundle.js:98048:36
+```
+
+#### Arquivos Envolvidos
+- `frontend/src/features/admin/GerenciarSubmissoes.tsx`
+- `backend/kaizen_app/controllers.py` (rotas de submissões)
+- `backend/kaizen_app/services.py` (lógica de busca de submissões)
+
+#### Próximos Passos
+1. Integrar endpoint de listas rápidas com endpoint de submissões gerais
+2. Modificar `GerenciarSubmissoes.tsx` para tratar ambos os tipos de lista
+3. Garantir que o formato de retorno seja consistente (array de submissões)
+4. Remover botão separado de "Listas Rápidas" do navbar do admin
+
+#### Notas
+- ✅ A funcionalidade de criação e edição de listas rápidas pelo colaborador está funcionando
+- ✅ A submissão de listas rápidas está sendo salva no banco de dados
+- ❌ O problema é apenas na visualização centralizada pelo admin
