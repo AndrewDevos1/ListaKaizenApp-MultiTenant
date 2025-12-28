@@ -5,8 +5,8 @@ import styles from './DetalhesListaRapida.module.css';
 
 interface ItemListaRapida {
     id: number;
-    nome: string;
-    unidade: string;
+    item_nome: string;
+    item_unidade: string;
     prioridade: string;
     observacao: string | null;
 }
@@ -133,12 +133,12 @@ const DetalhesListaRapida: React.FC = () => {
                         {lista.itens.map(item => (
                             <div key={item.id} className={styles.itemCard}>
                                 <div className={styles.itemHeader}>
-                                    <h4>{item.nome}</h4>
+                                    <h4>{item.item_nome}</h4>
                                     {getPrioridadeBadge(item.prioridade)}
                                 </div>
                                 <div className={styles.itemInfo}>
                                     <span className={styles.unidade}>
-                                        <i className="fas fa-box"></i> {item.unidade}
+                                        <i className="fas fa-box"></i> {item.item_unidade}
                                     </span>
                                 </div>
                                 {item.observacao && (
