@@ -15,6 +15,10 @@
   overflow: hidden;
 }
 
+[data-theme='dark'] .loginWrapper {
+  background: linear-gradient(135deg, #111827 0%, #1f2937 100%);
+}
+
 /* Animação de gradiente suave */
 @keyframes gradientShift {
   0% {
@@ -53,6 +57,14 @@
   animation: float 15s infinite ease-in-out reverse;
 }
 
+[data-theme='dark'] .loginWrapper::before {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+[data-theme='dark'] .loginWrapper::after {
+  background: rgba(255, 255, 255, 0.04);
+}
+
 @keyframes float {
   0%, 100% {
     transform: translateY(0) translateX(0);
@@ -74,6 +86,11 @@
   z-index: 1;
 }
 
+[data-theme='dark'] .loginCard {
+  background: rgba(26, 29, 35, 0.92);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+}
+
 @keyframes slideIn {
   from {
     opacity: 0;
@@ -89,6 +106,10 @@
   box-shadow: 0 25px 70px rgba(0, 0, 0, 0.35);
   transform: translateY(-2px);
   transition: all 0.3s ease;
+}
+
+[data-theme='dark'] .loginCard:hover {
+  box-shadow: 0 25px 70px rgba(0, 0, 0, 0.75);
 }
 
 /* Header do card */
@@ -120,12 +141,12 @@
 .appTitle {
   font-weight: 700;
   font-size: 2rem;
-  color: #2c3e50;
+  color: var(--text-primary, #2c3e50);
   margin-bottom: 0.5rem;
 }
 
 .appSubtitle {
-  color: #7f8c8d;
+  color: var(--text-muted, #7f8c8d);
   font-size: 0.95rem;
   font-weight: 400;
 }
@@ -138,7 +159,7 @@
 
 .formLabel {
   font-weight: 600;
-  color: #34495e;
+  color: var(--text-secondary, #34495e);
   margin-bottom: 0.5rem;
   display: flex;
   align-items: center;
@@ -152,7 +173,9 @@
 
 .formInput {
   border-radius: 10px;
-  border: 2px solid #e0e6ed;
+  border: 2px solid var(--border-color, #e0e6ed);
+  background-color: var(--input-bg, #ffffff);
+  color: var(--input-text, #212529);
   padding: 0.75rem 1rem;
   font-size: 1rem;
   transition: all 0.3s ease;
@@ -165,7 +188,7 @@
 }
 
 .formInput::placeholder {
-  color: #bdc3c7;
+  color: var(--input-placeholder, #bdc3c7);
 }
 
 /* Password input wrapper */
@@ -254,7 +277,7 @@
 /* Divider */
 .divider {
   margin: 1.5rem 0;
-  border-top: 1px solid #e0e6ed;
+  border-top: 1px solid var(--border-color, #e0e6ed);
 }
 
 /* Seção de usuários de teste */
@@ -284,8 +307,8 @@
 }
 
 .testUserButton {
-  background: white;
-  border: 2px solid #e0e6ed;
+  background: var(--bg-secondary, #ffffff);
+  border: 2px solid var(--border-color, #e0e6ed);
   border-radius: 8px;
   padding: 0.75rem;
   cursor: pointer;
@@ -295,7 +318,7 @@
   gap: 0.75rem;
   font-size: 0.85rem;
   font-weight: 500;
-  color: #34495e;
+  color: var(--text-secondary, #34495e);
 }
 
 .testUserButton:hover:not(:disabled) {
@@ -326,7 +349,7 @@
 
 .testUserName {
   font-weight: 600;
-  color: #2c3e50;
+  color: var(--text-primary, #2c3e50);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -334,7 +357,7 @@
 
 .testUserRole {
   font-size: 0.7rem;
-  color: #95a5a6;
+  color: var(--text-muted, #95a5a6);
   text-transform: uppercase;
   letter-spacing: 0.3px;
 }

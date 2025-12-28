@@ -13,7 +13,7 @@
 
 .header h1 {
     font-size: 28px;
-    color: #333;
+    color: var(--text-primary, #333);
     display: flex;
     align-items: center;
     gap: 12px;
@@ -27,7 +27,7 @@
 
 .badge {
     padding: 8px 16px;
-    background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
+    background: linear-gradient(135deg, var(--status-warning-accent, #ffc107) 0%, var(--status-warning-accent-strong, #ff9800) 100%);
     color: white;
     border-radius: 20px;
     font-weight: 600;
@@ -37,19 +37,19 @@
 .vazio {
     text-align: center;
     padding: 80px 20px;
-    background: white;
+    background: var(--bg-secondary, #ffffff);
     border-radius: 12px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
 .vazio i {
-    color: #28a745;
+    color: var(--status-success-accent, #28a745);
     margin-bottom: 20px;
 }
 
 .vazio p {
     font-size: 18px;
-    color: #666;
+    color: var(--text-muted, #666);
 }
 
 .grid {
@@ -59,7 +59,7 @@
 }
 
 .card {
-    background: white;
+    background: var(--bg-secondary, #ffffff);
     border-radius: 12px;
     padding: 24px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
@@ -70,7 +70,7 @@
 .card:hover {
     transform: translateY(-4px);
     box-shadow: 0 8px 24px rgba(0,0,0,0.15);
-    border-color: #ffc107;
+    border-color: var(--status-warning-accent, #ffc107);
 }
 
 .cardHeader {
@@ -83,12 +83,12 @@
 
 .cardHeader h3 {
     font-size: 18px;
-    color: #333;
+    color: var(--text-primary, #333);
     margin: 0 0 8px 0;
 }
 
 .usuario {
-    color: #666;
+    color: var(--text-muted, #666);
     font-size: 13px;
     display: flex;
     align-items: center;
@@ -97,7 +97,7 @@
 
 .urgenteBadge {
     padding: 6px 12px;
-    background: #dc3545;
+    background: var(--status-danger-accent, #dc3545);
     color: white;
     border-radius: 20px;
     font-size: 12px;
@@ -112,7 +112,7 @@
 }
 
 .descricao {
-    color: #666;
+    color: var(--text-muted, #666);
     font-size: 14px;
     margin-bottom: 15px;
     line-height: 1.5;
@@ -123,14 +123,14 @@
     gap: 16px;
     margin-bottom: 15px;
     padding-top: 12px;
-    border-top: 1px solid #e9ecef;
+    border-top: 1px solid var(--border-color, #e9ecef);
 }
 
 .stat {
     display: flex;
     align-items: center;
     gap: 6px;
-    color: #666;
+    color: var(--text-muted, #666);
     font-size: 14px;
 }
 
@@ -172,7 +172,7 @@
 }
 
 .modal {
-    background: white;
+    background: var(--bg-secondary, #ffffff);
     border-radius: 16px;
     max-width: 800px;
     width: 100%;
@@ -199,29 +199,29 @@
     justify-content: space-between;
     align-items: center;
     padding: 24px;
-    border-bottom: 2px solid #e9ecef;
+    border-bottom: 2px solid var(--border-color, #e9ecef);
 }
 
 .modalHeader h2 {
     font-size: 24px;
-    color: #333;
+    color: var(--text-primary, #333);
     margin: 0;
 }
 
 .btnFechar {
     width: 36px;
     height: 36px;
-    background: #f8f9fa;
+    background: var(--surface-muted, #f8f9fa);
     border: none;
     border-radius: 50%;
     cursor: pointer;
     transition: all 0.3s;
     font-size: 18px;
-    color: #666;
+    color: var(--text-muted, #666);
 }
 
 .btnFechar:hover {
-    background: #e9ecef;
+    background: var(--surface-muted, #e9ecef);
     transform: rotate(90deg);
 }
 
@@ -232,7 +232,7 @@
 }
 
 .infoLista {
-    background: #f8f9fa;
+    background: var(--surface-muted, #f8f9fa);
     padding: 20px;
     border-radius: 8px;
     margin-bottom: 24px;
@@ -249,18 +249,18 @@
 }
 
 .infoItem strong {
-    color: #333;
+    color: var(--text-primary, #333);
     min-width: 140px;
 }
 
 .infoItem span {
-    color: #666;
+    color: var(--text-muted, #666);
     flex: 1;
 }
 
 .itensLista h3 {
     font-size: 18px;
-    color: #333;
+    color: var(--text-primary, #333);
     margin-bottom: 16px;
 }
 
@@ -276,8 +276,8 @@
     flex-direction: column;
     gap: 8px;
     padding: 16px;
-    background: white;
-    border: 2px solid #e9ecef;
+    background: var(--bg-secondary, #ffffff);
+    border: 2px solid var(--border-color, #e9ecef);
     border-radius: 8px;
     transition: all 0.2s;
 }
@@ -294,14 +294,14 @@
 }
 
 .itemNome strong {
-    color: #333;
+    color: var(--text-primary, #333);
     font-size: 15px;
 }
 
 .unidade {
-    color: #666;
+    color: var(--text-muted, #666);
     font-size: 13px;
-    background: #f8f9fa;
+    background: var(--surface-muted, #f8f9fa);
     padding: 4px 10px;
     border-radius: 4px;
 }
@@ -318,22 +318,22 @@
 }
 
 .prioridade.prevencao {
-    background: #d4edda;
-    color: #155724;
+    background: var(--status-success-bg, #d4edda);
+    color: var(--status-success-text, #155724);
 }
 
 .prioridade.precisaComprar {
-    background: #fff3cd;
-    color: #856404;
+    background: var(--status-warning-bg, #fff3cd);
+    color: var(--status-warning-text, #856404);
 }
 
 .prioridade.urgente {
-    background: #f8d7da;
-    color: #721c24;
+    background: var(--status-danger-bg, #f8d7da);
+    color: var(--status-danger-text, #721c24);
 }
 
 .itemObs {
-    color: #666;
+    color: var(--text-muted, #666);
     font-size: 13px;
     font-style: italic;
     padding-left: 8px;
@@ -348,7 +348,7 @@
 
 .mensagemForm label {
     font-weight: 600;
-    color: #333;
+    color: var(--text-primary, #333);
 }
 
 .mensagemForm textarea {
@@ -370,7 +370,7 @@
     display: flex;
     gap: 12px;
     padding: 24px;
-    border-top: 2px solid #e9ecef;
+    border-top: 2px solid var(--border-color, #e9ecef);
 }
 
 .btnRejeitar,
@@ -390,18 +390,18 @@
 }
 
 .btnRejeitar {
-    background: #dc3545;
+    background: var(--status-danger-accent, #dc3545);
     color: white;
 }
 
 .btnRejeitar:hover:not(:disabled) {
-    background: #c82333;
+    background: var(--status-danger-accent-strong, #c82333);
     transform: translateY(-2px);
     box-shadow: 0 6px 20px rgba(220, 53, 69, 0.4);
 }
 
 .btnAprovar {
-    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    background: linear-gradient(135deg, var(--status-success-accent, #28a745) 0%, #20c997 100%);
     color: white;
 }
 

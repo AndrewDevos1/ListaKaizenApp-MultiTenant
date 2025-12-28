@@ -4,7 +4,7 @@
 
 /* Container principal */
 .pageWrapper {
-  background: #f0f3f8;
+  background: var(--bg-primary, #f0f3f8);
   min-height: 100vh;
   padding: 2rem 0;
 }
@@ -53,12 +53,12 @@
 .pageTitle {
   font-size: 2.25rem;
   font-weight: 700;
-  color: #2c3e50;
+  color: var(--text-primary, #2c3e50);
   margin-bottom: 0.5rem;
 }
 
 .pageSubtitle {
-  color: #7f8c8d;
+  color: var(--text-muted, #7f8c8d);
   font-size: 1rem;
   margin-bottom: 0;
 }
@@ -113,7 +113,7 @@
 
 /* Card de lista */
 .listaCard {
-  background: white;
+  background: var(--bg-secondary, #ffffff);
   border-radius: 15px;
   padding: 0;
   border: none;
@@ -144,7 +144,7 @@
 /* Card de criar nova lista */
 .cardCriar {
   border: 3px dashed #2eb85c;
-  background: linear-gradient(135deg, #f0fff4 0%, #e6f7ed 100%);
+  background: linear-gradient(135deg, var(--status-success-faint-bg, #f0fff4) 0%, var(--status-success-soft-bg, #e6f7ed) 100%);
   cursor: pointer;
   text-align: center;
   padding: 2rem;
@@ -154,7 +154,7 @@
 
 .cardCriar:hover {
   border-color: #1e7e34;
-  background: linear-gradient(135deg, #e6f7ed 0%, #d4f1dd 100%);
+  background: linear-gradient(135deg, var(--status-success-subtle-bg, #d3f9d8) 0%, var(--status-success-soft-bg, #e6f7ed) 100%);
 }
 
 .cardIconWrapper {
@@ -187,8 +187,8 @@
   justify-content: space-between;
   align-items: center;
   padding: 1.5rem 1.5rem 1rem;
-  background: linear-gradient(135deg, #fff8e6 0%, #fff 100%);
-  border-bottom: 1px solid #f0f0f0;
+  background: linear-gradient(135deg, var(--status-warning-soft-bg, #fff8e6) 0%, var(--bg-secondary, #ffffff) 100%);
+  border-bottom: 1px solid var(--border-color, #f0f0f0);
 }
 
 .cardIcon {
@@ -228,7 +228,7 @@
 
 .deleteButton:hover {
   background: rgba(229, 83, 83, 0.1);
-  color: #d32f2f;
+  color: var(--status-danger-text, #d32f2f);
 }
 
 /* Conteúdo do card */
@@ -240,12 +240,12 @@
 .cardTitulo {
   font-size: 1.25rem;
   font-weight: 700;
-  color: #2c3e50;
+  color: var(--text-primary, #2c3e50);
   margin-bottom: 0.75rem;
 }
 
 .cardMetadata {
-  color: #7f8c8d;
+  color: var(--text-muted, #7f8c8d);
   font-size: 0.9rem;
   margin-bottom: 0.75rem;
   display: flex;
@@ -254,12 +254,12 @@
 }
 
 .cardMetadata strong {
-  color: #2c3e50;
+  color: var(--text-primary, #2c3e50);
   font-weight: 600;
 }
 
 .cardDescricao {
-  color: #7f8c8d;
+  color: var(--text-muted, #7f8c8d);
   font-size: 0.95rem;
   line-height: 1.6;
   margin-bottom: 1rem;
@@ -272,20 +272,20 @@
 }
 
 .infoItem {
-  color: #7f8c8d;
+  color: var(--text-muted, #7f8c8d);
   font-size: 0.9rem;
 }
 
 .infoItem strong {
-  color: #2c3e50;
+  color: var(--text-primary, #2c3e50);
   font-weight: 700;
 }
 
 /* Footer do card */
 .cardFooter {
   padding: 1rem 1.5rem;
-  border-top: 1px solid #f0f0f0;
-  background: #fafafa;
+  border-top: 1px solid var(--border-color, #f0f0f0);
+  background: var(--surface-muted, #fafafa);
 }
 
 .cardButton {
@@ -312,7 +312,7 @@
 
 .loadingSpinner p {
   margin-top: 1rem;
-  color: #7f8c8d;
+  color: var(--text-muted, #7f8c8d);
   font-size: 1rem;
 }
 
@@ -324,13 +324,13 @@
   justify-content: center;
   padding: 4rem 2rem;
   text-align: center;
-  background: white;
+  background: var(--bg-secondary, #ffffff);
   border-radius: 15px;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
 }
 
 .emptyState h3 {
-  color: #2c3e50;
+  color: var(--text-primary, #2c3e50);
   font-size: 1.5rem;
   font-weight: 700;
   margin-top: 1.5rem;
@@ -338,7 +338,7 @@
 }
 
 .emptyState p {
-  color: #7f8c8d;
+  color: var(--text-muted, #7f8c8d);
   font-size: 1rem;
   margin-bottom: 0;
 }

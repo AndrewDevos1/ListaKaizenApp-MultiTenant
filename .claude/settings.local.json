@@ -63,7 +63,13 @@
       "Bash(timeout 10 .venv/bin/python:*)",
       "Bash(timeout 5 .venv/bin/python:*)",
       "Bash(env)",
-      "Bash(export DATABASE_URL:*)"
+      "Bash(export DATABASE_URL:*)",
+      "Bash(/home/devos/Codigos-vscode/ListaKaizenApp/backend/.venv/bin/python:*)",
+      "Bash(if [ -f requirements.txt ])",
+      "Bash(then grep -E \"flake8|pylint|black\" requirements.txt)",
+      "Bash(fi)",
+      "Bash(pytest:*)",
+      "Bash(../.venv/bin/python -m pytest:*)"
     ],
     "deny": [],
     "ask": []

@@ -457,17 +457,10 @@ const CollaboratorDashboard: React.FC = () => {
                                     {recentActivities.map((activity, index) => (
                                         <div
                                             key={index}
-                                            style={{
-                                                padding: '1rem',
-                                                borderBottom: index < recentActivities.length - 1 ? '1px solid #e9ecef' : 'none',
-                                            }}
+                                            className={`${styles.activityItem} ${index === recentActivities.length - 1 ? styles.activityItemLast : ''}`}
                                         >
-                                            <div style={{ fontWeight: 600, color: '#667eea', marginBottom: '0.25rem' }}>
-                                                {activity.time}
-                                            </div>
-                                            <div style={{ fontSize: '0.9rem', color: '#6c757d' }}>
-                                                {activity.description}
-                                            </div>
+                                            <div className={styles.activityTime}>{activity.time}</div>
+                                            <div className={styles.activityDescription}>{activity.description}</div>
                                         </div>
                                     ))}
                                 </div>

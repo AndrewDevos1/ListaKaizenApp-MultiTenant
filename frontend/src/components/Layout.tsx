@@ -34,6 +34,8 @@ const Layout: React.FC = () => {
   const { isDarkMode, toggleDarkMode } = useTheme();
   const { count: sugestoesPendentes } = useSugestoesPendentes(user?.role);
   const searchInputRef = React.useRef<HTMLInputElement>(null);
+  const dashboardRoutes = new Set(['/admin', '/admin/global', '/collaborator']);
+  const isDashboardRoute = dashboardRoutes.has(location.pathname);
 
   // Admin menu structure
   const adminMenuGroups: MenuGroup[] = [
@@ -483,7 +485,7 @@ const Layout: React.FC = () => {
       {/* Page Content */}
       <div className={styles.pageContentWrapper}>
         <Breadcrumbs />
-        <div className="container-fluid px-4">
+        <div className={`container-fluid ${isDashboardRoute ? 'px-0' : 'px-4'}`}>
           <Outlet />
         </div>
       </div>

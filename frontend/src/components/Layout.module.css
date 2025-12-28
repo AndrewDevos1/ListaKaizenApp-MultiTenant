@@ -431,8 +431,8 @@
    ================================ */
 
 .navbar {
-  background-color: #fff;
-  border-bottom: 1px solid #dee2e6;
+  background-color: var(--bg-secondary, #ffffff);
+  border-bottom: 1px solid var(--border-color, #dee2e6);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
   transition: all 0.3s ease;
 }
@@ -634,8 +634,8 @@
   position: absolute;
   top: 100%;
   right: 0;
-  background: #fff;
-  border: 1px solid #dee2e6;
+  background: var(--bg-secondary, #ffffff);
+  border: 1px solid var(--border-color, #dee2e6);
   border-radius: 8px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
   min-width: 280px;
@@ -659,13 +659,13 @@
 .userMenuMobile .dropdown-header {
   font-weight: 700;
   font-size: 0.875rem;
-  color: #495057;
+  color: var(--text-secondary, #495057);
   padding: 0.75rem 1rem;
 }
 
 .userMenuMobile .dropdown-item {
   padding: 0.75rem 1rem;
-  color: #212529;
+  color: var(--text-primary, #212529);
   text-decoration: none;
   display: flex;
   align-items: center;
@@ -674,14 +674,14 @@
 }
 
 .userMenuMobile .dropdown-item:hover {
-  background-color: #f8f9fa;
+  background-color: var(--surface-muted, #f8f9fa);
   color: #0d6efd;
   padding-left: 1.25rem;
 }
 
 .userMenuMobile .dropdown-divider {
   margin: 0.5rem 0;
-  border-top: 1px solid #dee2e6;
+  border-top: 1px solid var(--border-color, #dee2e6);
 }
 
 /* Hide user menu on desktop (≥768px) */
@@ -693,7 +693,7 @@
 
 /* ===== BADGE DE NOTIFICAÇÕES ===== */
 .badge {
-  background-color: #dc3545;
+  background-color: var(--status-danger-accent, #dc3545);
   color: white;
   font-size: 11px;
   padding: 2px 6px;
@@ -710,9 +710,9 @@
   right: 8px;
   width: 8px;
   height: 8px;
-  background-color: #dc3545;
+  background-color: var(--status-danger-accent, #dc3545);
   border-radius: 50%;
-  border: 2px solid white;
+  border: 2px solid var(--bg-secondary, #ffffff);
 }
 
 /* ===== DARK MODE TOGGLE ===== */
@@ -742,8 +742,14 @@
   --text-secondary: #adb5bd;
   --text-muted: #6c757d;
   --border-color: #495057;
+  --border-subtle: #343a40;
   --link-color: #66b3ff;
   --link-hover-color: #4d9fff;
+  --table-header-bg: #2b3035;
+  --table-row-hover: #343a40;
+  --card-shadow: 0 2px 15px rgba(0, 0, 0, 0.45);
+  --card-shadow-hover: 0 8px 30px rgba(0, 0, 0, 0.6);
+  --icon-muted: rgba(255, 255, 255, 0.35);
 }
 
 [data-theme='dark'] .sidebarWrapper {

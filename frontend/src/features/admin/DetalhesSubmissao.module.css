@@ -57,8 +57,8 @@
 }
 
 .tableCard .card-header {
-    background-color: #f8f9fa;
-    border-bottom: 2px solid #dee2e6;
+    background-color: var(--surface-muted, #f8f9fa);
+    border-bottom: 2px solid var(--border-color, #dee2e6);
 }
 
 .tableCard .card-header h5 {

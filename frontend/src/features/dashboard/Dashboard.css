@@ -7,6 +7,47 @@
     --sidebar-hover: #334155;
 }
 
+.dashboardShell {
+    background-color: var(--bg-primary, #f0f2f5);
+    color: var(--text-primary, #2c3e50);
+    min-height: 100vh;
+    padding: 2rem 0;
+}
+
+.dashboardShell .card {
+    background-color: var(--bg-secondary, #ffffff);
+    border-color: var(--border-color, #e9ecef);
+}
+
+.dashboardShell .card-header {
+    background-color: var(--table-header-bg, #f8f9fa);
+    border-bottom-color: var(--border-color, #e9ecef);
+    color: var(--text-primary, #2c3e50);
+}
+
+.dashboardShell .table {
+    color: var(--text-primary, #2c3e50);
+}
+
+.dashboardShell .table thead th {
+    background-color: var(--table-header-bg, #f8f9fa);
+    color: var(--text-muted, #6c757d);
+    border-color: var(--border-color, #e9ecef);
+}
+
+.dashboardShell .table th,
+.dashboardShell .table td {
+    border-color: var(--border-color, #e9ecef);
+}
+
+.dashboardShell .text-gray-800 {
+    color: var(--text-primary, #2c3e50) !important;
+}
+
+.dashboardShell .text-gray-300 {
+    color: var(--icon-muted, #bdc3c7) !important;
+}
+
 #wrapper {
     overflow-x: hidden;
     background-color: var(--main-bg-color);
@@ -67,5 +108,11 @@
 
     #wrapper.toggled #sidebar-wrapper {
         margin-left: -15rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .dashboardShell {
+        padding: 1rem 0;
     }
 }

@@ -4,7 +4,7 @@
 
 /* Container principal */
 .pageWrapper {
-  background: #f0f3f8;
+  background: var(--bg-primary, #f0f3f8);
   min-height: 100vh;
   padding: 2rem 0;
 }
@@ -48,19 +48,19 @@
 .pageTitle {
   font-size: 2.25rem;
   font-weight: 700;
-  color: #2c3e50;
+  color: var(--text-primary, #2c3e50);
   margin-bottom: 0.5rem;
 }
 
 .pageSubtitle {
-  color: #7f8c8d;
+  color: var(--text-muted, #7f8c8d);
   font-size: 1rem;
   margin-bottom: 0;
 }
 
 /* Card de configuração */
 .configCard {
-  background: white;
+  background: var(--bg-secondary, #ffffff);
   border-radius: 15px;
   padding: 2rem;
   border: none;
@@ -92,7 +92,7 @@
   gap: 1rem;
   margin-bottom: 1.5rem;
   padding-bottom: 1rem;
-  border-bottom: 2px solid #e9ecef;
+  border-bottom: 2px solid var(--border-color, #e9ecef);
 }
 
 .cardIcon {
@@ -111,12 +111,12 @@
 .cardTitle {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #2c3e50;
+  color: var(--text-primary, #2c3e50);
   margin: 0;
 }
 
 .cardDescription {
-  color: #7f8c8d;
+  color: var(--text-muted, #7f8c8d);
   font-size: 0.9rem;
   margin: 0;
 }
@@ -131,18 +131,18 @@
   align-items: center;
   gap: 0.5rem;
   font-weight: 600;
-  color: #2c3e50;
+  color: var(--text-primary, #2c3e50);
   margin-bottom: 0.75rem;
   font-size: 1rem;
 }
 
 .formLabel svg {
-  color: #95a5a6;
+  color: var(--text-muted, #95a5a6);
   font-size: 1rem;
 }
 
 .formControl {
-  border: 2px solid #e9ecef;
+  border: 2px solid var(--border-color, #e9ecef);
   border-radius: 10px;
   padding: 0.75rem 1rem;
   font-size: 1rem;
@@ -150,13 +150,13 @@
 }
 
 .formControl:focus {
-  border-color: #95a5a6;
+  border-color: var(--text-muted, #95a5a6);
   box-shadow: 0 0 0 0.2rem rgba(149, 165, 166, 0.25);
 }
 
 .helpText {
   font-size: 0.875rem;
-  color: #7f8c8d;
+  color: var(--text-muted, #7f8c8d);
   margin-top: 0.5rem;
   display: flex;
   align-items: center;
@@ -164,36 +164,36 @@
 }
 
 .helpText svg {
-  color: #95a5a6;
+  color: var(--text-muted, #95a5a6);
 }
 
 /* Dropdown de timeout */
 .timeoutSelect {
-  border: 2px solid #e9ecef;
+  border: 2px solid var(--border-color, #e9ecef);
   border-radius: 10px;
   padding: 0.75rem 1rem;
   font-size: 1rem;
   font-weight: 500;
-  color: #2c3e50;
-  background-color: white;
+  color: var(--text-primary, #2c3e50);
+  background-color: var(--bg-secondary, #ffffff);
   transition: all 0.3s ease;
   cursor: pointer;
 }
 
 .timeoutSelect:focus {
-  border-color: #95a5a6;
+  border-color: var(--text-muted, #95a5a6);
   box-shadow: 0 0 0 0.2rem rgba(149, 165, 166, 0.25);
   outline: none;
 }
 
 .timeoutSelect:hover {
-  border-color: #bdc3c7;
+  border-color: var(--icon-muted, #bdc3c7);
 }
 
 /* Caixa de informações */
 .infoBox {
-  background: linear-gradient(135deg, #e8f4fd 0%, #d6eaf8 100%);
-  border-left: 4px solid #3498db;
+  background: linear-gradient(135deg, var(--status-info-subtle-bg, #e8f4fd) 0%, var(--status-info-subtle-bg, #d6eaf8) 100%);
+  border-left: 4px solid var(--link-color, #3498db);
   border-radius: 10px;
   padding: 1rem 1.25rem;
   margin-top: 1.5rem;
@@ -202,19 +202,19 @@
 }
 
 .infoIcon {
-  color: #3498db;
+  color: var(--link-color, #3498db);
   font-size: 1.25rem;
   flex-shrink: 0;
   margin-top: 0.15rem;
 }
 
 .infoBox strong {
-  color: #2c3e50;
+  color: var(--text-primary, #2c3e50);
   font-size: 0.95rem;
 }
 
 .infoBox ul {
-  color: #34495e;
+  color: var(--text-secondary, #34495e);
   font-size: 0.875rem;
   line-height: 1.6;
 }
@@ -234,7 +234,7 @@
   justify-content: flex-end;
   margin-top: 2rem;
   padding-top: 1.5rem;
-  border-top: 2px solid #e9ecef;
+  border-top: 2px solid var(--border-color, #e9ecef);
 }
 
 .saveButton {
@@ -254,9 +254,9 @@
 }
 
 .cancelButton {
-  background: white;
-  border: 2px solid #e9ecef;
-  color: #7f8c8d;
+  background: var(--bg-secondary, #ffffff);
+  border: 2px solid var(--border-color, #e9ecef);
+  color: var(--text-muted, #7f8c8d);
   font-weight: 600;
   padding: 0.75rem 2rem;
   border-radius: 10px;
@@ -264,16 +264,16 @@
 }
 
 .cancelButton:hover {
-  background: #f8f9fa;
-  border-color: #dee2e6;
+  background: var(--surface-muted, #f8f9fa);
+  border-color: var(--border-color, #dee2e6);
 }
 
 /* Alert de sucesso */
 .successAlert {
   border: none;
   border-radius: 10px;
-  background: linear-gradient(135deg, #2eb85c 0%, #1e8449 100%);
-  color: white;
+  background: linear-gradient(135deg, var(--status-success-bg, #d4edda) 0%, var(--status-success-subtle-bg, #d3f9d8) 100%);
+  color: var(--status-success-text, #155724);
   padding: 1rem 1.5rem;
   margin-bottom: 1.5rem;
   animation: slideDown 0.3s ease-out;
@@ -315,7 +315,7 @@ input[type="range"] {
   width: 100%;
   height: 8px;
   border-radius: 5px;
-  background: #e9ecef;
+  background: var(--surface-muted, #e9ecef);
   outline: none;
   -webkit-appearance: none;
 }

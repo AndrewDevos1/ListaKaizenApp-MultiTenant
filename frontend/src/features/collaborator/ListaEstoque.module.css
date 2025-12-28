@@ -8,13 +8,13 @@
 }
 
 .header h2 {
-    color: #2c3e50;
+    color: var(--text-primary, #2c3e50);
     font-weight: 600;
     margin-bottom: 0.5rem;
 }
 
 .header p {
-    color: #6c757d;
+    color: var(--text-muted, #6c757d);
     font-size: 0.95rem;
     margin: 0;
 }
@@ -30,8 +30,8 @@
 
 .changedBadge {
     display: inline-block;
-    background-color: #fff3cd;
-    color: #856404;
+    background-color: var(--status-warning-bg, #fff3cd);
+    color: var(--status-warning-text, #856404);
     padding: 0.25rem 0.5rem;
     border-radius: 4px;
     font-size: 0.75rem;
@@ -40,19 +40,19 @@
 }
 
 .inputChanged {
-    border-color: #ffc107 !important;
-    background-color: #fffbf0 !important;
+    border-color: var(--status-warning-text, #ffc107) !important;
+    background-color: var(--status-warning-soft-bg, #fffbf0) !important;
 }
 
 .minValue {
-    color: #6c757d;
+    color: var(--text-muted, #6c757d);
     font-weight: 500;
 }
 
 .pedidoAlert {
     display: inline-block;
-    background-color: #f8d7da;
-    color: #721c24;
+    background-color: var(--status-danger-bg, #f8d7da);
+    color: var(--status-danger-text, #721c24);
     padding: 0.5rem 1rem;
     border-radius: 6px;
     font-weight: 600;
@@ -61,8 +61,8 @@
 
 .pedidoOk {
     display: inline-block;
-    background-color: #d4edda;
-    color: #155724;
+    background-color: var(--status-success-bg, #d4edda);
+    color: var(--status-success-text, #155724);
     padding: 0.5rem 1rem;
     border-radius: 6px;
     font-weight: 600;
@@ -70,11 +70,11 @@
 }
 
 .warningRow {
-    background-color: #fff3cd;
+    background-color: var(--status-warning-bg, #fff3cd);
 }
 
 .warningRow:hover {
-    background-color: #ffe8a8;
+    background-color: var(--status-warning-strong-bg, #ffe8a8);
 }
 
 .actions {
