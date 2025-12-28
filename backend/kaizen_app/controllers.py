@@ -508,6 +508,14 @@ def get_all_submissoes_route():
     return jsonify(submissoes)
 
 
+@admin_bp.route('/submissoes/<int:submissao_id>', methods=['GET'])
+@admin_required()
+def get_submissao_by_id_route(submissao_id):
+    """Retorna uma submissão específica por ID (apenas listas tradicionais)."""
+    response, status = services.get_submissao_by_id(submissao_id)
+    return jsonify(response), status
+
+
 @admin_bp.route('/submissoes/<int:submissao_id>/aprovar', methods=['POST'])
 @admin_required()
 def aprovar_submissao_route(submissao_id):

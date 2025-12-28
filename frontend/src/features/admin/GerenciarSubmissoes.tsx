@@ -22,6 +22,7 @@ interface Submissao {
     data_submissao: string;
     status: 'PENDENTE' | 'APROVADO' | 'REJEITADO' | 'PARCIALMENTE_APROVADO';
     total_pedidos: number;
+    tipo_lista?: 'LISTA_TRADICIONAL' | 'LISTA_RAPIDA';
 }
 
 type StatusFilter = 'TODOS' | 'PENDENTE' | 'APROVADO' | 'REJEITADO';
@@ -80,6 +81,15 @@ const GerenciarSubmissoes: React.FC = () => {
             hour: '2-digit',
             minute: '2-digit'
         });
+    };
+
+    const handleVerDetalhes = (submissao: Submissao) => {
+        // Rotear baseado no tipo de lista
+        if (submissao.tipo_lista === 'LISTA_RAPIDA') {
+            navigate(`/admin/listas-rapidas/${submissao.id}`);
+        } else {
+            navigate(`/admin/submissoes/${submissao.id}`);
+        }
     };
 
     if (loading) {
@@ -182,7 +192,7 @@ const GerenciarSubmissoes: React.FC = () => {
                                     <Button
                                         size="sm"
                                         variant="primary"
-                                        onClick={() => navigate(`/admin/submissoes/${sub.id}`)}
+                                        onClick={() => handleVerDetalhes(sub)}
                                     >
                                         <FontAwesomeIcon icon={faEye} /> Ver Detalhes
                                     </Button>
@@ -229,7 +239,7 @@ const GerenciarSubmissoes: React.FC = () => {
                             <div className={styles.cardActions}>
                                 <Button
                                     variant="primary"
-                                    onClick={() => navigate(`/admin/submissoes/${sub.id}`)}
+                                    onClick={() => handleVerDetalhes(sub)}
                                 >
                                     <FontAwesomeIcon icon={faEye} /> Ver Detalhes
                                 </Button>

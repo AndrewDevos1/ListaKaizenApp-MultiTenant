@@ -40,15 +40,14 @@ const DetalhesListaRapida: React.FC = () => {
   const carregarDados = async () => {
     try {
       setLoading(true);
-      const [listaRes, itensRes] = await Promise.all([
-        api.get(`/admin/listas-rapidas/${id}`),
-        api.get(`/admin/listas-rapidas/${id}/itens`)
-      ]);
-      setLista(listaRes.data);
-      setItens(itensRes.data);
+      const response = await api.get(`/admin/listas-rapidas/${id}`);
+      const dados = response.data;
+
+      setLista(dados);
+      setItens(dados.itens || []);
     } catch (error: any) {
       console.error('[DetalhesListaRapida] Erro:', error);
-      alert('Erro ao carregar dados da lista rápida.');
+      alert(error.response?.data?.error || 'Erro ao carregar dados da lista rápida.');
     } finally {
       setLoading(false);
     }

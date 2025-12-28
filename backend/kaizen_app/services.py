@@ -653,22 +653,27 @@ def get_submissoes_by_user(user_id):
 def get_all_submissoes(status_filter=None):
     """
     Retorna todas as submissões (admin) com pedidos agrupados.
-    
+    Inclui tanto listas tradicionais quanto listas rápidas.
+
     Args:
         status_filter: PENDENTE, APROVADO, REJEITADO, PARCIALMENTE_APROVADO ou None
     """
+    from .models import ListaRapida, StatusListaRapida, ListaRapidaItem
+
+    resultado = []
+
+    # 1. BUSCAR SUBMISSÕES TRADICIONAIS
     query = Submissao.query.options(
         db.joinedload(Submissao.lista),
         db.joinedload(Submissao.usuario),
         db.joinedload(Submissao.pedidos).joinedload(Pedido.item)
     )
-    
+
     if status_filter:
         query = query.filter_by(status=status_filter)
-    
-    submissoes = query.order_by(Submissao.data_submissao.desc()).all()
-    
-    resultado = []
+
+    submissoes = query.all()
+
     for sub in submissoes:
         sub_dict = {
             "id": sub.id,
@@ -679,6 +684,7 @@ def get_all_submissoes(status_filter=None):
             "data_submissao": sub.data_submissao.isoformat(),
             "status": sub.status.value,
             "total_pedidos": sub.total_pedidos,
+            "tipo_lista": "LISTA_TRADICIONAL",
             "pedidos": [
                 {
                     "id": p.id,
@@ -692,8 +698,108 @@ def get_all_submissoes(status_filter=None):
             ]
         }
         resultado.append(sub_dict)
-    
+
+    # 2. BUSCAR LISTAS RÁPIDAS (exceto RASCUNHO)
+    query_rapidas = ListaRapida.query.filter(
+        ListaRapida.status != StatusListaRapida.RASCUNHO,
+        ListaRapida.deletado == False
+    ).options(
+        db.joinedload(ListaRapida.usuario)
+        # Nota: itens usa lazy='dynamic', não pode usar joinedload
+    )
+
+    # Aplicar filtro de status se fornecido
+    if status_filter:
+        # Mapear status de submissão para status de lista rápida
+        status_map = {
+            "PENDENTE": StatusListaRapida.PENDENTE,
+            "APROVADO": StatusListaRapida.APROVADA,
+            "REJEITADO": StatusListaRapida.REJEITADA
+        }
+        if status_filter in status_map:
+            query_rapidas = query_rapidas.filter_by(status=status_map[status_filter])
+
+    listas_rapidas = query_rapidas.all()
+
+    # Mapear listas rápidas para formato de submissão
+    for lista in listas_rapidas:
+        # Mapear status de lista rápida para formato de submissão
+        status_normalizado = {
+            StatusListaRapida.PENDENTE: "PENDENTE",
+            StatusListaRapida.APROVADA: "APROVADO",
+            StatusListaRapida.REJEITADA: "REJEITADO"
+        }.get(lista.status, "PENDENTE")
+
+        # Buscar itens da lista rápida
+        itens_lista = lista.itens.all()
+
+        lista_dict = {
+            "id": lista.id,  # ID numérico da lista rápida
+            "lista_id": lista.id,
+            "lista_nome": lista.nome,
+            "usuario_id": lista.usuario_id,
+            "usuario_nome": lista.usuario.nome if lista.usuario else "N/A",
+            "data_submissao": lista.submetido_em.isoformat() if lista.submetido_em else lista.criado_em.isoformat(),
+            "status": status_normalizado,
+            "total_pedidos": len(itens_lista),
+            "tipo_lista": "LISTA_RAPIDA",
+            "pedidos": [
+                {
+                    "id": item.id,
+                    "item_id": item.item_global_id,
+                    "item_nome": item.item_global.nome if item.item_global else "N/A",
+                    "quantidade_solicitada": 1.0,  # Listas rápidas não têm quantidade explícita
+                    "status": status_normalizado,
+                    "unidade": item.item_global.unidade if item.item_global else "",
+                    "prioridade": item.prioridade.value if item.prioridade else "precisa_comprar",
+                    "observacao": item.observacao
+                }
+                for item in itens_lista
+            ]
+        }
+        resultado.append(lista_dict)
+
+    # 3. ORDENAR POR DATA DE SUBMISSÃO (mais recentes primeiro)
+    resultado.sort(key=lambda x: x["data_submissao"], reverse=True)
+
     return resultado, 200
+
+
+def get_submissao_by_id(submissao_id):
+    """Retorna uma submissão tradicional específica por ID."""
+    submissao = Submissao.query.options(
+        db.joinedload(Submissao.lista),
+        db.joinedload(Submissao.usuario),
+        db.joinedload(Submissao.pedidos).joinedload(Pedido.item)
+    ).filter_by(id=submissao_id).first()
+
+    if not submissao:
+        return {"error": "Submissão não encontrada."}, 404
+
+    sub_dict = {
+        "id": submissao.id,
+        "lista_id": submissao.lista_id,
+        "lista_nome": submissao.lista.nome if submissao.lista else "N/A",
+        "usuario_id": submissao.usuario_id,
+        "usuario_nome": submissao.usuario.nome if submissao.usuario else "N/A",
+        "data_submissao": submissao.data_submissao.isoformat(),
+        "status": submissao.status.value,
+        "total_pedidos": submissao.total_pedidos,
+        "tipo_lista": "LISTA_TRADICIONAL",
+        "pedidos": [
+            {
+                "id": p.id,
+                "item_id": p.lista_mae_item_id,
+                "item_nome": p.item.nome if p.item else "N/A",
+                "quantidade_solicitada": float(p.quantidade_solicitada),
+                "status": p.status.value,
+                "unidade": p.item.unidade if p.item else ""
+            }
+            for p in submissao.pedidos
+        ]
+    }
+
+    return sub_dict, 200
 
 
 def aprovar_submissao(submissao_id):
