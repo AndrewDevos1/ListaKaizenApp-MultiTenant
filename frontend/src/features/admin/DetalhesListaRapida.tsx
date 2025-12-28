@@ -47,7 +47,7 @@ const DetalhesListaRapida: React.FC = () => {
   const [itensEditados, setItensEditados] = useState<ItemListaRapida[]>([]);
   const [itensGlobais, setItensGlobais] = useState<ItemGlobal[]>([]);
   const [buscaItem, setBuscaItem] = useState('');
-  const [mostrarBusca, setMostrarBusca] = useState(false);
+  const [mostrarModalBusca, setMostrarModalBusca] = useState(false);
 
   useEffect(() => {
     carregarDados();
@@ -200,7 +200,7 @@ const DetalhesListaRapida: React.FC = () => {
     setModoEdicao(false);
     setItensEditados([]);
     setBuscaItem('');
-    setMostrarBusca(false);
+    setMostrarModalBusca(false);
   };
 
   const handleSalvarEdicao = async () => {
@@ -274,9 +274,10 @@ const DetalhesListaRapida: React.FC = () => {
       });
 
       setItensEditados([...itensEditados, response.data.item]);
+      setMostrarModalBusca(false);
+      setBuscaItem('');
       setModalMessage('✅ Item adicionado!');
       setShowModal(true);
-      setBuscaItem('');
       setTimeout(() => setShowModal(false), 1500);
     } catch (error: any) {
       alert(error.response?.data?.error || 'Erro ao adicionar item.');
@@ -431,41 +432,11 @@ const DetalhesListaRapida: React.FC = () => {
             {/* Adicionar item */}
             <div className={styles.adicionarItemSection}>
               <button
-                onClick={() => setMostrarBusca(!mostrarBusca)}
+                onClick={() => setMostrarModalBusca(true)}
                 className={`${styles.btn} ${styles.btnSuccess}`}
               >
                 <i className="fas fa-plus"></i> Adicionar Item
               </button>
-
-              {mostrarBusca && (
-                <div className={styles.buscaItemContainer}>
-                  <input
-                    type="text"
-                    placeholder="🔍 Buscar item no catálogo..."
-                    value={buscaItem}
-                    onChange={(e) => setBuscaItem(e.target.value)}
-                    className={styles.inputBusca}
-                  />
-                  {buscaItem && (
-                    <div className={styles.listaItensGlobais}>
-                      {itensFiltrados.length === 0 ? (
-                        <div className={styles.semResultados}>Nenhum item encontrado</div>
-                      ) : (
-                        itensFiltrados.map(item => (
-                          <div
-                            key={item.id}
-                            className={styles.itemGlobalCard}
-                            onClick={() => handleAdicionarItem(item.id)}
-                          >
-                            <strong>{item.nome}</strong>
-                            <span>({item.unidade})</span>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
             </div>
 
             {/* Botões de ação do modo edição */}
@@ -592,6 +563,92 @@ const DetalhesListaRapida: React.FC = () => {
         <Modal.Body className="text-center py-4">
           <p className="mb-0">{modalMessage}</p>
         </Modal.Body>
+      </Modal>
+
+      {/* Modal de busca de itens */}
+      <Modal
+        show={mostrarModalBusca}
+        onHide={() => {
+          setMostrarModalBusca(false);
+          setBuscaItem('');
+        }}
+        size="lg"
+        centered
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>
+            <i className="fas fa-search"></i> Adicionar Item do Catálogo
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <div className="mb-3">
+            <input
+              type="text"
+              className="form-control form-control-lg"
+              placeholder="🔍 Digite para buscar itens..."
+              value={buscaItem}
+              onChange={(e) => setBuscaItem(e.target.value)}
+              autoFocus
+            />
+          </div>
+
+          {buscaItem ? (
+            <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
+              {itensFiltrados.length === 0 ? (
+                <div className="text-center text-muted py-4">
+                  <i className="fas fa-search fa-2x mb-2"></i>
+                  <p>Nenhum item encontrado para "{buscaItem}"</p>
+                </div>
+              ) : (
+                <div className="list-group">
+                  {itensFiltrados.map(item => {
+                    const jaAdicionado = itensEditados.some(i => i.item_global_id === item.id);
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        className={`list-group-item list-group-item-action d-flex justify-content-between align-items-center ${jaAdicionado ? 'disabled' : ''}`}
+                        onClick={() => !jaAdicionado && handleAdicionarItem(item.id)}
+                        disabled={jaAdicionado}
+                        style={{
+                          cursor: jaAdicionado ? 'not-allowed' : 'pointer',
+                          opacity: jaAdicionado ? 0.5 : 1
+                        }}
+                      >
+                        <div>
+                          <strong>{item.nome}</strong>
+                          <small className="text-muted ms-2">({item.unidade})</small>
+                        </div>
+                        {jaAdicionado && (
+                          <span className="badge bg-secondary">
+                            <i className="fas fa-check"></i> Já adicionado
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="text-center text-muted py-5">
+              <i className="fas fa-keyboard fa-3x mb-3"></i>
+              <p>Digite no campo acima para buscar itens no catálogo global</p>
+              <small>Total de itens disponíveis: {itensGlobais.length}</small>
+            </div>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button
+            variant="secondary"
+            onClick={() => {
+              setMostrarModalBusca(false);
+              setBuscaItem('');
+            }}
+          >
+            <i className="fas fa-times"></i> Fechar
+          </Button>
+        </Modal.Footer>
       </Modal>
     </div>
   );
