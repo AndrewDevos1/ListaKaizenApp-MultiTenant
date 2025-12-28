@@ -1,4 +1,4 @@
-from .models import Usuario, UserRoles, Item, Area, Fornecedor, Estoque, Cotacao, CotacaoStatus, CotacaoItem, Pedido, PedidoStatus, Lista, ListaMaeItem, ListaItemRef, Submissao, SubmissaoStatus, SugestaoItem, SugestaoStatus
+from .models import Usuario, UserRoles, Item, Area, Fornecedor, Estoque, Cotacao, CotacaoStatus, CotacaoItem, Pedido, PedidoStatus, Lista, ListaMaeItem, ListaItemRef, Submissao, SubmissaoStatus, SugestaoItem, SugestaoStatus, brasilia_now
 from .extensions import db
 from . import repositories
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -4422,8 +4422,11 @@ def submeter_lista_rapida(lista_id, user_id):
     if lista.itens.count() == 0:
         return {"error": "Adicione pelo menos um item antes de submeter."}, 400
     
+    from datetime import datetime, timezone, timedelta
+    brasilia_tz = timezone(timedelta(hours=-3))
+    
     lista.status = StatusListaRapida.PENDENTE
-    lista.submetido_em = brasilia_now()
+    lista.submetido_em = datetime.now(brasilia_tz)
     
     db.session.commit()
     
@@ -4451,6 +4454,24 @@ def deletar_lista_rapida(lista_id, user_id):
     db.session.commit()
     
     return {"message": "Lista deletada com sucesso."}, 200
+
+
+def listar_minhas_listas_rapidas(user_id):
+    """Lista todas as listas rápidas do usuário (não só rascunhos)."""
+    from .models import ListaRapida
+    
+    listas = ListaRapida.query.filter_by(
+        usuario_id=user_id,
+        deletado=False
+    ).order_by(ListaRapida.criado_em.desc()).all()
+    
+    resultado = []
+    for lista in listas:
+        lista_dict = lista.to_dict()
+        lista_dict['total_itens'] = lista.itens.count()
+        resultado.append(lista_dict)
+    
+    return {"listas": resultado, "total": len(resultado)}, 200
 
 
 # Admin

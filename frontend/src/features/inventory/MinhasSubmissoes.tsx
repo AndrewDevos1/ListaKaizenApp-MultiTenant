@@ -23,6 +23,7 @@ interface Submissao {
     status: string;
     total_pedidos: number;
     pedidos: Pedido[];
+    tipo?: 'normal' | 'rapida'; // Tipo de lista
 }
 
 const MinhasSubmissoes: React.FC = () => {
@@ -36,8 +37,33 @@ const MinhasSubmissoes: React.FC = () => {
         const fetchSubmissoes = async () => {
             setIsLoading(true);
             try {
-                const response = await api.get('/v1/submissoes/me');
-                setSubmissoes(response.data);
+                // Buscar submissões normais
+                const responseSubmissoes = await api.get('/v1/submissoes/me');
+                const submissoesNormais = responseSubmissoes.data.map((s: any) => ({
+                    ...s,
+                    tipo: 'normal' as const
+                }));
+
+                // Buscar listas rápidas submetidas
+                const responseListasRapidas = await api.get('/auth/listas-rapidas');
+                const listasRapidas = responseListasRapidas.data.listas
+                    .filter((l: any) => l.status !== 'RASCUNHO')
+                    .map((l: any) => ({
+                        id: l.id,
+                        lista_id: l.id,
+                        lista_nome: l.nome,
+                        data_submissao: l.submetido_em || l.criado_em,
+                        status: l.status,
+                        total_pedidos: l.total_itens || 0,
+                        pedidos: [],
+                        tipo: 'rapida' as const
+                    }));
+
+                // Combinar e ordenar por data
+                const todasSubmissoes = [...submissoesNormais, ...listasRapidas]
+                    .sort((a, b) => new Date(b.data_submissao).getTime() - new Date(a.data_submissao).getTime());
+                
+                setSubmissoes(todasSubmissoes);
             } catch (err) {
                 setError('Não foi possível carregar suas submissões.');
                 console.error('Erro ao buscar submissões:', err);
@@ -158,6 +184,11 @@ const MinhasSubmissoes: React.FC = () => {
                                     <td>{submissao.id}</td>
                                     <td>
                                         <strong>{submissao.lista_nome}</strong>
+                                        {submissao.tipo === 'rapida' && (
+                                            <Badge bg="info" className="ms-2" style={{fontSize: '0.7rem'}}>
+                                                RÁPIDA
+                                            </Badge>
+                                        )}
                                     </td>
                                     <td>{formatarData(submissao.data_submissao)}</td>
                                     <td className="text-center">
@@ -176,7 +207,13 @@ const MinhasSubmissoes: React.FC = () => {
                                         <Button
                                             size="sm"
                                             variant="primary"
-                                            onClick={() => navigate(`/collaborator/submissions/${submissao.id}`)}
+                                            onClick={() => {
+                                                if (submissao.tipo === 'rapida') {
+                                                    navigate(`/collaborator/lista-rapida/${submissao.id}`);
+                                                } else {
+                                                    navigate(`/collaborator/submissions/${submissao.id}`);
+                                                }
+                                            }}
                                         >
                                             <FontAwesomeIcon icon={faClipboardList} /> Ver Detalhes
                                         </Button>
@@ -191,7 +228,14 @@ const MinhasSubmissoes: React.FC = () => {
                         {filteredSubmissoes.map((submissao) => (
                             <div key={submissao.id} className={styles.submissaoCard}>
                                 <div className={styles.cardHeader}>
-                                    <h5 className={styles.cardTitle}>{submissao.lista_nome}</h5>
+                                    <h5 className={styles.cardTitle}>
+                                        {submissao.lista_nome}
+                                        {submissao.tipo === 'rapida' && (
+                                            <Badge bg="info" className="ms-2" style={{fontSize: '0.7rem'}}>
+                                                RÁPIDA
+                                            </Badge>
+                                        )}
+                                    </h5>
                                     <span className={styles.cardId}>#{submissao.id}</span>
                                 </div>
                                 <div className={styles.cardRow}>
@@ -219,7 +263,13 @@ const MinhasSubmissoes: React.FC = () => {
                                 <div className={styles.cardActions}>
                                     <Button
                                         variant="primary"
-                                        onClick={() => navigate(`/collaborator/submissions/${submissao.id}`)}
+                                        onClick={() => {
+                                            if (submissao.tipo === 'rapida') {
+                                                navigate(`/collaborator/lista-rapida/${submissao.id}`);
+                                            } else {
+                                                navigate(`/collaborator/submissions/${submissao.id}`);
+                                            }
+                                        }}
                                     >
                                         <FontAwesomeIcon icon={faClipboardList} /> Ver Detalhes
                                     </Button>
