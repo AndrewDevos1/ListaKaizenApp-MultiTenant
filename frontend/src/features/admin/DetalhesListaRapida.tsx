@@ -120,16 +120,16 @@ const DetalhesListaRapida: React.FC = () => {
   const formatarMensagem = () => {
     if (!lista) return '';
 
-    let mensagem = `📋 *Lista Rápida - ${lista.nome}*\n\n`;
+    let mensagem = `⚡ *Lista Rápida - ${lista.nome}*\n\n`;
     mensagem += `*Solicitante:* ${lista.usuario_nome}\n`;
     mensagem += `*Data:* ${lista.submetido_em ? new Date(lista.submetido_em).toLocaleString('pt-BR') : '-'}\n`;
     mensagem += `*Status:* ${lista.status.toUpperCase()}\n\n`;
     mensagem += `*Itens Solicitados (${itens.length}):*\n\n`;
 
-    itens.forEach((item, index) => {
-      const emoji = item.prioridade === 'urgente' ? '🔴' :
-                    item.prioridade === 'precisa_comprar' ? '🟡' : '🟢';
-      mensagem += `${index + 1}. ${emoji} ${item.item_nome} (${item.item_unidade})\n`;
+    itens.forEach((item) => {
+      const bolinha = item.prioridade === 'urgente' ? '🔴' :
+                      item.prioridade === 'precisa_comprar' ? '🟡' : '🟢';
+      mensagem += `${bolinha} ${item.item_nome} (${item.item_unidade})\n`;
       if (item.observacao) {
         mensagem += `   Obs: ${item.observacao}\n`;
       }
