@@ -33,10 +33,12 @@ const CriarListaRapida: React.FC = () => {
     const carregarItensGlobais = async () => {
         try {
             const response = await api.get('/auth/itens-globais');
-            console.log('[CriarListaRapida] Itens carregados:', response.data.length);
-            setItensGlobais(response.data);
+            console.log('[CriarListaRapida] Itens carregados:', response.data);
+            const itens = Array.isArray(response.data) ? response.data : [];
+            setItensGlobais(itens);
         } catch (error) {
             console.error('[CriarListaRapida] Erro ao carregar itens:', error);
+            setItensGlobais([]);
             alert('Erro ao carregar itens. Tente novamente.');
         }
     };

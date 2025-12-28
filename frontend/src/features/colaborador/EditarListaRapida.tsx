@@ -63,7 +63,8 @@ const EditarListaRapida: React.FC = () => {
             // Carrega itens globais separadamente
             const itensRes = await api.get('/auth/itens-globais');
             console.log('[EditarListaRapida] Itens globais:', itensRes.data);
-            setItensGlobais(itensRes.data.itens || []);
+            const itens = Array.isArray(itensRes.data) ? itensRes.data : [];
+            setItensGlobais(itens);
         } catch (error) {
             console.error('[EditarListaRapida] Erro:', error);
             alert('Erro ao carregar dados');
