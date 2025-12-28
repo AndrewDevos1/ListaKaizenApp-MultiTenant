@@ -90,10 +90,10 @@ const CriarListaRapida: React.FC = () => {
             // Criar lista
             const listaResponse = await api.post('/auth/listas-rapidas', {
                 nome: nome.trim(),
-                descricao: descricao.trim() || null
+                descricao: descricao.trim() || ''
             });
             
-            const novaListaId = listaResponse.data.id;
+            const novaListaId = listaResponse.data.lista.id;
 
             // Adicionar itens
             await api.post(`/auth/listas-rapidas/${novaListaId}/itens`, {
@@ -101,7 +101,7 @@ const CriarListaRapida: React.FC = () => {
             });
 
             // Submeter
-            await api.put(`/auth/listas-rapidas/${novaListaId}/submeter`);
+            await api.post(`/auth/listas-rapidas/${novaListaId}/submeter`);
             
             alert('✅ Lista criada e submetida com sucesso! O administrador irá analisá-la.');
             navigate('/collaborator/minhas-listas-rapidas');

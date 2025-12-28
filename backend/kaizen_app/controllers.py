@@ -1302,7 +1302,7 @@ def criar_lista_rapida_route():
 def listar_itens_globais_route():
     """Lista todos os itens do catálogo global para colaboradores."""
     try:
-        itens = ListaMaeItem.query.filter_by(deletado=False).order_by(ListaMaeItem.nome).all()
+        itens = ListaMaeItem.query.order_by(ListaMaeItem.nome).all()
         return jsonify([{
             'id': item.id,
             'nome': item.nome,
@@ -1342,10 +1342,16 @@ def deletar_lista_rapida_route(lista_id):
 @auth_bp.route('/listas-rapidas/<int:lista_id>/itens', methods=['POST'])
 @jwt_required()
 def adicionar_item_lista_rapida_route(lista_id):
-    """Adiciona item à lista rápida."""
+    """Adiciona item(ns) à lista rápida."""
     user_id = get_jwt_identity()
     data = request.get_json()
-    response, status = services.adicionar_item_lista_rapida(lista_id, user_id, data)
+    
+    # Verifica se está enviando múltiplos itens ou um único item
+    if 'itens' in data and isinstance(data['itens'], list):
+        response, status = services.adicionar_multiplos_itens_lista_rapida(lista_id, user_id, data)
+    else:
+        response, status = services.adicionar_item_lista_rapida(lista_id, user_id, data)
+    
     return jsonify(response), status
 
 

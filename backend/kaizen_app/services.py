@@ -1751,9 +1751,10 @@ def get_minhas_areas_status(user_id):
     areas_status = {}
 
     for pedido in pedidos:
-        if pedido.item and pedido.item.area:
-            area_id = pedido.item.area.id
-            area_nome = pedido.item.area.nome
+        if pedido.submissao and pedido.submissao.lista:
+            lista = pedido.submissao.lista
+            area_id = lista.id
+            area_nome = lista.nome
 
             if area_id not in areas_status:
                 areas_status[area_id] = {
@@ -4149,8 +4150,8 @@ def criar_lista_rapida(user_id, data):
     from .models import ListaRapida, StatusListaRapida
     from .extensions import db
     
-    nome = data.get('nome', '').strip()
-    descricao = data.get('descricao', '').strip()
+    nome = (data.get('nome') or '').strip()
+    descricao = (data.get('descricao') or '').strip()
     
     if not nome:
         return {"error": "Nome da lista é obrigatório."}, 400
@@ -4221,7 +4222,7 @@ def adicionar_item_lista_rapida(lista_id, user_id, data):
     
     item_global_id = data.get('item_global_id')
     prioridade_str = data.get('prioridade', 'precisa_comprar')
-    observacao = data.get('observacao', '').strip()
+    observacao = (data.get('observacao') or '').strip()
     
     if not item_global_id:
         return {"error": "ID do item é obrigatório."}, 400
@@ -4257,6 +4258,82 @@ def adicionar_item_lista_rapida(lista_id, user_id, data):
     db.session.commit()
     
     return {"message": "Item adicionado!", "item": item.to_dict()}, 201
+
+
+def adicionar_multiplos_itens_lista_rapida(lista_id, user_id, data):
+    """Adiciona múltiplos itens à lista rápida de uma vez."""
+    from .models import ListaRapida, ListaRapidaItem, ListaMaeItem, PrioridadeItem, StatusListaRapida
+    from .extensions import db
+    
+    lista = ListaRapida.query.filter_by(
+        id=lista_id,
+        usuario_id=user_id,
+        deletado=False
+    ).first()
+    
+    if not lista:
+        return {"error": "Lista não encontrada."}, 404
+    
+    if lista.status != StatusListaRapida.RASCUNHO:
+        return {"error": "Não é possível adicionar itens a uma lista já submetida."}, 400
+    
+    itens_data = data.get('itens', [])
+    if not itens_data:
+        return {"error": "Nenhum item informado."}, 400
+    
+    itens_adicionados = []
+    erros = []
+    
+    for item_data in itens_data:
+        try:
+            item_global_id = item_data.get('item_global_id')
+            prioridade_str = item_data.get('prioridade', 'precisa_comprar')
+            observacao = (item_data.get('observacao') or '').strip()
+            
+            if not item_global_id:
+                continue
+            
+            # Verifica se item existe
+            item_global = ListaMaeItem.query.get(item_global_id)
+            if not item_global:
+                erros.append(f"Item ID {item_global_id} não encontrado")
+                continue
+            
+            # Verifica se já foi adicionado
+            item_existente = ListaRapidaItem.query.filter_by(
+                lista_rapida_id=lista_id,
+                item_global_id=item_global_id
+            ).first()
+            
+            if item_existente:
+                continue
+            
+            # Converte string para enum
+            try:
+                prioridade = PrioridadeItem(prioridade_str)
+            except ValueError:
+                prioridade = PrioridadeItem.PRECISA_COMPRAR
+            
+            item = ListaRapidaItem(
+                lista_rapida_id=lista_id,
+                item_global_id=item_global_id,
+                prioridade=prioridade,
+                observacao=observacao if observacao else None
+            )
+            
+            db.session.add(item)
+            itens_adicionados.append(item)
+        except Exception as e:
+            erros.append(f"Erro ao adicionar item: {str(e)}")
+    
+    if itens_adicionados:
+        db.session.commit()
+    
+    return {
+        "message": f"{len(itens_adicionados)} item(ns) adicionado(s)!",
+        "itens_adicionados": len(itens_adicionados),
+        "erros": erros if erros else None
+    }, 201
 
 
 def remover_item_lista_rapida(lista_id, item_id, user_id):
