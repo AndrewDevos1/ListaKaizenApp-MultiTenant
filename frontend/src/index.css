@@ -34,6 +34,29 @@ code {
   --input-text: #212529;
   --input-placeholder: #adb5bd;
   --input-border: #e0e6ed;
+  --status-success-bg: #d4edda;
+  --status-success-subtle-bg: #d3f9d8;
+  --status-success-soft-bg: #e6f7ed;
+  --status-success-faint-bg: #f0fff4;
+  --status-success-text: #155724;
+  --status-warning-bg: #fff3cd;
+  --status-warning-subtle-bg: #fff8e5;
+  --status-warning-soft-bg: #fffbf0;
+  --status-warning-strong-bg: #fff9c4;
+  --status-warning-text: #856404;
+  --status-danger-bg: #f8d7da;
+  --status-danger-subtle-bg: #ffebee;
+  --status-danger-text: #721c24;
+  --status-info-bg: #d1ecf1;
+  --status-info-subtle-bg: #e7f3ff;
+  --status-info-soft-bg: #f0f8ff;
+  --status-info-text: #0c5460;
+  --status-success-accent: #28a745;
+  --status-success-accent-strong: #218838;
+  --status-warning-accent: #ffc107;
+  --status-warning-accent-strong: #ff9800;
+  --status-danger-accent: #dc3545;
+  --status-danger-accent-strong: #c82333;
 }
 
 [data-theme='dark'] {
@@ -56,6 +79,29 @@ code {
   --input-text: #f8f9fa;
   --input-placeholder: #6c757d;
   --input-border: #495057;
+  --status-success-bg: rgba(46, 184, 92, 0.18);
+  --status-success-subtle-bg: rgba(46, 184, 92, 0.14);
+  --status-success-soft-bg: rgba(46, 184, 92, 0.1);
+  --status-success-faint-bg: rgba(46, 184, 92, 0.06);
+  --status-success-text: #9be7b2;
+  --status-warning-bg: rgba(255, 193, 7, 0.18);
+  --status-warning-subtle-bg: rgba(255, 193, 7, 0.12);
+  --status-warning-soft-bg: rgba(255, 193, 7, 0.08);
+  --status-warning-strong-bg: rgba(255, 193, 7, 0.24);
+  --status-warning-text: #ffd38a;
+  --status-danger-bg: rgba(229, 83, 83, 0.18);
+  --status-danger-subtle-bg: rgba(229, 83, 83, 0.1);
+  --status-danger-text: #ffb3b3;
+  --status-info-bg: rgba(102, 179, 255, 0.18);
+  --status-info-subtle-bg: rgba(102, 179, 255, 0.12);
+  --status-info-soft-bg: rgba(102, 179, 255, 0.08);
+  --status-info-text: #b7dcff;
+  --status-success-accent: #2eb85c;
+  --status-success-accent-strong: #1e8449;
+  --status-warning-accent: #f9b115;
+  --status-warning-accent-strong: #e67e22;
+  --status-danger-accent: #e55353;
+  --status-danger-accent-strong: #c0392b;
 }
 
 [data-theme='dark'] a {

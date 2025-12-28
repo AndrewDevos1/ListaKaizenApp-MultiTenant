@@ -192,8 +192,8 @@
 
 /* Caixa de informações */
 .infoBox {
-  background: linear-gradient(135deg, #e8f4fd 0%, #d6eaf8 100%);
-  border-left: 4px solid #3498db;
+  background: linear-gradient(135deg, var(--status-info-subtle-bg, #e8f4fd) 0%, var(--status-info-subtle-bg, #d6eaf8) 100%);
+  border-left: 4px solid var(--link-color, #3498db);
   border-radius: 10px;
   padding: 1rem 1.25rem;
   margin-top: 1.5rem;
@@ -202,7 +202,7 @@
 }
 
 .infoIcon {
-  color: #3498db;
+  color: var(--link-color, #3498db);
   font-size: 1.25rem;
   flex-shrink: 0;
   margin-top: 0.15rem;
@@ -272,8 +272,8 @@
 .successAlert {
   border: none;
   border-radius: 10px;
-  background: linear-gradient(135deg, #2eb85c 0%, #1e8449 100%);
-  color: white;
+  background: linear-gradient(135deg, var(--status-success-bg, #d4edda) 0%, var(--status-success-subtle-bg, #d3f9d8) 100%);
+  color: var(--status-success-text, #155724);
   padding: 1rem 1.5rem;
   margin-bottom: 1.5rem;
   animation: slideDown 0.3s ease-out;

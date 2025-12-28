@@ -66,7 +66,7 @@
 }
 
 .cardHeader {
-  background: linear-gradient(135deg, #fff8e6 0%, #fff 100%);
+  background: linear-gradient(135deg, var(--status-warning-soft-bg, #fff8e6) 0%, #fff 100%);
   border-bottom: 1px solid var(--border-color, #f0f0f0);
   padding: 1.5rem;
 }
@@ -225,7 +225,7 @@
 
 /* Pedido Preview */
 .pedidoPreview {
-  background: linear-gradient(135deg, #e55353 0%, #d32f2f 100%);
+  background: linear-gradient(135deg, #e55353 0%, var(--status-danger-text, #d32f2f) 100%);
   color: white;
   padding: 0.75rem 1rem;
   border-radius: 8px;

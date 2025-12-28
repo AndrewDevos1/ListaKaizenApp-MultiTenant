@@ -69,7 +69,7 @@
 }
 
 .urgentes {
-  color: #dc3545 !important;
+  color: var(--status-danger-text, #dc3545) !important;
 }
 
 .descricao {
@@ -135,8 +135,8 @@
 }
 
 .badgeUrgente {
-  background: #dc3545;
-  color: white;
+  background: var(--status-danger-bg, #f8d7da);
+  color: var(--status-danger-text, #721c24);
   padding: 0.25rem 0.75rem;
   border-radius: 12px;
   font-size: 0.8rem;
@@ -145,8 +145,8 @@
 }
 
 .badgeComprar {
-  background: #ffc107;
-  color: #000;
+  background: var(--status-warning-bg, #fff3cd);
+  color: var(--status-warning-text, #856404);
   padding: 0.25rem 0.75rem;
   border-radius: 12px;
   font-size: 0.8rem;
@@ -155,8 +155,8 @@
 }
 
 .badgePrevencao {
-  background: #28a745;
-  color: white;
+  background: var(--status-success-bg, #d4edda);
+  color: var(--status-success-text, #155724);
   padding: 0.25rem 0.75rem;
   border-radius: 12px;
   font-size: 0.8rem;
@@ -219,22 +219,22 @@
 }
 
 .btnAprovar {
-  background: #28a745;
+  background: var(--status-success-accent, #28a745);
   color: white;
 }
 
 .btnAprovar:hover:not(:disabled) {
-  background: #218838;
+  background: var(--status-success-accent-strong, #218838);
   transform: translateY(-1px);
 }
 
 .btnRejeitar {
-  background: #dc3545;
+  background: var(--status-danger-accent, #dc3545);
   color: white;
 }
 
 .btnRejeitar:hover:not(:disabled) {
-  background: #c82333;
+  background: var(--status-danger-accent-strong, #c82333);
   transform: translateY(-1px);
 }
 
@@ -247,7 +247,7 @@
 }
 
 .error {
-  color: #dc3545;
+  color: var(--status-danger-text, #dc3545);
 }
 
 @media (max-width: 768px) {

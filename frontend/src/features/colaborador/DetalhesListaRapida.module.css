@@ -45,23 +45,23 @@
 }
 
 .statusBadge.rascunho {
-    background: #e3f2fd;
-    color: #1976d2;
+    background: var(--status-info-subtle-bg, #e3f2fd);
+    color: var(--link-color, #1976d2);
 }
 
 .statusBadge.pendente {
-    background: #fff3e0;
-    color: #f57c00;
+    background: var(--status-warning-subtle-bg, #fff3e0);
+    color: var(--status-warning-text, #f57c00);
 }
 
 .statusBadge.aprovada {
-    background: #e8f5e9;
-    color: #388e3c;
+    background: var(--status-success-soft-bg, #e8f5e9);
+    color: var(--status-success-text, #388e3c);
 }
 
 .statusBadge.rejeitada {
-    background: #ffebee;
-    color: #d32f2f;
+    background: var(--status-danger-subtle-bg, #ffebee);
+    color: var(--status-danger-text, #d32f2f);
 }
 
 .descricao {
@@ -100,16 +100,16 @@
 }
 
 .mensagemAdmin {
-    background: #e3f2fd;
+    background: var(--status-info-subtle-bg, #e3f2fd);
     padding: 1.5rem;
     border-radius: 8px;
     margin-bottom: 2rem;
-    border-left: 4px solid #1976d2;
+    border-left: 4px solid var(--link-color, #1976d2);
 }
 
 .mensagemAdmin h3 {
     margin: 0 0 1rem 0;
-    color: #1976d2;
+    color: var(--link-color, #1976d2);
     font-size: 1.1rem;
     display: flex;
     align-items: center;
@@ -185,18 +185,18 @@
 }
 
 .badge.prevencao {
-    background: #e8f5e9;
-    color: #2e7d32;
+    background: var(--status-success-soft-bg, #e8f5e9);
+    color: var(--status-success-text, #2e7d32);
 }
 
 .badge.precisaComprar {
-    background: #fff9c4;
-    color: #f57f17;
+    background: var(--status-warning-strong-bg, #fff9c4);
+    color: var(--status-warning-text, #f57f17);
 }
 
 .badge.urgente {
-    background: #ffebee;
-    color: #c62828;
+    background: var(--status-danger-subtle-bg, #ffebee);
+    color: var(--status-danger-text, #c62828);
 }
 
 .itemInfo {
@@ -245,8 +245,8 @@
 .erro {
     text-align: center;
     padding: 3rem;
-    color: #d32f2f;
-    background: #ffebee;
+    color: var(--status-danger-text, #d32f2f);
+    background: var(--status-danger-subtle-bg, #ffebee);
     border-radius: 8px;
     margin: 2rem;
 }

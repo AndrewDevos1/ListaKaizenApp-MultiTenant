@@ -128,12 +128,12 @@
 }
 
 .changedRow {
-    background-color: #fff3cd;
-    border-left: 4px solid #ffc107 !important;
+    background-color: var(--status-warning-bg, #fff3cd);
+    border-left: 4px solid var(--status-warning-text, #ffc107) !important;
 }
 
 .changedRow td {
-    background-color: #fff8e5;
+    background-color: var(--status-warning-subtle-bg, #fff8e5);
 }
 
 .actionButtons {

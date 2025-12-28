@@ -144,7 +144,7 @@
 /* Card de criar nova lista */
 .cardCriar {
   border: 3px dashed #2eb85c;
-  background: linear-gradient(135deg, #f0fff4 0%, #e6f7ed 100%);
+  background: linear-gradient(135deg, var(--status-success-faint-bg, #f0fff4) 0%, var(--status-success-soft-bg, #e6f7ed) 100%);
   cursor: pointer;
   text-align: center;
   padding: 2rem;
@@ -154,7 +154,7 @@
 
 .cardCriar:hover {
   border-color: #1e7e34;
-  background: linear-gradient(135deg, #e6f7ed 0%, #d4f1dd 100%);
+  background: linear-gradient(135deg, var(--status-success-subtle-bg, #d3f9d8) 0%, var(--status-success-soft-bg, #e6f7ed) 100%);
 }
 
 .cardIconWrapper {
@@ -187,7 +187,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 1.5rem 1.5rem 1rem;
-  background: linear-gradient(135deg, #fff8e6 0%, #fff 100%);
+  background: linear-gradient(135deg, var(--status-warning-soft-bg, #fff8e6) 0%, var(--bg-secondary, #ffffff) 100%);
   border-bottom: 1px solid var(--border-color, #f0f0f0);
 }
 
@@ -228,7 +228,7 @@
 
 .deleteButton:hover {
   background: rgba(229, 83, 83, 0.1);
-  color: #d32f2f;
+  color: var(--status-danger-text, #d32f2f);
 }
 
 /* Conteúdo do card */

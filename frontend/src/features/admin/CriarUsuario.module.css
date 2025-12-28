@@ -41,7 +41,7 @@
 .titleIcon {
   width: 60px;
   height: 60px;
-  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+  background: linear-gradient(135deg, var(--status-success-accent, #28a745) 0%, #20c997 100%);
   border-radius: 15px;
   display: flex;
   align-items: center;
@@ -95,7 +95,7 @@
 }
 
 .input:focus {
-  border-color: #28a745;
+  border-color: var(--status-success-accent, #28a745);
   box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
 }
 
@@ -124,7 +124,7 @@
 }
 
 .passwordInput input:focus {
-  border-color: #28a745;
+  border-color: var(--status-success-accent, #28a745);
   box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
 }
 
@@ -140,7 +140,7 @@
 }
 
 .togglePassword:hover {
-  color: #28a745;
+  color: var(--status-success-accent, #28a745);
 }
 
 /* Botões de ação */

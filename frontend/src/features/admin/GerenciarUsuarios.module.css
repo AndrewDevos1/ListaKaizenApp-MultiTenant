@@ -126,11 +126,11 @@
 }
 
 .cardYellow {
-  --card-color: #ffc107;
+  --card-color: var(--status-warning-accent, #ffc107);
 }
 
 .cardYellow .cardIcon {
-  background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
+  background: linear-gradient(135deg, var(--status-warning-accent, #ffc107) 0%, var(--status-warning-accent-strong, #ff9800) 100%);
 }
 
 .cardGreen {

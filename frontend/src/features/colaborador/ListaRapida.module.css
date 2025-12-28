@@ -331,7 +331,7 @@
 .btnAdicionar {
     width: 36px;
     height: 36px;
-    background: #28a745;
+    background: var(--status-success-accent, #28a745);
     color: white;
     border: none;
     border-radius: 50%;
@@ -341,7 +341,7 @@
 }
 
 .btnAdicionar:hover:not(:disabled) {
-    background: #218838;
+    background: var(--status-success-accent-strong, #218838);
     transform: scale(1.1);
 }
 
@@ -379,7 +379,7 @@
 .btnRemover {
     width: 28px;
     height: 28px;
-    background: #dc3545;
+    background: var(--status-danger-accent, #dc3545);
     color: white;
     border: none;
     border-radius: 50%;
@@ -388,7 +388,7 @@
 }
 
 .btnRemover:hover {
-    background: #c82333;
+    background: var(--status-danger-accent-strong, #c82333);
     transform: scale(1.1);
 }
 
@@ -422,36 +422,36 @@
 }
 
 .btnPrioridade.prevencao {
-    background: #d4edda;
-    color: #155724;
+    background: var(--status-success-bg, #d4edda);
+    color: var(--status-success-text, #155724);
 }
 
 .btnPrioridade.prevencao.ativo {
-    border-color: #28a745;
+    border-color: var(--status-success-accent, #28a745);
 }
 
 .btnPrioridade.precisaComprar {
-    background: #fff3cd;
-    color: #856404;
+    background: var(--status-warning-bg, #fff3cd);
+    color: var(--status-warning-text, #856404);
 }
 
 .btnPrioridade.precisaComprar.ativo {
-    border-color: #ffc107;
+    border-color: var(--status-warning-accent, #ffc107);
 }
 
 .btnPrioridade.urgente {
-    background: #f8d7da;
-    color: #721c24;
+    background: var(--status-danger-bg, #f8d7da);
+    color: var(--status-danger-text, #721c24);
 }
 
 .btnPrioridade.urgente.ativo {
-    border-color: #dc3545;
+    border-color: var(--status-danger-accent, #dc3545);
 }
 
 .btnSubmeter {
     width: 100%;
     padding: 16px;
-    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    background: linear-gradient(135deg, var(--status-success-accent, #28a745) 0%, #20c997 100%);
     color: white;
     border: none;
     border-radius: 8px;
@@ -560,7 +560,7 @@
 .btnAdd {
     width: 32px;
     height: 32px;
-    background: #28a745;
+    background: var(--status-success-accent, #28a745);
     color: white;
     border: none;
     border-radius: 50%;
@@ -569,7 +569,7 @@
 }
 
 .btnAdd:hover {
-    background: #218838;
+    background: var(--status-success-accent-strong, #218838);
     transform: scale(1.1);
 }
 
@@ -590,7 +590,7 @@
 .btnRemove {
     width: 32px;
     height: 32px;
-    background: #dc3545;
+    background: var(--status-danger-accent, #dc3545);
     color: white;
     border: none;
     border-radius: 50%;
@@ -599,7 +599,7 @@
 }
 
 .btnRemove:hover {
-    background: #c82333;
+    background: var(--status-danger-accent-strong, #c82333);
     transform: scale(1.1);
 }
 
@@ -650,7 +650,7 @@
 
 .btnSuccess {
     padding: 12px 24px;
-    background: #28a745;
+    background: var(--status-success-accent, #28a745);
     color: white;
     border: none;
     border-radius: 8px;
@@ -664,7 +664,7 @@
 }
 
 .btnSuccess:hover {
-    background: #218838;
+    background: var(--status-success-accent-strong, #218838);
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
 }
@@ -735,7 +735,7 @@
 .btnRemove {
     width: 32px;
     height: 32px;
-    background: #dc3545;
+    background: var(--status-danger-accent, #dc3545);
     color: white;
     border: none;
     border-radius: 6px;
@@ -747,7 +747,7 @@
 }
 
 .btnRemove:hover {
-    background: #c82333;
+    background: var(--status-danger-accent-strong, #c82333);
     transform: scale(1.05);
 }
 

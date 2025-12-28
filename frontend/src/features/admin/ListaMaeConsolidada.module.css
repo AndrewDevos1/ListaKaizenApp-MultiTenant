@@ -73,25 +73,25 @@
 
 .statDate {
     font-size: 0.9rem;
-    color: #3498db;
+    color: var(--link-color, #3498db);
     font-weight: 600;
     margin: 0.5rem 0 0 0;
 }
 
 .alertCard {
-    border-left: 4px solid #ffc107;
+    border-left: 4px solid var(--status-warning-text, #ffc107);
 }
 
 .alertCard .statValue {
-    color: #f39c12;
+    color: var(--status-warning-text, #f39c12);
 }
 
 .dangerCard {
-    border-left: 4px solid #e74c3c;
+    border-left: 4px solid var(--status-danger-text, #e74c3c);
 }
 
 .dangerCard .statValue {
-    color: #e74c3c;
+    color: var(--status-danger-text, #e74c3c);
 }
 
 .searchInput {
@@ -107,7 +107,7 @@
 
 .searchInput:focus {
     outline: none;
-    border-color: #3498db;
+    border-color: var(--link-color, #3498db);
     box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
 }
 
@@ -160,11 +160,11 @@
 }
 
 .warningRow {
-    background-color: #fff3cd;
+    background-color: var(--status-warning-bg, #fff3cd);
 }
 
 .warningRow td {
-    background-color: #fffbf0;
+    background-color: var(--status-warning-soft-bg, #fffbf0);
 }
 
 .submissaoCell {
@@ -201,7 +201,7 @@
 }
 
 .editableCell:hover {
-    background-color: var(--table-row-hover, #f0f8ff) !important;
+    background-color: var(--table-row-hover, var(--status-info-soft-bg, #f0f8ff)) !important;
 }
 
 /* Responsivo */

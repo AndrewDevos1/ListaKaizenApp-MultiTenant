@@ -57,7 +57,7 @@
 .titleIcon {
   width: 60px;
   height: 60px;
-  background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+  background: linear-gradient(135deg, #007bff 0%, var(--link-hover-color, #0056b3) 100%);
   border-radius: 15px;
   display: flex;
   align-items: center;
@@ -176,23 +176,23 @@
 }
 
 .infoBadge[data-role="ADMIN"] {
-  background-color: #e7f3ff;
-  color: #0056b3;
+  background-color: var(--status-info-subtle-bg, #e7f3ff);
+  color: var(--link-hover-color, #0056b3);
 }
 
 .infoBadge[data-role="COLLABORATOR"] {
-  background-color: #e8f5e9;
-  color: #2e7d32;
+  background-color: var(--status-success-soft-bg, #e8f5e9);
+  color: var(--status-success-text, #2e7d32);
 }
 
 .infoBadge[data-status="approved"] {
-  background-color: #d4edda;
-  color: #155724;
+  background-color: var(--status-success-bg, #d4edda);
+  color: var(--status-success-text, #155724);
 }
 
 .infoBadge[data-status="pending"] {
-  background-color: #fff3cd;
-  color: #856404;
+  background-color: var(--status-warning-bg, #fff3cd);
+  color: var(--status-warning-text, #856404);
 }
 
 /* Botões de ação */

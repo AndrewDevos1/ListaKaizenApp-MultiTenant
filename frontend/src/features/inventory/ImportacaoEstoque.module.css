@@ -59,22 +59,22 @@
 }
 
 .importacaoEstoque .infoBox {
-    background-color: #e7f5ff;
-    border-left: 4px solid #339af0;
+    background-color: var(--status-info-subtle-bg, #e7f5ff);
+    border-left: 4px solid var(--link-color, #339af0);
     padding: 1rem;
     margin-bottom: 1rem;
 }
 
 .importacaoEstoque .successBox {
-    background-color: #d3f9d8;
-    border-left: 4px solid #51cf66;
+    background-color: var(--status-success-subtle-bg, #d3f9d8);
+    border-left: 4px solid var(--status-success-text, #51cf66);
     padding: 1rem;
     margin-bottom: 1rem;
 }
 
 .importacaoEstoque .warningBox {
-    background-color: #fff3bf;
-    border-left: 4px solid #fab005;
+    background-color: var(--status-warning-subtle-bg, #fff3bf);
+    border-left: 4px solid var(--status-warning-text, #fab005);
     padding: 1rem;
     margin-bottom: 1rem;
 }

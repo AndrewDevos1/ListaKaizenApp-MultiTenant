@@ -243,7 +243,7 @@
 
 /* Info box para token admin */
 .infoBox {
-  background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
+  background: linear-gradient(135deg, var(--status-info-subtle-bg, #e3f2fd) 0%, #f3e5f5 100%);
   border-left: 4px solid #667eea;
   border-radius: 8px;
   padding: 1rem;

@@ -15,8 +15,8 @@
 }
 
 .respostaAdmin {
-    background-color: #fff3cd;
-    border-left: 3px solid #ffc107;
+    background-color: var(--status-warning-bg, #fff3cd);
+    border-left: 3px solid var(--status-warning-text, #ffc107);
 }
 
 .mensagem p,

@@ -112,7 +112,7 @@
 }
 
 .widgetYellow {
-  --widget-color: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
+  --widget-color: linear-gradient(135deg, var(--status-warning-accent, #ffc107) 0%, var(--status-warning-accent-strong, #ff9800) 100%);
 }
 
 .widgetRed {
@@ -353,23 +353,23 @@
 }
 
 .badgeSuccess {
-  background: #d4edda;
-  color: #155724;
+  background: var(--status-success-bg, #d4edda);
+  color: var(--status-success-text, #155724);
 }
 
 .badgeWarning {
-  background: #fff3cd;
-  color: #856404;
+  background: var(--status-warning-bg, #fff3cd);
+  color: var(--status-warning-text, #856404);
 }
 
 .badgeDanger {
-  background: #f8d7da;
-  color: #721c24;
+  background: var(--status-danger-bg, #f8d7da);
+  color: var(--status-danger-text, #721c24);
 }
 
 .badgeInfo {
-  background: #d1ecf1;
-  color: #0c5460;
+  background: var(--status-info-bg, #d1ecf1);
+  color: var(--status-info-text, #0c5460);
 }
 
 /* Loading state */
