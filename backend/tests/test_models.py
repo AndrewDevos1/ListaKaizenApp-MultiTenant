@@ -249,22 +249,21 @@ class TestListaModel:
 
 class TestListaMaeItemModel:
     """Testes para o modelo ListaMaeItem"""
-    
+
     def test_criar_item_lista_mae(self, app):
-        """Testa criação de item na lista mãe"""
+        """Testa criação de item no catálogo global"""
         with app.app_context():
             from kaizen_app import db
-            lista = Lista(nome="Lista Mãe")
-            db.session.add(lista)
-            db.session.flush()
-            
+
+            # ListaMaeItem agora é um catálogo global (não vinculado a lista específica)
             item = ListaMaeItem(
-                lista_mae_id=lista.id,
                 nome="Óleo de Soja",
-                unidade="litro",
-                quantidade_atual=5.0,
-                quantidade_minima=10.0
+                unidade="litro"
             )
+            db.session.add(item)
+            db.session.commit()
+
+            assert item.id is not None
             assert item.nome == "Óleo de Soja"
             assert item.unidade == "litro"
-            assert item.quantidade_atual == 5.0
+            assert item.criado_em is not None

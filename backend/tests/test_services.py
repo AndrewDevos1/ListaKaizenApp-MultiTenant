@@ -220,11 +220,11 @@ class TestAuthenticateUser:
             assert status == 401
 
 
-class TestGetTestUsers:
-    """Testes para o serviço de usuários de teste"""
-    
-    def test_get_test_users_retorna_apenas_aprovados(self, app):
-        """Testa que apenas usuários aprovados são retornados"""
+class TestGetAllUsers:
+    """Testes para o serviço de listagem de usuários"""
+
+    def test_get_all_users_retorna_todos_usuarios(self, app):
+        """Testa que todos os usuários são retornados"""
         with app.app_context():
             # Cria usuário aprovado
             services.register_user({
@@ -233,23 +233,24 @@ class TestGetTestUsers:
                 'senha': 'senha',
                 'token_admin': 'Kaiser@210891'
             })
-            
+
             # Cria usuário não aprovado
             services.register_user({
                 'nome': 'Pendente',
                 'email': 'pendente@example.com',
                 'senha': 'senha'
             })
-            
-            response, status = services.get_test_users()
-            
-            # Apenas o aprovado deve aparecer
-            emails = [u['email'] for u in response['usuarios']]
-            assert 'aprovado@example.com' in emails
-            assert 'pendente@example.com' not in emails
 
-    def test_get_test_users_retorna_apenas_ativos(self, app):
-        """Testa que usuários desativados não são retornados"""
+            usuarios, status = services.get_all_users()
+
+            # Ambos devem aparecer
+            emails = [u.email for u in usuarios]
+            assert 'aprovado@example.com' in emails
+            assert 'pendente@example.com' in emails
+            assert status == 200
+
+    def test_get_all_users_inclui_desativados(self, app):
+        """Testa que get_all_users retorna todos, incluindo desativados"""
         with app.app_context():
             # Cria usuário aprovado
             services.register_user({
@@ -258,16 +259,18 @@ class TestGetTestUsers:
                 'senha': 'senha',
                 'token_admin': 'Kaiser@210891'
             })
-            
+
             # Desativa usuário
             user = Usuario.query.filter_by(email='user@example.com').first()
             user.ativo = False
             db.session.commit()
-            
-            response, status = services.get_test_users()
-            emails = [u['email'] for u in response['usuarios']]
-            
-            assert 'user@example.com' not in emails
+
+            usuarios, status = services.get_all_users()
+            emails = [u.email for u in usuarios]
+
+            # Usuário desativado ainda deve aparecer
+            assert 'user@example.com' in emails
+            assert status == 200
 
 
 class TestEstoqueServices:
@@ -306,35 +309,46 @@ class TestEstoqueServices:
 
 class TestListaServices:
     """Testes para serviços relacionados às listas"""
-    
+
     def test_criar_lista_com_itens(self, app):
-        """Testa criação de lista com itens"""
+        """Testa criação de lista com itens via catálogo global"""
         with app.app_context():
+            from kaizen_app.models import ListaItemRef
+
+            # Criar lista
             lista = Lista(nome="Lista de Teste", descricao="Teste")
             db.session.add(lista)
             db.session.flush()
-            
-            item1 = ListaMaeItem(
-                lista_mae_id=lista.id,
-                nome="Feijão",
-                unidade="kg",
+
+            # Criar itens no catálogo global
+            item1 = ListaMaeItem(nome="Feijão", unidade="kg")
+            item2 = ListaMaeItem(nome="Arroz", unidade="kg")
+            db.session.add_all([item1, item2])
+            db.session.flush()
+
+            # Associar itens à lista via ListaItemRef
+            ref1 = ListaItemRef(
+                lista_id=lista.id,
+                item_id=item1.id,
                 quantidade_atual=5.0,
                 quantidade_minima=10.0
             )
-            item2 = ListaMaeItem(
-                lista_mae_id=lista.id,
-                nome="Arroz",
-                unidade="kg",
+            ref2 = ListaItemRef(
+                lista_id=lista.id,
+                item_id=item2.id,
                 quantidade_atual=8.0,
                 quantidade_minima=12.0
             )
-            db.session.add_all([item1, item2])
+            db.session.add_all([ref1, ref2])
             db.session.commit()
-            
+
             # Verifica
             lista_db = db.session.get(Lista, lista.id)
-            assert len(lista_db.itens) == 2
-            assert lista_db.itens[0].nome in ["Feijão", "Arroz"]
+            assert lista_db.item_refs.count() == 2
+            item_refs = lista_db.item_refs.all()
+            nomes = [ref.item.nome for ref in item_refs]
+            assert "Feijão" in nomes
+            assert "Arroz" in nomes
 
     def test_soft_delete_lista(self, app):
         """Testa exclusão lógica de lista"""
