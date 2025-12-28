@@ -1,6 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Modal, Button } from 'react-bootstrap';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import {
+  faArrowLeft,
+  faEdit,
+  faCopy,
+  faUndo,
+  faTrash,
+  faSave,
+  faTimes,
+  faPlus,
+  faCheckCircle,
+  faTimesCircle,
+  faSearch,
+  faKeyboard,
+  faCheck
+} from '@fortawesome/free-solid-svg-icons';
+import { faWhatsapp } from '@fortawesome/free-brands-svg-icons';
 import api from '../../services/api';
 import styles from './DetalhesListaRapida.module.css';
 
@@ -317,7 +334,7 @@ const DetalhesListaRapida: React.FC = () => {
     <div className={styles.container}>
       <div className={styles.header}>
         <button onClick={() => navigate('/admin/listas-rapidas')} className={styles.btnVoltar}>
-          <i className="fas fa-arrow-left"></i> Voltar
+          <FontAwesomeIcon icon={faArrowLeft} /> Voltar
         </button>
         <h1>Detalhes da Lista Rápida</h1>
       </div>
@@ -416,12 +433,13 @@ const DetalhesListaRapida: React.FC = () => {
                         />
                       </td>
                       <td className="text-center">
-                        <i
-                          className="fas fa-trash text-danger"
+                        <FontAwesomeIcon
+                          icon={faTrash}
+                          className="text-danger"
                           onClick={() => handleRemoverItem(item.id)}
                           style={{ cursor: 'pointer', fontSize: '1.2rem' }}
                           title="Remover item"
-                        ></i>
+                        />
                       </td>
                     </tr>
                   ))}
@@ -435,21 +453,21 @@ const DetalhesListaRapida: React.FC = () => {
                 onClick={() => setMostrarModalBusca(true)}
                 className={`${styles.btn} ${styles.btnSuccess}`}
               >
-                <i className="fas fa-plus"></i> Adicionar Item
+                <FontAwesomeIcon icon={faPlus} /> Adicionar Item
               </button>
               <button
                 onClick={handleSalvarEdicao}
                 disabled={submitting}
                 className={`${styles.btn} ${styles.btnSuccess}`}
               >
-                <i className="fas fa-save"></i> Salvar Alterações
+                <FontAwesomeIcon icon={faSave} /> Salvar Alterações
               </button>
               <button
                 onClick={handleCancelarEdicao}
                 disabled={submitting}
                 className={`${styles.btn} ${styles.btnSecondary}`}
               >
-                <i className="fas fa-times"></i> Cancelar
+                <FontAwesomeIcon icon={faTimes} /> Cancelar
               </button>
             </div>
           </>
@@ -495,7 +513,7 @@ const DetalhesListaRapida: React.FC = () => {
                 onClick={handleIniciarEdicao}
                 className={`${styles.btn} ${styles.btnPrimary}`}
               >
-                <i className="fas fa-edit"></i> Editar Lista
+                <FontAwesomeIcon icon={faEdit} /> Editar Lista
               </button>
             )}
             <button
@@ -503,14 +521,14 @@ const DetalhesListaRapida: React.FC = () => {
               className={`${styles.btn} ${styles.btnSecondary}`}
               title="Copiar lista de itens"
             >
-              <i className="fas fa-copy"></i> Copiar
+              <FontAwesomeIcon icon={faCopy} /> Copiar
             </button>
             <button
               onClick={handleWhatsApp}
               className={`${styles.btn} ${styles.btnWhatsapp}`}
               title="Enviar lista via WhatsApp"
             >
-              <i className="fab fa-whatsapp"></i> Enviar via WhatsApp
+              <FontAwesomeIcon icon={faWhatsapp} /> Enviar via WhatsApp
             </button>
             {(lista.status === 'aprovada' || lista.status === 'rejeitada') && (
               <button
@@ -518,7 +536,7 @@ const DetalhesListaRapida: React.FC = () => {
                 disabled={submitting}
                 className={`${styles.btn} ${styles.btnWarning}`}
               >
-                <i className="fas fa-undo"></i> Reverter para Pendente
+                <FontAwesomeIcon icon={faUndo} /> Reverter para Pendente
               </button>
             )}
           </div>
@@ -541,14 +559,14 @@ const DetalhesListaRapida: React.FC = () => {
               disabled={submitting}
               className={`${styles.btn} ${styles.btnAprovar}`}
             >
-              <i className="fas fa-check"></i> Aprovar Lista
+              <FontAwesomeIcon icon={faCheckCircle} /> Aprovar Lista
             </button>
             <button
               onClick={handleRejeitar}
               disabled={submitting}
               className={`${styles.btn} ${styles.btnRejeitar}`}
             >
-              <i className="fas fa-times"></i> Rejeitar Lista
+              <FontAwesomeIcon icon={faTimesCircle} /> Rejeitar Lista
             </button>
           </div>
         </div>
@@ -573,7 +591,7 @@ const DetalhesListaRapida: React.FC = () => {
       >
         <Modal.Header closeButton>
           <Modal.Title>
-            <i className="fas fa-search"></i> Adicionar Item do Catálogo
+            <FontAwesomeIcon icon={faSearch} /> Adicionar Item do Catálogo
           </Modal.Title>
         </Modal.Header>
         <Modal.Body>
@@ -592,7 +610,7 @@ const DetalhesListaRapida: React.FC = () => {
             <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
               {itensFiltrados.length === 0 ? (
                 <div className="text-center text-muted py-4">
-                  <i className="fas fa-search fa-2x mb-2"></i>
+                  <FontAwesomeIcon icon={faSearch} size="2x" className="mb-2" />
                   <p>Nenhum item encontrado para "{buscaItem}"</p>
                 </div>
               ) : (
@@ -617,7 +635,7 @@ const DetalhesListaRapida: React.FC = () => {
                         </div>
                         {jaAdicionado && (
                           <span className="badge bg-secondary">
-                            <i className="fas fa-check"></i> Já adicionado
+                            <FontAwesomeIcon icon={faCheck} /> Já adicionado
                           </span>
                         )}
                       </button>
@@ -628,7 +646,7 @@ const DetalhesListaRapida: React.FC = () => {
             </div>
           ) : (
             <div className="text-center text-muted py-5">
-              <i className="fas fa-keyboard fa-3x mb-3"></i>
+              <FontAwesomeIcon icon={faKeyboard} size="3x" className="mb-3" />
               <p>Digite no campo acima para buscar itens no catálogo global</p>
               <small>Total de itens disponíveis: {itensGlobais.length}</small>
             </div>
@@ -642,7 +660,7 @@ const DetalhesListaRapida: React.FC = () => {
               setBuscaItem('');
             }}
           >
-            <i className="fas fa-times"></i> Fechar
+            <FontAwesomeIcon icon={faTimes} /> Fechar
           </Button>
         </Modal.Footer>
       </Modal>
