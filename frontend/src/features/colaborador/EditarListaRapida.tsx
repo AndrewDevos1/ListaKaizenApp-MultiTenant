@@ -23,6 +23,7 @@ const EditarListaRapida: React.FC = () => {
     const navigate = useNavigate();
     const [nome, setNome] = useState('');
     const [descricao, setDescricao] = useState('');
+    const [status, setStatus] = useState('');
     const [busca, setBusca] = useState('');
     const [itensGlobais, setItensGlobais] = useState<ItemGlobal[]>([]);
     const [itensSelecionados, setItensSelecionados] = useState<ItemSelecionado[]>([]);
@@ -40,6 +41,14 @@ const EditarListaRapida: React.FC = () => {
             
             setNome(lista.nome);
             setDescricao(lista.descricao || '');
+            setStatus(lista.status);
+
+            // Verifica se pode editar
+            if (lista.status === 'APROVADO') {
+                alert('⚠️ Esta lista já foi aprovada e não pode mais ser editada');
+                navigate('/collaborator/minhas-listas-rapidas');
+                return;
+            }
 
             const itensExistentes = lista.itens.map((item: any) => ({
                 id: item.id,
@@ -286,12 +295,16 @@ const EditarListaRapida: React.FC = () => {
                     <button onClick={() => navigate('/collaborator/minhas-listas-rapidas')} className={styles.btnSecondary}>
                         Cancelar
                     </button>
-                    <button onClick={salvar} className={styles.btnPrimary}>
-                        <i className="fas fa-save"></i> Salvar Alterações
-                    </button>
-                    <button onClick={submeter} className={styles.btnSuccess}>
-                        <i className="fas fa-paper-plane"></i> Submeter para Aprovação
-                    </button>
+                    {status === 'RASCUNHO' && (
+                        <>
+                            <button onClick={salvar} className={styles.btnPrimary}>
+                                <i className="fas fa-save"></i> Salvar Alterações
+                            </button>
+                            <button onClick={submeter} className={styles.btnSuccess}>
+                                <i className="fas fa-paper-plane"></i> Submeter para Aprovação
+                            </button>
+                        </>
+                    )}
                 </div>
             </div>
         </div>
