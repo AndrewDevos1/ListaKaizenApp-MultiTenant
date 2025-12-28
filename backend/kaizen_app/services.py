@@ -4727,3 +4727,118 @@ def contar_listas_rapidas_pendentes():
     ).count()
 
     return {"count": count}, 200
+
+
+def adicionar_item_lista_rapida_admin(lista_id, data):
+    """Admin adiciona item à lista rápida PENDENTE."""
+    from .models import ListaRapida, ListaRapidaItem, ListaMaeItem, PrioridadeItem, StatusListaRapida
+    from .extensions import db
+
+    lista = ListaRapida.query.filter_by(id=lista_id, deletado=False).first()
+
+    if not lista:
+        return {"error": "Lista não encontrada."}, 404
+
+    if lista.status != StatusListaRapida.PENDENTE:
+        return {"error": "Apenas listas PENDENTES podem ser editadas."}, 400
+
+    item_global_id = data.get('item_global_id')
+    if not item_global_id:
+        return {"error": "item_global_id é obrigatório."}, 400
+
+    # Verificar se item global existe
+    item_global = ListaMaeItem.query.get(item_global_id)
+    if not item_global:
+        return {"error": "Item não encontrado no catálogo global."}, 404
+
+    # Verificar se já existe
+    item_existente = ListaRapidaItem.query.filter_by(
+        lista_rapida_id=lista_id,
+        item_global_id=item_global_id
+    ).first()
+
+    if item_existente:
+        return {"error": "Item já está na lista."}, 409
+
+    # Criar item
+    prioridade_str = data.get('prioridade', 'precisa_comprar')
+    try:
+        prioridade = PrioridadeItem(prioridade_str)
+    except ValueError:
+        prioridade = PrioridadeItem.PRECISA_COMPRAR
+
+    novo_item = ListaRapidaItem(
+        lista_rapida_id=lista_id,
+        item_global_id=item_global_id,
+        prioridade=prioridade,
+        observacao=data.get('observacao', '').strip() or None
+    )
+
+    db.session.add(novo_item)
+    db.session.commit()
+
+    return {"message": "Item adicionado.", "item": novo_item.to_dict()}, 201
+
+
+def remover_item_lista_rapida_admin(lista_id, item_id):
+    """Admin remove item da lista rápida PENDENTE."""
+    from .models import ListaRapida, ListaRapidaItem, StatusListaRapida
+    from .extensions import db
+
+    lista = ListaRapida.query.filter_by(id=lista_id, deletado=False).first()
+
+    if not lista:
+        return {"error": "Lista não encontrada."}, 404
+
+    if lista.status != StatusListaRapida.PENDENTE:
+        return {"error": "Apenas listas PENDENTES podem ser editadas."}, 400
+
+    item = ListaRapidaItem.query.filter_by(
+        id=item_id,
+        lista_rapida_id=lista_id
+    ).first()
+
+    if not item:
+        return {"error": "Item não encontrado na lista."}, 404
+
+    db.session.delete(item)
+    db.session.commit()
+
+    return {"message": "Item removido."}, 200
+
+
+def editar_item_lista_rapida_admin(lista_id, item_id, data):
+    """Admin edita observação e prioridade de item da lista rápida PENDENTE."""
+    from .models import ListaRapida, ListaRapidaItem, PrioridadeItem, StatusListaRapida
+    from .extensions import db
+
+    lista = ListaRapida.query.filter_by(id=lista_id, deletado=False).first()
+
+    if not lista:
+        return {"error": "Lista não encontrada."}, 404
+
+    if lista.status != StatusListaRapida.PENDENTE:
+        return {"error": "Apenas listas PENDENTES podem ser editadas."}, 400
+
+    item = ListaRapidaItem.query.filter_by(
+        id=item_id,
+        lista_rapida_id=lista_id
+    ).first()
+
+    if not item:
+        return {"error": "Item não encontrado na lista."}, 404
+
+    # Atualizar observação
+    if 'observacao' in data:
+        item.observacao = data['observacao'].strip() or None
+
+    # Atualizar prioridade
+    if 'prioridade' in data:
+        try:
+            item.prioridade = PrioridadeItem(data['prioridade'])
+        except ValueError:
+            return {"error": "Prioridade inválida."}, 400
+
+    db.session.commit()
+
+    return {"message": "Item atualizado.", "item": item.to_dict()}, 200

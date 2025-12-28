@@ -13,6 +13,12 @@ interface ItemListaRapida {
   observacao: string | null;
 }
 
+interface ItemGlobal {
+  id: number;
+  nome: string;
+  unidade: string;
+}
+
 interface ListaRapida {
   id: number;
   nome: string;
@@ -35,6 +41,13 @@ const DetalhesListaRapida: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [modalMessage, setModalMessage] = useState('');
+
+  // Estados para edição
+  const [modoEdicao, setModoEdicao] = useState(false);
+  const [itensEditados, setItensEditados] = useState<ItemListaRapida[]>([]);
+  const [itensGlobais, setItensGlobais] = useState<ItemGlobal[]>([]);
+  const [buscaItem, setBuscaItem] = useState('');
+  const [mostrarBusca, setMostrarBusca] = useState(false);
 
   useEffect(() => {
     carregarDados();
@@ -169,6 +182,111 @@ const DetalhesListaRapida: React.FC = () => {
     window.open(urlWhatsApp, '_blank');
   };
 
+  // Funções de edição
+  const handleIniciarEdicao = async () => {
+    setModoEdicao(true);
+    setItensEditados(JSON.parse(JSON.stringify(itens))); // Deep copy
+
+    // Carregar itens globais para busca
+    try {
+      const response = await api.get('/admin/itens-globais');
+      setItensGlobais(response.data.itens || response.data);
+    } catch (error) {
+      console.error('Erro ao carregar itens globais:', error);
+    }
+  };
+
+  const handleCancelarEdicao = () => {
+    setModoEdicao(false);
+    setItensEditados([]);
+    setBuscaItem('');
+    setMostrarBusca(false);
+  };
+
+  const handleSalvarEdicao = async () => {
+    if (!window.confirm('Salvar alterações?')) return;
+
+    try {
+      setSubmitting(true);
+
+      // Atualizar itens modificados
+      for (const item of itensEditados) {
+        const itemOriginal = itens.find(i => i.id === item.id);
+        if (!itemOriginal) continue;
+
+        // Verificar se houve mudança
+        if (item.observacao !== itemOriginal.observacao ||
+            item.prioridade !== itemOriginal.prioridade) {
+          await api.put(`/admin/listas-rapidas/${id}/itens/${item.id}`, {
+            observacao: item.observacao,
+            prioridade: item.prioridade
+          });
+        }
+      }
+
+      setModalMessage('✅ Alterações salvas com sucesso!');
+      setShowModal(true);
+      setModoEdicao(false);
+      setTimeout(() => {
+        setShowModal(false);
+        carregarDados();
+      }, 2000);
+    } catch (error: any) {
+      console.error('Erro ao salvar:', error);
+      alert(error.response?.data?.error || 'Erro ao salvar alterações.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleEditarObservacao = (itemId: number, observacao: string) => {
+    setItensEditados(itensEditados.map(item =>
+      item.id === itemId ? { ...item, observacao } : item
+    ));
+  };
+
+  const handleEditarPrioridade = (itemId: number, prioridade: 'prevencao' | 'precisa_comprar' | 'urgente') => {
+    setItensEditados(itensEditados.map(item =>
+      item.id === itemId ? { ...item, prioridade } : item
+    ));
+  };
+
+  const handleRemoverItem = async (itemId: number) => {
+    if (!window.confirm('Remover este item da lista?')) return;
+
+    try {
+      await api.delete(`/admin/listas-rapidas/${id}/itens/${itemId}`);
+      setItensEditados(itensEditados.filter(item => item.id !== itemId));
+      setModalMessage('Item removido!');
+      setShowModal(true);
+      setTimeout(() => setShowModal(false), 1500);
+    } catch (error: any) {
+      alert(error.response?.data?.error || 'Erro ao remover item.');
+    }
+  };
+
+  const handleAdicionarItem = async (itemGlobalId: number) => {
+    try {
+      const response = await api.post(`/admin/listas-rapidas/${id}/itens`, {
+        item_global_id: itemGlobalId,
+        prioridade: 'precisa_comprar',
+        observacao: ''
+      });
+
+      setItensEditados([...itensEditados, response.data.item]);
+      setModalMessage('✅ Item adicionado!');
+      setShowModal(true);
+      setBuscaItem('');
+      setTimeout(() => setShowModal(false), 1500);
+    } catch (error: any) {
+      alert(error.response?.data?.error || 'Erro ao adicionar item.');
+    }
+  };
+
+  const itensFiltrados = itensGlobais.filter(item =>
+    item.nome.toLowerCase().includes(buscaItem.toLowerCase())
+  );
+
   const getPrioridadeBadge = (prioridade: string) => {
     const badges = {
       urgente: { label: 'Urgente', className: styles.badgeUrgente },
@@ -235,67 +353,212 @@ const DetalhesListaRapida: React.FC = () => {
       </div>
 
       <div className={styles.itensSection}>
-        <h2>Itens Solicitados</h2>
-        <div className={styles.tableWrapper}>
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th>Item</th>
-                <th>Unidade</th>
-                <th>Prioridade</th>
-                <th>Observação</th>
-              </tr>
-            </thead>
-            <tbody>
-              {itens.map((item) => {
-                const badge = getPrioridadeBadge(item.prioridade);
-                return (
-                  <tr key={item.id}>
-                    <td><strong>{item.item_nome}</strong></td>
-                    <td>{item.item_unidade}</td>
-                    <td>
-                      <span className={badge.className}>{badge.label}</span>
-                    </td>
-                    <td>{item.observacao || '-'}</td>
+        <h2>
+          Itens Solicitados ({modoEdicao ? itensEditados.length : itens.length})
+          {modoEdicao && <span className={styles.badgeModoEdicao}> Modo Edição</span>}
+        </h2>
+
+        {modoEdicao ? (
+          // MODO EDIÇÃO
+          <>
+            <div className={styles.tableWrapper}>
+              <table className={styles.table}>
+                <thead>
+                  <tr>
+                    <th>Item</th>
+                    <th>Unidade</th>
+                    <th>Prioridade</th>
+                    <th>Observação</th>
+                    <th className="text-center">Ações</th>
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                </thead>
+                <tbody>
+                  {itensEditados.map((item) => (
+                    <tr key={item.id}>
+                      <td><strong>{item.item_nome}</strong></td>
+                      <td>{item.item_unidade}</td>
+                      <td>
+                        <div className={styles.prioridadesBtns}>
+                          <button
+                            type="button"
+                            className={`${styles.btnPrioridadeSmall} ${item.prioridade === 'urgente' ? styles.urgente : ''}`}
+                            onClick={() => handleEditarPrioridade(item.id, 'urgente')}
+                            title="Urgente"
+                          >
+                            🔴
+                          </button>
+                          <button
+                            type="button"
+                            className={`${styles.btnPrioridadeSmall} ${item.prioridade === 'precisa_comprar' ? styles.comprar : ''}`}
+                            onClick={() => handleEditarPrioridade(item.id, 'precisa_comprar')}
+                            title="Comprar"
+                          >
+                            🟡
+                          </button>
+                          <button
+                            type="button"
+                            className={`${styles.btnPrioridadeSmall} ${item.prioridade === 'prevencao' ? styles.prevencao : ''}`}
+                            onClick={() => handleEditarPrioridade(item.id, 'prevencao')}
+                            title="Prevenção"
+                          >
+                            🟢
+                          </button>
+                        </div>
+                      </td>
+                      <td>
+                        <input
+                          type="text"
+                          className={styles.inputObservacao}
+                          value={item.observacao || ''}
+                          onChange={(e) => handleEditarObservacao(item.id, e.target.value)}
+                          placeholder="Observação..."
+                        />
+                      </td>
+                      <td className="text-center">
+                        <button
+                          onClick={() => handleRemoverItem(item.id)}
+                          className={`${styles.btn} ${styles.btnDanger} ${styles.btnSmall}`}
+                        >
+                          <i className="fas fa-trash"></i>
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Adicionar item */}
+            <div className={styles.adicionarItemSection}>
+              <button
+                onClick={() => setMostrarBusca(!mostrarBusca)}
+                className={`${styles.btn} ${styles.btnSuccess}`}
+              >
+                <i className="fas fa-plus"></i> Adicionar Item
+              </button>
+
+              {mostrarBusca && (
+                <div className={styles.buscaItemContainer}>
+                  <input
+                    type="text"
+                    placeholder="🔍 Buscar item no catálogo..."
+                    value={buscaItem}
+                    onChange={(e) => setBuscaItem(e.target.value)}
+                    className={styles.inputBusca}
+                  />
+                  {buscaItem && (
+                    <div className={styles.listaItensGlobais}>
+                      {itensFiltrados.length === 0 ? (
+                        <div className={styles.semResultados}>Nenhum item encontrado</div>
+                      ) : (
+                        itensFiltrados.map(item => (
+                          <div
+                            key={item.id}
+                            className={styles.itemGlobalCard}
+                            onClick={() => handleAdicionarItem(item.id)}
+                          >
+                            <strong>{item.nome}</strong>
+                            <span>({item.unidade})</span>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Botões de ação do modo edição */}
+            <div className={styles.acoesBotoes}>
+              <button
+                onClick={handleSalvarEdicao}
+                disabled={submitting}
+                className={`${styles.btn} ${styles.btnSuccess}`}
+              >
+                <i className="fas fa-save"></i> Salvar Alterações
+              </button>
+              <button
+                onClick={handleCancelarEdicao}
+                disabled={submitting}
+                className={`${styles.btn} ${styles.btnSecondary}`}
+              >
+                <i className="fas fa-times"></i> Cancelar
+              </button>
+            </div>
+          </>
+        ) : (
+          // MODO VISUALIZAÇÃO
+          <div className={styles.tableWrapper}>
+            <table className={styles.table}>
+              <thead>
+                <tr>
+                  <th>Item</th>
+                  <th>Unidade</th>
+                  <th>Prioridade</th>
+                  <th>Observação</th>
+                </tr>
+              </thead>
+              <tbody>
+                {itens.map((item) => {
+                  const badge = getPrioridadeBadge(item.prioridade);
+                  return (
+                    <tr key={item.id}>
+                      <td><strong>{item.item_nome}</strong></td>
+                      <td>{item.item_unidade}</td>
+                      <td>
+                        <span className={badge.className}>{badge.label}</span>
+                      </td>
+                      <td>{item.observacao || '-'}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       {/* Botões de ação de compartilhamento */}
-      <div className={styles.acaoSection}>
-        <h2>Ações</h2>
-        <div className={styles.acoesBotoes}>
-          <button
-            onClick={handleCopiar}
-            className={`${styles.btn} ${styles.btnSecondary}`}
-            title="Copiar lista de itens"
-          >
-            <i className="fas fa-copy"></i> Copiar
-          </button>
-          <button
-            onClick={handleWhatsApp}
-            className={`${styles.btn} ${styles.btnWhatsapp}`}
-            title="Enviar lista via WhatsApp"
-          >
-            <i className="fab fa-whatsapp"></i> Enviar via WhatsApp
-          </button>
-          {(lista.status === 'aprovada' || lista.status === 'rejeitada') && (
+      {!modoEdicao && (
+        <div className={styles.acaoSection}>
+          <h2>Ações</h2>
+          <div className={styles.acoesBotoes}>
+            {lista.status === 'pendente' && (
+              <button
+                onClick={handleIniciarEdicao}
+                className={`${styles.btn} ${styles.btnPrimary}`}
+              >
+                <i className="fas fa-edit"></i> Editar Lista
+              </button>
+            )}
             <button
-              onClick={handleReverter}
-              disabled={submitting}
-              className={`${styles.btn} ${styles.btnWarning}`}
+              onClick={handleCopiar}
+              className={`${styles.btn} ${styles.btnSecondary}`}
+              title="Copiar lista de itens"
             >
-              <i className="fas fa-undo"></i> Reverter para Pendente
+              <i className="fas fa-copy"></i> Copiar
             </button>
-          )}
+            <button
+              onClick={handleWhatsApp}
+              className={`${styles.btn} ${styles.btnWhatsapp}`}
+              title="Enviar lista via WhatsApp"
+            >
+              <i className="fab fa-whatsapp"></i> Enviar via WhatsApp
+            </button>
+            {(lista.status === 'aprovada' || lista.status === 'rejeitada') && (
+              <button
+                onClick={handleReverter}
+                disabled={submitting}
+                className={`${styles.btn} ${styles.btnWarning}`}
+              >
+                <i className="fas fa-undo"></i> Reverter para Pendente
+              </button>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
-      {lista.status === 'pendente' && (
+      {lista.status === 'pendente' && !modoEdicao && (
         <div className={styles.acaoSection}>
           <h2>Resposta do Administrador</h2>
           <textarea
