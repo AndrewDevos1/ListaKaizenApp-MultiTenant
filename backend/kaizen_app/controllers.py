@@ -1411,6 +1411,20 @@ def obter_lista_rapida_admin_route(lista_id):
     return jsonify(response), status
 
 
+@admin_bp.route('/listas-rapidas/<int:lista_id>/itens', methods=['GET'])
+@admin_required()
+def listar_itens_lista_rapida_admin_route(lista_id):
+    """Admin lista os itens de uma lista rápida."""
+    from .models import ListaRapida
+    
+    lista = ListaRapida.query.filter_by(id=lista_id, deletado=False).first()
+    if not lista:
+        return jsonify({"error": "Lista não encontrada."}), 404
+    
+    itens = [item.to_dict() for item in lista.itens.all()]
+    return jsonify(itens), 200
+
+
 @admin_bp.route('/listas-rapidas/<int:lista_id>/aprovar', methods=['PUT'])
 @admin_required()
 def aprovar_lista_rapida_route(lista_id):
