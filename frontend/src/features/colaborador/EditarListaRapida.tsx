@@ -101,9 +101,24 @@ const EditarListaRapida: React.FC = () => {
         }
 
         try {
-            // Atualiza nome e descrição se necessário
+            // Atualiza prioridades de itens existentes
+            const itensExistentes = itensSelecionados.filter(item => item.id);
+            for (const item of itensExistentes) {
+                await api.put(`/auth/listas-rapidas/${id}/itens/${item.id}/prioridade`, {
+                    prioridade: item.prioridade,
+                    observacao: item.observacao || ''
+                });
+            }
+
             // Adiciona novos itens
-            const novosItens = itensSelecionados.filter(item => !item.id);
+            const novosItens = itensSelecionados.filter(item => !item.id).map(item => ({
+                item_global_id: item.item_global_id,
+                nome: item.item_nome,
+                unidade: item.item_unidade,
+                prioridade: item.prioridade,
+                observacao: item.observacao || ''
+            }));
+            
             if (novosItens.length > 0) {
                 await api.post(`/auth/listas-rapidas/${id}/itens`, { itens: novosItens });
             }
@@ -111,6 +126,7 @@ const EditarListaRapida: React.FC = () => {
             alert('✅ Lista atualizada com sucesso!');
             navigate('/collaborator/minhas-listas-rapidas');
         } catch (error: any) {
+            console.error('[EditarListaRapida] Erro ao salvar:', error);
             alert(error.response?.data?.error || 'Erro ao salvar lista');
         }
     };

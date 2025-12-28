@@ -472,6 +472,210 @@
     cursor: not-allowed;
 }
 
+.form {
+    background: white;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.input {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    font-size: 14px;
+}
+
+.input:focus {
+    outline: none;
+    border-color: #0d6efd;
+}
+
+.textarea {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: inherit;
+    resize: vertical;
+}
+
+.textarea:focus {
+    outline: none;
+    border-color: #0d6efd;
+}
+
+.divider {
+    height: 2px;
+    background: #e9ecef;
+    margin: 30px 0;
+}
+
+.itensDisponiveis {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    margin: 20px 0;
+}
+
+.itensDisponiveis h4 {
+    margin-bottom: 15px;
+    color: #333;
+}
+
+.itensGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 15px;
+}
+
+.itemDisponivel {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: white;
+    padding: 12px;
+    border-radius: 6px;
+    border: 1px solid #ddd;
+}
+
+.itemDisponivel div {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.itemDisponivel strong {
+    color: #333;
+    font-size: 14px;
+}
+
+.itemDisponivel small {
+    color: #666;
+    font-size: 12px;
+}
+
+.btnAdd {
+    width: 32px;
+    height: 32px;
+    background: #28a745;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.btnAdd:hover {
+    background: #218838;
+    transform: scale(1.1);
+}
+
+.itensSelecionados {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.selectPrioridade {
+    padding: 8px;
+    border: 2px solid #ddd;
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.btnRemove {
+    width: 32px;
+    height: 32px;
+    background: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.btnRemove:hover {
+    background: #c82333;
+    transform: scale(1.1);
+}
+
+.actions {
+    display: flex;
+    gap: 15px;
+    margin-top: 30px;
+    justify-content: flex-end;
+}
+
+.btnSecondary {
+    padding: 12px 24px;
+    background: #6c757d;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.btnSecondary:hover {
+    background: #5a6268;
+    transform: translateY(-2px);
+}
+
+.btnPrimary {
+    padding: 12px 24px;
+    background: #0d6efd;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btnPrimary:hover {
+    background: #0b5ed7;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(13, 110, 253, 0.3);
+}
+
+.btnSuccess {
+    padding: 12px 24px;
+    background: #28a745;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btnSuccess:hover {
+    background: #218838;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+}
+
+.loading {
+    text-align: center;
+    padding: 60px;
+    color: #666;
+    font-size: 18px;
+}
+
 @media (max-width: 768px) {
     .grid {
         grid-template-columns: 1fr;
@@ -480,5 +684,16 @@
     .header {
         flex-direction: column;
         gap: 15px;
+    }
+    
+    .actions {
+        flex-direction: column;
+    }
+    
+    .btnSecondary,
+    .btnPrimary,
+    .btnSuccess {
+        width: 100%;
+        justify-content: center;
     }
 }
