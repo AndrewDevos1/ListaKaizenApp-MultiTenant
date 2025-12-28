@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify, send_file
 from . import services
-from .models import Item, Area, Fornecedor, Estoque
+from .models import Item, Area, Fornecedor, Estoque, ItemGlobal
 from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 from functools import wraps
 
