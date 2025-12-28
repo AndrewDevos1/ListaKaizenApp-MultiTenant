@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify, send_file
 from . import services
-from .models import Item, Area, Fornecedor, Estoque, ItemGlobal
+from .models import Item, Area, Fornecedor, Estoque, ListaMaeItem
 from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 from functools import wraps
 
@@ -1302,7 +1302,7 @@ def criar_lista_rapida_route():
 def listar_itens_globais_route():
     """Lista todos os itens do catálogo global para colaboradores."""
     try:
-        itens = ItemGlobal.query.filter_by(deletado=False).order_by(ItemGlobal.nome).all()
+        itens = ListaMaeItem.query.filter_by(deletado=False).order_by(ListaMaeItem.nome).all()
         return jsonify([{
             'id': item.id,
             'nome': item.nome,
