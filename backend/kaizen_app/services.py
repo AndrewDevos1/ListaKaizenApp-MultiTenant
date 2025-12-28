@@ -723,7 +723,7 @@ def get_all_submissoes(status_filter=None):
             "usuario_nome": lr.usuario.nome if lr.usuario else "N/A",
             "data_submissao": lr.submetido_em.isoformat() if lr.submetido_em else lr.criado_em.isoformat(),
             "status": lr.status.value,
-            "total_pedidos": lr.itens.count(),
+            "total_pedidos": len(lr.itens),
             "pedidos": [
                 {
                     "id": item.id,

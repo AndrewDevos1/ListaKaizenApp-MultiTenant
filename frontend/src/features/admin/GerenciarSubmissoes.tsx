@@ -14,7 +14,8 @@ import api from '../../services/api';
 import styles from './GerenciarSubmissoes.module.css';
 
 interface Submissao {
-    id: number;
+    id: number | string; // pode ser "LR-X" para lista rápida
+    tipo?: 'lista_comum' | 'lista_rapida';
     lista_id: number;
     lista_nome: string;
     usuario_id: number;
@@ -48,7 +49,9 @@ const GerenciarSubmissoes: React.FC = () => {
                 : `/admin/submissoes?status=${statusFilter}`;
 
             const response = await api.get(url);
-            setSubmissoes(response.data);
+            // Garantir que response.data é um array
+            const data = Array.isArray(response.data) ? response.data : [];
+            setSubmissoes(data);
         } catch (err: any) {
             setError(err.response?.data?.error || 'Erro ao carregar submissões');
         } finally {
@@ -182,7 +185,13 @@ const GerenciarSubmissoes: React.FC = () => {
                                     <Button
                                         size="sm"
                                         variant="primary"
-                                        onClick={() => navigate(`/admin/submissoes/${sub.id}`)}
+                                        onClick={() => {
+                                            if (sub.tipo === 'lista_rapida') {
+                                                navigate(`/admin/listas-rapidas/${sub.lista_id}`);
+                                            } else {
+                                                navigate(`/admin/submissoes/${sub.id}`);
+                                            }
+                                        }}
                                     >
                                         <FontAwesomeIcon icon={faEye} /> Ver Detalhes
                                     </Button>
@@ -229,7 +238,13 @@ const GerenciarSubmissoes: React.FC = () => {
                             <div className={styles.cardActions}>
                                 <Button
                                     variant="primary"
-                                    onClick={() => navigate(`/admin/submissoes/${sub.id}`)}
+                                    onClick={() => {
+                                        if (sub.tipo === 'lista_rapida') {
+                                            navigate(`/admin/listas-rapidas/${sub.lista_id}`);
+                                        } else {
+                                            navigate(`/admin/submissoes/${sub.id}`);
+                                        }
+                                    }}
                                 >
                                     <FontAwesomeIcon icon={faEye} /> Ver Detalhes
                                 </Button>
