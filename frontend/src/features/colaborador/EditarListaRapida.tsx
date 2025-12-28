@@ -74,8 +74,16 @@ const EditarListaRapida: React.FC = () => {
         }
     };
 
+    // Função para normalizar string (remove acentos e converte para minúsculas)
+    const normalizarString = (str: string): string => {
+        return str
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '');
+    };
+
     const itensDisponiveis = itensGlobais.filter(item => 
-        item.nome.toLowerCase().includes(busca.toLowerCase()) &&
+        normalizarString(item.nome).includes(normalizarString(busca)) &&
         !itensSelecionados.some(sel => sel.item_global_id === item.id)
     );
 
