@@ -82,6 +82,8 @@ interface ListStatus {
     area: string;
     last_submission: string | null;
     pending_submissions: number;
+    tipo: 'lista_comum' | 'lista_rapida';
+    nome?: string;
 }
 
 interface Activity {
@@ -494,8 +496,15 @@ const AdminDashboard: React.FC = () => {
                                     </thead>
                                     <tbody>
                                         {listStatus.map((list) => (
-                                            <tr key={list.id}>
-                                                <td><strong>{list.area}</strong></td>
+                                            <tr key={`${list.tipo}-${list.id}`}>
+                                                <td>
+                                                    <strong>{list.area}</strong>
+                                                    {list.tipo === 'lista_rapida' && (
+                                                        <span className={styles.badgeInfo} style={{ marginLeft: '8px', fontSize: '0.75rem' }}>
+                                                            Lista Rápida
+                                                        </span>
+                                                    )}
+                                                </td>
                                                 <td>{formatListSubmissionDate(list.last_submission)}</td>
                                                 <td>
                                                     <span className={styles.badgeWarning}>
@@ -503,28 +512,42 @@ const AdminDashboard: React.FC = () => {
                                                     </span>
                                                 </td>
                                                 <td>
-                                                    <Button
-                                                        as={Link}
-                                                        to={`/admin/listas/${list.id}/lista-mae`}
-                                                        variant="outline-primary"
-                                                        size="sm"
-                                                        className="me-2"
-                                                    >
-                                                        Ver Consolidação
-                                                    </Button>
-                                                    <Button
-                                                        variant="success"
-                                                        size="sm"
-                                                        onClick={() => handleAprovarTodosPedidos(
-                                                            list.id,
-                                                            list.area,
-                                                            list.pending_submissions
-                                                        )}
-                                                        disabled={loadingListStatus}
-                                                    >
-                                                        <FontAwesomeIcon icon={faCheck} className="me-1" />
-                                                        Aprovar Todos
-                                                    </Button>
+                                                    {list.tipo === 'lista_comum' ? (
+                                                        <>
+                                                            <Button
+                                                                as={Link}
+                                                                to={`/admin/listas/${list.id}/lista-mae`}
+                                                                variant="outline-primary"
+                                                                size="sm"
+                                                                className="me-2"
+                                                            >
+                                                                Ver Consolidação
+                                                            </Button>
+                                                            <Button
+                                                                variant="success"
+                                                                size="sm"
+                                                                onClick={() => handleAprovarTodosPedidos(
+                                                                    list.id,
+                                                                    list.area,
+                                                                    list.pending_submissions
+                                                                )}
+                                                                disabled={loadingListStatus}
+                                                            >
+                                                                <FontAwesomeIcon icon={faCheck} className="me-1" />
+                                                                Aprovar Todos
+                                                            </Button>
+                                                        </>
+                                                    ) : (
+                                                        <Button
+                                                            as={Link}
+                                                            to={`/admin/listas-rapidas/${list.id}`}
+                                                            variant="outline-primary"
+                                                            size="sm"
+                                                        >
+                                                            <FontAwesomeIcon icon={faEdit} className="me-1" />
+                                                            Analisar
+                                                        </Button>
+                                                    )}
                                                 </td>
                                             </tr>
                                         ))}

@@ -38,6 +38,7 @@ import MinhasSugestoes from './features/colaborador/MinhasSugestoes';
 import CriarListaRapida from './features/colaborador/CriarListaRapida';
 import MinhasListasRapidas from './features/colaborador/MinhasListasRapidas';
 import DetalhesListaRapida from './features/colaborador/DetalhesListaRapida';
+import DetalhesListaRapidaAdmin from './features/admin/DetalhesListaRapida';
 import EditarListaRapida from './features/colaborador/EditarListaRapida';
 import AdminRoute from './components/AdminRoute';
 import CollaboratorRoute from './components/CollaboratorRoute';
@@ -65,6 +66,7 @@ function App() {
               <Route path="submissoes/:id" element={<DetalhesSubmissao />} />
               <Route path="sugestoes" element={<GerenciarSugestoes />} />
               <Route path="listas-rapidas" element={<GerenciarListasRapidas />} />
+              <Route path="listas-rapidas/:id" element={<DetalhesListaRapidaAdmin />} />
               <Route path="configuracoes" element={<Configuracoes />} />
               <Route path="mudar-senha" element={<MudarSenha />} />
               <Route path="editar-perfil" element={<EditarPerfil />} />

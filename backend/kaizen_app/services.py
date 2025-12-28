@@ -1,4 +1,4 @@
-from .models import Usuario, UserRoles, Item, Area, Fornecedor, Estoque, Cotacao, CotacaoStatus, CotacaoItem, Pedido, PedidoStatus, Lista, ListaMaeItem, ListaItemRef, Submissao, SubmissaoStatus, SugestaoItem, SugestaoStatus, brasilia_now
+from .models import Usuario, UserRoles, Item, Area, Fornecedor, Estoque, Cotacao, CotacaoStatus, CotacaoItem, Pedido, PedidoStatus, Lista, ListaMaeItem, ListaItemRef, Submissao, SubmissaoStatus, SugestaoItem, SugestaoStatus, ListaRapida, ListaRapidaItem, StatusListaRapida, PrioridadeItem, brasilia_now
 from .extensions import db
 from . import repositories
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -1601,9 +1601,13 @@ def get_listas_status_submissoes():
     - ID e nome
     - Data da última submissão
     - Quantidade de pedidos pendentes
+    
+    Também inclui listas rápidas pendentes.
     """
-    listas = Lista.query.filter_by(deletado=False).all()
     resultado = []
+    
+    # 1. Listas comuns com pedidos pendentes
+    listas = Lista.query.filter_by(deletado=False).all()
 
     for lista in listas:
         estoques = Estoque.query.filter_by(lista_id=lista.id).all()
@@ -1627,9 +1631,27 @@ def get_listas_status_submissoes():
                 "id": lista.id,
                 "nome": lista.nome,
                 "area": lista.nome,
+                "tipo": "lista_comum",
                 "last_submission": ultima_submissao.isoformat() if ultima_submissao else None,
                 "pending_submissions": pedidos_pendentes
             })
+    
+    # 2. Listas rápidas pendentes
+    listas_rapidas_pendentes = ListaRapida.query.filter_by(
+        deletado=False,
+        status=StatusListaRapida.PENDENTE
+    ).all()
+    
+    for lista_rapida in listas_rapidas_pendentes:
+        total_itens = lista_rapida.itens.count()
+        resultado.append({
+            "id": lista_rapida.id,
+            "nome": lista_rapida.nome,
+            "area": f"Lista Rápida - {lista_rapida.usuario.nome if lista_rapida.usuario else 'Usuário'}",
+            "tipo": "lista_rapida",
+            "last_submission": lista_rapida.submetido_em.isoformat() if lista_rapida.submetido_em else None,
+            "pending_submissions": total_itens
+        })
 
     return resultado, 200
 
