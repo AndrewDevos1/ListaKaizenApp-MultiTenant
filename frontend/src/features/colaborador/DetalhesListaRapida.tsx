@@ -129,25 +129,27 @@ const DetalhesListaRapida: React.FC = () => {
                 {lista.itens.length === 0 ? (
                     <div className={styles.vazio}>Nenhum item nesta lista</div>
                 ) : (
-                    <div className={styles.itensGrid}>
-                        {lista.itens.map(item => (
-                            <div key={item.id} className={styles.itemCard}>
-                                <div className={styles.itemHeader}>
-                                    <h4>{item.item_nome}</h4>
-                                    {getPrioridadeBadge(item.prioridade)}
-                                </div>
-                                <div className={styles.itemInfo}>
-                                    <span className={styles.unidade}>
-                                        <i className="fas fa-box"></i> {item.item_unidade}
-                                    </span>
-                                </div>
-                                {item.observacao && (
-                                    <div className={styles.observacao}>
-                                        <strong>Obs:</strong> {item.observacao}
-                                    </div>
-                                )}
-                            </div>
-                        ))}
+                    <div className={styles.tableContainer}>
+                        <table className={styles.table}>
+                            <thead>
+                                <tr>
+                                    <th>Item</th>
+                                    <th>Unidade</th>
+                                    <th>Prioridade</th>
+                                    <th>Observação</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {lista.itens.map(item => (
+                                    <tr key={item.id}>
+                                        <td><strong>{item.item_nome}</strong></td>
+                                        <td>{item.item_unidade}</td>
+                                        <td>{getPrioridadeBadge(item.prioridade)}</td>
+                                        <td>{item.observacao || '-'}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
                     </div>
                 )}
             </div>

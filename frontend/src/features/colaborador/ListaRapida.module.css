@@ -676,6 +676,91 @@
     font-size: 18px;
 }
 
+.tableContainer {
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    overflow: hidden;
+    margin-top: 20px;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.table thead {
+    background: #f8f9fa;
+}
+
+.table th {
+    padding: 1rem;
+    text-align: left;
+    font-weight: 600;
+    color: #495057;
+    border-bottom: 2px solid #dee2e6;
+}
+
+.table tbody tr {
+    border-bottom: 1px solid #dee2e6;
+    transition: background 0.2s;
+}
+
+.table tbody tr:hover {
+    background: #f8f9fa;
+}
+
+.table tbody tr:last-child {
+    border-bottom: none;
+}
+
+.table td {
+    padding: 1rem;
+    color: #212529;
+}
+
+.inputObs {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.inputObs:focus {
+    outline: none;
+    border-color: #0d6efd;
+}
+
+.btnRemove {
+    width: 32px;
+    height: 32px;
+    background: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btnRemove:hover {
+    background: #c82333;
+    transform: scale(1.05);
+}
+
+@media (max-width: 768px) {
+    .tableContainer {
+        overflow-x: auto;
+    }
+
+    .table {
+        min-width: 600px;
+    }
+}
+
 @media (max-width: 768px) {
     .grid {
         grid-template-columns: 1fr;

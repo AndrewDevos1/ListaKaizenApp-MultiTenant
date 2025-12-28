@@ -134,38 +134,46 @@
     gap: 0.5rem;
 }
 
-.itensGrid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 1rem;
-}
-
-.itemCard {
+.tableContainer {
     background: white;
     border: 1px solid #dee2e6;
     border-radius: 8px;
+    overflow: hidden;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.table thead {
+    background: #f8f9fa;
+}
+
+.table th {
     padding: 1rem;
-    transition: all 0.2s;
+    text-align: left;
+    font-weight: 600;
+    color: #495057;
+    border-bottom: 2px solid #dee2e6;
 }
 
-.itemCard:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    transform: translateY(-2px);
+.table tbody tr {
+    border-bottom: 1px solid #dee2e6;
+    transition: background 0.2s;
 }
 
-.itemHeader {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 0.5rem;
-    margin-bottom: 0.8rem;
+.table tbody tr:hover {
+    background: #f8f9fa;
 }
 
-.itemHeader h4 {
-    margin: 0;
-    font-size: 1.1rem;
-    flex: 1;
-    word-break: break-word;
+.table tbody tr:last-child {
+    border-bottom: none;
+}
+
+.table td {
+    padding: 1rem;
+    color: #212529;
 }
 
 .badge {

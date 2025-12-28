@@ -34,15 +34,12 @@ const EditarListaRapida: React.FC = () => {
 
     const carregarDados = async () => {
         try {
-            const [listaRes, itensRes] = await Promise.all([
-                api.get(`/auth/listas-rapidas/${id}`),
-                api.get('/auth/itens-globais')
-            ]);
-
+            console.log('[EditarListaRapida] Carregando dados...');
+            const listaRes = await api.get(`/auth/listas-rapidas/${id}`);
             const lista = listaRes.data;
+            
             setNome(lista.nome);
             setDescricao(lista.descricao || '');
-            setItensGlobais(itensRes.data.itens || []);
 
             const itensExistentes = lista.itens.map((item: any) => ({
                 id: item.id,
@@ -53,6 +50,11 @@ const EditarListaRapida: React.FC = () => {
                 observacao: item.observacao || ''
             }));
             setItensSelecionados(itensExistentes);
+
+            // Carrega itens globais separadamente
+            const itensRes = await api.get('/auth/itens-globais');
+            console.log('[EditarListaRapida] Itens globais:', itensRes.data);
+            setItensGlobais(itensRes.data.itens || []);
         } catch (error) {
             console.error('[EditarListaRapida] Erro:', error);
             alert('Erro ao carregar dados');
@@ -220,34 +222,63 @@ const EditarListaRapida: React.FC = () => {
                 {itensSelecionados.length === 0 ? (
                     <p className={styles.vazio}>Nenhum item selecionado ainda</p>
                 ) : (
-                    <div className={styles.itensSelecionados}>
-                        {itensSelecionados.map((item, index) => (
-                            <div key={index} className={styles.itemSelecionado}>
-                                <div className={styles.itemInfo}>
-                                    <strong>{item.item_nome}</strong>
-                                    <small>{item.item_unidade}</small>
-                                </div>
-                                <select
-                                    value={item.prioridade}
-                                    onChange={(e) => {
-                                        const novos = [...itensSelecionados];
-                                        novos[index].prioridade = e.target.value as any;
-                                        setItensSelecionados(novos);
-                                    }}
-                                    className={styles.selectPrioridade}
-                                >
-                                    <option value="prevencao">🟢 Prevenção</option>
-                                    <option value="precisa_comprar">🟡 Precisa Comprar</option>
-                                    <option value="urgente">🔴 Urgente</option>
-                                </select>
-                                <button
-                                    onClick={() => removerItem(index)}
-                                    className={styles.btnRemove}
-                                >
-                                    <i className="fas fa-trash"></i>
-                                </button>
-                            </div>
-                        ))}
+                    <div className={styles.tableContainer}>
+                        <table className={styles.table}>
+                            <thead>
+                                <tr>
+                                    <th>Item</th>
+                                    <th>Unidade</th>
+                                    <th>Prioridade</th>
+                                    <th>Observação</th>
+                                    <th style={{width: '80px'}}>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {itensSelecionados.map((item, index) => (
+                                    <tr key={index}>
+                                        <td><strong>{item.item_nome}</strong></td>
+                                        <td>{item.item_unidade}</td>
+                                        <td>
+                                            <select
+                                                value={item.prioridade}
+                                                onChange={(e) => {
+                                                    const novos = [...itensSelecionados];
+                                                    novos[index].prioridade = e.target.value as any;
+                                                    setItensSelecionados(novos);
+                                                }}
+                                                className={styles.selectPrioridade}
+                                            >
+                                                <option value="prevencao">🟢 Prevenção</option>
+                                                <option value="precisa_comprar">🟡 Precisa Comprar</option>
+                                                <option value="urgente">🔴 Urgente</option>
+                                            </select>
+                                        </td>
+                                        <td>
+                                            <input
+                                                type="text"
+                                                value={item.observacao}
+                                                onChange={(e) => {
+                                                    const novos = [...itensSelecionados];
+                                                    novos[index].observacao = e.target.value;
+                                                    setItensSelecionados(novos);
+                                                }}
+                                                className={styles.inputObs}
+                                                placeholder="Observação..."
+                                            />
+                                        </td>
+                                        <td style={{textAlign: 'center'}}>
+                                            <button
+                                                onClick={() => removerItem(index)}
+                                                className={styles.btnRemove}
+                                                title="Remover item"
+                                            >
+                                                <i className="fas fa-trash-alt"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
                     </div>
                 )}
 
