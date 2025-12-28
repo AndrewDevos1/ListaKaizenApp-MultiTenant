@@ -65,7 +65,7 @@
 }
 
 .descricao {
-    background: #f8f9fa;
+    background: var(--surface-muted, #f8f9fa);
     padding: 1rem;
     border-radius: 8px;
     margin-bottom: 1.5rem;
@@ -73,7 +73,7 @@
 
 .descricao p {
     margin: 0;
-    color: #495057;
+    color: var(--text-secondary, #495057);
 }
 
 .info {
@@ -90,12 +90,12 @@
 }
 
 .infoItem strong {
-    color: #495057;
+    color: var(--text-secondary, #495057);
     font-size: 0.9rem;
 }
 
 .infoItem span {
-    color: #212529;
+    color: var(--text-primary, #212529);
     font-size: 1rem;
 }
 
@@ -118,7 +118,7 @@
 
 .mensagemAdmin p {
     margin: 0;
-    color: #495057;
+    color: var(--text-secondary, #495057);
     line-height: 1.6;
 }
 
@@ -135,8 +135,8 @@
 }
 
 .tableContainer {
-    background: white;
-    border: 1px solid #dee2e6;
+    background: var(--bg-secondary, #ffffff);
+    border: 1px solid var(--border-color, #dee2e6);
     border-radius: 8px;
     overflow: hidden;
 }
@@ -147,24 +147,24 @@
 }
 
 .table thead {
-    background: #f8f9fa;
+    background: var(--surface-muted, #f8f9fa);
 }
 
 .table th {
     padding: 1rem;
     text-align: left;
     font-weight: 600;
-    color: #495057;
-    border-bottom: 2px solid #dee2e6;
+    color: var(--text-secondary, #495057);
+    border-bottom: 2px solid var(--border-color, #dee2e6);
 }
 
 .table tbody tr {
-    border-bottom: 1px solid #dee2e6;
+    border-bottom: 1px solid var(--border-color, #dee2e6);
     transition: background 0.2s;
 }
 
 .table tbody tr:hover {
-    background: #f8f9fa;
+    background: var(--surface-muted, #f8f9fa);
 }
 
 .table tbody tr:last-child {
@@ -173,7 +173,7 @@
 
 .table td {
     padding: 1rem;
-    color: #212529;
+    color: var(--text-primary, #212529);
 }
 
 .badge {
@@ -206,7 +206,7 @@
 }
 
 .unidade {
-    color: #6c757d;
+    color: var(--text-muted, #6c757d);
     font-size: 0.9rem;
     display: flex;
     align-items: center;
@@ -216,20 +216,20 @@
 .observacao {
     margin-top: 0.8rem;
     padding: 0.6rem;
-    background: #f8f9fa;
+    background: var(--surface-muted, #f8f9fa);
     border-radius: 6px;
     font-size: 0.9rem;
 }
 
 .observacao strong {
-    color: #495057;
+    color: var(--text-secondary, #495057);
 }
 
 .vazio {
     text-align: center;
     padding: 3rem;
-    color: #6c757d;
-    background: #f8f9fa;
+    color: var(--text-muted, #6c757d);
+    background: var(--surface-muted, #f8f9fa);
     border-radius: 8px;
 }
 
@@ -239,7 +239,7 @@
     align-items: center;
     height: 400px;
     font-size: 1.2rem;
-    color: #6c757d;
+    color: var(--text-muted, #6c757d);
 }
 
 .erro {

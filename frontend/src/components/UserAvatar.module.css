@@ -64,7 +64,7 @@
 
 /* Dark mode */
 [data-theme='dark'] .container {
-    border-bottom-color: #495057;
+    border-bottom-color: var(--text-secondary, #495057);
 }
 
 [data-theme='dark'] .name {

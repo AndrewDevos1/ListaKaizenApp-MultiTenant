@@ -8,13 +8,13 @@
 }
 
 .header h2 {
-    color: #2c3e50;
+    color: var(--text-primary, #2c3e50);
     font-weight: 600;
     margin-bottom: 0.5rem;
 }
 
 .header p {
-    color: #6c757d;
+    color: var(--text-muted, #6c757d);
     font-size: 0.95rem;
     margin: 0;
 }
@@ -45,7 +45,7 @@
 }
 
 .minValue {
-    color: #6c757d;
+    color: var(--text-muted, #6c757d);
     font-weight: 500;
 }
 

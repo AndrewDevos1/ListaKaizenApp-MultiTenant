@@ -6,8 +6,12 @@
     min-height: calc(100vh - 60px);
 }
 
+[data-theme='dark'] .container {
+    background: var(--bg-primary, #1a1d23);
+}
+
 .header {
-    background: white;
+    background: var(--bg-secondary, #ffffff);
     padding: 2rem;
     border-radius: 12px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
@@ -15,7 +19,7 @@
 }
 
 .title {
-    color: #2c3e50;
+    color: var(--text-primary, #2c3e50);
     font-weight: 700;
     margin: 0;
     display: flex;
@@ -24,14 +28,16 @@
 }
 
 .header p {
-    color: #7f8c8d;
+    color: var(--text-muted, #7f8c8d);
     margin-top: 0.5rem;
     margin-bottom: 0;
 }
 
 .searchInput {
     border-radius: 8px;
-    border: 2px solid #ecf0f1;
+    border: 2px solid var(--border-color, #ecf0f1);
+    background-color: var(--input-bg, #ffffff);
+    color: var(--input-text, #212529);
     transition: all 0.3s ease;
     padding: 0.75rem 1rem;
 }
@@ -45,7 +51,7 @@
     border: none;
     border-radius: 12px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-    background: white;
+    background: var(--bg-secondary, #ffffff);
 }
 
 .summaryCard .card-body {
@@ -66,12 +72,12 @@
 }
 
 .summaryItem small {
-    color: #7f8c8d;
+    color: var(--text-muted, #7f8c8d);
     font-size: 0.8rem;
 }
 
 .tableWrapper {
-    background: white;
+    background: var(--bg-secondary, #ffffff);
     border-radius: 12px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     overflow: hidden;
@@ -107,8 +113,10 @@
 
 .quantityInput {
     text-align: center;
-    border: 2px solid #ecf0f1;
+    border: 2px solid var(--border-color, #ecf0f1);
     border-radius: 6px;
+    background-color: var(--input-bg, #ffffff);
+    color: var(--input-text, #212529);
     padding: 0.5rem;
     font-weight: 500;
     transition: all 0.2s ease;

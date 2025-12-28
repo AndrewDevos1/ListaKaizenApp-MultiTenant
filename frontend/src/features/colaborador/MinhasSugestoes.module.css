@@ -10,7 +10,7 @@
 }
 
 .mensagem {
-    background-color: #f8f9fa;
+    background-color: var(--surface-muted, #f8f9fa);
     border-left: 3px solid #0d6efd;
 }
 

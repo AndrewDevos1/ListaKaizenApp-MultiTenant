@@ -4,7 +4,7 @@
 
 /* Container principal */
 .container {
-  background: #f0f3f8;
+  background: var(--bg-primary, #f0f3f8);
   min-height: 100vh;
   padding: 2rem 0;
 }
@@ -46,7 +46,7 @@
 
 /* Fornecedor Card */
 .fornecedorCard {
-  background: white;
+  background: var(--bg-secondary, #ffffff);
   border-radius: 12px;
   border: none;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
@@ -67,14 +67,14 @@
 
 .cardHeader {
   background: linear-gradient(135deg, #fff8e6 0%, #fff 100%);
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--border-color, #f0f0f0);
   padding: 1.5rem;
 }
 
 .fornecedorNome {
   font-size: 1.75rem;
   font-weight: 700;
-  color: #2c3e50;
+  color: var(--text-primary, #2c3e50);
   margin: 0;
   display: flex;
   align-items: center;
@@ -82,23 +82,23 @@
 }
 
 .fornecedorInfo {
-  color: #7f8c8d;
+  color: var(--text-muted, #7f8c8d);
   font-size: 0.95rem;
   margin-bottom: 0.5rem;
   line-height: 1.6;
 }
 
 .fornecedorInfo strong {
-  color: #2c3e50;
+  color: var(--text-primary, #2c3e50);
   font-weight: 600;
 }
 
 .observacaoText {
-  background: #f8f9fa;
+  background: var(--surface-muted, #f8f9fa);
   border-left: 4px solid #667eea;
   padding: 1rem;
   border-radius: 4px;
-  color: #555;
+  color: var(--text-secondary, #555);
   line-height: 1.6;
   white-space: pre-wrap;
   word-break: break-word;
@@ -106,7 +106,7 @@
 
 /* Itens Section */
 .itensSection {
-  background: white;
+  background: var(--bg-secondary, #ffffff);
   border-radius: 12px;
   padding: 1.5rem;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
@@ -116,7 +116,7 @@
 .sectionTitle {
   font-size: 1.25rem;
   font-weight: 700;
-  color: #2c3e50;
+  color: var(--text-primary, #2c3e50);
   margin-bottom: 1.5rem;
   display: flex;
   align-items: center;
@@ -127,7 +127,7 @@
 .tableWrapper {
   overflow-x: auto;
   border-radius: 8px;
-  border: 1px solid #e9ecef;
+  border: 1px solid var(--border-color, #e9ecef);
 }
 
 .estoquesTable {
@@ -155,7 +155,7 @@
 
 .rowEstoque {
   transition: all 0.2s ease;
-  border-bottom: 1px solid #e9ecef;
+  border-bottom: 1px solid var(--border-color, #e9ecef);
 }
 
 .rowEstoque:hover {
@@ -164,7 +164,7 @@
 
 .rowSemEstoque {
   background: rgba(249, 177, 21, 0.05);
-  border-bottom: 1px solid #e9ecef;
+  border-bottom: 1px solid var(--border-color, #e9ecef);
 }
 
 .rowSemEstoque:hover {
@@ -173,7 +173,7 @@
 
 .tdItemNome {
   font-weight: 600;
-  color: #2c3e50;
+  color: var(--text-primary, #2c3e50);
   padding: 1rem 0.75rem;
 }
 
@@ -181,7 +181,7 @@
   text-align: center;
   padding: 1rem 0.75rem;
   font-weight: 500;
-  color: #2c3e50;
+  color: var(--text-primary, #2c3e50);
 }
 
 .tdAtual {
@@ -219,7 +219,7 @@
 
 .loadingSpinner p {
   margin-top: 1rem;
-  color: #7f8c8d;
+  color: var(--text-muted, #7f8c8d);
   font-size: 1rem;
 }
 

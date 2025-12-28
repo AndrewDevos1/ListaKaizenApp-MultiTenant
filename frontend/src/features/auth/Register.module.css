@@ -24,6 +24,10 @@
   -webkit-overflow-scrolling: touch;
 }
 
+[data-theme='dark'] .registerWrapper {
+  background: linear-gradient(135deg, #111827 0%, #1f2937 100%);
+}
+
 /* Animação de gradiente suave */
 @keyframes gradientShift {
   0% {
@@ -64,6 +68,14 @@
   pointer-events: none;
 }
 
+[data-theme='dark'] .registerWrapper::before {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+[data-theme='dark'] .registerWrapper::after {
+  background: rgba(255, 255, 255, 0.04);
+}
+
 @keyframes float {
   0%, 100% {
     transform: translateY(0) translateX(0);
@@ -88,6 +100,11 @@
   margin: auto;
 }
 
+[data-theme='dark'] .registerCard {
+  background: rgba(26, 29, 35, 0.92);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+}
+
 @keyframes slideIn {
   from {
     opacity: 0;
@@ -103,6 +120,10 @@
   box-shadow: 0 25px 70px rgba(0, 0, 0, 0.35);
   transform: translateY(-2px);
   transition: all 0.3s ease;
+}
+
+[data-theme='dark'] .registerCard:hover {
+  box-shadow: 0 25px 70px rgba(0, 0, 0, 0.75);
 }
 
 /* Header do card */
@@ -134,12 +155,12 @@
 .appTitle {
   font-weight: 700;
   font-size: 2rem;
-  color: #2c3e50;
+  color: var(--text-primary, #2c3e50);
   margin-bottom: 0.5rem;
 }
 
 .appSubtitle {
-  color: #7f8c8d;
+  color: var(--text-muted, #7f8c8d);
   font-size: 0.95rem;
   font-weight: 400;
 }
@@ -152,7 +173,7 @@
 
 .formLabel {
   font-weight: 600;
-  color: #34495e;
+  color: var(--text-secondary, #34495e);
   margin-bottom: 0.5rem;
   display: flex;
   align-items: center;
@@ -166,7 +187,9 @@
 
 .formInput {
   border-radius: 10px;
-  border: 2px solid #e0e6ed;
+  border: 2px solid var(--border-color, #e0e6ed);
+  background-color: var(--input-bg, #ffffff);
+  color: var(--input-text, #212529);
   padding: 0.75rem 1rem;
   font-size: 1rem;
   transition: all 0.3s ease;
@@ -179,7 +202,7 @@
 }
 
 .formInput::placeholder {
-  color: #bdc3c7;
+  color: var(--input-placeholder, #bdc3c7);
 }
 
 /* Password input wrapper */
@@ -230,6 +253,10 @@
   gap: 0.75rem;
 }
 
+[data-theme='dark'] .infoBox {
+  background: rgba(102, 126, 234, 0.12);
+}
+
 .infoBox i {
   color: #667eea;
   font-size: 1.2rem;
@@ -239,7 +266,7 @@
 .infoBox p {
   margin: 0;
   font-size: 0.85rem;
-  color: #5a6c7d;
+  color: var(--text-secondary, #5a6c7d);
   line-height: 1.5;
 }
 
@@ -277,7 +304,7 @@
 /* Divider */
 .divider {
   margin: 1.5rem 0;
-  border-top: 1px solid #e0e6ed;
+  border-top: 1px solid var(--border-color, #e0e6ed);
 }
 
 /* Link de login */
@@ -352,19 +379,19 @@
 .successTitle {
   font-size: 1.75rem;
   font-weight: 700;
-  color: #2c3e50;
+  color: var(--text-primary, #2c3e50);
   margin-bottom: 1rem;
 }
 
 .successMessage {
   font-size: 1rem;
-  color: #7f8c8d;
+  color: var(--text-muted, #7f8c8d);
   line-height: 1.6;
   margin-bottom: 2rem;
 }
 
 .successSteps {
-  background: #f8f9fa;
+  background: var(--surface-muted, #f8f9fa);
   border-radius: 10px;
   padding: 1.5rem;
   text-align: left;
@@ -374,7 +401,7 @@
 .successSteps h4 {
   font-size: 1.1rem;
   font-weight: 600;
-  color: #34495e;
+  color: var(--text-secondary, #34495e);
   margin-bottom: 1rem;
 }
 
@@ -384,7 +411,7 @@
 }
 
 .successSteps li {
-  color: #5a6c7d;
+  color: var(--text-secondary, #5a6c7d);
   margin-bottom: 0.75rem;
   line-height: 1.5;
 }

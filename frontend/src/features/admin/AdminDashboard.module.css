@@ -5,9 +5,10 @@
 
 /* Container principal */
 .dashboardWrapper {
-  background: #f0f3f8;
+  background: var(--bg-primary, #f0f3f8);
   min-height: 100vh;
   padding: 2rem 0;
+  color: var(--text-primary, #2c3e50);
 }
 
 /* Header do dashboard */
@@ -35,12 +36,12 @@
 .dashboardTitle {
   font-size: 2.25rem;
   font-weight: 700;
-  color: #2c3e50;
+  color: var(--text-primary, #2c3e50);
   margin-bottom: 0.5rem;
 }
 
 .dashboardSubtitle {
-  color: #7f8c8d;
+  color: var(--text-muted, #7f8c8d);
   font-size: 1rem;
 }
 
@@ -54,10 +55,10 @@
 
 /* Widget Card (Métrica) */
 .widgetCard {
-  background: white;
+  background: var(--bg-secondary, #ffffff);
   border-radius: 15px;
   padding: 1.75rem;
-  box-shadow: 0 2px 15px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--card-shadow, 0 2px 15px rgba(0, 0, 0, 0.08));
   border: none;
   transition: all 0.3s ease;
   position: relative;
@@ -86,7 +87,7 @@
 
 .widgetCard:hover {
   transform: translateY(-8px);
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--card-shadow-hover, 0 8px 30px rgba(0, 0, 0, 0.15));
 }
 
 /* Efeito de barra lateral colorida no card */
@@ -158,7 +159,7 @@
 
 .widgetTitle {
   font-size: 0.9rem;
-  color: #7f8c8d;
+  color: var(--text-muted, #7f8c8d);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -168,13 +169,13 @@
 .widgetValue {
   font-size: 2.25rem;
   font-weight: 700;
-  color: #2c3e50;
+  color: var(--text-primary, #2c3e50);
   line-height: 1;
 }
 
 .widgetFooter {
   padding-top: 1rem;
-  border-top: 1px solid #e9ecef;
+  border-top: 1px solid var(--border-color, #e9ecef);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -194,7 +195,7 @@
 }
 
 .widgetLink {
-  color: #667eea;
+  color: var(--link-color, #667eea);
   text-decoration: none;
   font-size: 0.9rem;
   font-weight: 600;
@@ -205,7 +206,7 @@
 }
 
 .widgetLink:hover {
-  color: #764ba2;
+  color: var(--link-hover-color, #764ba2);
 }
 
 /* Seção de ações rápidas */
@@ -216,7 +217,7 @@
 .sectionTitle {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #2c3e50;
+  color: var(--text-primary, #2c3e50);
   margin-bottom: 1.5rem;
   display: flex;
   align-items: center;
@@ -236,14 +237,14 @@
 }
 
 .quickActionBtn {
-  background: white;
-  border: 2px solid #e9ecef;
+  background: var(--bg-secondary, #ffffff);
+  border: 2px solid var(--border-color, #e9ecef);
   border-radius: 12px;
   padding: 1rem 1.5rem;
   min-width: 200px;
   text-align: center;
   font-weight: 600;
-  color: #2c3e50;
+  color: var(--text-primary, #2c3e50);
   transition: all 0.3s ease;
   cursor: pointer;
   white-space: nowrap;
@@ -265,10 +266,10 @@
 
 /* Card de seção */
 .sectionCard {
-  background: white;
+  background: var(--bg-secondary, #ffffff);
   border-radius: 15px;
   padding: 1.5rem;
-  box-shadow: 0 2px 15px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--card-shadow, 0 2px 15px rgba(0, 0, 0, 0.08));
   border: none;
   margin-bottom: 2rem;
 }
@@ -279,13 +280,13 @@
   align-items: center;
   margin-bottom: 1.5rem;
   padding-bottom: 1rem;
-  border-bottom: 2px solid #f0f3f8;
+  border-bottom: 2px solid var(--border-subtle, #f0f3f8);
 }
 
 .sectionCardTitle {
   font-size: 1.25rem;
   font-weight: 700;
-  color: #2c3e50;
+  color: var(--text-primary, #2c3e50);
   margin: 0;
   display: flex;
   align-items: center;
@@ -304,8 +305,8 @@
 }
 
 .customTable thead th {
-  background: #f8f9fa;
-  color: #6c757d;
+  background: var(--table-header-bg, #f8f9fa);
+  color: var(--text-muted, #6c757d);
   font-weight: 600;
   font-size: 0.85rem;
   text-transform: uppercase;
@@ -315,28 +316,28 @@
 }
 
 .customTable tbody tr {
-  background: white;
+  background: var(--bg-secondary, #ffffff);
   transition: all 0.3s ease;
 }
 
 .customTable tbody tr:hover {
-  background: #f8f9fa;
+  background: var(--table-row-hover, #f8f9fa);
   transform: scale(1.01);
 }
 
 .customTable tbody td {
   padding: 1rem;
-  border-top: 1px solid #e9ecef;
-  border-bottom: 1px solid #e9ecef;
+  border-top: 1px solid var(--border-color, #e9ecef);
+  border-bottom: 1px solid var(--border-color, #e9ecef);
 }
 
 .customTable tbody td:first-child {
-  border-left: 1px solid #e9ecef;
+  border-left: 1px solid var(--border-color, #e9ecef);
   border-radius: 8px 0 0 8px;
 }
 
 .customTable tbody td:last-child {
-  border-right: 1px solid #e9ecef;
+  border-right: 1px solid var(--border-color, #e9ecef);
   border-radius: 0 8px 8px 0;
 }
 
@@ -382,8 +383,8 @@
 .spinner {
   width: 50px;
   height: 50px;
-  border: 4px solid #f3f3f3;
-  border-top: 4px solid #667eea;
+  border: 4px solid var(--border-color, #f3f3f3);
+  border-top: 4px solid var(--link-color, #667eea);
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -397,13 +398,33 @@
 .emptyState {
   text-align: center;
   padding: 3rem 1rem;
-  color: #7f8c8d;
+  color: var(--text-muted, #7f8c8d);
 }
 
 .emptyState i {
   font-size: 4rem;
-  color: #bdc3c7;
+  color: var(--icon-muted, #bdc3c7);
   margin-bottom: 1rem;
+}
+
+.activityItem {
+  padding: 1rem;
+  border-bottom: 1px solid var(--border-color, #e9ecef);
+}
+
+.activityItemLast {
+  border-bottom: none;
+}
+
+.activityTime {
+  font-weight: 600;
+  color: var(--link-color, #667eea);
+  margin-bottom: 0.25rem;
+}
+
+.activityDescription {
+  font-size: 0.9rem;
+  color: var(--text-secondary, #6c757d);
 }
 
 /* Gráfico de atividades */
@@ -415,6 +436,20 @@
 }
 
 /* Responsividade */
+@media (max-width: 992px) {
+  .dashboardHeader {
+    align-items: flex-start;
+  }
+
+  .widgetsGrid {
+    grid-template-columns: repeat(2, minmax(240px, 1fr));
+  }
+
+  .sectionCard {
+    padding: 1.25rem;
+  }
+}
+
 @media (max-width: 768px) {
   .dashboardTitle {
     font-size: 1.75rem;
@@ -424,20 +459,46 @@
     grid-template-columns: 1fr;
   }
 
-  .quickActionsGrid {
-    flex-direction: column;
-  }
-
-  .quickActionBtn {
-    min-width: 100%;
-  }
-
   .widgetValue {
     font-size: 1.75rem;
   }
 
   .customTable {
     font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .dashboardWrapper {
+    padding: 1rem 0;
+  }
+
+  .dashboardTitle {
+    font-size: 1.5rem;
+  }
+
+  .quickActionsGrid {
+    gap: 0.75rem;
+    scroll-snap-type: x mandatory;
+  }
+
+  .quickActionBtn {
+    min-width: 160px;
+    flex: 0 0 auto;
+    scroll-snap-align: start;
+  }
+
+  .widgetCard {
+    padding: 1.25rem;
+  }
+
+  .sectionCard {
+    padding: 1rem;
+  }
+
+  .customTable thead th,
+  .customTable tbody td {
+    padding: 0.75rem;
   }
 }
 
@@ -495,6 +556,16 @@
 /* Ajuste de posição do widget card para acomodar o drag handle */
 .widgetCard {
   position: relative;
+}
+
+[data-theme='dark'] .dragHandle {
+  color: rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme='dark'] .dragHandle:hover {
+  color: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.12);
 }
 
 /* ================================

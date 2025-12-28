@@ -6,8 +6,12 @@
     padding: 2rem 1rem;
 }
 
+[data-theme='dark'] .container {
+    background: var(--bg-primary, #1a1d23);
+}
+
 .header {
-    background: white;
+    background: var(--bg-secondary, #ffffff);
     padding: 2rem;
     border-radius: 12px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
@@ -15,7 +19,7 @@
 }
 
 .title {
-    color: #2c3e50;
+    color: var(--text-primary, #2c3e50);
     font-weight: 700;
     margin: 1rem 0 0.5rem 0;
     display: flex;
@@ -24,14 +28,14 @@
 }
 
 .subtitle {
-    color: #34495e;
+    color: var(--text-secondary, #34495e);
     font-size: 1.5rem;
     font-weight: 600;
     margin: 0.5rem 0 0.25rem 0;
 }
 
 .header p {
-    color: #7f8c8d;
+    color: var(--text-muted, #7f8c8d);
     margin-top: 0.5rem;
     margin-bottom: 0;
 }
@@ -40,7 +44,7 @@
     border: none;
     border-radius: 12px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-    background: white;
+    background: var(--bg-secondary, #ffffff);
     transition: all 0.3s ease;
 }
 
@@ -56,19 +60,19 @@
 .statValue {
     font-size: 2rem;
     font-weight: 700;
-    color: #2c3e50;
+    color: var(--text-primary, #2c3e50);
     margin: 0.5rem 0;
 }
 
 .statLabel {
     font-size: 0.9rem;
-    color: #7f8c8d;
+    color: var(--text-muted, #7f8c8d);
     margin: 0;
     font-weight: 500;
 }
 
 .tableWrapper {
-    background: white;
+    background: var(--bg-secondary, #ffffff);
     border-radius: 12px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     overflow: hidden;
@@ -77,7 +81,7 @@
 }
 
 .sectionTitle {
-    color: #2c3e50;
+    color: var(--text-primary, #2c3e50);
     font-weight: 600;
     margin-bottom: 1.5rem;
     display: flex;
@@ -114,7 +118,7 @@
 }
 
 .itemCard {
-    border: 2px solid #ecf0f1;
+    border: 2px solid var(--border-color, #ecf0f1);
     border-radius: 8px;
     margin-bottom: 1rem;
     transition: all 0.2s ease;

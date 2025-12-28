@@ -1,6 +1,7 @@
 import React from 'react';
 import UserStats from './UserStats';
 import WorkAreasList from './WorkAreasList';
+import './Dashboard.css';
 
 /**
  * Dashboard principal para o usuário colaborador.
@@ -8,11 +9,13 @@ import WorkAreasList from './WorkAreasList';
  */
 const UserDashboard: React.FC = () => {
   return (
-    <div>
-      <h1 className="h3 mb-4 text-gray-800">Meu Dashboard</h1>
-      <UserStats />
-      <hr className="my-4" />
-      <WorkAreasList />
+    <div className="dashboardShell">
+      <div className="container-fluid">
+        <h1 className="h3 mb-4 text-gray-800">Meu Dashboard</h1>
+        <UserStats />
+        <hr className="my-4" />
+        <WorkAreasList />
+      </div>
     </div>
   );
 };

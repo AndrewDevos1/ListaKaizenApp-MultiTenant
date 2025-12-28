@@ -8,7 +8,7 @@
     text-align: center;
     padding: 60px;
     font-size: 18px;
-    color: #666;
+    color: var(--text-muted, #666);
 }
 
 .header {
@@ -20,7 +20,7 @@
 
 .header h1 {
     font-size: 28px;
-    color: #333;
+    color: var(--text-primary, #333);
     display: flex;
     align-items: center;
     gap: 12px;
@@ -45,19 +45,19 @@
 .vazio {
     text-align: center;
     padding: 80px 20px;
-    background: white;
+    background: var(--bg-secondary, #ffffff);
     border-radius: 12px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
 .vazio i {
-    color: #ccc;
+    color: var(--icon-muted, #ccc);
     margin-bottom: 20px;
 }
 
 .vazio p {
     font-size: 18px;
-    color: #666;
+    color: var(--text-muted, #666);
     margin-bottom: 30px;
 }
 
@@ -86,7 +86,7 @@
 }
 
 .card {
-    background: white;
+    background: var(--bg-secondary, #ffffff);
     border-radius: 12px;
     padding: 24px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
@@ -108,7 +108,7 @@
 
 .cardHeader h3 {
     font-size: 18px;
-    color: #333;
+    color: var(--text-primary, #333);
     flex: 1;
     margin: 0;
 }
@@ -142,7 +142,7 @@
 }
 
 .descricao {
-    color: #666;
+    color: var(--text-muted, #666);
     font-size: 14px;
     margin-bottom: 15px;
     line-height: 1.5;
@@ -158,7 +158,7 @@
     display: flex;
     align-items: center;
     gap: 6px;
-    color: #666;
+    color: var(--text-muted, #666);
     font-size: 14px;
 }
 
@@ -180,17 +180,17 @@
     flex-direction: column;
     gap: 4px;
     padding-top: 12px;
-    border-top: 1px solid #e9ecef;
+    border-top: 1px solid var(--border-color, #e9ecef);
     margin-bottom: 15px;
 }
 
 .datas small {
-    color: #999;
+    color: var(--text-muted, #999);
     font-size: 12px;
 }
 
 .mensagemAdmin {
-    background: #f8f9fa;
+    background: var(--surface-muted, #f8f9fa);
     padding: 12px;
     border-radius: 6px;
     margin-bottom: 15px;
@@ -198,13 +198,13 @@
 
 .mensagemAdmin strong {
     display: block;
-    color: #333;
+    color: var(--text-primary, #333);
     font-size: 13px;
     margin-bottom: 6px;
 }
 
 .mensagemAdmin p {
-    color: #666;
+    color: var(--text-muted, #666);
     font-size: 13px;
     margin: 0;
     line-height: 1.5;

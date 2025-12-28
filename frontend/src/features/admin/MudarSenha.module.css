@@ -14,7 +14,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  color: #6c757d;
+  color: var(--text-muted, #6c757d);
   text-decoration: none;
   font-size: 0.95rem;
   font-weight: 500;
@@ -24,8 +24,8 @@
 }
 
 .backButton:hover {
-  background-color: #f8f9fa;
-  color: #495057;
+  background-color: var(--surface-muted, #f8f9fa);
+  color: var(--text-secondary, #495057);
 }
 
 /* Título da página */
@@ -35,7 +35,7 @@
   gap: 1rem;
   margin-bottom: 2rem;
   padding-bottom: 1rem;
-  border-bottom: 2px solid #e9ecef;
+  border-bottom: 2px solid var(--border-color, #e9ecef);
 }
 
 .titleIcon {
@@ -55,18 +55,18 @@
   margin: 0;
   font-size: 2rem;
   font-weight: 700;
-  color: #212529;
+  color: var(--text-primary, #212529);
 }
 
 .subtitle {
   margin: 0.25rem 0 0 0;
   font-size: 1rem;
-  color: #6c757d;
+  color: var(--text-muted, #6c757d);
 }
 
 /* Card do formulário */
 .formCard {
-  background: white;
+  background: var(--bg-secondary, #ffffff);
   border-radius: 15px;
   padding: 2rem;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
@@ -80,7 +80,7 @@
 
 .formGroup label {
   font-weight: 600;
-  color: #495057;
+  color: var(--text-secondary, #495057);
   margin-bottom: 0.5rem;
 }
 
@@ -95,7 +95,7 @@
   flex: 1;
   padding-right: 3rem;
   border-radius: 10px;
-  border: 2px solid #dee2e6;
+  border: 2px solid var(--border-color, #dee2e6);
   transition: all 0.3s ease;
   font-size: 1rem;
 }
@@ -110,7 +110,7 @@
   right: 0.75rem;
   background: none;
   border: none;
-  color: #6c757d;
+  color: var(--text-muted, #6c757d);
   cursor: pointer;
   padding: 0.5rem;
   transition: color 0.3s ease;
@@ -125,7 +125,7 @@
   display: block;
   margin-top: 0.5rem;
   font-size: 0.875rem;
-  color: #6c757d;
+  color: var(--text-muted, #6c757d);
 }
 
 /* Botões de ação */
@@ -135,7 +135,7 @@
   justify-content: flex-end;
   margin-top: 2rem;
   padding-top: 1.5rem;
-  border-top: 1px solid #e9ecef;
+  border-top: 1px solid var(--border-color, #e9ecef);
 }
 
 .actions button {
@@ -153,7 +153,7 @@
 
 /* Dicas de segurança */
 .securityTips {
-  background: #f8f9fa;
+  background: var(--surface-muted, #f8f9fa);
   border-radius: 15px;
   padding: 1.5rem;
   border-left: 4px solid #28a745;
@@ -176,7 +176,7 @@
 .securityTips ul {
   margin: 0;
   padding-left: 1.5rem;
-  color: #495057;
+  color: var(--text-secondary, #495057);
 }
 
 .securityTips li {

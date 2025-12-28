@@ -16,6 +16,10 @@
   padding: 2rem 1rem;
 }
 
+[data-theme='dark'] .homeWrapper {
+  background: linear-gradient(135deg, #111827 0%, #1f2937 100%);
+}
+
 @keyframes gradientShift {
   0% { background-position: 0% 50%; }
   50% { background-position: 100% 50%; }
@@ -47,6 +51,14 @@
   animation: float 15s infinite ease-in-out reverse;
 }
 
+[data-theme='dark'] .homeWrapper::before {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+[data-theme='dark'] .homeWrapper::after {
+  background: rgba(255, 255, 255, 0.04);
+}
+
 @keyframes float {
   0%, 100% { transform: translateY(0) translateX(0); }
   50% { transform: translateY(-30px) translateX(30px); }
@@ -65,6 +77,11 @@
   backdrop-filter: blur(10px);
 }
 
+[data-theme='dark'] .heroSection {
+  background: rgba(26, 29, 35, 0.92);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+}
+
 @keyframes slideIn {
   from {
     opacity: 0;
@@ -79,6 +96,10 @@
 .heroSection:hover {
   box-shadow: 0 25px 70px rgba(0, 0, 0, 0.35);
   transition: box-shadow 0.3s ease;
+}
+
+[data-theme='dark'] .heroSection:hover {
+  box-shadow: 0 25px 70px rgba(0, 0, 0, 0.75);
 }
 
 /* Logo */
@@ -104,21 +125,21 @@
 .mainTitle {
   font-size: 3rem;
   font-weight: 800;
-  color: #2c3e50;
+  color: var(--text-primary, #2c3e50);
   margin-bottom: 1rem;
   letter-spacing: -1px;
 }
 
 .subtitle {
   font-size: 1.25rem;
-  color: #7f8c8d;
+  color: var(--text-muted, #7f8c8d);
   font-weight: 500;
   margin-bottom: 1.5rem;
 }
 
 .description {
   font-size: 1rem;
-  color: #95a5a6;
+  color: var(--text-muted, #95a5a6);
   line-height: 1.6;
   max-width: 600px;
   margin: 0 auto 2rem;
@@ -181,9 +202,18 @@
   height: 100%;
 }
 
+[data-theme='dark'] .featureCard {
+  background: rgba(43, 48, 53, 0.92);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
 .featureCard:hover {
   transform: translateY(-10px);
   box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
+}
+
+[data-theme='dark'] .featureCard:hover {
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6);
 }
 
 .featureIcon {
@@ -203,13 +233,13 @@
 .featureTitle {
   font-size: 1.125rem;
   font-weight: 700;
-  color: #2c3e50;
+  color: var(--text-primary, #2c3e50);
   margin-bottom: 0.75rem;
 }
 
 .featureDescription {
   font-size: 0.9rem;
-  color: #7f8c8d;
+  color: var(--text-muted, #7f8c8d);
   line-height: 1.5;
   margin: 0;
 }
@@ -222,6 +252,10 @@
   position: relative;
   z-index: 1;
   animation: fadeIn 1.5s ease-out 0.5s backwards;
+}
+
+[data-theme='dark'] .footer {
+  color: rgba(255, 255, 255, 0.75);
 }
 
 @keyframes fadeIn {

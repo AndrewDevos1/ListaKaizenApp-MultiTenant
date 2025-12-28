@@ -28,11 +28,11 @@
 }
 
 .submissaoCard {
-    border: 1px solid #dee2e6;
+    border: 1px solid var(--border-color, #dee2e6);
     border-radius: 8px;
     padding: 1rem;
     margin-bottom: 1rem;
-    background: white;
+    background: var(--bg-secondary, #ffffff);
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     transition: transform 0.2s, box-shadow 0.2s;
 }
@@ -48,20 +48,20 @@
     align-items: flex-start;
     margin-bottom: 0.75rem;
     padding-bottom: 0.75rem;
-    border-bottom: 2px solid #e9ecef;
+    border-bottom: 2px solid var(--border-color, #e9ecef);
 }
 
 .cardTitle {
     font-weight: 700;
     font-size: 1.1rem;
-    color: #212529;
+    color: var(--text-primary, #212529);
     margin: 0;
     flex: 1;
 }
 
 .cardId {
     font-weight: 600;
-    color: #6c757d;
+    color: var(--text-muted, #6c757d);
     font-size: 0.9rem;
     margin-left: 0.5rem;
 }
@@ -71,7 +71,7 @@
     justify-content: space-between;
     align-items: center;
     padding: 0.5rem 0;
-    border-bottom: 1px solid #f0f0f0;
+    border-bottom: 1px solid var(--border-color, #f0f0f0);
 }
 
 .cardRow:last-child {
@@ -80,21 +80,21 @@
 
 .cardLabel {
     font-weight: 600;
-    color: #6c757d;
+    color: var(--text-muted, #6c757d);
     font-size: 0.85rem;
     text-transform: uppercase;
 }
 
 .cardValue {
     font-size: 1rem;
-    color: #212529;
+    color: var(--text-primary, #212529);
     text-align: right;
 }
 
 .cardActions {
     margin-top: 1rem;
     padding-top: 1rem;
-    border-top: 1px solid #e9ecef;
+    border-top: 1px solid var(--border-color, #e9ecef);
 }
 
 .cardActions button {
