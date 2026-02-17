@@ -1,34 +1,45 @@
-# Python
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-.venv/
-backend/.venv/
-
-# Node
+# Dependencies
 node_modules/
-npm-debug.log
-yarn-error.log
+.pnp
+.pnp.js
+
+# Build outputs
+dist/
+.next/
+out/
+build/
 
 # Environment
 .env
 .env.local
+.env.*.local
 
-# IDE / OS
-.vscode/
+# IDE
 .idea/
-*.DS_Store
+.vscode/
+*.swp
+*.swo
 
-# Database files
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Turbo
+.turbo/
+
+# Prisma
+apps/api/prisma/*.db
+
+# Testing
+coverage/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Legacy Python
+*.pyc
+__pycache__/
+.venv/
 *.db
-*.sqlite
-*.sqlite3
-
-# System files
-nul
-*.nul
-
-# Build files
-frontend/build/
-frontend/dist/ 

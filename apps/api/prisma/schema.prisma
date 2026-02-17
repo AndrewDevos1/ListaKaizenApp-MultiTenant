@@ -1,0 +1,114 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  ADMIN
+  COLLABORATOR
+  SUPPLIER
+}
+
+model Restaurante {
+  id       Int      @id @default(autoincrement())
+  nome     String
+  cnpj     String?  @unique
+  ativo    Boolean  @default(true)
+  criadoEm DateTime @default(now()) @map("criado_em")
+
+  usuarios Usuario[]
+  items    Item[]
+  areas    Area[]
+  listas   Lista[]
+
+  @@map("restaurantes")
+}
+
+model Usuario {
+  id            Int       @id @default(autoincrement())
+  nome          String
+  email         String    @unique
+  username      String?   @unique
+  senha         String
+  role          UserRole  @default(COLLABORATOR)
+  aprovado      Boolean   @default(false)
+  ativo         Boolean   @default(true)
+  restauranteId Int?      @map("restaurante_id")
+  sessionToken  String?   @map("session_token")
+  criadoEm      DateTime  @default(now()) @map("criado_em")
+
+  restaurante Restaurante?     @relation(fields: [restauranteId], references: [id])
+  listas      ListaColaborador[]
+
+  @@map("usuarios")
+}
+
+model Item {
+  id            Int      @id @default(autoincrement())
+  nome          String
+  unidadeMedida String   @map("unidade_medida")
+  ativo         Boolean  @default(true)
+  restauranteId Int      @map("restaurante_id")
+  criadoEm      DateTime @default(now()) @map("criado_em")
+
+  restaurante Restaurante  @relation(fields: [restauranteId], references: [id])
+  listasRef   ListaItemRef[]
+
+  @@map("itens")
+}
+
+model Area {
+  id            Int      @id @default(autoincrement())
+  nome          String
+  restauranteId Int      @map("restaurante_id")
+  criadoEm      DateTime @default(now()) @map("criado_em")
+
+  restaurante Restaurante @relation(fields: [restauranteId], references: [id])
+
+  @@map("areas")
+}
+
+model Lista {
+  id            Int      @id @default(autoincrement())
+  nome          String
+  restauranteId Int      @map("restaurante_id")
+  deletado      Boolean  @default(false)
+  criadoEm      DateTime @default(now()) @map("criado_em")
+
+  restaurante   Restaurante      @relation(fields: [restauranteId], references: [id])
+  colaboradores ListaColaborador[]
+  itensRef      ListaItemRef[]
+
+  @@map("listas")
+}
+
+model ListaColaborador {
+  id        Int @id @default(autoincrement())
+  listaId   Int @map("lista_id")
+  usuarioId Int @map("usuario_id")
+
+  lista   Lista   @relation(fields: [listaId], references: [id])
+  usuario Usuario @relation(fields: [usuarioId], references: [id])
+
+  @@unique([listaId, usuarioId])
+  @@map("lista_colaborador")
+}
+
+model ListaItemRef {
+  id               Int   @id @default(autoincrement())
+  listaId          Int   @map("lista_id")
+  itemId           Int   @map("item_id")
+  quantidadeMinima Float @default(0) @map("quantidade_minima")
+  quantidadeAtual  Float @default(0) @map("quantidade_atual")
+
+  lista Lista @relation(fields: [listaId], references: [id])
+  item  Item  @relation(fields: [itemId], references: [id])
+
+  @@unique([listaId, itemId])
+  @@map("lista_item_ref")
+}

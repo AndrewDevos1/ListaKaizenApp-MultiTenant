@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+backend/.venv/
+
+# Node
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Environment
+.env
+.env.local
+
+# IDE / OS
+.vscode/
+.idea/
+*.DS_Store
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# System files
+nul
+*.nul
+
+# Build files
+frontend/build/
+frontend/dist/ 
