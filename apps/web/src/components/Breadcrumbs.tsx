@@ -59,12 +59,12 @@ export default function Breadcrumbs() {
       <ol className={styles.list}>
         {crumbs.map((crumb, index) => {
           const isLast = index === crumbs.length - 1;
-          const isLink = crumb.href && !isLast;
+          const isLink = Boolean(crumb.href) && !isLast;
 
           return (
             <li key={`${crumb.label}-${index}`} className={styles.item}>
               {isLink ? (
-                <Link href={crumb.href} className={styles.link}>
+                <Link href={crumb.href!} className={styles.link}>
                   {crumb.label}
                 </Link>
               ) : (
