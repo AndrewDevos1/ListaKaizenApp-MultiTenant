@@ -24,6 +24,15 @@ import {
   FaCog,
   FaGripLinesVertical,
   FaChevronLeft,
+  FaUsersCog,
+  FaClipboardCheck,
+  FaListAlt,
+  FaTasks,
+  FaGlobeAmericas,
+  FaLightbulb,
+  FaBolt,
+  FaTruck,
+  FaTruckLoading,
 } from 'react-icons/fa';
 import styles from './Sidebar.module.css';
 import Breadcrumbs from './Breadcrumbs';
@@ -82,7 +91,14 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
   // Initialize expanded groups from localStorage
   useEffect(() => {
     const defaultGroups = isAdmin
-      ? { 'visao-geral': true, gestao: true, perfil: true }
+      ? {
+          'visao-geral': true,
+          pop: true,
+          itens: true,
+          'listas-compras': true,
+          fornecedores: true,
+          perfil: true,
+        }
       : { dashboard: true, atividades: true, perfil: true };
 
     const saved = localStorage.getItem('expandedGroups');
@@ -202,30 +218,103 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
       label: 'VISÃO GERAL',
       items: [
         {
-          label: 'Dashboard',
+          label: 'Dashboard Admin',
           href: '/admin/dashboard',
           icon: <FaTachometerAlt />,
+        },
+        {
+          label: 'Submissões',
+          href: '/admin/submissoes',
+          icon: <FaClipboardCheck />,
+        },
+        {
+          label: 'Gerenciar Usuários',
+          href: '/admin/gerenciar-usuarios',
+          icon: <FaUsersCog />,
         },
       ],
     },
     {
-      id: 'gestao',
-      label: 'GESTÃO',
+      id: 'pop',
+      label: 'POP',
       items: [
         {
-          label: 'Itens',
+          label: 'POP Listas',
+          href: '/admin/pop-listas',
+          icon: <FaListAlt />,
+        },
+        {
+          label: 'POP Auditoria',
+          href: '/admin/pop-auditoria',
+          icon: <FaClipboardCheck />,
+        },
+        {
+          label: 'POP Atividades',
+          href: '/admin/pop-atividades',
+          icon: <FaTasks />,
+        },
+      ],
+    },
+    {
+      id: 'itens',
+      label: 'ITENS',
+      items: [
+        {
+          label: 'Itens Regionais',
+          href: '/admin/itens-regionais',
+          icon: <FaGlobeAmericas />,
+        },
+        {
+          label: 'Itens Cadastrados',
           href: '/admin/items',
           icon: <FaBoxes />,
         },
+        {
+          label: 'Sugestões de Itens',
+          href: '/admin/sugestoes',
+          icon: <FaLightbulb />,
+        },
+      ],
+    },
+    {
+      id: 'listas-compras',
+      label: 'LISTAS & COMPRAS',
+      items: [
+        {
+          label: 'Lista Rápida',
+          href: '/admin/lista-rapida',
+          icon: <FaBolt />,
+        },
+        {
+          label: 'Listas de Compras',
+          href: '/admin/listas',
+          icon: <FaList />,
+        },
+        {
+          label: 'Checklists de Compras',
+          href: '/admin/checklists',
+          icon: <FaClipboardList />,
+        },
+      ],
+    },
+    {
+      id: 'fornecedores',
+      label: 'FORNECEDORES & ÁREAS',
+      items: [
         {
           label: 'Áreas',
           href: '/admin/areas',
           icon: <FaMapMarkerAlt />,
         },
         {
-          label: 'Listas',
-          href: '/admin/listas',
-          icon: <FaList />,
+          label: 'Fornecedores',
+          href: '/admin/fornecedores',
+          icon: <FaTruck />,
+        },
+        {
+          label: 'Fornecedores da Região',
+          href: '/admin/fornecedores-regiao',
+          icon: <FaTruckLoading />,
         },
       ],
     },
@@ -262,12 +351,12 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
     items: [
       {
         label: 'Editar Perfil',
-        href: '#',
+        href: isAdmin ? '/admin/editar-perfil' : '/collaborator/perfil',
         icon: <FaUserEdit />,
       },
       {
         label: 'Mudar Senha',
-        href: '#',
+        href: isAdmin ? '/admin/mudar-senha' : '/collaborator/mudar-senha',
         icon: <FaKey />,
       },
       {
@@ -297,7 +386,7 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
   }, [searchTerm, allMenuGroups]);
 
   const isMenuItemActive = (href: string): boolean => {
-    return pathname === href;
+    return pathname === href || pathname.startsWith(`${href}/`);
   };
 
   return (
@@ -446,7 +535,7 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
               </Link>
             </div>
           )}
-          <div className={styles.footerVersion}>v2.1.0</div>
+          <div className={styles.footerVersion}>v3.0.29</div>
         </div>
       </nav>
 
