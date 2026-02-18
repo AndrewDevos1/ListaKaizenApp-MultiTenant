@@ -355,24 +355,6 @@
   color: inherit;
 }
 
-.menuItemDisabled {
-  cursor: not-allowed;
-  opacity: 0.65;
-}
-
-.menuItemDisabled:hover {
-  background-color: transparent;
-  transform: none;
-}
-
-.menuItemTag {
-  font-size: 0.7rem;
-  padding: 0.15rem 0.4rem;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.15);
-  color: var(--sidebar-text);
-}
-
 /* Sidebar Footer */
 .sidebarFooter {
   padding: var(--spacing-lg) var(--spacing-md);

@@ -39,10 +39,9 @@ import Breadcrumbs from './Breadcrumbs';
 
 interface MenuItem {
   label: string;
-  href?: string;
+  href: string;
   icon: React.ReactNode;
   onClick?: () => void;
-  status?: 'available' | 'soon';
 }
 
 interface MenuGroup {
@@ -222,16 +221,15 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
           label: 'Dashboard Admin',
           href: '/admin/dashboard',
           icon: <FaTachometerAlt />,
-          status: 'available',
         },
         {
           label: 'Submissões',
-          status: 'soon',
+          href: '/admin/submissoes',
           icon: <FaClipboardCheck />,
         },
         {
           label: 'Gerenciar Usuários',
-          status: 'soon',
+          href: '/admin/gerenciar-usuarios',
           icon: <FaUsersCog />,
         },
       ],
@@ -242,17 +240,17 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
       items: [
         {
           label: 'POP Listas',
-          status: 'soon',
+          href: '/admin/pop-listas',
           icon: <FaListAlt />,
         },
         {
           label: 'POP Auditoria',
-          status: 'soon',
+          href: '/admin/pop-auditoria',
           icon: <FaClipboardCheck />,
         },
         {
           label: 'POP Atividades',
-          status: 'soon',
+          href: '/admin/pop-atividades',
           icon: <FaTasks />,
         },
       ],
@@ -263,18 +261,17 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
       items: [
         {
           label: 'Itens Regionais',
-          status: 'soon',
+          href: '/admin/itens-regionais',
           icon: <FaGlobeAmericas />,
         },
         {
           label: 'Itens Cadastrados',
           href: '/admin/items',
           icon: <FaBoxes />,
-          status: 'available',
         },
         {
           label: 'Sugestões de Itens',
-          status: 'soon',
+          href: '/admin/sugestoes',
           icon: <FaLightbulb />,
         },
       ],
@@ -285,18 +282,17 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
       items: [
         {
           label: 'Lista Rápida',
-          status: 'soon',
+          href: '/admin/lista-rapida',
           icon: <FaBolt />,
         },
         {
           label: 'Listas de Compras',
           href: '/admin/listas',
           icon: <FaList />,
-          status: 'available',
         },
         {
           label: 'Checklists de Compras',
-          status: 'soon',
+          href: '/admin/checklists',
           icon: <FaClipboardList />,
         },
       ],
@@ -309,16 +305,15 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
           label: 'Áreas',
           href: '/admin/areas',
           icon: <FaMapMarkerAlt />,
-          status: 'available',
         },
         {
           label: 'Fornecedores',
-          status: 'soon',
+          href: '/admin/fornecedores',
           icon: <FaTruck />,
         },
         {
           label: 'Fornecedores da Região',
-          status: 'soon',
+          href: '/admin/fornecedores-regiao',
           icon: <FaTruckLoading />,
         },
       ],
@@ -356,15 +351,13 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
     items: [
       {
         label: 'Editar Perfil',
-        href: isAdmin ? undefined : '/collaborator/perfil',
+        href: isAdmin ? '/admin/editar-perfil' : '/collaborator/perfil',
         icon: <FaUserEdit />,
-        status: isAdmin ? 'soon' : 'available',
       },
       {
         label: 'Mudar Senha',
-        href: isAdmin ? undefined : '/collaborator/mudar-senha',
+        href: isAdmin ? '/admin/mudar-senha' : '/collaborator/mudar-senha',
         icon: <FaKey />,
-        status: isAdmin ? 'soon' : 'available',
       },
       {
         label: 'Sair',
@@ -472,63 +465,34 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
               </button>
               {expandedGroups[group.id] && (
                 <div className={styles.menuItems}>
-                  {group.items.map((item, itemIndex) => {
-                    const isDisabled = item.status === 'soon' || !item.href;
-                    const title = isCollapsed
-                      ? item.status === 'soon'
-                        ? `${item.label} (em breve)`
-                        : item.label
-                      : item.status === 'soon'
-                        ? 'Em breve'
-                        : undefined;
-
-                    if (item.onClick) {
-                      return (
-                        <button
-                          key={itemIndex}
-                          type="button"
-                          className={`${styles.menuItem} ${styles.menuItemButton}`}
-                          onClick={() => {
-                            item.onClick?.();
-                            closeMobileMenu();
-                          }}
-                          title={title}
-                        >
-                          {item.icon}
-                          <span className={styles.menuItemLabel}>{item.label}</span>
-                        </button>
-                      );
-                    }
-
-                    if (isDisabled) {
-                      return (
-                        <div
-                          key={itemIndex}
-                          className={`${styles.menuItem} ${styles.menuItemDisabled}`}
-                          title={title}
-                          role="button"
-                          aria-disabled="true"
-                        >
-                          {item.icon}
-                          <span className={styles.menuItemLabel}>{item.label}</span>
-                          <span className={styles.menuItemTag}>Em breve</span>
-                        </div>
-                      );
-                    }
-
-                    return (
+                  {group.items.map((item, itemIndex) =>
+                    item.onClick ? (
+                      <button
+                        key={itemIndex}
+                        type="button"
+                        className={`${styles.menuItem} ${styles.menuItemButton}`}
+                        onClick={() => {
+                          item.onClick?.();
+                          closeMobileMenu();
+                        }}
+                        title={isCollapsed ? item.label : undefined}
+                      >
+                        {item.icon}
+                        <span className={styles.menuItemLabel}>{item.label}</span>
+                      </button>
+                    ) : (
                       <Link
                         key={itemIndex}
-                        href={item.href!}
-                        className={`${styles.menuItem} ${isMenuItemActive(item.href!) ? styles.active : ''}`}
+                        href={item.href}
+                        className={`${styles.menuItem} ${isMenuItemActive(item.href) ? styles.active : ''}`}
                         onClick={closeMobileMenu}
-                        title={title}
+                        title={isCollapsed ? item.label : undefined}
                       >
                         {item.icon}
                         <span className={styles.menuItemLabel}>{item.label}</span>
                       </Link>
-                    );
-                  })}
+                    ),
+                  )}
                 </div>
               )}
             </div>
