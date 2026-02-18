@@ -91,7 +91,7 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
 
   // Initialize expanded groups from localStorage
   useEffect(() => {
-    const defaultGroups = isAdmin
+    const defaultGroups: Record<string, boolean> = isAdmin
       ? {
           'visao-geral': true,
           pop: true,
