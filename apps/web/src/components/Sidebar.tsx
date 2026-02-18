@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
@@ -16,7 +16,7 @@ import {
   FaBars,
   FaTimes,
   FaChevronRight,
-  FaUser,
+  FaSearch,
 } from 'react-icons/fa';
 import styles from './Sidebar.module.css';
 
@@ -27,6 +27,7 @@ interface MenuItem {
 }
 
 interface MenuGroup {
+  id: string;
   label: string;
   items: MenuItem[];
 }
@@ -34,9 +35,13 @@ interface MenuGroup {
 export default function Sidebar({ children }: { children: React.ReactNode }) {
   const { user, logout, isAdmin } = useAuth();
   const pathname = usePathname();
-  const [collapsed, setCollapsed] = useState(false);
-  const [toggled, setToggled] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isToggled, setIsToggled] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
+  const searchRef = useRef<HTMLInputElement>(null);
+  const touchStartX = useRef(0);
 
   // Initialize dark mode from localStorage
   useEffect(() => {
@@ -52,13 +57,29 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
     const isMobile = window.innerWidth <= 768;
     if (!isMobile) {
       const savedCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
-      setCollapsed(savedCollapsed);
+      setIsCollapsed(savedCollapsed);
     }
   }, []);
 
+  // Initialize expanded groups from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem('expandedGroups');
+    if (saved) {
+      try {
+        setExpandedGroups(JSON.parse(saved));
+      } catch {
+        // Fallback to default state
+        setExpandedGroups(isAdmin ? { 'visao-geral': true, gestao: true } : { dashboard: true, atividades: true });
+      }
+    } else {
+      // Default: expand all groups
+      setExpandedGroups(isAdmin ? { 'visao-geral': true, gestao: true } : { dashboard: true, atividades: true });
+    }
+  }, [isAdmin]);
+
   // Persist collapsed state
   const handleToggleCollapse = useCallback(() => {
-    setCollapsed((prev) => {
+    setIsCollapsed((prev) => {
       const newState = !prev;
       localStorage.setItem('sidebarCollapsed', newState.toString());
       return newState;
@@ -67,12 +88,21 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
 
   // Toggle mobile sidebar
   const handleToggleMobile = useCallback(() => {
-    setToggled((prev) => !prev);
+    setIsToggled((prev) => !prev);
   }, []);
 
   // Close mobile sidebar on link click
   const closeMobileMenu = useCallback(() => {
-    setToggled(false);
+    setIsToggled(false);
+  }, []);
+
+  // Toggle group expansion
+  const toggleGroup = useCallback((groupId: string) => {
+    setExpandedGroups((prev) => {
+      const newState = { ...prev, [groupId]: !prev[groupId] };
+      localStorage.setItem('expandedGroups', JSON.stringify(newState));
+      return newState;
+    });
   }, []);
 
   // Toggle dark mode
@@ -90,11 +120,57 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
+  // Keyboard shortcuts: Escape to close, "/" to focus search
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isToggled) {
+        setIsToggled(false);
+      }
+      if (e.key === '/' && !isToggled) {
+        e.preventDefault();
+        searchRef.current?.focus();
+      }
+    };
+
+    const handleResize = () => {
+      if (window.innerWidth > 768) {
+        setIsToggled(false);
+        const savedCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+        setIsCollapsed(savedCollapsed);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [isToggled]);
+
+  // Swipe gesture for mobile
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    const diff = touchStartX.current - e.changedTouches[0].clientX;
+    if (diff > 50) {
+      // Swipe left → close
+      setIsToggled(false);
+    }
+    if (diff < -50) {
+      // Swipe right → open
+      setIsToggled(true);
+    }
+  };
+
   if (!user) return null;
 
   // Menu groups based on role
   const adminMenuGroups: MenuGroup[] = [
     {
+      id: 'visao-geral',
       label: 'VISÃO GERAL',
       items: [
         {
@@ -105,6 +181,7 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
       ],
     },
     {
+      id: 'gestao',
       label: 'GESTÃO',
       items: [
         {
@@ -128,6 +205,7 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
 
   const collaboratorMenuGroups: MenuGroup[] = [
     {
+      id: 'dashboard',
       label: 'DASHBOARD',
       items: [
         {
@@ -138,6 +216,7 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
       ],
     },
     {
+      id: 'atividades',
       label: 'ATIVIDADES',
       items: [
         {
@@ -149,61 +228,106 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
     },
   ];
 
-  const menuGroups = isAdmin ? adminMenuGroups : collaboratorMenuGroups;
+  const allMenuGroups = isAdmin ? adminMenuGroups : collaboratorMenuGroups;
+
+  // Filter groups and items based on search
+  const filteredGroups = useMemo(() => {
+    if (!searchTerm.trim()) {
+      return allMenuGroups;
+    }
+
+    const term = searchTerm.toLowerCase();
+    return allMenuGroups
+      .map((group) => ({
+        ...group,
+        items: group.items.filter((item) => item.label.toLowerCase().includes(term)),
+      }))
+      .filter((group) => group.items.length > 0);
+  }, [searchTerm, allMenuGroups]);
 
   const isMenuItemActive = (href: string): boolean => {
     return pathname === href;
   };
 
   return (
-    <div className={`${styles.wrapper} ${collapsed ? styles.collapsed : ''} ${toggled ? styles.toggled : ''}`}>
+    <div className={`${styles.wrapper} ${isCollapsed ? styles.collapsed : ''} ${isToggled ? styles.toggled : ''}`}>
       {/* Overlay for mobile */}
       <div className={styles.overlay} onClick={closeMobileMenu} />
 
       {/* Sidebar Navigation */}
-      <nav className={styles.sidebarWrapper}>
+      <nav className={styles.sidebarWrapper} onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
         {/* Header */}
         <div className={styles.sidebarHeader}>
           <h1>Kaizen</h1>
           <button
             className={styles.collapseBtn}
             onClick={handleToggleCollapse}
-            aria-label={collapsed ? 'Expandir menu' : 'Recolher menu'}
-            title={collapsed ? 'Expandir menu' : 'Recolher menu'}
+            aria-label={isCollapsed ? 'Expandir menu' : 'Recolher menu'}
+            title={isCollapsed ? 'Expandir menu' : 'Recolher menu'}
           >
-            <FaChevronRight style={{ transform: collapsed ? 'rotate(180deg)' : 'rotate(0deg)' }} />
+            <FaChevronRight style={{ transform: isCollapsed ? 'rotate(180deg)' : 'rotate(0deg)' }} />
           </button>
         </div>
 
         {/* User Info */}
         <div className={styles.userInfo}>
-          <div className={styles.userAvatar}>
-            <FaUser />
-          </div>
+          <div className={styles.userAvatar}>{user.nome.charAt(0).toUpperCase()}</div>
           <div className={styles.userDetails}>
             <div className={styles.userName}>{user.nome}</div>
             <div className={styles.userRole}>{isAdmin ? 'Administrador' : 'Colaborador'}</div>
           </div>
         </div>
 
+        {/* Search */}
+        <div className={styles.searchContainer}>
+          <FaSearch className={styles.searchIcon} />
+          <input
+            ref={searchRef}
+            type="text"
+            className={styles.searchInput}
+            placeholder="Buscar... (/)"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            aria-label="Buscar menu"
+          />
+          {searchTerm && (
+            <button
+              className={styles.searchClear}
+              onClick={() => setSearchTerm('')}
+              aria-label="Limpar busca"
+            >
+              <FaTimes />
+            </button>
+          )}
+        </div>
+
         {/* Menu Container */}
         <div className={styles.menuContainer}>
-          {menuGroups.map((group, groupIndex) => (
-            <div key={groupIndex} className={styles.menuGroup}>
-              <label className={styles.groupLabel}>{group.label}</label>
-              <div className={styles.menuItems}>
-                {group.items.map((item, itemIndex) => (
-                  <Link
-                    key={itemIndex}
-                    href={item.href}
-                    className={`${styles.menuItem} ${isMenuItemActive(item.href) ? styles.active : ''}`}
-                    onClick={closeMobileMenu}
-                  >
-                    {item.icon}
-                    <span className={styles.menuItemLabel}>{item.label}</span>
-                  </Link>
-                ))}
-              </div>
+          {filteredGroups.map((group) => (
+            <div key={group.id} className={styles.menuGroup}>
+              <button
+                className={styles.groupLabel}
+                onClick={() => toggleGroup(group.id)}
+                aria-label={`${expandedGroups[group.id] ? 'Recolher' : 'Expandir'} ${group.label}`}
+              >
+                <span>{group.label}</span>
+                <FaChevronRight className={expandedGroups[group.id] ? styles.rotated : ''} />
+              </button>
+              {expandedGroups[group.id] && (
+                <div className={styles.menuItems}>
+                  {group.items.map((item, itemIndex) => (
+                    <Link
+                      key={itemIndex}
+                      href={item.href}
+                      className={`${styles.menuItem} ${isMenuItemActive(item.href) ? styles.active : ''}`}
+                      onClick={closeMobileMenu}
+                    >
+                      {item.icon}
+                      <span className={styles.menuItemLabel}>{item.label}</span>
+                    </Link>
+                  ))}
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -218,9 +342,7 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
           >
             {isDarkMode ? <FaSun /> : <FaMoon />}
           </button>
-          <label className={styles.themeToggleLabel}>
-            {isDarkMode ? 'Claro' : 'Escuro'}
-          </label>
+          <label className={styles.themeToggleLabel}>{isDarkMode ? 'Claro' : 'Escuro'}</label>
         </div>
 
         {/* Logout */}
@@ -237,10 +359,10 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
       <button
         className={styles.sidebarTab}
         onClick={handleToggleMobile}
-        aria-label={toggled ? 'Fechar menu' : 'Abrir menu'}
-        title={toggled ? 'Fechar menu' : 'Abrir menu'}
+        aria-label={isToggled ? 'Fechar menu' : 'Abrir menu'}
+        title={isToggled ? 'Fechar menu' : 'Abrir menu'}
       >
-        {toggled ? <FaTimes /> : <FaBars />}
+        {isToggled ? <FaTimes /> : <FaBars />}
         MENU
       </button>
     </div>

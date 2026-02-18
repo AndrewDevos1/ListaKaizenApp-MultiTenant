@@ -1,0 +1,43 @@
+.avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-weight: 700;
+  color: #ffffff;
+  flex-shrink: 0;
+  transition: all var(--transition-fast);
+}
+
+.small {
+  width: 32px;
+  height: 32px;
+  font-size: 0.75rem;
+}
+
+.medium {
+  width: 40px;
+  height: 40px;
+  font-size: 0.9rem;
+}
+
+.large {
+  width: 56px;
+  height: 56px;
+  font-size: 1.2rem;
+}
+
+/* Gradient by role */
+.admin {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
+.collaborator {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  box-shadow: 0 4px 15px rgba(79, 172, 254, 0.3);
+}
+
+.avatar:hover {
+  transform: scale(1.05);
+}
