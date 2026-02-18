@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { Alert, Spinner, Table } from 'react-bootstrap';
 import api from '@/lib/api';
 import { Item } from 'shared';
-import styles from '../../admin/listas/[id]/ListaDetail.module.css';
+import styles from '@/app/admin/listas/[id]/ListaDetail.module.css';
 
 interface ListaDetail {
   id: number;
