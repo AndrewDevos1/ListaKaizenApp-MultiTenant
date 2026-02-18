@@ -5,9 +5,9 @@
   "scripts": {
     "build": "nest build",
     "dev": "nest start --watch",
-    "start": "npx prisma migrate deploy && nest start",
+    "start": "npx prisma db push --skip-generate && nest start",
     "start:debug": "nest start --debug --watch",
-    "start:prod": "npx prisma migrate deploy && node dist/main",
+    "start:prod": "npx prisma db push --skip-generate && node dist/main",
     "lint": "eslint \"{src,test}/**/*.ts\" --fix",
     "test": "jest",
     "test:watch": "jest --watch",
