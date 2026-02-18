@@ -13,17 +13,26 @@ import {
   FaSignOutAlt,
   FaMoon,
   FaSun,
-  FaBars,
   FaTimes,
   FaChevronRight,
   FaSearch,
+  FaUserShield,
+  FaUser,
+  FaUserEdit,
+  FaKey,
+  FaQuestionCircle,
+  FaCog,
+  FaGripLinesVertical,
+  FaChevronLeft,
 } from 'react-icons/fa';
 import styles from './Sidebar.module.css';
+import Breadcrumbs from './Breadcrumbs';
 
 interface MenuItem {
   label: string;
   href: string;
   icon: React.ReactNode;
+  onClick?: () => void;
 }
 
 interface MenuGroup {
@@ -42,6 +51,15 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
   const searchRef = useRef<HTMLInputElement>(null);
   const touchStartX = useRef(0);
+
+  const expandSidebarForSearch = useCallback(() => {
+    setIsCollapsed((prev) => {
+      if (prev) {
+        localStorage.setItem('sidebarCollapsed', 'false');
+      }
+      return false;
+    });
+  }, []);
 
   // Initialize dark mode from localStorage
   useEffect(() => {
@@ -63,17 +81,22 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
 
   // Initialize expanded groups from localStorage
   useEffect(() => {
+    const defaultGroups = isAdmin
+      ? { 'visao-geral': true, gestao: true, perfil: true }
+      : { dashboard: true, atividades: true, perfil: true };
+
     const saved = localStorage.getItem('expandedGroups');
     if (saved) {
       try {
-        setExpandedGroups(JSON.parse(saved));
+        const parsed = JSON.parse(saved);
+        setExpandedGroups({ ...defaultGroups, ...parsed });
       } catch {
         // Fallback to default state
-        setExpandedGroups(isAdmin ? { 'visao-geral': true, gestao: true } : { dashboard: true, atividades: true });
+        setExpandedGroups(defaultGroups);
       }
     } else {
       // Default: expand all groups
-      setExpandedGroups(isAdmin ? { 'visao-geral': true, gestao: true } : { dashboard: true, atividades: true });
+      setExpandedGroups(defaultGroups);
     }
   }, [isAdmin]);
 
@@ -128,7 +151,12 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
       }
       if (e.key === '/' && !isToggled) {
         e.preventDefault();
-        searchRef.current?.focus();
+        if (isCollapsed) {
+          expandSidebarForSearch();
+          setTimeout(() => searchRef.current?.focus(), 0);
+        } else {
+          searchRef.current?.focus();
+        }
       }
     };
 
@@ -146,7 +174,7 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('resize', handleResize);
     };
-  }, [isToggled]);
+  }, [isToggled, isCollapsed, expandSidebarForSearch]);
 
   // Swipe gesture for mobile
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -228,7 +256,30 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
     },
   ];
 
-  const allMenuGroups = isAdmin ? adminMenuGroups : collaboratorMenuGroups;
+  const profileMenuGroup: MenuGroup = {
+    id: 'perfil',
+    label: 'PERFIL',
+    items: [
+      {
+        label: 'Editar Perfil',
+        href: '#',
+        icon: <FaUserEdit />,
+      },
+      {
+        label: 'Mudar Senha',
+        href: '#',
+        icon: <FaKey />,
+      },
+      {
+        label: 'Sair',
+        href: '#',
+        icon: <FaSignOutAlt />,
+        onClick: logout,
+      },
+    ],
+  };
+
+  const allMenuGroups = [...(isAdmin ? adminMenuGroups : collaboratorMenuGroups), profileMenuGroup];
 
   // Filter groups and items based on search
   const filteredGroups = useMemo(() => {
@@ -271,7 +322,13 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
 
         {/* User Info */}
         <div className={styles.userInfo}>
-          <div className={styles.userAvatar}>{user.nome.charAt(0).toUpperCase()}</div>
+          <div className={styles.userAvatar}>
+            {isCollapsed ? (
+              <div className={styles.userAvatarIcon}>{isAdmin ? <FaUserShield /> : <FaUser />}</div>
+            ) : (
+              user.nome.charAt(0).toUpperCase()
+            )}
+          </div>
           <div className={styles.userDetails}>
             <div className={styles.userName}>{user.nome}</div>
             <div className={styles.userRole}>{isAdmin ? 'Administrador' : 'Colaborador'}</div>
@@ -279,27 +336,31 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
         </div>
 
         {/* Search */}
-        <div className={styles.searchContainer}>
-          <FaSearch className={styles.searchIcon} />
-          <input
-            ref={searchRef}
-            type="text"
-            className={styles.searchInput}
-            placeholder="Buscar... (/)"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            aria-label="Buscar menu"
-          />
-          {searchTerm && (
-            <button
-              className={styles.searchClear}
-              onClick={() => setSearchTerm('')}
-              aria-label="Limpar busca"
-            >
-              <FaTimes />
-            </button>
-          )}
-        </div>
+        {!isCollapsed && (
+          <div className={styles.searchContainer}>
+            <FaSearch className={styles.searchIcon} />
+            <input
+              ref={searchRef}
+              type="text"
+              className={styles.searchInput}
+              placeholder="Buscar... (/)"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              onFocus={expandSidebarForSearch}
+              aria-label="Buscar menu"
+            />
+            {searchTerm && (
+              <button
+                className={styles.searchClear}
+                onClick={() => setSearchTerm('')}
+                aria-label="Limpar busca"
+                type="button"
+              >
+                <FaTimes />
+              </button>
+            )}
+          </div>
+        )}
 
         {/* Menu Container */}
         <div className={styles.menuContainer}>
@@ -315,17 +376,34 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
               </button>
               {expandedGroups[group.id] && (
                 <div className={styles.menuItems}>
-                  {group.items.map((item, itemIndex) => (
-                    <Link
-                      key={itemIndex}
-                      href={item.href}
-                      className={`${styles.menuItem} ${isMenuItemActive(item.href) ? styles.active : ''}`}
-                      onClick={closeMobileMenu}
-                    >
-                      {item.icon}
-                      <span className={styles.menuItemLabel}>{item.label}</span>
-                    </Link>
-                  ))}
+                  {group.items.map((item, itemIndex) =>
+                    item.onClick ? (
+                      <button
+                        key={itemIndex}
+                        type="button"
+                        className={`${styles.menuItem} ${styles.menuItemButton}`}
+                        onClick={() => {
+                          item.onClick?.();
+                          closeMobileMenu();
+                        }}
+                        title={isCollapsed ? item.label : undefined}
+                      >
+                        {item.icon}
+                        <span className={styles.menuItemLabel}>{item.label}</span>
+                      </button>
+                    ) : (
+                      <Link
+                        key={itemIndex}
+                        href={item.href}
+                        className={`${styles.menuItem} ${isMenuItemActive(item.href) ? styles.active : ''}`}
+                        onClick={closeMobileMenu}
+                        title={isCollapsed ? item.label : undefined}
+                      >
+                        {item.icon}
+                        <span className={styles.menuItemLabel}>{item.label}</span>
+                      </Link>
+                    ),
+                  )}
                 </div>
               )}
             </div>
@@ -334,26 +412,49 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
 
         {/* Sidebar Footer */}
         <div className={styles.sidebarFooter}>
-          <button
-            className={styles.themeToggleBtn}
-            onClick={handleToggleDarkMode}
-            aria-label={isDarkMode ? 'Modo claro' : 'Modo escuro'}
-            title={isDarkMode ? 'Modo claro' : 'Modo escuro'}
-          >
-            {isDarkMode ? <FaSun /> : <FaMoon />}
-          </button>
-          <label className={styles.themeToggleLabel}>{isDarkMode ? 'Claro' : 'Escuro'}</label>
-        </div>
+          <div className={styles.footerControls}>
+            <button
+              className={styles.themeToggleBtn}
+              onClick={handleToggleDarkMode}
+              aria-label={isDarkMode ? 'Modo claro' : 'Modo escuro'}
+              title={isDarkMode ? 'Modo claro' : 'Modo escuro'}
+              type="button"
+            >
+              {isDarkMode ? <FaSun /> : <FaMoon />}
+            </button>
+            {!isCollapsed && <label className={styles.themeToggleLabel}>{isDarkMode ? 'Claro' : 'Escuro'}</label>}
+          </div>
 
-        {/* Logout */}
-        <button className={styles.logoutBtn} onClick={logout}>
-          <FaSignOutAlt />
-          <span className={styles.menuItemLabel}>Sair</span>
-        </button>
+          {!isCollapsed ? (
+            <div className={styles.footerLinks}>
+              <Link href="#" className={styles.footerLink}>
+                <FaQuestionCircle />
+                Ajuda & Suporte
+              </Link>
+              <Link href="#" className={styles.footerLink}>
+                <FaCog />
+                Configurações
+              </Link>
+            </div>
+          ) : (
+            <div className={styles.footerIconLinks}>
+              <Link href="#" className={styles.footerIconLink} title="Ajuda & Suporte">
+                <FaQuestionCircle />
+              </Link>
+              <Link href="#" className={styles.footerIconLink} title="Configurações">
+                <FaCog />
+              </Link>
+            </div>
+          )}
+          <div className={styles.footerVersion}>v2.1.0</div>
+        </div>
       </nav>
 
       {/* Page Content Wrapper */}
-      <div className={styles.pageContentWrapper}>{children}</div>
+      <div className={styles.pageContentWrapper}>
+        <Breadcrumbs />
+        {children}
+      </div>
 
       {/* Mobile Floating Tab */}
       <button
@@ -361,9 +462,10 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
         onClick={handleToggleMobile}
         aria-label={isToggled ? 'Fechar menu' : 'Abrir menu'}
         title={isToggled ? 'Fechar menu' : 'Abrir menu'}
+        aria-expanded={isToggled}
       >
-        {isToggled ? <FaTimes /> : <FaBars />}
-        MENU
+        <FaGripLinesVertical />
+        <FaChevronLeft />
       </button>
     </div>
   );

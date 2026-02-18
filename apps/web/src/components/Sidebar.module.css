@@ -135,6 +135,15 @@
   font-size: 1.25rem;
 }
 
+.userAvatarIcon {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+}
+
 .userDetails {
   flex: 1;
   min-width: 0;
@@ -338,15 +347,29 @@
   display: none;
 }
 
+.menuItemButton {
+  background: none;
+  border: none;
+  width: 100%;
+  text-align: left;
+  color: inherit;
+}
+
 /* Sidebar Footer */
 .sidebarFooter {
   padding: var(--spacing-lg) var(--spacing-md);
   border-top: 1px solid rgba(255, 255, 255, 0.1);
   flex-shrink: 0;
   display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.footerControls {
+  display: flex;
   align-items: center;
-  justify-content: center;
   gap: var(--spacing-md);
+  justify-content: center;
 }
 
 .themeToggleBtn {
@@ -381,40 +404,59 @@
   display: none;
 }
 
-/* Logout Button */
-.logoutBtn {
+.footerLinks {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.footerLink {
   display: flex;
   align-items: center;
-  gap: var(--spacing-md);
-  padding: var(--spacing-md) var(--spacing-md);
+  gap: var(--spacing-sm);
   color: var(--sidebar-text);
   text-decoration: none;
-  transition: all var(--transition-fast);
-  border-right: 3px solid transparent;
-  cursor: pointer;
-  font-weight: 500;
-  white-space: nowrap;
-  background: none;
-  border: none;
-  width: 100%;
-  text-align: left;
-  margin-top: var(--spacing-md);
+  padding: 0.35rem 0.5rem;
+  border-radius: 8px;
+  transition: background var(--transition-fast);
 }
 
-.logoutBtn:hover {
-  background-color: rgba(255, 0, 0, 0.15);
-  border-right-color: #ff6b6b;
-  transform: translateX(-4px);
+.footerLink:hover {
+  background: rgba(255, 255, 255, 0.12);
 }
 
-.logoutBtn svg {
-  width: 20px;
-  height: 20px;
-  flex-shrink: 0;
+.footerIconLinks {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  justify-content: center;
+  align-self: center;
 }
 
-.wrapper.collapsed .logoutBtn {
-  padding: var(--spacing-md) 0;
+.footerIconLink {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--sidebar-text);
+  text-decoration: none;
+  transition: background var(--transition-fast), transform var(--transition-fast);
+}
+
+.footerIconLink:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
+}
+
+.footerVersion {
+  font-size: 0.75rem;
+  color: var(--sidebar-text-muted);
+  opacity: 0.7;
+  text-align: center;
+  align-self: center;
 }
 
 /* Page Content Wrapper */
@@ -519,7 +561,6 @@
 /* Accessibility */
 .menuItem:focus-visible,
 .collapseBtn:focus-visible,
-.logoutBtn:focus-visible,
 .themeToggleBtn:focus-visible {
   outline: 2px solid var(--color-accent);
   outline-offset: 2px;
