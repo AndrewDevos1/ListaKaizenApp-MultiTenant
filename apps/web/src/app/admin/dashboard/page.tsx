@@ -9,6 +9,9 @@ import styles from './Dashboard.module.css';
 import { FaBoxes, FaMapMarkerAlt, FaList, FaChartBar, FaUsers, FaCog } from 'react-icons/fa';
 import { Spinner } from 'react-bootstrap';
 
+export default function AdminDashboard() {
+  const { user } = useAuth();
+
   return (
     <div className={styles.dashboardWrapper}>
       <div className={styles.pageContainer}>
