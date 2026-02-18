@@ -5,9 +5,9 @@
   "scripts": {
     "build": "nest build",
     "dev": "nest start --watch",
-    "start": "npx prisma db push --skip-generate && npx prisma db seed && nest start",
+    "start": "npx prisma db push --skip-generate && nest start",
     "start:debug": "nest start --debug --watch",
-    "start:prod": "npx prisma db push --skip-generate && npx prisma db seed && node dist/main",
+    "start:prod": "npx prisma db push --skip-generate && node dist/main",
     "lint": "eslint \"{src,test}/**/*.ts\" --fix",
     "test": "jest",
     "test:watch": "jest --watch",
@@ -17,7 +17,8 @@
     "db:migrate": "prisma migrate dev",
     "db:push": "prisma db push",
     "db:studio": "prisma studio",
-    "db:seed": "ts-node prisma/seed.ts"
+    "db:seed": "ts-node prisma/seed.ts",
+    "postinstall": "npx prisma generate"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.0",
