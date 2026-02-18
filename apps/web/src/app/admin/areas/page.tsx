@@ -4,6 +4,7 @@ import { useState, useEffect, FormEvent } from 'react';
 import { Table, Button, Modal, Form, Alert, Spinner } from 'react-bootstrap';
 import api from '@/lib/api';
 import { Area } from 'shared';
+import styles from './Areas.module.css';
 
 export default function AreasPage() {
   const [areas, setAreas] = useState<Area[]>([]);
@@ -75,17 +76,19 @@ export default function AreasPage() {
   }
 
   return (
-    <>
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <h2>Areas</h2>
-        <Button variant="primary" onClick={() => openModal()}>
-          + Nova Area
-        </Button>
-      </div>
+    <div className={styles.pageWrapper}>
+      <div className={styles.pageContainer}>
+        <div className={styles.pageHeader}>
+          <h2 className={styles.pageTitle}>Áreas</h2>
+          <Button variant="primary" onClick={() => openModal()}>
+            + Nova Área
+          </Button>
+        </div>
 
-      {error && <Alert variant="danger" dismissible onClose={() => setError('')}>{error}</Alert>}
+        {error && <Alert variant="danger" dismissible onClose={() => setError('')}>{error}</Alert>}
 
-      <Table striped bordered hover responsive>
+        <div className={styles.tableWrapper}>
+          <Table striped bordered hover responsive className={styles.table}>
         <thead>
           <tr>
             <th>Nome</th>
@@ -114,9 +117,10 @@ export default function AreasPage() {
             </tr>
           )}
         </tbody>
-      </Table>
+          </Table>
+        </div>
 
-      <Modal show={showModal} onHide={() => setShowModal(false)}>
+        <Modal show={showModal} onHide={() => setShowModal(false)}>
         <Form onSubmit={handleSubmit}>
           <Modal.Header closeButton>
             <Modal.Title>{editing ? 'Editar Area' : 'Nova Area'}</Modal.Title>
@@ -141,7 +145,8 @@ export default function AreasPage() {
             </Button>
           </Modal.Footer>
         </Form>
-      </Modal>
-    </>
+        </Modal>
+      </div>
+    </div>
   );
 }

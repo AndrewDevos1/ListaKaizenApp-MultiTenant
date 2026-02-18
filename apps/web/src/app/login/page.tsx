@@ -3,8 +3,9 @@
 import { useState, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Container, Form, Button, Card, Alert, Spinner } from 'react-bootstrap';
 import { useAuth } from '@/contexts/AuthContext';
+import styles from './Login.module.css';
+import { FaSpinner } from 'react-icons/fa';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -30,47 +31,68 @@ export default function LoginPage() {
   };
 
   return (
-    <Container className="d-flex justify-content-center align-items-center vh-100">
-      <Card style={{ width: '100%', maxWidth: '420px' }}>
-        <Card.Body className="p-4">
-          <h2 className="text-center mb-4">Kaizen Lists</h2>
-          <h5 className="text-center text-muted mb-4">Login</h5>
+    <div className={styles.loginWrapper}>
+      <div className={styles.glassContainer}>
+        <div className={styles.cardHeader}>
+          <h1 className={styles.cardTitle}>Kaizen Lists</h1>
+          <p className={styles.cardSubtitle}>Sistema de Gestão de Estoque</p>
+        </div>
 
-          {error && <Alert variant="danger">{error}</Alert>}
+        {error && <div className={styles.errorMessage}>{error}</div>}
 
-          <Form onSubmit={handleSubmit}>
-            <Form.Group className="mb-3">
-              <Form.Label>Email</Form.Label>
-              <Form.Control
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="seu@email.com"
-                required
-              />
-            </Form.Group>
+        <form onSubmit={handleSubmit}>
+          <div className={styles.formGroup}>
+            <label htmlFor="email" className={styles.formLabel}>
+              Email
+            </label>
+            <input
+              id="email"
+              type="email"
+              className={styles.formInput}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="seu@email.com"
+              required
+            />
+          </div>
 
-            <Form.Group className="mb-3">
-              <Form.Label>Senha</Form.Label>
-              <Form.Control
-                type="password"
-                value={senha}
-                onChange={(e) => setSenha(e.target.value)}
-                placeholder="Sua senha"
-                required
-              />
-            </Form.Group>
+          <div className={styles.formGroup}>
+            <label htmlFor="senha" className={styles.formLabel}>
+              Senha
+            </label>
+            <input
+              id="senha"
+              type="password"
+              className={styles.formInput}
+              value={senha}
+              onChange={(e) => setSenha(e.target.value)}
+              placeholder="Sua senha"
+              required
+            />
+          </div>
 
-            <Button variant="primary" type="submit" className="w-100" disabled={loading}>
-              {loading ? <Spinner size="sm" animation="border" /> : 'Entrar'}
-            </Button>
-          </Form>
+          <button
+            type="submit"
+            className={styles.loginButton}
+            disabled={loading}
+          >
+            {loading ? (
+              <>
+                <FaSpinner className={styles.spinner} />
+                Entrando...
+              </>
+            ) : (
+              'Entrar'
+            )}
+          </button>
+        </form>
 
-          <p className="text-center mt-3 mb-0">
-            Nao tem conta? <Link href="/register">Registre-se</Link>
+        <div className={styles.formLink}>
+          <p className={styles.formLinkText}>
+            Não tem conta? <Link href="/register">Registre-se</Link>
           </p>
-        </Card.Body>
-      </Card>
-    </Container>
+        </div>
+      </div>
+    </div>
   );
 }

@@ -1,42 +1,102 @@
 'use client';
 
-import { Card, Row, Col } from 'react-bootstrap';
+import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
+import styles from './Dashboard.module.css';
+import { FaBoxes, FaMapMarkerAlt, FaList, FaChartBar, FaUsers, FaCog } from 'react-icons/fa';
 
 export default function AdminDashboard() {
   const { user } = useAuth();
 
-  return (
-    <>
-      <h2 className="mb-4">Dashboard Admin</h2>
-      <p className="text-muted mb-4">Bem-vindo, {user?.nome}!</p>
+  const widgets = [
+    {
+      id: 1,
+      title: 'Total de Itens',
+      value: '1,245',
+      icon: FaBoxes,
+      color: 'widgetBlue',
+      change: '+12%',
+      positive: true,
+    },
+    {
+      id: 2,
+      title: 'Áreas Ativas',
+      value: '8',
+      icon: FaMapMarkerAlt,
+      color: 'widgetGreen',
+      change: '+2',
+      positive: true,
+    },
+    {
+      id: 3,
+      title: 'Listas Criadas',
+      value: '42',
+      icon: FaList,
+      color: 'widgetYellow',
+      change: '+8',
+      positive: true,
+    },
+    {
+      id: 4,
+      title: 'Utilizadores',
+      value: '23',
+      icon: FaUsers,
+      color: 'widgetRed',
+      change: '+3',
+      positive: true,
+    },
+  ];
 
-      <Row className="g-4">
-        <Col md={4}>
-          <Card className="h-100">
-            <Card.Body>
-              <Card.Title>Itens</Card.Title>
-              <Card.Text>Gerenciar itens do estoque</Card.Text>
-            </Card.Body>
-          </Card>
-        </Col>
-        <Col md={4}>
-          <Card className="h-100">
-            <Card.Body>
-              <Card.Title>Areas</Card.Title>
-              <Card.Text>Gerenciar areas do restaurante</Card.Text>
-            </Card.Body>
-          </Card>
-        </Col>
-        <Col md={4}>
-          <Card className="h-100">
-            <Card.Body>
-              <Card.Title>Listas</Card.Title>
-              <Card.Text>Gerenciar listas de estoque</Card.Text>
-            </Card.Body>
-          </Card>
-        </Col>
-      </Row>
-    </>
+  return (
+    <div className={styles.dashboardWrapper}>
+      <div className={styles.pageContainer}>
+        <div className={styles.pageHeader}>
+          <div>
+            <h1 className={styles.pageTitle}>Dashboard Admin</h1>
+            <p className={styles.pageSubtitle}>Bem-vindo, {user?.nome}!</p>
+          </div>
+        </div>
+
+        <div className={styles.widgetsGrid}>
+          {widgets.map((widget) => {
+            const Icon = widget.icon;
+            return (
+              <div key={widget.id} className={`${styles.widgetCard} ${styles[widget.color]}`}>
+                <div className={styles.widgetHeader}>
+                  <div className={styles.widgetIcon}>
+                    <Icon />
+                  </div>
+                </div>
+
+                <h3 className={styles.widgetTitle}>{widget.title}</h3>
+                <div className={styles.widgetValue}>{widget.value}</div>
+
+                <div className={styles.widgetFooter}>
+                  <span className={`${styles.widgetChange} ${widget.positive ? styles.positive : styles.negative}`}>
+                    {widget.positive ? '↑' : '↓'} {widget.change}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        <div className={styles.quickActionsSection}>
+          <h2 className={styles.sectionTitle}>Ações Rápidas</h2>
+          <div className={styles.actionsGrid}>
+            <Link href="/admin/items" className={styles.actionButton}>
+              Gerenciar Itens
+            </Link>
+            <Link href="/admin/areas" className={styles.actionButton}>
+              Gerenciar Áreas
+            </Link>
+            <Link href="/admin/listas" className={styles.actionButton}>
+              Ver Listas
+            </Link>
+            <button className={styles.actionButton}>Configurações</button>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }

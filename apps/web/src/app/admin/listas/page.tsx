@@ -1,9 +1,11 @@
 'use client';
 
 import { useState, useEffect, FormEvent } from 'react';
-import { Table, Button, Modal, Form, Alert, Spinner, Badge } from 'react-bootstrap';
+import { Button, Modal, Form, Alert, Spinner } from 'react-bootstrap';
 import Link from 'next/link';
 import api from '@/lib/api';
+import styles from './Listas.module.css';
+import { FaPlus, FaList, FaTrash } from 'react-icons/fa';
 
 interface ListaSummary {
   id: number;
@@ -67,89 +69,111 @@ export default function ListasPage() {
   }
 
   return (
-    <>
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <h2>Listas</h2>
-        <Button variant="primary" onClick={() => setShowModal(true)}>
-          + Nova Lista
-        </Button>
-      </div>
+    <div className={styles.pageWrapper}>
+      <div className={styles.pageContainer}>
+        <div className={styles.pageHeader}>
+          <h2 className={styles.pageTitle}>Listas</h2>
+          <Button variant="primary" onClick={() => setShowModal(true)}>
+            <FaPlus /> Nova Lista
+          </Button>
+        </div>
 
-      {error && <Alert variant="danger" dismissible onClose={() => setError('')}>{error}</Alert>}
+        {error && <Alert variant="danger" dismissible onClose={() => setError('')}>{error}</Alert>}
 
-      <Table striped bordered hover responsive>
-        <thead>
-          <tr>
-            <th>Nome</th>
-            <th>Colaboradores</th>
-            <th>Itens</th>
-            <th style={{ width: 200 }}>Acoes</th>
-          </tr>
-        </thead>
-        <tbody>
+        <div className={styles.listsGrid}>
+          <div className={`${styles.listCard} ${styles.cardCriar}`} onClick={() => setShowModal(true)}>
+            <div className={styles.criarContent}>
+              <div className={styles.criarIcon}>
+                <FaPlus />
+              </div>
+              <p className={styles.criarText}>Criar Nova Lista</p>
+            </div>
+          </div>
+
           {listas.map((lista) => (
-            <tr key={lista.id}>
-              <td>
-                <Link href={`/admin/listas/${lista.id}`}>{lista.nome}</Link>
-              </td>
-              <td>
-                <Badge bg="info">{lista._count.colaboradores}</Badge>
-              </td>
-              <td>
-                <Badge bg="secondary">{lista._count.itensRef}</Badge>
-              </td>
-              <td>
-                <Button
-                  size="sm"
-                  variant="outline-primary"
-                  className="me-1"
-                  as={Link as any}
-                  href={`/admin/listas/${lista.id}`}
+            <Link
+              key={lista.id}
+              href={`/admin/listas/${lista.id}`}
+              className={`${styles.listCard} ${styles.cardLista}`}
+            >
+              <div className={styles.listHeader}>
+                <div className={styles.listIcon}>
+                  <FaList />
+                </div>
+              </div>
+
+              <h3 className={styles.listName}>{lista.nome}</h3>
+              <p className={styles.listDescription}>
+                {lista._count.itensRef} itens • {lista._count.colaboradores} colaborador{lista._count.colaboradores !== 1 ? 'es' : ''}
+              </p>
+
+              <div className={styles.listMeta}>
+                <span className={styles.metaItem}>
+                  <strong>{lista._count.itensRef}</strong> itens
+                </span>
+                <span className={styles.metaItem}>
+                  <strong>{lista._count.colaboradores}</strong> colab.
+                </span>
+              </div>
+
+              <div className={styles.listActions}>
+                <button
+                  className={styles.actionBtn}
+                  onClick={(e) => {
+                    e.preventDefault();
+                  }}
                 >
                   Gerenciar
-                </Button>
-                <Button size="sm" variant="outline-danger" onClick={() => handleDelete(lista.id)}>
-                  Excluir
-                </Button>
-              </td>
-            </tr>
+                </button>
+                <button
+                  className={styles.actionBtn}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleDelete(lista.id);
+                  }}
+                >
+                  <FaTrash />
+                </button>
+              </div>
+            </Link>
           ))}
-          {listas.length === 0 && (
-            <tr>
-              <td colSpan={4} className="text-center text-muted">
-                Nenhuma lista cadastrada
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </Table>
+        </div>
 
-      <Modal show={showModal} onHide={() => setShowModal(false)}>
-        <Form onSubmit={handleCreate}>
-          <Modal.Header closeButton>
-            <Modal.Title>Nova Lista</Modal.Title>
-          </Modal.Header>
-          <Modal.Body>
-            <Form.Group>
-              <Form.Label>Nome</Form.Label>
-              <Form.Control
-                value={nome}
-                onChange={(e) => setNome(e.target.value)}
-                placeholder="Ex: Lista Semanal"
-                required
-              />
-            </Form.Group>
-          </Modal.Body>
-          <Modal.Footer>
-            <Button variant="secondary" onClick={() => setShowModal(false)}>
-              Cancelar
-            </Button>
-            <Button variant="primary" type="submit">
-              Criar
-            </Button>
-          </Modal.Footer>
-        </Form>
-      </Modal>
-    </>
+        {listas.length === 0 && (
+          <div className={styles.emptyState}>
+            <FaList className={styles.emptyIcon} />
+            <h3 className={styles.emptyTitle}>Nenhuma lista cadastrada</h3>
+            <p className={styles.emptyText}>Clique em "Nova Lista" para criar sua primeira lista</p>
+          </div>
+        )}
+
+        <Modal show={showModal} onHide={() => setShowModal(false)}>
+          <Form onSubmit={handleCreate}>
+            <Modal.Header closeButton>
+              <Modal.Title>Nova Lista</Modal.Title>
+            </Modal.Header>
+            <Modal.Body>
+              <Form.Group>
+                <Form.Label>Nome</Form.Label>
+                <Form.Control
+                  value={nome}
+                  onChange={(e) => setNome(e.target.value)}
+                  placeholder="Ex: Lista Semanal"
+                  required
+                />
+              </Form.Group>
+            </Modal.Body>
+            <Modal.Footer>
+              <Button variant="secondary" onClick={() => setShowModal(false)}>
+                Cancelar
+              </Button>
+              <Button variant="primary" type="submit">
+                Criar
+              </Button>
+            </Modal.Footer>
+          </Form>
+        </Modal>
+      </div>
+    </div>
   );
 }

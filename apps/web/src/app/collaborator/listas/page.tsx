@@ -1,8 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Card, Row, Col, Badge, Spinner, Alert } from 'react-bootstrap';
+import { Spinner, Alert } from 'react-bootstrap';
+import Link from 'next/link';
 import api from '@/lib/api';
+import styles from './Listas.module.css';
+import { FaClipboardList } from 'react-icons/fa';
 
 interface MinhaLista {
   id: number;
@@ -38,29 +41,62 @@ export default function MinhasListasPage() {
   }
 
   return (
-    <>
-      <h2 className="mb-4">Minhas Listas</h2>
+    <div className={styles.pageWrapper}>
+      <div className={styles.pageContainer}>
+        <div className={styles.pageHeader}>
+          <h1 className={styles.pageTitle}>Minhas Listas</h1>
+          <p className={styles.pageSubtitle}>Listas atribuídas para você</p>
+        </div>
 
-      {error && <Alert variant="danger">{error}</Alert>}
+        {error && <Alert variant="danger">{error}</Alert>}
 
-      {listas.length === 0 ? (
-        <Alert variant="info">
-          Voce ainda nao foi atribuido a nenhuma lista.
-        </Alert>
-      ) : (
-        <Row className="g-3">
-          {listas.map((lista) => (
-            <Col key={lista.id} md={6} lg={4}>
-              <Card className="h-100">
-                <Card.Body>
-                  <Card.Title>{lista.nome}</Card.Title>
-                  <Badge bg="secondary">{lista._count.itensRef} itens</Badge>
-                </Card.Body>
-              </Card>
-            </Col>
-          ))}
-        </Row>
-      )}
-    </>
+        {listas.length === 0 ? (
+          <div className={styles.emptyState}>
+            <div className={styles.emptyIcon}>
+              <FaClipboardList />
+            </div>
+            <h3 className={styles.emptyTitle}>Nenhuma lista atribuída</h3>
+            <p className={styles.emptyText}>
+              Você ainda não foi atribuído a nenhuma lista. Aguarde que um administrador faça a atribuição.
+            </p>
+          </div>
+        ) : (
+          <div className={styles.listsGrid}>
+            {listas.map((lista) => (
+              <Link
+                key={lista.id}
+                href={`/collaborator/listas/${lista.id}`}
+                className={styles.listCard}
+              >
+                <div className={styles.listHeader}>
+                  <div className={styles.listIcon}>
+                    <FaClipboardList />
+                  </div>
+                </div>
+
+                <h3 className={styles.listName}>{lista.nome}</h3>
+
+                <div className={styles.listMeta}>
+                  <div className={styles.metaItem}>
+                    <div className={styles.metaLabel}>Itens</div>
+                    <div className={styles.metaValue}>{lista._count.itensRef}</div>
+                  </div>
+                  <div className={styles.metaItem}>
+                    <div className={styles.metaLabel}>Status</div>
+                    <div className={styles.metaValue} style={{ fontSize: '0.9rem' }}>Ativo</div>
+                  </div>
+                </div>
+
+                <div className={styles.listActions}>
+                  <button className={styles.actionButton} onClick={(e) => e.preventDefault()}>
+                    Abrir
+                  </button>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
   );
 }

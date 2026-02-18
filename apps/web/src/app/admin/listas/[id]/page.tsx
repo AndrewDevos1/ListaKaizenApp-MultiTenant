@@ -17,6 +17,7 @@ import {
 import Link from 'next/link';
 import api from '@/lib/api';
 import { Item } from 'shared';
+import styles from './ListaDetail.module.css';
 
 interface ListaDetail {
   id: number;
@@ -113,46 +114,65 @@ export default function ListaDetailPage() {
   const availableItems = allItems.filter((i) => !existingItemIds.has(i.id));
 
   return (
-    <>
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <div>
-          <Link href="/admin/listas" className="text-decoration-none">
-            &larr; Voltar
-          </Link>
-          <h2 className="mt-2">{lista.nome}</h2>
+    <div className={styles.pageWrapper}>
+      <div className={styles.pageContainer}>
+        <Link href="/admin/listas" className={styles.backButton}>
+          ← Voltar para Listas
+        </Link>
+
+        <div className={styles.header}>
+          <div className={styles.headerInfo}>
+            <h1 className={styles.listTitle}>{lista.nome}</h1>
+            <div className={styles.listMeta}>
+              <div className={styles.metaItem}>
+                <span className={styles.metaLabel}>Itens:</span>
+                {lista.itensRef.length}
+              </div>
+              <div className={styles.metaItem}>
+                <span className={styles.metaLabel}>Colaboradores:</span>
+                {lista.colaboradores.length}
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
 
-      {error && <Alert variant="danger" dismissible onClose={() => setError('')}>{error}</Alert>}
+        {error && <Alert variant="danger" dismissible onClose={() => setError('')}>{error}</Alert>}
 
-      <Row className="g-4">
-        <Col lg={6}>
-          <Card>
-            <Card.Header className="d-flex justify-content-between align-items-center">
-              <strong>
-                Itens <Badge bg="secondary">{lista.itensRef.length}</Badge>
-              </strong>
-              <Button size="sm" variant="primary" onClick={() => setShowItemModal(true)}>
-                + Adicionar
-              </Button>
-            </Card.Header>
-            <Card.Body className="p-0">
-              <Table className="mb-0" hover responsive>
-                <thead>
-                  <tr>
-                    <th>Item</th>
-                    <th>Unidade</th>
-                    <th>Qtd Min</th>
-                    <th></th>
-                  </tr>
-                </thead>
+        <div className={styles.statsSection}>
+          <div className={styles.statCard}>
+            <div className={styles.statLabel}>Total de Itens</div>
+            <div className={styles.statValue}>{lista.itensRef.length}</div>
+          </div>
+          <div className={styles.statCard}>
+            <div className={styles.statLabel}>Colaboradores</div>
+            <div className={styles.statValue}>{lista.colaboradores.length}</div>
+          </div>
+        </div>
+
+        <div className={styles.tableSection}>
+          <h2 className={styles.sectionTitle}>Itens da Lista</h2>
+          <div style={{ marginBottom: '1rem' }}>
+            <Button variant="primary" onClick={() => setShowItemModal(true)}>
+              + Adicionar Item
+            </Button>
+          </div>
+          <div className={styles.tableWrapper}>
+            <Table striped bordered hover responsive className={styles.table}>
+              <thead>
+                <tr className={styles.tableHeader}>
+                  <th className={styles.tableHeaderCell}>Item</th>
+                  <th className={styles.tableHeaderCell}>Unidade</th>
+                  <th className={styles.tableHeaderCell}>Qtd Min</th>
+                  <th className={styles.tableHeaderCell}></th>
+                </tr>
+              </thead>
                 <tbody>
                   {lista.itensRef.map((ir) => (
-                    <tr key={ir.id}>
-                      <td>{ir.item.nome}</td>
-                      <td>{ir.item.unidadeMedida}</td>
-                      <td>{ir.quantidadeMinima}</td>
-                      <td>
+                    <tr key={ir.id} className={styles.tableRow}>
+                      <td className={styles.tableCell}>{ir.item.nome}</td>
+                      <td className={styles.tableCell}>{ir.item.unidadeMedida}</td>
+                      <td className={styles.tableCell}>{ir.quantidadeMinima}</td>
+                      <td className={styles.tableCell}>
                         <Button
                           size="sm"
                           variant="outline-danger"
@@ -171,90 +191,83 @@ export default function ListaDetailPage() {
                     </tr>
                   )}
                 </tbody>
-              </Table>
-            </Card.Body>
-          </Card>
-        </Col>
+            </Table>
+          </div>
+        </div>
 
-        <Col lg={6}>
-          <Card>
-            <Card.Header>
-              <strong>
-                Colaboradores <Badge bg="info">{lista.colaboradores.length}</Badge>
-              </strong>
-            </Card.Header>
-            <Card.Body className="p-0">
-              <Table className="mb-0" hover responsive>
-                <thead>
-                  <tr>
-                    <th>Nome</th>
-                    <th>Email</th>
+        <div className={styles.tableSection}>
+          <h2 className={styles.sectionTitle}>Colaboradores</h2>
+          <div className={styles.tableWrapper}>
+            <Table striped bordered hover responsive className={styles.table}>
+              <thead>
+                <tr className={styles.tableHeader}>
+                  <th className={styles.tableHeaderCell}>Nome</th>
+                  <th className={styles.tableHeaderCell}>Email</th>
+                </tr>
+              </thead>
+              <tbody>
+                {lista.colaboradores.map((c) => (
+                  <tr key={c.id} className={styles.tableRow}>
+                    <td className={styles.tableCell}>{c.usuario.nome}</td>
+                    <td className={styles.tableCell}>{c.usuario.email}</td>
                   </tr>
-                </thead>
-                <tbody>
-                  {lista.colaboradores.map((c) => (
-                    <tr key={c.id}>
-                      <td>{c.usuario.nome}</td>
-                      <td>{c.usuario.email}</td>
-                    </tr>
-                  ))}
-                  {lista.colaboradores.length === 0 && (
-                    <tr>
-                      <td colSpan={2} className="text-center text-muted">
-                        Nenhum colaborador vinculado
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </Table>
-            </Card.Body>
-          </Card>
-        </Col>
-      </Row>
+                ))}
+                {lista.colaboradores.length === 0 && (
+                  <tr>
+                    <td colSpan={2} className="text-center text-muted">
+                      Nenhum colaborador vinculado
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </Table>
+          </div>
+        </div>
 
-      <Modal show={showItemModal} onHide={() => setShowItemModal(false)}>
-        <Modal.Header closeButton>
-          <Modal.Title>Adicionar Item</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <Form.Group className="mb-3">
-            <Form.Label>Item</Form.Label>
-            <Form.Select
-              value={selectedItemId}
-              onChange={(e) => setSelectedItemId(e.target.value)}
+        <Modal show={showItemModal} onHide={() => setShowItemModal(false)}>
+          <Modal.Header closeButton>
+            <Modal.Title>Adicionar Item</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            <Form.Group className="mb-3">
+              <Form.Label>Item</Form.Label>
+              <Form.Select
+                value={selectedItemId}
+                onChange={(e) => setSelectedItemId(e.target.value)}
+              >
+                <option value="">Selecione...</option>
+                {availableItems.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.nome} ({item.unidadeMedida})
+                  </option>
+                ))}
+              </Form.Select>
+            </Form.Group>
+            <Form.Group>
+              <Form.Label>Quantidade Mínima</Form.Label>
+              <Form.Control
+                type="number"
+                value={quantidadeMinima}
+                onChange={(e) => setQuantidadeMinima(e.target.value)}
+                min="0"
+                step="0.01"
+              />
+            </Form.Group>
+          </Modal.Body>
+          <Modal.Footer>
+            <Button variant="secondary" onClick={() => setShowItemModal(false)}>
+              Cancelar
+            </Button>
+            <Button
+              variant="primary"
+              onClick={handleAddItem}
+              disabled={!selectedItemId}
             >
-              <option value="">Selecione...</option>
-              {availableItems.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.nome} ({item.unidadeMedida})
-                </option>
-              ))}
-            </Form.Select>
-          </Form.Group>
-          <Form.Group>
-            <Form.Label>Quantidade Minima</Form.Label>
-            <Form.Control
-              type="number"
-              value={quantidadeMinima}
-              onChange={(e) => setQuantidadeMinima(e.target.value)}
-              min="0"
-              step="0.01"
-            />
-          </Form.Group>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowItemModal(false)}>
-            Cancelar
-          </Button>
-          <Button
-            variant="primary"
-            onClick={handleAddItem}
-            disabled={!selectedItemId}
-          >
-            Adicionar
-          </Button>
-        </Modal.Footer>
-      </Modal>
-    </>
+              Adicionar
+            </Button>
+          </Modal.Footer>
+        </Modal>
+      </div>
+    </div>
   );
 }

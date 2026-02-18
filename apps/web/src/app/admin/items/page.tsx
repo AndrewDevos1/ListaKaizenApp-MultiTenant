@@ -12,6 +12,7 @@ import {
 } from 'react-bootstrap';
 import api from '@/lib/api';
 import { Item } from 'shared';
+import styles from './Items.module.css';
 
 export default function ItemsPage() {
   const [items, setItems] = useState<Item[]>([]);
@@ -91,25 +92,27 @@ export default function ItemsPage() {
   }
 
   return (
-    <>
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <h2>Itens</h2>
-        <Button variant="primary" onClick={() => openModal()}>
-          + Novo Item
-        </Button>
-      </div>
+    <div className={styles.pageWrapper}>
+      <div className={styles.pageContainer}>
+        <div className={styles.pageHeader}>
+          <h2 className={styles.pageTitle}>Itens</h2>
+          <Button variant="primary" onClick={() => openModal()}>
+            + Novo Item
+          </Button>
+        </div>
 
-      {error && <Alert variant="danger" dismissible onClose={() => setError('')}>{error}</Alert>}
+        {error && <Alert variant="danger" dismissible onClose={() => setError('')}>{error}</Alert>}
 
-      <InputGroup className="mb-3" style={{ maxWidth: 400 }}>
-        <Form.Control
-          placeholder="Buscar item..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-      </InputGroup>
+        <InputGroup className="mb-3" style={{ maxWidth: 400 }}>
+          <Form.Control
+            placeholder="Buscar item..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </InputGroup>
 
-      <Table striped bordered hover responsive>
+        <div className={styles.tableWrapper}>
+          <Table striped bordered hover responsive className={styles.table}>
         <thead>
           <tr>
             <th>Nome</th>
@@ -140,9 +143,10 @@ export default function ItemsPage() {
             </tr>
           )}
         </tbody>
-      </Table>
+          </Table>
+        </div>
 
-      <Modal show={showModal} onHide={() => setShowModal(false)}>
+        <Modal show={showModal} onHide={() => setShowModal(false)}>
         <Form onSubmit={handleSubmit}>
           <Modal.Header closeButton>
             <Modal.Title>{editing ? 'Editar Item' : 'Novo Item'}</Modal.Title>
@@ -175,7 +179,8 @@ export default function ItemsPage() {
             </Button>
           </Modal.Footer>
         </Form>
-      </Modal>
-    </>
+        </Modal>
+      </div>
+    </div>
   );
 }
