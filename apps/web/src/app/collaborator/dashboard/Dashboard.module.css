@@ -265,6 +265,23 @@
   margin: 0;
 }
 
+.errorBox {
+  background: #fff3f3;
+  color: #b02020;
+  border: 1px solid #ffcaca;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  margin-bottom: 1rem;
+}
+
+.loadingBox {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--text-secondary);
+  margin-bottom: 1rem;
+}
+
 /* Animations */
 @keyframes slideUp {
   from {
