@@ -663,21 +663,21 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
 
           {!isCollapsed ? (
             <div className={styles.footerLinks}>
-              <Link href="#" className={styles.footerLink}>
+              <Link href="#" className={`${styles.footerLink} ${styles.footerLinkDisabled}`} title="Em breve">
                 <FaQuestionCircle />
                 Ajuda & Suporte
               </Link>
-              <Link href="#" className={styles.footerLink}>
+              <Link href={isAdmin ? '/admin/convites' : '#'} className={styles.footerLink}>
                 <FaCog />
                 Configurações
               </Link>
             </div>
           ) : (
             <div className={styles.footerIconLinks}>
-              <Link href="#" className={styles.footerIconLink} title="Ajuda & Suporte">
+              <Link href="#" className={`${styles.footerIconLink} ${styles.footerLinkDisabled}`} title="Ajuda & Suporte (em breve)">
                 <FaQuestionCircle />
               </Link>
-              <Link href="#" className={styles.footerIconLink} title="Configurações">
+              <Link href={isAdmin ? '/admin/convites' : '#'} className={styles.footerIconLink} title="Configurações">
                 <FaCog />
               </Link>
             </div>
