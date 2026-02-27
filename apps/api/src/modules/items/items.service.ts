@@ -13,9 +13,14 @@ export class ItemsService {
     });
   }
 
-  async findAll(restauranteId: number) {
+  async findAll(restauranteId: number, fornecedorId?: number) {
     return this.prisma.item.findMany({
-      where: { restauranteId, ativo: true },
+      where: {
+        restauranteId,
+        ativo: true,
+        ...(fornecedorId ? { fornecedorId } : {}),
+      },
+      include: { fornecedor: { select: { id: true, nome: true } } },
       orderBy: { nome: 'asc' },
     });
   }

@@ -9,6 +9,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { CreateListaDto } from './dto/create-lista.dto';
 import { UpdateListaDto } from './dto/update-lista.dto';
 import { AtualizarEstoqueDto } from './dto/atualizar-estoque.dto';
+import { UpdateItemRefDto } from './dto/update-item-ref.dto';
 
 @Injectable()
 export class ListasService {
@@ -174,6 +175,31 @@ export class ListasService {
     );
 
     return atualizados;
+  }
+
+  // Tarefa 2.4 — Atualizar configuração de item ref (usaThreshold, qtdFardo, quantidadeMinima)
+  async updateItemRef(
+    listaId: number,
+    itemRefId: number,
+    dto: UpdateItemRefDto,
+    restauranteId: number,
+  ) {
+    // Verificar que a lista pertence ao restaurante
+    await this.findOne(listaId, restauranteId);
+
+    // Verificar que o itemRef pertence à lista
+    const itemRef = await this.prisma.listaItemRef.findFirst({
+      where: { id: itemRefId, listaId },
+    });
+    if (!itemRef) {
+      throw new NotFoundException('Item não encontrado nesta lista');
+    }
+
+    return this.prisma.listaItemRef.update({
+      where: { id: itemRefId },
+      data: dto,
+      include: { item: { select: { id: true, nome: true, unidadeMedida: true } } },
+    });
   }
 
   // Tarefa 1.3 — Submeter lista (colaborador)

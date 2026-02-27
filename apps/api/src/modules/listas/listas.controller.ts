@@ -17,6 +17,7 @@ import { UpdateListaDto } from './dto/update-lista.dto';
 import { AddColaboradorDto } from './dto/add-colaborador.dto';
 import { AddItemRefDto } from './dto/add-item-ref.dto';
 import { AtualizarEstoqueDto } from './dto/atualizar-estoque.dto';
+import { UpdateItemRefDto } from './dto/update-item-ref.dto';
 import { CurrentUser, Roles, TenantId } from '../../common/decorators';
 import { RolesGuard, TenantGuard } from '../../common/guards';
 
@@ -133,6 +134,23 @@ export class ListasController {
     @TenantId() restauranteId: number,
   ) {
     return this.listasService.getListaItens(listaId, restauranteId);
+  }
+
+  @Put(':listaId/itens/:itemRefId')
+  @Roles('ADMIN' as any, 'SUPER_ADMIN' as any)
+  @ApiOperation({ summary: 'Atualizar configuração de item na lista (threshold, fardo, mínimo)' })
+  updateItemRef(
+    @Param('listaId') listaId: string,
+    @Param('itemRefId') itemRefId: string,
+    @Body() dto: UpdateItemRefDto,
+    @TenantId() restauranteId: number,
+  ) {
+    return this.listasService.updateItemRef(
+      parseInt(listaId),
+      parseInt(itemRefId),
+      dto,
+      restauranteId,
+    );
   }
 }
 

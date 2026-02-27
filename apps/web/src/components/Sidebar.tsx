@@ -315,8 +315,9 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
         },
         {
           label: 'Fornecedores',
-          status: 'soon',
+          href: '/admin/fornecedores',
           icon: <FaTruck />,
+          status: 'available',
         },
         {
           label: 'Fornecedores da Região',

@@ -34,8 +34,12 @@ export class ItemsController {
 
   @Get()
   @ApiOperation({ summary: 'Listar itens do restaurante' })
-  findAll(@TenantId() restauranteId: number) {
-    return this.itemsService.findAll(restauranteId);
+  findAll(
+    @TenantId() restauranteId: number,
+    @Query('fornecedorId') fornecedorId?: string,
+  ) {
+    const fornecedorIdNum = fornecedorId ? parseInt(fornecedorId) : undefined;
+    return this.itemsService.findAll(restauranteId, fornecedorIdNum);
   }
 
   @Get('search')

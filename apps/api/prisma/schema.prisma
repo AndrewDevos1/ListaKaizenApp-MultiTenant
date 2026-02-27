@@ -14,6 +14,16 @@ enum UserRole {
   SUPPLIER
 }
 
+enum StatusCotacao {
+  ABERTA
+  FECHADA
+}
+
+enum StatusChecklist {
+  ABERTO
+  FINALIZADO
+}
+
 enum StatusSubmissao {
   PENDENTE
   APROVADO
@@ -35,11 +45,14 @@ model Restaurante {
   ativo    Boolean  @default(true)
   criadoEm DateTime @default(now()) @map("criado_em")
 
-  usuarios   Usuario[]
-  items      Item[]
-  areas      Area[]
-  listas     Lista[]
-  submissoes Submissao[]
+  usuarios     Usuario[]
+  items        Item[]
+  areas        Area[]
+  listas       Lista[]
+  submissoes   Submissao[]
+  fornecedores Fornecedor[]
+  cotacoes     Cotacao[]
+  checklists   Checklist[]
 
   @@map("restaurantes")
 }
@@ -72,9 +85,13 @@ model Item {
   restauranteId Int      @map("restaurante_id")
   criadoEm      DateTime @default(now()) @map("criado_em")
 
-  restaurante Restaurante  @relation(fields: [restauranteId], references: [id])
-  listasRef   ListaItemRef[]
-  pedidos     Pedido[]
+  restaurante  Restaurante   @relation(fields: [restauranteId], references: [id])
+  fornecedor   Fornecedor?   @relation(fields: [fornecedorId], references: [id])
+  fornecedorId Int?          @map("fornecedor_id")
+  listasRef    ListaItemRef[]
+  pedidos      Pedido[]
+  cotacaoItens CotacaoItem[]
+  checklistItens ChecklistItem[]
 
   @@map("itens")
 }
@@ -121,14 +138,34 @@ model ListaItemRef {
   id               Int   @id @default(autoincrement())
   listaId          Int   @map("lista_id")
   itemId           Int   @map("item_id")
-  quantidadeMinima Float @default(0) @map("quantidade_minima")
-  quantidadeAtual  Float @default(0) @map("quantidade_atual")
+  quantidadeMinima Float   @default(0) @map("quantidade_minima")
+  quantidadeAtual  Float   @default(0) @map("quantidade_atual")
+  usaThreshold     Boolean @default(true) @map("usa_threshold")
+  qtdFardo         Float?  @map("qtd_fardo")
 
   lista Lista @relation(fields: [listaId], references: [id])
   item  Item  @relation(fields: [itemId], references: [id])
 
   @@unique([listaId, itemId])
   @@map("lista_item_ref")
+}
+
+model Fornecedor {
+  id            Int      @id @default(autoincrement())
+  nome          String
+  cnpj          String?
+  telefone      String?
+  email         String?
+  ativo         Boolean  @default(true)
+  restauranteId Int      @map("restaurante_id")
+  criadoEm      DateTime @default(now()) @map("criado_em")
+  atualizadoEm  DateTime @updatedAt @map("atualizado_em")
+
+  restaurante  Restaurante   @relation(fields: [restauranteId], references: [id])
+  itens        Item[]
+  cotacaoItens CotacaoItem[]
+
+  @@map("fornecedores")
 }
 
 model Submissao {
@@ -145,6 +182,7 @@ model Submissao {
   usuario     Usuario     @relation(fields: [usuarioId], references: [id])
   restaurante Restaurante @relation(fields: [restauranteId], references: [id])
   pedidos     Pedido[]
+  checklist   Checklist?
 
   @@map("submissoes")
 }
@@ -162,4 +200,64 @@ model Pedido {
   item      Item      @relation(fields: [itemId], references: [id])
 
   @@map("pedidos")
+}
+
+model Cotacao {
+  id            Int           @id @default(autoincrement())
+  titulo        String?
+  status        StatusCotacao @default(ABERTA)
+  restauranteId Int           @map("restaurante_id")
+  criadoEm      DateTime      @default(now()) @map("criado_em")
+  atualizadoEm  DateTime      @updatedAt @map("atualizado_em")
+
+  restaurante Restaurante   @relation(fields: [restauranteId], references: [id])
+  itens       CotacaoItem[]
+
+  @@map("cotacoes")
+}
+
+model CotacaoItem {
+  id            Int        @id @default(autoincrement())
+  cotacaoId     Int        @map("cotacao_id")
+  itemId        Int        @map("item_id")
+  fornecedorId  Int?       @map("fornecedor_id")
+  qtdSolicitada Float      @map("qtd_solicitada")
+  precoUnitario Float?     @map("preco_unitario")
+  criadoEm     DateTime   @default(now()) @map("criado_em")
+  atualizadoEm DateTime   @updatedAt @map("atualizado_em")
+
+  cotacao    Cotacao    @relation(fields: [cotacaoId], references: [id])
+  item       Item       @relation(fields: [itemId], references: [id])
+  fornecedor Fornecedor? @relation(fields: [fornecedorId], references: [id])
+
+  @@map("cotacao_itens")
+}
+
+model Checklist {
+  id            Int             @id @default(autoincrement())
+  submissaoId   Int             @unique @map("submissao_id")
+  status        StatusChecklist @default(ABERTO)
+  restauranteId Int             @map("restaurante_id")
+  criadoEm     DateTime        @default(now()) @map("criado_em")
+  atualizadoEm DateTime        @updatedAt @map("atualizado_em")
+
+  submissao   Submissao       @relation(fields: [submissaoId], references: [id])
+  restaurante Restaurante     @relation(fields: [restauranteId], references: [id])
+  itens       ChecklistItem[]
+
+  @@map("checklists")
+}
+
+model ChecklistItem {
+  id          Int       @id @default(autoincrement())
+  checklistId Int       @map("checklist_id")
+  itemId      Int       @map("item_id")
+  qtdPedida   Float     @map("qtd_pedida")
+  marcado     Boolean   @default(false)
+  criadoEm   DateTime  @default(now()) @map("criado_em")
+
+  checklist Checklist @relation(fields: [checklistId], references: [id])
+  item      Item      @relation(fields: [itemId], references: [id])
+
+  @@map("checklist_itens")
 }
