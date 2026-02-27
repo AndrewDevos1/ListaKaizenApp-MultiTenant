@@ -69,6 +69,21 @@
   - [ ] Testar de forma completa todas as novas funcionalidades implementadas.
   - [ ] Corrigir quaisquer bugs que sejam encontrados durante os testes.
 
+## Testes Pendentes - Estoque do Colaborador
+
+- [ ] `/collaborator/listas/:id/estoque`: pedido recalcula em tempo real ao digitar a quantidade atual
+- [ ] Contadores "Em Falta" e "Alterados" atualizam enquanto edita os campos
+- [ ] Desktop: `Enter` avanca para o proximo item e `Tab` volta para o item anterior sem perder a alteracao
+- [ ] Mobile: pedido atualiza sem precisar sair do campo
+
+## Testes Pendentes - Convite de Restaurante
+
+- [ ] `/admin/restaurantes`: gerar convite e copiar link/WhatsApp
+- [ ] Link com token valido abre `/register-restaurant?token=...` e habilita envio
+- [ ] Token expirado ou usado bloqueia o cadastro e mostra alerta
+- [ ] Cadastro com convite cria restaurante + usuario ADMIN aprovado e mostra credenciais
+- [ ] Convite usado aparece como "Usado" na lista de convites
+
 ## Resolução de Problemas de Acesso em Rede
 
 - **[CONCLUÍDO] Correção de Acesso Local e CORS:**

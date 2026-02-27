@@ -12,10 +12,10 @@ from kaizen_app.extensions import db
 from kaizen_app.models import (
     Usuario, UserRoles, Item, Area, Fornecedor, Estoque,
     Pedido, PedidoStatus, Cotacao, CotacaoStatus, CotacaoItem,
-    Lista, ListaMaeItem, fornecedor_lista, lista_colaborador
+    Lista, ListaMaeItem, fornecedor_lista, lista_colaborador, brasilia_now
 )
 from werkzeug.security import generate_password_hash
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 import random
 
 def seed_database():
@@ -144,18 +144,22 @@ def seed_database():
 
         # 5. Criar Listas de Compras
         print("📋 Criando listas de compras...")
+        restaurante = Restaurante.query.first()
         listas = [
             Lista(
                 nome="Lista Mensal - Alimentos",
-                descricao="Lista mensal de compras de alimentos"
+                descricao="Lista mensal de compras de alimentos",
+                restaurante_id=restaurante.id
             ),
             Lista(
                 nome="Lista Semanal - Limpeza",
-                descricao="Lista semanal de produtos de limpeza"
+                descricao="Lista semanal de produtos de limpeza",
+                restaurante_id=restaurante.id
             ),
             Lista(
                 nome="Lista Escritório",
-                descricao="Material de escritório trimestral"
+                descricao="Material de escritório trimestral",
+                restaurante_id=restaurante.id
             )
         ]
 
@@ -234,7 +238,7 @@ def seed_database():
                     item_id=item.id,
                     fornecedor_id=item.fornecedor_id,
                     quantidade_solicitada=random.uniform(10, 100),
-                    data_pedido=datetime.now(timezone.utc) - timedelta(days=random.randint(1, 30)),
+                    data_pedido=brasilia_now() - timedelta(days=random.randint(1, 30)),
                     usuario_id=admin.id,
                     status=random.choice([PedidoStatus.PENDENTE, PedidoStatus.APROVADO, PedidoStatus.REJEITADO])
                 )
@@ -249,7 +253,7 @@ def seed_database():
         for fornecedor in fornecedores[:2]:
             cotacao = Cotacao(
                 fornecedor_id=fornecedor.id,
-                data_cotacao=datetime.now(timezone.utc) - timedelta(days=random.randint(1, 15)),
+                data_cotacao=brasilia_now() - timedelta(days=random.randint(1, 15)),
                 status=random.choice([CotacaoStatus.PENDENTE, CotacaoStatus.CONCLUIDA])
             )
             db.session.add(cotacao)

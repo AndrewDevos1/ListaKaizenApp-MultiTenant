@@ -33,9 +33,9 @@ const CollaboratorRoute: React.FC = () => {
         return <Navigate to="/login" replace />;
     }
 
-    if (user?.role === 'ADMIN') {
-        console.log('[COLLAB_ROUTE] Usuario e ADMIN - redirecionando para /admin');
-        return <Navigate to="/admin" replace />; // Admin vai para seu dashboard
+    if (user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN') {
+        console.log('[COLLAB_ROUTE] Usuario e ADMIN/SUPER_ADMIN - liberando acesso colaborador');
+        return <Outlet />;
     }
 
     if (user?.role !== 'COLLABORATOR') {

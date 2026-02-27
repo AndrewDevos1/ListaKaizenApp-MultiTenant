@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import api from '../../services/api';
+import { formatarDataBrasiliaSemHora } from '../../utils/dateFormatter';
 
 interface Submission {
   id: number;
@@ -60,7 +61,7 @@ const RecentSubmissions: React.FC = () => {
                   <td>{sub.id}</td>
                   <td>{sub.list_name}</td>
                   <td>{sub.user_name}</td>
-                  <td>{new Date(sub.created_at).toLocaleDateString()}</td>
+                  <td>{formatarDataBrasiliaSemHora(sub.created_at)}</td>
                   <td>{sub.status}</td>
                 </tr>
               ))}

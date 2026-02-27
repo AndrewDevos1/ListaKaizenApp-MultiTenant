@@ -1,5 +1,6 @@
 import React from 'react';
 import styles from './UserAvatar.module.css';
+import defaultAvatarLogo from '../assets/kaizen-logo-black.png';
 
 interface UserAvatarProps {
     nome: string;
@@ -17,17 +18,35 @@ const UserAvatar: React.FC<UserAvatarProps> = ({ nome, role, size = 'medium' }) 
     };
 
     const getRoleLabel = (role: string) => {
-        return role === 'ADMIN' ? 'Administrador' : 'Colaborador';
+        if (role === 'SUPER_ADMIN') return 'Super Admin';
+        if (role === 'ADMIN') return 'Administrador';
+        if (role === 'SUPPLIER') return 'Fornecedor';
+        return 'Colaborador';
     };
 
     const getRoleColor = (role: string) => {
-        return role === 'ADMIN' ? styles.admin : styles.collaborator;
+        if (role === 'SUPER_ADMIN') return styles.superAdmin;
+        if (role === 'ADMIN') return styles.admin;
+        if (role === 'SUPPLIER') return styles.supplier;
+        return styles.collaborator;
     };
+
+    const [logoError, setLogoError] = React.useState(false);
+    const showLogo = !logoError;
 
     return (
         <div className={`${styles.container} ${styles[size]}`}>
-            <div className={`${styles.avatar} ${getRoleColor(role)}`}>
-                {getInitials(nome)}
+            <div className={`${styles.avatar} ${getRoleColor(role)} ${showLogo ? styles.avatarLogo : ''}`}>
+                {showLogo ? (
+                    <img
+                        src={defaultAvatarLogo}
+                        alt=""
+                        className={styles.avatarImage}
+                        onError={() => setLogoError(true)}
+                    />
+                ) : (
+                    getInitials(nome)
+                )}
             </div>
             <div className={styles.info}>
                 <div className={styles.name}>{nome}</div>

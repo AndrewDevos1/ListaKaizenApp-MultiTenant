@@ -8,7 +8,7 @@
  * - Validações completas
  */
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Container, Form, Button, Alert } from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
@@ -27,11 +27,20 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../../services/api';
-import AuthDebug from '../../components/AuthDebug';
 import styles from './CriarUsuario.module.css';
+import { useAuth } from '../../context/AuthContext';
+
+interface Restaurante {
+    id: number;
+    nome: string;
+}
 
 const CriarUsuario: React.FC = () => {
     const navigate = useNavigate();
+    const { user: authUser } = useAuth();
+    const isSuperAdmin = authUser?.role === 'SUPER_ADMIN';
+    const [restaurantes, setRestaurantes] = useState<Restaurante[]>([]);
+    const [loadingRestaurantes, setLoadingRestaurantes] = useState(false);
     const [formData, setFormData] = useState({
         nome: '',
         username: '',
@@ -39,6 +48,7 @@ const CriarUsuario: React.FC = () => {
         senha: '',
         confirmar_senha: '',
         role: 'COLLABORATOR',
+        restaurante_id: '',
     });
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -58,7 +68,9 @@ const CriarUsuario: React.FC = () => {
         return { valid: true, message: '' };
     };
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const handleChange = (
+        e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+    ) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
         setError('');
@@ -100,6 +112,10 @@ const CriarUsuario: React.FC = () => {
             setError('A senha e a confirmação não coincidem');
             return;
         }
+        if (isSuperAdmin && !formData.restaurante_id) {
+            setError('Selecione um restaurante');
+            return;
+        }
 
         setLoading(true);
 
@@ -110,6 +126,7 @@ const CriarUsuario: React.FC = () => {
                 email: formData.email,
                 senha: formData.senha,
                 role: formData.role,
+                restaurante_id: formData.restaurante_id || undefined,
             };
 
             // Só adiciona username se não estiver vazio
@@ -119,8 +136,13 @@ const CriarUsuario: React.FC = () => {
 
             console.log('[FORM] Enviando payload para criar usuario:', payload);
 
-            // NOTA: Usando rota sem JWT ate resolver problema do token
-            const response = await api.post('/admin/create_user_temp', payload);
+            let response;
+            if (isSuperAdmin && formData.role === 'ADMIN') {
+                response = await api.post('/admin/users/criar-admin-restaurante', payload);
+            } else {
+                // NOTA: Usando rota sem JWT ate resolver problema do token
+                response = await api.post('/admin/create_user_temp', payload);
+            }
 
             console.log('[FORM] Resposta do servidor:', response.data);
             setSuccess(true);
@@ -131,8 +153,9 @@ const CriarUsuario: React.FC = () => {
                 username: '',
                 email: '',
                 senha: '',
-                confirmarSenha: '',
-                role: 'COLLABORATOR'
+                confirmar_senha: '',
+                role: 'COLLABORATOR',
+                restaurante_id: '',
             });
 
             // Redireciona após 1.5 segundos
@@ -179,11 +202,24 @@ const CriarUsuario: React.FC = () => {
         navigate('/admin/gerenciar-usuarios');
     };
 
+    useEffect(() => {
+        const fetchRestaurantes = async () => {
+            if (!isSuperAdmin) return;
+            setLoadingRestaurantes(true);
+            try {
+                const response = await api.get('/admin/restaurantes');
+                setRestaurantes(response.data.restaurantes || []);
+            } catch (err) {
+                setError('Não foi possível carregar os restaurantes');
+            } finally {
+                setLoadingRestaurantes(false);
+            }
+        };
+        fetchRestaurantes();
+    }, [isSuperAdmin]);
+
     return (
         <Container className={styles.container}>
-            {/* DEBUG: Componente de Autenticação */}
-            <AuthDebug />
-
             <div className={styles.header}>
                 <Link to="/admin/gerenciar-usuarios" className={styles.backButton}>
                     <FontAwesomeIcon icon={faArrowLeft} />
@@ -271,26 +307,61 @@ const CriarUsuario: React.FC = () => {
                         />
                     </Form.Group>
 
-                    {/* Role */}
-                    <Form.Group className={styles.formGroup}>
-                        <Form.Label>
-                            <FontAwesomeIcon icon={faUserTag} style={{ marginRight: '0.5rem' }} />
-                            Tipo de Conta *
-                        </Form.Label>
-                        <Form.Select
-                            name="role"
-                            value={formData.role}
-                            onChange={handleChange}
-                            disabled={loading}
-                            className={styles.input}
-                        >
-                            <option value="COLLABORATOR">Colaborador</option>
-                            <option value="ADMIN">Administrador</option>
-                        </Form.Select>
-                        <Form.Text className={styles.hint}>
-                            Administradores têm acesso total ao sistema
-                        </Form.Text>
-                    </Form.Group>
+                    {isSuperAdmin && (
+                        <Form.Group className={styles.formGroup}>
+                            <Form.Label>
+                                <FontAwesomeIcon icon={faUserTag} style={{ marginRight: '0.5rem' }} />
+                                Restaurante *
+                            </Form.Label>
+                            <Form.Select
+                                name="restaurante_id"
+                                value={formData.restaurante_id}
+                                onChange={handleChange}
+                                disabled={loading || loadingRestaurantes}
+                                className={styles.input}
+                            >
+                                <option value="">Selecione um restaurante</option>
+                                {restaurantes.map(rest => (
+                                    <option key={rest.id} value={rest.id}>{rest.nome}</option>
+                                ))}
+                            </Form.Select>
+                        </Form.Group>
+                    )}
+
+                    {isSuperAdmin ? (
+                        <Form.Group className={styles.formGroup}>
+                            <Form.Label>
+                                <FontAwesomeIcon icon={faUserTag} style={{ marginRight: '0.5rem' }} />
+                                Tipo de Conta *
+                            </Form.Label>
+                            <Form.Select
+                                name="role"
+                                value={formData.role}
+                                onChange={handleChange}
+                                disabled={loading}
+                                className={styles.input}
+                            >
+                                <option value="COLLABORATOR">Colaborador</option>
+                                <option value="ADMIN">Administrador</option>
+                            </Form.Select>
+                            <Form.Text className={styles.hint}>
+                                Administradores têm acesso total ao sistema
+                            </Form.Text>
+                        </Form.Group>
+                    ) : (
+                        <Form.Group className={styles.formGroup}>
+                            <Form.Label>
+                                <FontAwesomeIcon icon={faUserTag} style={{ marginRight: '0.5rem' }} />
+                                Tipo de Conta
+                            </Form.Label>
+                            <Form.Control
+                                type="text"
+                                value="Colaborador"
+                                disabled
+                                className={styles.input}
+                            />
+                        </Form.Group>
+                    )}
 
                     {/* Senha */}
                     <Form.Group className={styles.formGroup}>

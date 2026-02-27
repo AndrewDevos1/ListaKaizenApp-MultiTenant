@@ -11,6 +11,15 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faArrowLeft, faSave, faExclamationTriangle } from '@fortawesome/free-solid-svg-icons';
 import api from '../../services/api';
 import styles from './ListaEstoque.module.css';
+import { parseQuantidadeInput } from '../../utils/quantityParser';
+import {
+    buildDraftKey,
+    getOfflineDraft,
+    isOfflineError,
+    mergeDraftItems,
+    removeOfflineDraft,
+    saveOfflineDraft
+} from '../../services/offlineDrafts';
 
 interface Item {
     id?: number;
@@ -21,7 +30,7 @@ interface Item {
 interface EstoqueItem {
     id: number;
     item_id: number;
-    quantidade_atual: number;
+    quantidade_atual: number | string;
     quantidade_minima: number;
     item?: Item;
     nome?: string;
@@ -39,6 +48,7 @@ const ListaEstoque: React.FC = () => {
     const [success, setSuccess] = useState('');
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const draftKey = listaId ? buildDraftKey('lista', listaId) : null;
 
     useEffect(() => {
         if (listaId) {
@@ -67,10 +77,43 @@ const ListaEstoque: React.FC = () => {
                 unidade: item.item?.unidade || item.unidade,
                 changed: false
             }));
+            let itensFinal = itensComStatus;
+            if (draftKey) {
+                const draft = await getOfflineDraft<EstoqueItem>(draftKey);
+                if (draft?.items?.length) {
+                    const merged = mergeDraftItems(itensComStatus, draft.items);
+                    const baseMap = new Map(
+                        itensComStatus.map((item: EstoqueItem) => [item.id, item.quantidade_atual])
+                    );
+                    itensFinal = merged.map((item: EstoqueItem) => ({
+                        ...item,
+                        changed: baseMap.get(item.id) !== (parseQuantidadeInput(item.quantidade_atual) ?? item.quantidade_atual)
+                    }));
+                    setSuccess('Rascunho offline restaurado.');
+                }
+            }
 
-            setItens(itensComStatus);
+            setItens(itensFinal);
             setOriginalItens(JSON.parse(JSON.stringify(itensComStatus)));
         } catch (err: any) {
+            if (draftKey) {
+                const draft = await getOfflineDraft<EstoqueItem>(draftKey);
+                if (draft?.items?.length) {
+                    const offlineItems = draft.items.map((item: EstoqueItem) => ({
+                        ...item,
+                        changed: true
+                    }));
+                    setItens(offlineItems);
+                    setOriginalItens(JSON.parse(JSON.stringify(draft.originalItems || draft.items)));
+                    const storedName = draft.meta?.name;
+                    if (typeof storedName === 'string') {
+                        setListaNome(storedName);
+                    }
+                    setSuccess('Sem conexão. Usando rascunho offline.');
+                    setError('');
+                    return;
+                }
+            }
             setError(err.response?.data?.error || 'Erro ao carregar itens da lista');
             console.error('Erro:', err);
         } finally {
@@ -78,20 +121,81 @@ const ListaEstoque: React.FC = () => {
         }
     };
 
+    useEffect(() => {
+        if (!draftKey || !originalItens.length) {
+            return;
+        }
+        const hasChanges = itens.some((item) => item.changed);
+        if (!hasChanges) {
+            if (draftKey) {
+                void removeOfflineDraft(draftKey);
+            }
+            return;
+        }
+        const timeoutId = window.setTimeout(() => {
+            void saveOfflineDraft({
+                key: draftKey,
+                updatedAt: Date.now(),
+                items: itens,
+                originalItems: originalItens,
+                meta: { name: listaNome }
+            });
+        }, 400);
+        return () => window.clearTimeout(timeoutId);
+    }, [draftKey, itens, originalItens, listaNome]);
+
     const handleQuantityChange = (estoqueId: number, novaQuantidade: string) => {
+        const parsed = parseQuantidadeInput(novaQuantidade);
         const updatedItens = itens.map(item => {
             if (item.id === estoqueId) {
                 const originalItem = originalItens.find(oi => oi.id === estoqueId);
-                const isChanged = originalItem && originalItem.quantidade_atual !== parseFloat(novaQuantidade);
+                const isChanged = parsed === null || originalItem?.quantidade_atual !== parsed;
                 return {
                     ...item,
-                    quantidade_atual: parseFloat(novaQuantidade) || 0,
+                    quantidade_atual: novaQuantidade,
                     changed: isChanged
                 };
             }
             return item;
         });
         setItens(updatedItens);
+    };
+
+    const handleQuantidadeKeyDown = (
+        event: React.KeyboardEvent<HTMLElement>,
+        estoqueId: number
+    ) => {
+        if (event.key !== 'Enter') return;
+        event.preventDefault();
+        const parsed = parseQuantidadeInput((event.currentTarget as HTMLInputElement).value);
+        if (parsed !== null) {
+            handleQuantityChange(estoqueId, String(parsed));
+        }
+    };
+
+    // Android: keydown chega com key='Unidentified', keyup chega com key='Enter' correto
+    const handleQuantidadeKeyUp = (
+        event: React.KeyboardEvent<HTMLElement>,
+        estoqueId: number
+    ) => {
+        if (event.key !== 'Enter') return;
+        const input = event.currentTarget as HTMLInputElement;
+        const parsed = parseQuantidadeInput(input.value);
+        if (parsed !== null) {
+            handleQuantityChange(estoqueId, String(parsed));
+        }
+    };
+
+    // Cobertura total mobile: "toque no próximo campo", "Done", Tab no desktop
+    const handleQuantidadeBlur = (
+        event: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
+        estoqueId: number
+    ) => {
+        const raw = event.currentTarget.value;
+        const parsed = parseQuantidadeInput(raw);
+        if (parsed !== null && raw !== String(parsed)) {
+            handleQuantityChange(estoqueId, String(parsed));
+        }
     };
 
     const handleSave = async () => {
@@ -110,7 +214,7 @@ const ListaEstoque: React.FC = () => {
             await Promise.all(
                 changedItems.map(item =>
                     api.put(`/collaborator/estoque/${item.id}`, {
-                        quantidade_atual: item.quantidade_atual
+                        quantidade_atual: parseQuantidadeInput(item.quantidade_atual) ?? 0
                     })
                 )
             );
@@ -124,9 +228,16 @@ const ListaEstoque: React.FC = () => {
             }));
             setItens(updatedItensComStatus);
             setOriginalItens(JSON.parse(JSON.stringify(updatedItensComStatus)));
+            if (draftKey) {
+                await removeOfflineDraft(draftKey);
+            }
 
             setTimeout(() => setSuccess(''), 3000);
         } catch (err: any) {
+            if (isOfflineError(err)) {
+                setSuccess('Sem conexão. Rascunho salvo localmente e será sincronizado.');
+                return;
+            }
             setError(err.response?.data?.error || 'Erro ao salvar alterações');
             console.error('Erro:', err);
         } finally {
@@ -198,8 +309,9 @@ const ListaEstoque: React.FC = () => {
                             </tr>
                         ) : (
                             itens.map((item) => {
-                                const pedido = calculatePedido(item.quantidade_minima, item.quantidade_atual);
-                                const isLow = item.quantidade_atual < item.quantidade_minima;
+                                const quantidadeAtual = parseQuantidadeInput(item.quantidade_atual) ?? 0;
+                                const pedido = calculatePedido(item.quantidade_minima, quantidadeAtual);
+                                const isLow = quantidadeAtual < item.quantidade_minima;
 
                                 return (
                                     <tr key={item.id} className={isLow ? styles.warningRow : ''}>
@@ -210,12 +322,15 @@ const ListaEstoque: React.FC = () => {
                                         <td className="text-center">{item.unidade}</td>
                                         <td className="text-center">
                                             <Form.Control
-                                                type="number"
-                                                step="0.01"
-                                                min="0"
+                                                type="text"
+                                                inputMode="text"
+                                                pattern="[0-9+.,]*"
                                                 size="sm"
                                                 value={item.quantidade_atual}
                                                 onChange={(e) => handleQuantityChange(item.id, e.target.value)}
+                                                onKeyDown={(e) => handleQuantidadeKeyDown(e, item.id)}
+                                                onKeyUp={(e) => handleQuantidadeKeyUp(e, item.id)}
+                                                onBlur={(e) => handleQuantidadeBlur(e, item.id)}
                                                 className={item.changed ? styles.inputChanged : ''}
                                             />
                                         </td>

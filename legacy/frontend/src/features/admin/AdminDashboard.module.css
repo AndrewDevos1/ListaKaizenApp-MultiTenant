@@ -194,6 +194,10 @@
   color: #e55353;
 }
 
+.trendHidden {
+  visibility: hidden;
+}
+
 .widgetLink {
   color: var(--link-color, #667eea);
   text-decoration: none;
@@ -468,7 +472,7 @@
   }
 }
 
-@media (max-width: 576px) {
+@media (max-width: 767px) {
   .dashboardWrapper {
     padding: 1rem 0;
   }
@@ -477,19 +481,75 @@
     font-size: 1.5rem;
   }
 
+  /* Cards em grid 2x2 no mobile */
+  .widgetsGrid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 0.75rem !important;
+    margin-bottom: 1rem !important;
+  }
+
+  /* Reduzir tamanho dos widget cards em ~30% no mobile */
+  .widgetCard {
+    padding: 1rem !important;
+    border-radius: 10px !important;
+  }
+
+  .widgetHeader {
+    margin-bottom: 0.75rem !important;
+  }
+
+  .widgetIcon {
+    width: 42px !important;
+    height: 42px !important;
+    font-size: 1.25rem !important;
+    border-radius: 8px !important;
+  }
+
+  .widgetTitle {
+    font-size: 0.7rem !important;
+    margin-bottom: 0.25rem !important;
+  }
+
+  .widgetValue {
+    font-size: 1.5rem !important;
+  }
+
+  .widgetFooter {
+    padding-top: 0.5rem !important;
+  }
+
+  .widgetTrend {
+    font-size: 0.7rem !important;
+  }
+
+  .widgetLink {
+    font-size: 0.75rem !important;
+  }
+
+  /* Ações Rápidas em grid 2x2 no mobile */
   .quickActionsGrid {
-    gap: 0.75rem;
-    scroll-snap-type: x mandatory;
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 0.5rem !important;
+    overflow-x: visible !important;
+    padding-bottom: 0 !important;
   }
 
   .quickActionBtn {
-    min-width: 160px;
-    flex: 0 0 auto;
-    scroll-snap-align: start;
+    min-width: unset !important;
+    width: 100% !important;
+    padding: 0.75rem 0.5rem !important;
+    font-size: 0.75rem !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 0.25rem !important;
   }
 
-  .widgetCard {
-    padding: 1.25rem;
+  .quickActionBtn i {
+    font-size: 1.25rem !important;
+    margin-bottom: 0 !important;
   }
 
   .sectionCard {
@@ -499,6 +559,20 @@
   .customTable thead th,
   .customTable tbody td {
     padding: 0.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .widgetsGrid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .widgetTitle {
+    font-size: 0.8rem !important;
+  }
+
+  .quickActionsGrid {
+    grid-template-columns: 1fr 1fr !important;
   }
 }
 

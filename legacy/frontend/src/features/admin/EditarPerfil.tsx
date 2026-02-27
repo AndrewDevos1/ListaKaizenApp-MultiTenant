@@ -23,6 +23,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../../services/api';
+import { formatarDataBrasiliaSemHora } from '../../utils/dateFormatter';
 import styles from './EditarPerfil.module.css';
 import { useAuth } from '../../context/AuthContext';
 
@@ -255,7 +256,11 @@ const EditarPerfil: React.FC = () => {
                                 <div className={styles.infoItem}>
                                     <span className={styles.infoLabel}>Tipo de Conta:</span>
                                     <span className={styles.infoBadge} data-role={profile.role}>
-                                        {profile.role === 'ADMIN' ? 'Administrador' : 'Colaborador'}
+                                        {profile.role === 'SUPER_ADMIN'
+                                            ? 'Super Admin'
+                                            : profile.role === 'ADMIN'
+                                                ? 'Administrador'
+                                                : 'Colaborador'}
                                     </span>
                                 </div>
                                 <div className={styles.infoItem}>
@@ -267,7 +272,7 @@ const EditarPerfil: React.FC = () => {
                                 <div className={styles.infoItem}>
                                     <span className={styles.infoLabel}>Membro desde:</span>
                                     <span className={styles.infoValue}>
-                                        {new Date(profile.criado_em).toLocaleDateString('pt-BR')}
+                                        {formatarDataBrasiliaSemHora(profile.criado_em)}
                                     </span>
                                 </div>
                             </div>

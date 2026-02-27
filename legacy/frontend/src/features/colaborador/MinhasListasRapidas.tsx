@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
+import { formatarDataBrasiliaSemHora } from '../../utils/dateFormatter';
 import styles from './MinhasListasRapidas.module.css';
 
 interface ListaRapida {
@@ -111,9 +112,9 @@ const MinhasListasRapidas: React.FC = () => {
                             </div>
 
                             <div className={styles.datas}>
-                                <small>Criada: {new Date(lista.criado_em).toLocaleDateString('pt-BR')}</small>
+                                <small>Criada: {formatarDataBrasiliaSemHora(lista.criado_em)}</small>
                                 {lista.submetido_em && (
-                                    <small>Submetida: {new Date(lista.submetido_em).toLocaleDateString('pt-BR')}</small>
+                                    <small>Submetida: {formatarDataBrasiliaSemHora(lista.submetido_em)}</small>
                                 )}
                             </div>
 

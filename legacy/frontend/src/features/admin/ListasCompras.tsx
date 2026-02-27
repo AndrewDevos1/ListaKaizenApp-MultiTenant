@@ -5,7 +5,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Container, Card, Button, Modal, Form, Alert } from 'react-bootstrap';
+import { Container, Card, Button, Modal, Form, Alert, Dropdown, Badge, Spinner } from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faShoppingCart,
@@ -29,12 +29,28 @@ import {
     faUpload,
     faTrashAlt,
     faUndo,
+    faClipboardList,
+    faSearch,
+    faTimes,
 } from '@fortawesome/free-solid-svg-icons';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import api from '../../services/api';
+import { formatarDataBrasiliaSemHora, formatarDataHoraBrasilia } from '../../utils/dateFormatter';
 import styles from './ListasCompras.module.css';
+import SeletorItensUnificado from './SeletorItensUnificado';
+import { useAuth } from '../../context/AuthContext';
 
 // Interfaces TypeScript
+interface Area {
+    id: number;
+    nome: string;
+}
+
+interface Restaurante {
+    id: number;
+    nome: string;
+}
+
 interface Fornecedor {
     id: number;
     nome: string;
@@ -54,12 +70,16 @@ interface Lista {
     nome: string;
     descricao: string | null;
     data_criacao: string; // ISO date string
+    data_delecao?: string | null;
     fornecedor_id?: number;
     fornecedor?: Fornecedor;
     categoria?: string;
     telefone_whatsapp?: string;
+    area_id?: number | null;
+    area_nome?: string | null;
     colaboradores?: Array<{id: number; nome: string}>;
     itens?: ListaItem[]; // Preview dos itens
+    itens_nomes?: string[]; // Todos os nomes dos itens ativos (para busca)
 }
 
 interface ListaFormData {
@@ -68,21 +88,10 @@ interface ListaFormData {
     fornecedor_id: string;
     categoria: string;
     telefone_whatsapp: string;
+    area_id: number | '';
+    restaurante_id: number | '';
 }
 
-interface ItemSelecionado {
-    item_id: number;
-    nome: string;
-    unidade: string;
-    quantidade_atual: number;
-    quantidade_minima: number;
-}
-
-interface CatalogoItem {
-    id: number;
-    nome: string;
-    unidade: string;
-}
 
 interface Usuario {
     id: number;
@@ -92,6 +101,13 @@ interface Usuario {
 }
 
 const ListasCompras: React.FC = () => {
+    const navigate = useNavigate();
+    const { user: authUser } = useAuth();
+    const isSuperAdmin = authUser?.role === 'SUPER_ADMIN';
+
+    // Estado de restaurantes (para Super Admin)
+    const [restaurantes, setRestaurantes] = useState<Restaurante[]>([]);
+
     // Estados principais
     const [listas, setListas] = useState<Lista[]>([]);
     const [loading, setLoading] = useState(true);
@@ -124,6 +140,21 @@ const ListasCompras: React.FC = () => {
     const [selectedTrashIds, setSelectedTrashIds] = useState<number[]>([]);
     const [loadingTrash, setLoadingTrash] = useState(false);
 
+    // Estado das áreas disponíveis
+    const [areas, setAreas] = useState<Area[]>([]);
+
+    // Estado do filtro por área
+    const [selectedAreaFilter, setSelectedAreaFilter] = useState<number | null>(null);
+
+    // Estado da busca textual
+    const [searchTerm, setSearchTerm] = useState('');
+
+    // Estado para modal de vincular área
+    const [showAreaModal, setShowAreaModal] = useState(false);
+    const [areaingLista, setAreaingLista] = useState<Lista | null>(null);
+    const [selectedAreaId, setSelectedAreaId] = useState<number | ''>('');
+    const [savingArea, setSavingArea] = useState(false);
+
     // Estado para form data
     const resetFormData = (): ListaFormData => ({
         nome: '',
@@ -131,14 +162,14 @@ const ListasCompras: React.FC = () => {
         fornecedor_id: '',
         categoria: '',
         telefone_whatsapp: '',
+        area_id: '',
+        restaurante_id: '',
     });
 
     const [formData, setFormData] = useState<ListaFormData>(resetFormData());
 
     // Estados para seleção de itens do catálogo
-    const [catalogoItens, setCatalogoItens] = useState<CatalogoItem[]>([]);
-    const [itensSelecionados, setItensSelecionados] = useState<ItemSelecionado[]>([]);
-    const [loadingCatalogo, setLoadingCatalogo] = useState(false);
+    const [selectedItens, setSelectedItens] = useState<Map<string, string>>(new Map());
     const [showItensTab, setShowItensTab] = useState(false);
 
     // Estados para atribuição de colaboradores
@@ -146,6 +177,10 @@ const ListasCompras: React.FC = () => {
     const [selectedCollaborators, setSelectedCollaborators] = useState<number[]>([]);
     const [loadingUsers, setLoadingUsers] = useState(false);
     const [assigningLoading, setAssigningLoading] = useState(false);
+
+    // Estados para seleção de colaboradores no modal de criação
+    const [createCollaborators, setCreateCollaborators] = useState<number[]>([]);
+    const [loadingCreateColab, setLoadingCreateColab] = useState(false);
 
     // Buscar prévia dos itens de uma lista (primeiros 3)
     const fetchListaPreview = async (listaId: number): Promise<ListaItem[]> => {
@@ -187,55 +222,45 @@ const ListasCompras: React.FC = () => {
         }
     };
 
-    // useEffect para carregar listas na montagem
+    // Buscar áreas disponíveis
+    const fetchAreas = async () => {
+        try {
+            const response = await api.get('/v1/areas');
+            setAreas(response.data);
+        } catch (err) {
+            console.error('Erro ao buscar áreas:', err);
+        }
+    };
+
+    // Buscar restaurantes (apenas Super Admin)
+    const fetchRestaurantes = async () => {
+        try {
+            const response = await api.get('/admin/restaurantes');
+            setRestaurantes(response.data || []);
+        } catch (err) {
+            console.error('Erro ao buscar restaurantes:', err);
+        }
+    };
+
+    // useEffect para carregar listas e áreas na montagem
     useEffect(() => {
         fetchListas();
+        fetchAreas();
+        if (isSuperAdmin) {
+            fetchRestaurantes();
+        }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [isSuperAdmin]);
 
     // Funções do modal de criar/editar
-    const handleOpenCreateModal = async () => {
+    const handleOpenCreateModal = () => {
         setEditingLista(null);
         setFormData(resetFormData());
-        setItensSelecionados([]);
+        setSelectedItens(new Map());
         setShowItensTab(false);
+        setCreateCollaborators([]);
+        fetchAllUsers();
         setShowModal(true);
-        
-        // Buscar catálogo global
-        await fetchCatalogo();
-    };
-    
-    const fetchCatalogo = async () => {
-        try {
-            setLoadingCatalogo(true);
-            const response = await api.get('/admin/catalogo-global');
-            setCatalogoItens(response.data.itens || []);
-        } catch (err) {
-            console.error('Erro ao buscar catálogo:', err);
-        } finally {
-            setLoadingCatalogo(false);
-        }
-    };
-    
-    const handleToggleItem = (item: CatalogoItem) => {
-        const exists = itensSelecionados.find(i => i.item_id === item.id);
-        if (exists) {
-            setItensSelecionados(prev => prev.filter(i => i.item_id !== item.id));
-        } else {
-            setItensSelecionados(prev => [...prev, {
-                item_id: item.id,
-                nome: item.nome,
-                unidade: item.unidade,
-                quantidade_atual: 0,
-                quantidade_minima: 1.0
-            }]);
-        }
-    };
-    
-    const handleUpdateQuantidade = (itemId: number, field: 'quantidade_atual' | 'quantidade_minima', value: number) => {
-        setItensSelecionados(prev => prev.map(item => 
-            item.item_id === itemId ? {...item, [field]: value} : item
-        ));
     };
 
     const handleOpenEditModal = (lista: Lista) => {
@@ -246,6 +271,8 @@ const ListasCompras: React.FC = () => {
             fornecedor_id: lista.fornecedor_id?.toString() || '',
             categoria: lista.categoria || '',
             telefone_whatsapp: lista.telefone_whatsapp || '',
+            area_id: lista.area_id ?? '',
+            restaurante_id: '',
         });
         setShowModal(true);
     };
@@ -254,9 +281,30 @@ const ListasCompras: React.FC = () => {
         setShowModal(false);
         setEditingLista(null);
         setFormData(resetFormData());
-        setItensSelecionados([]);
+        setSelectedItens(new Map());
         setShowItensTab(false);
+        setCreateCollaborators([]);
         setError(null);
+    };
+
+    const handleCreateAreaChange = async (value: string) => {
+        const newAreaId = value === '' ? '' : Number(value);
+        setFormData(prev => ({...prev, area_id: newAreaId}));
+
+        if (newAreaId === '') {
+            setCreateCollaborators([]);
+            return;
+        }
+        try {
+            setLoadingCreateColab(true);
+            const res = await api.get(`/v1/areas/${newAreaId}/colaboradores`);
+            const ids = (res.data.colaboradores || []).map((c: any) => c.id);
+            setCreateCollaborators(ids);
+        } catch {
+            // silently ignore
+        } finally {
+            setLoadingCreateColab(false);
+        }
     };
 
     const handleSubmit = async () => {
@@ -266,15 +314,29 @@ const ListasCompras: React.FC = () => {
                 return;
             }
 
+            if (isSuperAdmin && !editingLista && !formData.restaurante_id) {
+                setError('Selecione um restaurante para a lista');
+                return;
+            }
+
             if (editingLista) {
                 // UPDATE
                 await api.put(`/v1/listas/${editingLista.id}`, formData);
                 setSuccessMessage('Lista atualizada com sucesso!');
             } else {
                 // CREATE - Incluir itens selecionados
+                const itens = Array.from(selectedItens.entries()).map(([id, quantidadeMinimaStr]) => {
+                    const quantidadeMinimaParsed = quantidadeMinimaStr === '' ? 0 : parseFloat(quantidadeMinimaStr);
+                    const quantidade_minima = Number.isNaN(quantidadeMinimaParsed) ? 0 : quantidadeMinimaParsed;
+                    return {
+                        id,
+                        quantidade_minima
+                    };
+                });
                 const payload = {
                     ...formData,
-                    itens: itensSelecionados
+                    itens,
+                    colaborador_ids: createCollaborators
                 };
                 await api.post('/v1/listas', payload);
                 setSuccessMessage('Lista criada com sucesso!');
@@ -598,6 +660,51 @@ const ListasCompras: React.FC = () => {
         setSelectedTrashIds([]);
     };
 
+    // Funções do modal de vincular área
+    const handleOpenAreaModal = (lista: Lista) => {
+        setAreaingLista(lista);
+        setSelectedAreaId(lista.area_id ?? '');
+        setShowAreaModal(true);
+    };
+
+    const handleCloseAreaModal = () => {
+        setShowAreaModal(false);
+        setAreaingLista(null);
+        setSelectedAreaId('');
+        setError(null);
+    };
+
+    const handleSaveArea = async () => {
+        if (!areaingLista) return;
+        try {
+            setSavingArea(true);
+            await api.put(`/v1/listas/${areaingLista.id}`, {
+                area_id: selectedAreaId === '' ? null : selectedAreaId
+            });
+            setSuccessMessage('Área vinculada com sucesso!');
+            handleCloseAreaModal();
+            fetchListas();
+            setTimeout(() => setSuccessMessage(null), 3000);
+        } catch (err: any) {
+            setError(err.response?.data?.error || 'Erro ao vincular área');
+        } finally {
+            setSavingArea(false);
+        }
+    };
+
+    const normalizeText = (text: string): string =>
+        text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+    const listasFiltradas = listas
+        .filter(l => selectedAreaFilter === null || l.area_id === selectedAreaFilter)
+        .filter(l => {
+            if (!searchTerm) return true;
+            const termo = normalizeText(searchTerm);
+            const nomeMatch = normalizeText(l.nome).includes(termo);
+            const itemMatch = (l.itens_nomes ?? []).some(n => normalizeText(n).includes(termo));
+            return nomeMatch || itemMatch;
+        });
+
     return (
         <div className={styles.pageWrapper}>
             <Container fluid>
@@ -665,6 +772,54 @@ const ListasCompras: React.FC = () => {
                     </Alert>
                 )}
 
+                {/* Campo de busca */}
+                <div style={{ marginBottom: '1rem', position: 'relative' }}>
+                    <span style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: '#6c757d', pointerEvents: 'none' }}>
+                        <FontAwesomeIcon icon={faSearch} />
+                    </span>
+                    <Form.Control
+                        type="text"
+                        placeholder="Buscar por nome da lista ou item..."
+                        value={searchTerm}
+                        onChange={e => setSearchTerm(e.target.value)}
+                        style={{ paddingLeft: '2.2rem', paddingRight: searchTerm ? '2.2rem' : undefined }}
+                    />
+                    {searchTerm && (
+                        <Button
+                            variant="link"
+                            size="sm"
+                            onClick={() => setSearchTerm('')}
+                            style={{ position: 'absolute', right: '0.5rem', top: '50%', transform: 'translateY(-50%)', color: '#6c757d', padding: 0 }}
+                            aria-label="Limpar busca"
+                        >
+                            <FontAwesomeIcon icon={faTimes} />
+                        </Button>
+                    )}
+                </div>
+
+                {/* Filtro por área */}
+                {areas.length > 0 && (
+                    <div style={{ marginBottom: '1rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                        <Button
+                            variant={selectedAreaFilter === null ? 'primary' : 'outline-primary'}
+                            size="sm"
+                            onClick={() => setSelectedAreaFilter(null)}
+                        >
+                            Todas
+                        </Button>
+                        {areas.map(area => (
+                            <Button
+                                key={area.id}
+                                variant={selectedAreaFilter === area.id ? 'primary' : 'outline-primary'}
+                                size="sm"
+                                onClick={() => setSelectedAreaFilter(selectedAreaFilter === area.id ? null : area.id)}
+                            >
+                                {area.nome}
+                            </Button>
+                        ))}
+                    </div>
+                )}
+
                 {/* Loading spinner */}
                 {loading && (
                     <div className={styles.loadingSpinner}>
@@ -676,18 +831,18 @@ const ListasCompras: React.FC = () => {
                 )}
 
                 {/* Estado vazio */}
-                {!loading && listas.length === 0 && (
+                {!loading && listasFiltradas.length === 0 && (
                     <div className={styles.emptyState}>
                         <FontAwesomeIcon icon={faListAlt} size="3x" style={{color: '#ccc', marginBottom: '1rem'}} />
-                        <h3>Nenhuma lista encontrada</h3>
-                        <p>Clique em "Adicionar Lista" para criar sua primeira lista</p>
+                        <h3>{searchTerm ? 'Nenhuma lista encontrada' : selectedAreaFilter !== null ? 'Nenhuma lista nesta área' : 'Nenhuma lista encontrada'}</h3>
+                        <p>{searchTerm ? 'Nenhuma lista ou item corresponde à busca' : selectedAreaFilter !== null ? 'Tente selecionar outra área ou "Todas"' : 'Clique em "Adicionar Lista" para criar sua primeira lista'}</p>
                     </div>
                 )}
 
                 {/* Grid com os cards */}
-                {!loading && listas.length > 0 && (
+                {!loading && listasFiltradas.length > 0 && (
                     <div className={styles.listasGrid}>
-                        {listas.map((lista) => (
+                        {listasFiltradas.map((lista) => (
                             <Card key={lista.id} className={`${styles.listaCard} ${styles.cardLista}`}>
                                 <div className={styles.cardHeader}>
                                     <div className={styles.cardIcon}>
@@ -695,63 +850,60 @@ const ListasCompras: React.FC = () => {
                                     </div>
                                     <div className={styles.cardActions}>
                                         <Button
-                                            variant="link"
+                                            variant="primary"
                                             size="sm"
-                                            onClick={() => handleOpenViewModal(lista)}
-                                            className={styles.actionButton}
-                                            title="Ver Todos os Itens"
+                                            className={styles.actionPrimary}
+                                            onClick={() => navigate(`/collaborator/listas/${lista.id}/estoque`)}
                                         >
-                                            <FontAwesomeIcon icon={faEye} />
+                                            <FontAwesomeIcon icon={faClipboardList} /> Preencher
                                         </Button>
-                                        <Link to={`/admin/listas/${lista.id}/lista-mae`} title="Lista Mãe">
-                                            <Button
-                                                variant="link"
+                                        <Dropdown align="end">
+                                            <Dropdown.Toggle
+                                                variant="outline-secondary"
                                                 size="sm"
-                                                className={styles.actionButton}
+                                                className={styles.actionDropdown}
                                             >
-                                                <FontAwesomeIcon icon={faShoppingCart} />
-                                            </Button>
-                                        </Link>
-                                        <Button
-                                            variant="link"
-                                            size="sm"
-                                            onClick={() => handleOpenAssignModal(lista)}
-                                            className={styles.actionButton}
-                                            title="Atribuir Colaboradores"
-                                        >
-                                            <FontAwesomeIcon icon={faUsersCog} />
-                                        </Button>
-                                        <Button
-                                            variant="link"
-                                            size="sm"
-                                            onClick={() => handleExportCSV(lista)}
-                                            className={styles.actionButton}
-                                            title="Exportar Lista (CSV)"
-                                        >
-                                            <FontAwesomeIcon icon={faUpload} />
-                                        </Button>
-                                        <Button
-                                            variant="link"
-                                            size="sm"
-                                            onClick={() => handleOpenEditModal(lista)}
-                                            className={styles.actionButton}
-                                            title="Editar"
-                                        >
-                                            <FontAwesomeIcon icon={faEdit} />
-                                        </Button>
-                                        <Button
-                                            variant="link"
-                                            size="sm"
-                                            onClick={() => handleOpenDeleteModal(lista)}
-                                            className={`${styles.actionButton} ${styles.deleteButton}`}
-                                            title="Deletar"
-                                        >
-                                            <FontAwesomeIcon icon={faTrash} />
-                                        </Button>
+                                                Acoes
+                                            </Dropdown.Toggle>
+                                            <Dropdown.Menu className={styles.actionMenu}>
+                                                <Dropdown.Item onClick={() => handleOpenViewModal(lista)}>
+                                                    <FontAwesomeIcon icon={faEye} /> Ver itens
+                                                </Dropdown.Item>
+                                                <Dropdown.Item onClick={() => navigate(`/admin/listas/${lista.id}/lista-mae`)}>
+                                                    <FontAwesomeIcon icon={faShoppingCart} /> Lista mae
+                                                </Dropdown.Item>
+                                                <Dropdown.Item onClick={() => handleOpenAssignModal(lista)}>
+                                                    <FontAwesomeIcon icon={faUsersCog} /> Atribuir colaboradores
+                                                </Dropdown.Item>
+                                                <Dropdown.Item onClick={() => handleOpenAreaModal(lista)}>
+                                                    <FontAwesomeIcon icon={faTag} /> Vincular Área
+                                                </Dropdown.Item>
+                                                <Dropdown.Item onClick={() => handleExportCSV(lista)}>
+                                                    <FontAwesomeIcon icon={faUpload} /> Exportar CSV
+                                                </Dropdown.Item>
+                                                <Dropdown.Item onClick={() => handleOpenEditModal(lista)}>
+                                                    <FontAwesomeIcon icon={faEdit} /> Editar
+                                                </Dropdown.Item>
+                                                <Dropdown.Divider />
+                                                <Dropdown.Item
+                                                    className={styles.actionDanger}
+                                                    onClick={() => handleOpenDeleteModal(lista)}
+                                                >
+                                                    <FontAwesomeIcon icon={faTrash} /> Deletar
+                                                </Dropdown.Item>
+                                            </Dropdown.Menu>
+                                        </Dropdown>
                                     </div>
                                 </div>
                                 <div className={styles.cardContent}>
                                     <h3 className={styles.cardTitulo}>{lista.nome}</h3>
+
+                                    {/* Área */}
+                                    {lista.area_nome && (
+                                        <div className="mb-2">
+                                            <Badge bg="secondary">{lista.area_nome}</Badge>
+                                        </div>
+                                    )}
 
                                     {/* Fornecedor */}
                                     {lista.fornecedor && (
@@ -787,7 +939,7 @@ const ListasCompras: React.FC = () => {
                                         </span>
                                         <span className={styles.infoItem}>
                                             <FontAwesomeIcon icon={faCalendar} style={{marginRight: '0.25rem'}} />
-                                            {new Date(lista.data_criacao).toLocaleDateString('pt-BR')}
+                                            {formatarDataBrasiliaSemHora(lista.data_criacao)}
                                         </span>
                                     </div>
 
@@ -898,7 +1050,7 @@ const ListasCompras: React.FC = () => {
                                         className={`btn ${showItensTab ? 'btn-primary' : 'btn-outline-secondary'}`}
                                         onClick={() => setShowItensTab(true)}
                                     >
-                                        <FontAwesomeIcon icon={faBoxOpen} /> Itens ({itensSelecionados.length})
+                                        <FontAwesomeIcon icon={faBoxOpen} /> Itens ({selectedItens.size})
                                     </button>
                                 </div>
                             </div>
@@ -907,6 +1059,21 @@ const ListasCompras: React.FC = () => {
                         {/* Aba de Informações */}
                         {(!editingLista && !showItensTab) || editingLista ? (
                             <Form>
+                                {isSuperAdmin && !editingLista && (
+                                    <Form.Group className="mb-3">
+                                        <Form.Label>Restaurante *</Form.Label>
+                                        <Form.Select
+                                            value={formData.restaurante_id}
+                                            onChange={(e) => setFormData({...formData, restaurante_id: e.target.value === '' ? '' : Number(e.target.value)})}
+                                            required
+                                        >
+                                            <option value="">Selecione um restaurante</option>
+                                            {restaurantes.map(r => (
+                                                <option key={r.id} value={r.id}>{r.nome}</option>
+                                            ))}
+                                        </Form.Select>
+                                    </Form.Group>
+                                )}
                                 <Form.Group className="mb-3">
                                     <Form.Label>Nome da Lista *</Form.Label>
                                     <Form.Control
@@ -927,78 +1094,72 @@ const ListasCompras: React.FC = () => {
                                         onChange={(e) => setFormData({...formData, descricao: e.target.value})}
                                     />
                                 </Form.Group>
+                                <Form.Group className="mb-3">
+                                    <Form.Label>Área</Form.Label>
+                                    <Form.Select
+                                        value={formData.area_id}
+                                        onChange={(e) => editingLista
+                                            ? setFormData({...formData, area_id: e.target.value === '' ? '' : Number(e.target.value)})
+                                            : handleCreateAreaChange(e.target.value)
+                                        }
+                                    >
+                                        <option value="">Nenhuma</option>
+                                        {areas.map(a => (
+                                            <option key={a.id} value={a.id}>{a.nome}</option>
+                                        ))}
+                                    </Form.Select>
+                                </Form.Group>
+                                {!editingLista && (
+                                    <Form.Group className="mb-3">
+                                        <Form.Label>Colaboradores</Form.Label>
+                                        {loadingCreateColab || loadingUsers ? (
+                                            <div><Spinner size="sm" animation="border" /> Carregando...</div>
+                                        ) : allUsers.length === 0 ? (
+                                            <small className="text-muted">Nenhum colaborador disponível</small>
+                                        ) : (
+                                            <div style={{maxHeight: '200px', overflowY: 'auto', border: '1px solid #dee2e6', borderRadius: '4px', padding: '0.5rem'}}>
+                                                {allUsers.map(user => (
+                                                    <Form.Check
+                                                        key={user.id}
+                                                        type="checkbox"
+                                                        id={`create-colab-${user.id}`}
+                                                        label={`${user.nome} (${user.email})`}
+                                                        checked={createCollaborators.includes(user.id)}
+                                                        onChange={() => setCreateCollaborators(prev =>
+                                                            prev.includes(user.id) ? prev.filter(id => id !== user.id) : [...prev, user.id]
+                                                        )}
+                                                        className="mb-1"
+                                                    />
+                                                ))}
+                                            </div>
+                                        )}
+                                        {createCollaborators.length > 0 && (
+                                            <small className="text-success">{createCollaborators.length} colaborador(es) selecionado(s)</small>
+                                        )}
+                                    </Form.Group>
+                                )}
                             </Form>
                         ) : null}
                         
                         {/* Aba de Itens - apenas ao criar */}
                         {!editingLista && showItensTab && (
                             <div>
-                                {loadingCatalogo ? (
-                                    <div className="text-center py-4">
-                                        <div className="spinner-border text-primary" role="status">
-                                            <span className="visually-hidden">Carregando catálogo...</span>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <>
-                                        <Alert variant="info">
-                                            <FontAwesomeIcon icon={faInfoCircle} /> Selecione os itens que deseja adicionar à lista
-                                        </Alert>
-                                        
-                                        {/* Lista de itens do catálogo */}
-                                        <div style={{maxHeight: '400px', overflowY: 'auto'}}>
-                                            {catalogoItens.map(item => {
-                                                const selecionado = itensSelecionados.find(i => i.item_id === item.id);
-                                                return (
-                                                    <div key={item.id} className="border rounded p-2 mb-2" style={{backgroundColor: selecionado ? '#e7f3ff' : 'white'}}>
-                                                        <div className="d-flex align-items-center justify-content-between">
-                                                            <Form.Check
-                                                                type="checkbox"
-                                                                id={`item-${item.id}`}
-                                                                label={
-                                                                    <span>
-                                                                        <strong>{item.nome}</strong>
-                                                                        <span className="badge bg-secondary ms-2">{item.unidade}</span>
-                                                                    </span>
-                                                                }
-                                                                checked={!!selecionado}
-                                                                onChange={() => handleToggleItem(item)}
-                                                            />
-                                                        </div>
-                                                        
-                                                        {/* Campos de quantidade - apenas se selecionado */}
-                                                        {selecionado && (
-                                                            <div className="row mt-2">
-                                                                <div className="col-6">
-                                                                    <Form.Label style={{fontSize: '0.85rem'}}>Qtd. Atual</Form.Label>
-                                                                    <Form.Control
-                                                                        type="number"
-                                                                        size="sm"
-                                                                        min="0"
-                                                                        step="0.1"
-                                                                        value={selecionado.quantidade_atual}
-                                                                        onChange={(e) => handleUpdateQuantidade(item.id, 'quantidade_atual', parseFloat(e.target.value) || 0)}
-                                                                    />
-                                                                </div>
-                                                                <div className="col-6">
-                                                                    <Form.Label style={{fontSize: '0.85rem'}}>Qtd. Mínima</Form.Label>
-                                                                    <Form.Control
-                                                                        type="number"
-                                                                        size="sm"
-                                                                        min="0"
-                                                                        step="0.1"
-                                                                        value={selecionado.quantidade_minima}
-                                                                        onChange={(e) => handleUpdateQuantidade(item.id, 'quantidade_minima', parseFloat(e.target.value) || 1.0)}
-                                                                    />
-                                                                </div>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    </>
-                                )}
+                                <Alert variant="info">
+                                    <FontAwesomeIcon icon={faInfoCircle} /> Selecione os itens que deseja adicionar à lista
+                                </Alert>
+
+                                <SeletorItensUnificado
+                                    selectedItems={selectedItens}
+                                    onToggleItem={(item, quantidadeMinima) => {
+                                        const newMap = new Map(selectedItens);
+                                        if (quantidadeMinima === null) {
+                                            newMap.delete(item.id);
+                                        } else {
+                                            newMap.set(item.id, quantidadeMinima);
+                                        }
+                                        setSelectedItens(newMap);
+                                    }}
+                                />
                             </div>
                         )}
                     </Modal.Body>
@@ -1178,6 +1339,43 @@ const ListasCompras: React.FC = () => {
                     </Modal.Footer>
                 </Modal>
 
+                {/* Modal Vincular Área */}
+                <Modal show={showAreaModal} onHide={handleCloseAreaModal}>
+                    <Modal.Header closeButton>
+                        <Modal.Title>
+                            <FontAwesomeIcon icon={faTag} style={{marginRight: '0.5rem'}} />
+                            Vincular Área — {areaingLista?.nome}
+                        </Modal.Title>
+                    </Modal.Header>
+                    <Modal.Body>
+                        {error && (
+                            <Alert variant="danger" dismissible onClose={() => setError(null)}>
+                                {error}
+                            </Alert>
+                        )}
+                        <Form.Group>
+                            <Form.Label>Área</Form.Label>
+                            <Form.Select
+                                value={selectedAreaId}
+                                onChange={(e) => setSelectedAreaId(e.target.value === '' ? '' : Number(e.target.value))}
+                            >
+                                <option value="">Nenhuma (remover vínculo)</option>
+                                {areas.map(a => (
+                                    <option key={a.id} value={a.id}>{a.nome}</option>
+                                ))}
+                            </Form.Select>
+                        </Form.Group>
+                    </Modal.Body>
+                    <Modal.Footer>
+                        <Button variant="secondary" onClick={handleCloseAreaModal} disabled={savingArea}>
+                            Cancelar
+                        </Button>
+                        <Button variant="primary" onClick={handleSaveArea} disabled={savingArea}>
+                            {savingArea ? 'Salvando...' : 'Salvar'}
+                        </Button>
+                    </Modal.Footer>
+                </Modal>
+
                 {/* Modal Importar Nova Lista */}
                 <Modal show={showImportModal} onHide={handleCloseImportModal}>
                     <Modal.Header closeButton>
@@ -1345,7 +1543,7 @@ const ListasCompras: React.FC = () => {
                                                     </td>
                                                     <td><strong>{lista.nome}</strong></td>
                                                     <td>
-                                                        {lista.data_delecao ? new Date(lista.data_delecao).toLocaleString('pt-BR') : '-'}
+                                                        {lista.data_delecao ? formatarDataHoraBrasilia(lista.data_delecao) : '-'}
                                                     </td>
                                                     <td className="text-center">
                                                         <Button

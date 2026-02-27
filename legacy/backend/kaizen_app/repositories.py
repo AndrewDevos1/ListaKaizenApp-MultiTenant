@@ -1,17 +1,17 @@
 # Este arquivo conterá a camada de acesso a dados (Repositórios).
 from .extensions import db
-from datetime import datetime, timezone
-
 from .models import (
     Item,
     Area,
     Fornecedor,
+    Restaurante,
     Estoque,
     Pedido,
     Cotacao,
     CotacaoItem,
     Usuario,
     Lista,
+    brasilia_now,
 )
 
 # Funções genéricas de repositório
@@ -76,13 +76,17 @@ def listar_areas():
 def buscar_area_por_id(area_id):
     return db.session.get(Area, area_id)
 
-def criar_fornecedor(nome, contato=None, meio_envio=None, responsavel=None, observacao=None):
+def criar_fornecedor(nome, contato=None, meio_envio=None, responsavel=None, observacao=None, restaurante_id=None):
+    if restaurante_id is None:
+        restaurante = Restaurante.query.first()
+        restaurante_id = restaurante.id if restaurante else None
     fornecedor = Fornecedor(
         nome=nome,
         contato=contato,
         meio_envio=meio_envio,
         responsavel=responsavel,
         observacao=observacao,
+        restaurante_id=restaurante_id,
     )
     db.session.add(fornecedor)
     db.session.commit()
@@ -115,8 +119,10 @@ def atualizar_quantidade_estoque(estoque_id, quantidade_atual):
     db.session.commit()
     return estoque
 
-def criar_lista(nome, descricao=None):
-    lista = Lista(nome=nome, descricao=descricao)
+def criar_lista(nome, descricao=None, restaurante_id=None):
+    if restaurante_id is None:
+        raise ValueError("restaurante_id é obrigatório")
+    lista = Lista(nome=nome, descricao=descricao, restaurante_id=restaurante_id)
     db.session.add(lista)
     db.session.commit()
     return lista
@@ -129,7 +135,7 @@ def soft_delete_lista(lista_id):
     if not lista:
         return None
     lista.deletado = True
-    lista.data_delecao = datetime.now(timezone.utc)
+    lista.data_delecao = brasilia_now()
     db.session.commit()
     return lista
 

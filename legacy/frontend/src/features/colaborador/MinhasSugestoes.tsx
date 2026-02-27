@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Table, Spinner, Alert, Badge } from 'react-bootstrap';
+import { Table, Spinner, Alert, Badge } from 'react-bootstrap';
 import api from '../../services/api';
+import { formatarDataBrasiliaSemHora } from '../../utils/dateFormatter';
 import styles from './MinhasSugestoes.module.css';
 
 interface Sugestao {
@@ -57,7 +58,7 @@ const MinhasSugestoes: React.FC = () => {
 
     const formatDate = (dateStr: string | null) => {
         if (!dateStr) return '-';
-        return new Date(dateStr).toLocaleDateString('pt-BR');
+        return formatarDataBrasiliaSemHora(dateStr);
     };
 
     return (

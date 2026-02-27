@@ -33,12 +33,12 @@ const AdminRoute: React.FC = () => {
         return <Navigate to="/login" replace />;
     }
 
-    if (user?.role !== 'ADMIN') {
-        console.log('[ADMIN_ROUTE] Usuario nao e ADMIN - redirecionando para /login');
+    if (user?.role !== 'ADMIN' && user?.role !== 'SUPER_ADMIN') {
+        console.log('[ADMIN_ROUTE] Usuario nao e ADMIN/SUPER_ADMIN - redirecionando para /login');
         return <Navigate to="/login" replace />; // Redireciona para login se não for admin
     }
 
-    console.log('[ADMIN_ROUTE] Usuario ADMIN autenticado - renderizando Outlet');
+    console.log('[ADMIN_ROUTE] Usuario ADMIN/SUPER_ADMIN autenticado - renderizando Outlet');
     return <Outlet />;
 };
 

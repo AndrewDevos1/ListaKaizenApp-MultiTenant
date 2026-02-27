@@ -6,7 +6,7 @@ export const useSugestoesPendentes = (userRole: string | undefined) => {
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
-        if (userRole !== 'ADMIN') return;
+        if (userRole !== 'ADMIN' && userRole !== 'SUPER_ADMIN') return;
 
         const fetchCount = async () => {
             setLoading(true);

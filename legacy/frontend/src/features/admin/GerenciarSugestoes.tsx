@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Table, Spinner, Alert, Badge, Button, Modal, Form } from 'react-bootstrap';
 import api from '../../services/api';
+import { formatarDataHoraBrasilia } from '../../utils/dateFormatter';
 import styles from './GerenciarSugestoes.module.css';
 
 interface Sugestao {
@@ -121,13 +122,7 @@ const GerenciarSugestoes: React.FC = () => {
     };
 
     const formatDate = (dateStr: string) => {
-        return new Date(dateStr).toLocaleDateString('pt-BR', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
+        return formatarDataHoraBrasilia(dateStr);
     };
 
     return (

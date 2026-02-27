@@ -60,6 +60,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import api from '../../services/api';
+import { formatarDataHoraBrasilia } from '../../utils/dateFormatter';
 import styles from './CollaboratorDashboard.module.css';
 
 interface DashboardStats {
@@ -88,8 +89,8 @@ interface Widget {
     icon: any;
     color: string;
     link: string;
-    trend: string;
-    trendType: 'positive' | 'negative';
+    trend?: string;
+    trendType?: 'positive' | 'negative';
 }
 
 // Componente SortableWidget
@@ -115,6 +116,13 @@ const SortableWidget: React.FC<SortableWidgetProps> = ({ widget, isEditMode }) =
         cursor: isEditMode ? (isDragging ? 'grabbing' : 'grab') : 'default',
     };
 
+    const hasTrend = Boolean(widget.trend);
+    const trendClass = hasTrend
+        ? widget.trendType === 'negative'
+            ? styles.negative
+            : styles.positive
+        : styles.trendHidden;
+
     return (
         <div ref={setNodeRef} style={style} {...attributes}>
             <Card className={`${styles.widgetCard} ${widget.color}`}>
@@ -133,12 +141,14 @@ const SortableWidget: React.FC<SortableWidgetProps> = ({ widget, isEditMode }) =
                     </div>
                 </div>
                 <div className={styles.widgetFooter}>
-                    <span className={`${styles.widgetTrend} ${widget.trendType === 'positive' ? styles.positive : styles.negative}`}>
-                        <FontAwesomeIcon
-                            icon={widget.trendType === 'positive' ? faArrowUp : faArrowDown}
-                            style={{ marginRight: '0.25rem' }}
-                        />
-                        {widget.trend}
+                    <span className={`${styles.widgetTrend} ${trendClass}`}>
+                        {hasTrend && (
+                            <FontAwesomeIcon
+                                icon={widget.trendType === 'negative' ? faArrowDown : faArrowUp}
+                                style={{ marginRight: '0.25rem' }}
+                            />
+                        )}
+                        {widget.trend || ''}
                     </span>
                     <Link to={widget.link} className={styles.widgetLink}>
                         Ver detalhes
@@ -181,13 +191,7 @@ const CollaboratorDashboard: React.FC = () => {
         if (!value) {
             return 'Nunca';
         }
-
-        const parsedDate = new Date(value);
-        if (Number.isNaN(parsedDate.getTime())) {
-            return value;
-        }
-
-        return parsedDate.toLocaleString('pt-BR');
+        return formatarDataHoraBrasilia(value);
     };
 
     // DIAGNOSTICO: Verificar se este componente esta sendo carregado
@@ -219,9 +223,13 @@ const CollaboratorDashboard: React.FC = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const statsResponse = await api.get('/collaborator/dashboard-summary');
+                const [statsResponse, activitiesResponse] = await Promise.all([
+                    api.get('/collaborator/dashboard-summary'),
+                    api.get('/collaborator/recent-activities'),
+                ]);
 
                 setStats(statsResponse.data);
+                setRecentActivities(activitiesResponse.data?.activities || []);
 
                 try {
                     const areasResponse = await api.get('/collaborator/minhas-areas-status');
@@ -230,15 +238,9 @@ const CollaboratorDashboard: React.FC = () => {
                     console.error('Erro ao buscar status das áreas:', err);
                     setAreaStatus([]);
                 }
-
-                setRecentActivities([
-                    { time: '14:30', description: 'Você submeteu lista "Cozinha"' },
-                    { time: '13:15', description: 'Pedido #89 aprovado pelo administrador' },
-                    { time: '11:45', description: 'Você atualizou estoque de "Almoxarifado"' },
-                    { time: '10:30', description: 'Nova lista "Manutenção" atribuída a você' },
-                ]);
             } catch (error) {
                 console.error('Failed to fetch dashboard data', error);
+                setRecentActivities([]);
             } finally {
                 setLoading(false);
             }
@@ -257,28 +259,22 @@ const CollaboratorDashboard: React.FC = () => {
                 icon: faCheckCircle,
                 color: styles.widgetGreen,
                 link: '/collaborator/submissions',
-                trend: '+5',
-                trendType: 'positive',
             },
             {
-                id: 'widget-compras',
-                title: 'Minhas Compras',
+                id: 'widget-pending',
+                title: 'Submissões Pendentes',
+                value: stats.pending_submissions,
+                icon: faListAlt,
+                color: styles.widgetYellow,
+                link: '/collaborator/submissions',
+            },
+            {
+                id: 'widget-areas',
+                title: 'Minhas Áreas',
                 value: stats.minhas_areas,
                 icon: faShoppingCart,
                 color: styles.widgetPurple,
                 link: '/collaborator/listas',
-                trend: '',
-                trendType: 'positive',
-            },
-            {
-                id: 'widget-lista-rapida',
-                title: 'Lista Rápida',
-                value: '⚡',
-                icon: faBolt,
-                color: styles.widgetOrange,
-                link: '/collaborator/lista-rapida/criar',
-                trend: 'Novo!',
-                trendType: 'positive',
             },
         ];
 
@@ -379,7 +375,7 @@ const CollaboratorDashboard: React.FC = () => {
                         {quickActions.map((action, index) => (
                             <Button
                                 key={index}
-                                as={Link}
+                                as={Link as any}
                                 to={action.link}
                                 className={styles.quickActionBtn}
                             >
@@ -422,7 +418,7 @@ const CollaboratorDashboard: React.FC = () => {
                                                 </td>
                                                 <td>
                                                     <Button
-                                                        as={Link}
+                                                        as={Link as any}
                                                         to={`/collaborator/areas/${area.id}/estoque`}
                                                         variant="outline-primary"
                                                         size="sm"

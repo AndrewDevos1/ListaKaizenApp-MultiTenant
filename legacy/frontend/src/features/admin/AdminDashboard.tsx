@@ -65,6 +65,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import api from '../../services/api';
+import { formatarDataHoraBrasilia } from '../../utils/dateFormatter';
 import styles from './AdminDashboard.module.css';
 
 interface DashboardStats {
@@ -98,9 +99,23 @@ interface Widget {
     icon: any;
     color: string;
     link: string;
-    trend: string;
-    trendType: 'positive' | 'negative';
+    trend?: string;
+    trendType?: 'positive' | 'negative';
 }
+
+const widgetWizardTargets: Record<string, string> = {
+    'widget-submissions': 'admin-widget-lists',
+    'widget-items': 'admin-widget-items',
+    'widget-orders': 'admin-widget-submissions',
+};
+
+const quickActionWizardTargets: Record<string, string> = {
+    'Gerenciar Usuários': 'admin-quick-users',
+    'Fornecedores': 'admin-quick-suppliers',
+    'Gerenciar Submissões': 'admin-quick-submissions',
+    'Cotações': 'admin-quick-cotacoes',
+    'Configurações': 'admin-quick-config',
+};
 
 // Componente SortableWidget
 interface SortableWidgetProps {
@@ -125,9 +140,20 @@ const SortableWidget: React.FC<SortableWidgetProps> = ({ widget, isEditMode }) =
         cursor: isEditMode ? (isDragging ? 'grabbing' : 'grab') : 'default',
     };
 
+    const hasTrend = Boolean(widget.trend);
+    const trendClass = hasTrend
+        ? widget.trendType === 'negative'
+            ? styles.negative
+            : styles.positive
+        : styles.trendHidden;
+    const wizardTarget = widgetWizardTargets[widget.id];
+
     return (
         <div ref={setNodeRef} style={style} {...attributes}>
-            <Card className={`${styles.widgetCard} ${widget.color}`}>
+            <Card
+                className={`${styles.widgetCard} ${widget.color}`}
+                data-wizard-target={wizardTarget}
+            >
                 {isEditMode && (
                     <div className={styles.dragHandle} {...listeners}>
                         <FontAwesomeIcon icon={faGripVertical} />
@@ -143,12 +169,14 @@ const SortableWidget: React.FC<SortableWidgetProps> = ({ widget, isEditMode }) =
                     </div>
                 </div>
                 <div className={styles.widgetFooter}>
-                    <span className={`${styles.widgetTrend} ${widget.trendType === 'positive' ? styles.positive : styles.negative}`}>
-                        <FontAwesomeIcon
-                            icon={widget.trendType === 'positive' ? faArrowUp : faArrowDown}
-                            style={{ marginRight: '0.25rem' }}
-                        />
-                        {widget.trend}
+                    <span className={`${styles.widgetTrend} ${trendClass}`}>
+                        {hasTrend && (
+                            <FontAwesomeIcon
+                                icon={widget.trendType === 'negative' ? faArrowDown : faArrowUp}
+                                style={{ marginRight: '0.25rem' }}
+                            />
+                        )}
+                        {widget.trend || ''}
                     </span>
                     <Link to={widget.link} className={styles.widgetLink}>
                         Ver detalhes
@@ -197,13 +225,7 @@ const AdminDashboard: React.FC = () => {
         if (!value) {
             return 'Nunca';
         }
-
-        const parsedDate = new Date(value);
-        if (Number.isNaN(parsedDate.getTime())) {
-            return value;
-        }
-
-        return parsedDate.toLocaleString('pt-BR');
+        return formatarDataHoraBrasilia(value);
     };
 
     const fetchListStatus = useCallback(async () => {
@@ -275,21 +297,16 @@ const AdminDashboard: React.FC = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [statsResponse] = await Promise.all([
+                const [statsResponse, activitiesResponse] = await Promise.all([
                     api.get('/admin/dashboard-summary'),
+                    api.get('/admin/recent-activities'),
                 ]);
 
                 setStats(statsResponse.data);
-
-                // Mock data para demonstração (remover quando backend estiver pronto)
-                setRecentActivities([
-                    { time: '14:30', description: 'Usuário João Silva submeteu lista "Cozinha"' },
-                    { time: '13:15', description: 'Cotação #125 criada para Fornecedor ABC' },
-                    { time: '11:45', description: 'Usuário Maria Santos aprovado' },
-                    { time: '10:30', description: 'Pedido #89 gerado para Fornecedor XYZ' },
-                ]);
+                setRecentActivities(activitiesResponse.data?.activities || []);
             } catch (error) {
                 console.error('Failed to fetch dashboard data', error);
+                setRecentActivities([]);
             } finally {
                 setLoading(false);
             }
@@ -308,12 +325,10 @@ const AdminDashboard: React.FC = () => {
             {
                 id: 'widget-submissions',
                 title: 'Gerenciar Listas',
-                value: stats.pending_submissions,
+                value: stats.total_lists,
                 icon: faShoppingCart,
                 color: styles.widgetOrange,
                 link: '/admin/listas-compras',
-                trend: '-2',
-                trendType: 'negative',
             },
             {
                 id: 'widget-items',
@@ -322,18 +337,14 @@ const AdminDashboard: React.FC = () => {
                 icon: faBox,
                 color: styles.widgetBlue,
                 link: '/admin/catalogo-global',
-                trend: '+12',
-                trendType: 'positive',
             },
             {
                 id: 'widget-orders',
                 title: 'Solicitações',
-                value: stats.orders_today,
+                value: stats.pending_submissions,
                 icon: faClipboardList,
                 color: styles.widgetRed,
                 link: '/admin/submissoes',
-                trend: '+7',
-                trendType: 'positive',
             },
         ];
 
@@ -398,10 +409,10 @@ const AdminDashboard: React.FC = () => {
     }
 
     return (
-        <div className={styles.dashboardWrapper}>
+        <div className={styles.dashboardWrapper} data-wizard-target="admin-dashboard">
             <Container fluid>
                 {/* Header */}
-                <div className={styles.dashboardHeader}>
+                <div className={styles.dashboardHeader} data-wizard-target="admin-header">
                     <div>
                         <h1 className={styles.dashboardTitle}>
                             <FontAwesomeIcon icon={faChartLine} style={{ marginRight: '1rem', color: '#667eea' }} />
@@ -415,6 +426,7 @@ const AdminDashboard: React.FC = () => {
                         variant={isEditMode ? 'success' : 'outline-primary'}
                         onClick={toggleEditMode}
                         className={styles.editModeButton}
+                        data-wizard-target="admin-edit-mode"
                     >
                         <FontAwesomeIcon icon={isEditMode ? faSave : faEdit} style={{ marginRight: '0.5rem' }} />
                         {isEditMode ? 'Salvar Organização' : 'Organizar Cards'}
@@ -431,7 +443,7 @@ const AdminDashboard: React.FC = () => {
                         items={widgets.map(w => w.id)}
                         strategy={rectSortingStrategy}
                     >
-                        <div className={styles.widgetsGrid}>
+                        <div className={styles.widgetsGrid} data-wizard-target="admin-widgets">
                             {widgets.map((widget) => (
                                 <SortableWidget key={widget.id} widget={widget} isEditMode={isEditMode} />
                             ))}
@@ -440,7 +452,7 @@ const AdminDashboard: React.FC = () => {
                 </DndContext>
 
                 {/* Quick Actions */}
-                <div className={styles.quickActionsSection}>
+                <div className={styles.quickActionsSection} data-wizard-target="admin-quick-actions">
                     <h3 className={styles.sectionTitle}>
                         <FontAwesomeIcon icon={faBolt} />
                         Ações Rápidas
@@ -449,9 +461,10 @@ const AdminDashboard: React.FC = () => {
                         {quickActions.map((action, index) => (
                             <Button
                                 key={index}
-                                as={Link}
+                                as={Link as any}
                                 to={action.link}
                                 className={styles.quickActionBtn}
+                                data-wizard-target={quickActionWizardTargets[action.title]}
                             >
                                 <FontAwesomeIcon icon={action.icon} />
                                 {action.title}
@@ -463,7 +476,7 @@ const AdminDashboard: React.FC = () => {
                 <Row>
                     {/* Status das Listas */}
                     <Col lg={8} className="mb-4">
-                        <Card className={styles.sectionCard}>
+                        <Card className={styles.sectionCard} data-wizard-target="admin-status-list">
                             <div className={styles.sectionCardHeader}>
                                 <h4 className={styles.sectionCardTitle}>
                                     <FontAwesomeIcon icon={faListAlt} />
@@ -515,11 +528,12 @@ const AdminDashboard: React.FC = () => {
                                                     {list.tipo === 'lista_comum' ? (
                                                         <>
                                                             <Button
-                                                                as={Link}
+                                                                as={Link as any}
                                                                 to={`/admin/listas/${list.id}/lista-mae`}
                                                                 variant="outline-primary"
                                                                 size="sm"
                                                                 className="me-2"
+                                                                data-wizard-target="admin-status-consolidacao"
                                                             >
                                                                 Ver Consolidação
                                                             </Button>
@@ -532,6 +546,7 @@ const AdminDashboard: React.FC = () => {
                                                                     list.pending_submissions
                                                                 )}
                                                                 disabled={loadingListStatus}
+                                                                data-wizard-target="admin-status-aprovar"
                                                             >
                                                                 <FontAwesomeIcon icon={faCheck} className="me-1" />
                                                                 Aprovar Todos
@@ -539,10 +554,11 @@ const AdminDashboard: React.FC = () => {
                                                         </>
                                                     ) : (
                                                         <Button
-                                                            as={Link}
+                                                            as={Link as any}
                                                             to={`/admin/listas-rapidas/${list.id}`}
                                                             variant="outline-primary"
                                                             size="sm"
+                                                            data-wizard-target="admin-status-analisar"
                                                         >
                                                             <FontAwesomeIcon icon={faEdit} className="me-1" />
                                                             Analisar
@@ -564,7 +580,7 @@ const AdminDashboard: React.FC = () => {
 
                     {/* Atividades Recentes */}
                     <Col lg={4} className="mb-4">
-                        <Card className={styles.sectionCard}>
+                        <Card className={styles.sectionCard} data-wizard-target="admin-recent-activities">
                             <div className={styles.sectionCardHeader}>
                                 <h4 className={styles.sectionCardTitle}>
                                     <FontAwesomeIcon icon={faCheckCircle} />

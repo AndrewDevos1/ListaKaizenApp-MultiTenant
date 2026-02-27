@@ -33,6 +33,37 @@ const api = axios.create({
   },
 });
 
+const NETWORK_STATUS_EVENT = 'kaizen-network-status';
+type NetworkStatus = 'online' | 'offline';
+let lastNetworkStatus: NetworkStatus | null = null;
+
+const dispatchNetworkStatus = (status: NetworkStatus) => {
+  if (typeof window === 'undefined') {
+    return;
+  }
+  if (lastNetworkStatus === status) {
+    return;
+  }
+  lastNetworkStatus = status;
+  window.dispatchEvent(new CustomEvent(NETWORK_STATUS_EVENT, { detail: { status } }));
+};
+
+const isNetworkError = (error: any) => {
+  if (!error) {
+    return false;
+  }
+  if (error.code === 'ERR_NETWORK' || error.message === 'Network Error') {
+    return true;
+  }
+  if (error.response?.status === 0) {
+    return true;
+  }
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+    return true;
+  }
+  return false;
+};
+
 // Interceptor para adicionar o token JWT em cada requisição
 api.interceptors.request.use(async (config) => {
   console.log('[INTERCEPTOR] Executando interceptor...');
@@ -60,6 +91,7 @@ api.interceptors.request.use(async (config) => {
 api.interceptors.response.use(
   (response) => {
     console.log('[API] Resposta bem-sucedida:', response.status, response.data);
+    dispatchNetworkStatus('online');
     return response;
   },
   (error) => {
@@ -69,12 +101,20 @@ api.interceptors.response.use(
     console.error('[API] Mensagem:', error.message);
     console.error('[API] Config:', error.config);
 
+    if (error.response?.status === 401 && error.response?.data?.code === 'SESSION_SUPERSEDED') {
+      window.dispatchEvent(new CustomEvent('kaizen-session-superseded'));
+    }
+
     if (error.message === 'Network Error') {
       console.error('[API] ERRO DE REDE - Verifique se o backend está rodando');
     }
 
     if (error.response?.status === 0) {
       console.error('[API] CORS ou erro de conexão - verifique CORS no backend');
+    }
+
+    if (isNetworkError(error)) {
+      dispatchNetworkStatus('offline');
     }
 
     return Promise.reject(error);

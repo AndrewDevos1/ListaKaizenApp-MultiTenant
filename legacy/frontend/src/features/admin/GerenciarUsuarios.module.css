@@ -224,35 +224,75 @@
 }
 
 /* Responsividade */
-@media (max-width: 768px) {
+@media (max-width: 767px) {
+  .pageWrapper {
+    padding: 1rem 0 !important;
+  }
+
+  .pageHeader {
+    margin-bottom: 1rem !important;
+  }
+
   .pageTitle {
-    font-size: 1.75rem;
+    font-size: 1.3rem !important;
+  }
+
+  .pageSubtitle {
+    font-size: 0.85rem !important;
+  }
+
+  .backButton {
+    font-size: 0.85rem !important;
+    padding: 0.4rem 0.75rem !important;
   }
 
   .opcoesGrid {
-    grid-template-columns: 1fr;
-    gap: 1.5rem;
+    grid-template-columns: 1fr !important;
+    gap: 0.75rem !important;
+    margin-top: 1rem !important;
   }
 
+  /* Reduzir tamanho dos cards em ~40% */
   .opcaoCard {
-    min-height: 280px;
+    min-height: unset !important;
+    padding: 1rem !important;
+    border-radius: 10px !important;
+  }
+
+  .cardIconWrapper {
+    margin-bottom: 0.75rem !important;
   }
 
   .cardIcon {
-    width: 60px;
-    height: 60px;
-    font-size: 1.5rem;
+    width: 50px !important;
+    height: 50px !important;
+    font-size: 1.25rem !important;
   }
 
   .quantidadeNumero {
-    font-size: 2.5rem;
+    font-size: 1.75rem !important;
+  }
+
+  .quantidadeLabel {
+    font-size: 0.7rem !important;
   }
 
   .cardTitulo {
-    font-size: 1.25rem;
+    font-size: 1rem !important;
+    margin-bottom: 0.5rem !important;
   }
 
   .cardDescricao {
-    font-size: 0.9rem;
+    font-size: 0.8rem !important;
+    line-height: 1.4 !important;
+  }
+
+  .cardFooter {
+    margin-top: 0.75rem !important;
+    padding-top: 0.75rem !important;
+  }
+
+  .cardAction {
+    font-size: 0.85rem !important;
   }
 }

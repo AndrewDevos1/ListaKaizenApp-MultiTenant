@@ -4,7 +4,7 @@ Testa o fluxo completo: requisição -> controller -> service -> model -> respos
 """
 import json
 import pytest
-from kaizen_app.models import Usuario, UserRoles, Item, Area, Fornecedor, Lista
+from kaizen_app.models import Usuario, UserRoles, Item, Area, Fornecedor, Lista, Restaurante, ListaMaeItem, ListaItemRef
 from kaizen_app import db
 from .conftest import create_user, get_auth_token
 
@@ -144,7 +144,8 @@ class TestItemRoutes:
         """Testa criação de item por admin"""
         with app.app_context():
             create_user('Admin', 'admin@example.com', 'senha', UserRoles.ADMIN, aprovado=True)
-            fornecedor = Fornecedor(nome="Fornecedor Teste")
+            restaurante = Restaurante.query.first()
+            fornecedor = Fornecedor(nome="Fornecedor Teste", restaurante_id=restaurante.id)
             db.session.add(fornecedor)
             db.session.commit()
             fornecedor_id = fornecedor.id
@@ -165,7 +166,8 @@ class TestItemRoutes:
         """Testa listagem de itens"""
         with app.app_context():
             create_user('User', 'user@example.com', 'senha', UserRoles.ADMIN, aprovado=True)
-            fornecedor = Fornecedor(nome="Fornecedor")
+            restaurante = Restaurante.query.first()
+            fornecedor = Fornecedor(nome="Fornecedor", restaurante_id=restaurante.id)
             db.session.add(fornecedor)
             db.session.flush()
             
@@ -242,7 +244,8 @@ class TestFornecedorRoutes:
         """Testa listagem de fornecedores"""
         with app.app_context():
             create_user('User', 'user@example.com', 'senha', UserRoles.ADMIN, aprovado=True)
-            fornecedor = Fornecedor(nome="Fornecedor XYZ")
+            restaurante = Restaurante.query.first()
+            fornecedor = Fornecedor(nome="Fornecedor XYZ", restaurante_id=restaurante.id)
             db.session.add(fornecedor)
             db.session.commit()
             token = get_auth_token(client, 'user@example.com', 'senha')
@@ -253,6 +256,165 @@ class TestFornecedorRoutes:
         assert response.status_code == 200
         data = response.get_json()
         assert isinstance(data, list)
+
+    def test_listar_fornecedores_compartilhados(self, client, app):
+        """Testa filtro de fornecedores compartilhados na regiao"""
+        with app.app_context():
+            create_user('Admin', 'admin-comp@example.com', 'senha', UserRoles.ADMIN, aprovado=True)
+            restaurante = Restaurante.query.first()
+            fornecedor_regional = Fornecedor(
+                nome="Fornecedor Regional",
+                restaurante_id=restaurante.id,
+                compartilhado_regiao=True
+            )
+            fornecedor_privado = Fornecedor(
+                nome="Fornecedor Privado",
+                restaurante_id=restaurante.id,
+                compartilhado_regiao=False
+            )
+            db.session.add(fornecedor_regional)
+            db.session.add(fornecedor_privado)
+            db.session.commit()
+            token = get_auth_token(client, 'admin-comp@example.com', 'senha')
+
+        response = client.get(
+            '/api/v1/fornecedores?compartilhado_regiao=1',
+            headers={'Authorization': f'Bearer {token}'}
+        )
+
+        assert response.status_code == 200
+        data = response.get_json()
+        nomes = [f['nome'] for f in data]
+        assert "Fornecedor Regional" in nomes
+        assert "Fornecedor Privado" not in nomes
+        assert all(f.get('compartilhado_regiao') for f in data)
+
+    def test_fornecedor_detalhes_estoque(self, client, app):
+        """Testa rota de detalhes com itens do fornecedor"""
+        with app.app_context():
+            create_user('Admin', 'admin-detalhes@example.com', 'senha', UserRoles.ADMIN, aprovado=True)
+            restaurante = Restaurante.query.first()
+            fornecedor = Fornecedor(nome="Fornecedor Detalhes", restaurante_id=restaurante.id)
+            db.session.add(fornecedor)
+            db.session.flush()
+            item = Item(nome="Arroz Detalhe", unidade_medida="kg", fornecedor_id=fornecedor.id)
+            db.session.add(item)
+            db.session.commit()
+            token = get_auth_token(client, 'admin-detalhes@example.com', 'senha')
+            fornecedor_id = fornecedor.id
+            item_id = item.id
+
+        response = client.get(
+            f'/api/v1/fornecedores/{fornecedor_id}/detalhes-estoque',
+            headers={'Authorization': f'Bearer {token}'}
+        )
+
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data['fornecedor']['id'] == fornecedor_id
+        assert len(data['itens']) == 1
+        assert data['itens'][0]['id'] == item_id
+        assert data['estoques'] == []
+
+    def test_lista_skip_item_existente(self, client, app):
+        """Testa adicionar item na lista sem alterar quando ja existe."""
+        with app.app_context():
+            create_user('Admin', 'admin-skip@example.com', 'senha', UserRoles.ADMIN, aprovado=True)
+            restaurante = Restaurante.query.first()
+            lista = Lista(nome="Lista Skip", restaurante_id=restaurante.id)
+            db.session.add(lista)
+            fornecedor = Fornecedor(nome="Fornecedor Skip", restaurante_id=restaurante.id)
+            db.session.add(fornecedor)
+            db.session.flush()
+            item_fornecedor = Item(nome="Item Skip", unidade_medida="kg", fornecedor_id=fornecedor.id)
+            db.session.add(item_fornecedor)
+            db.session.flush()
+            item_global = ListaMaeItem(
+                nome="Item Skip",
+                unidade="kg",
+                restaurante_id=restaurante.id
+            )
+            db.session.add(item_global)
+            db.session.flush()
+            ref = ListaItemRef(
+                lista_id=lista.id,
+                item_id=item_global.id,
+                quantidade_atual=0,
+                quantidade_minima=5
+            )
+            db.session.add(ref)
+            db.session.commit()
+            token = get_auth_token(client, 'admin-skip@example.com', 'senha')
+            lista_id = lista.id
+            item_fornecedor_id = item_fornecedor.id
+            item_global_id = item_global.id
+
+        response = client.post(
+            f'/api/admin/listas/{lista_id}/itens?skip_if_exists=1',
+            data=json.dumps({
+                'itens': [
+                    {'id': f'fornecedor_{item_fornecedor_id}', 'quantidade_minima': 1}
+                ]
+            }),
+            headers={'Authorization': f'Bearer {token}'},
+            content_type='application/json'
+        )
+
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data['resultados'][0].get('skipped') is True
+
+        with app.app_context():
+            ref_atual = ListaItemRef.query.filter_by(
+                lista_id=lista_id,
+                item_id=item_global_id
+            ).first()
+            assert ref_atual is not None
+            assert ref_atual.quantidade_minima == 5
+
+    def test_listar_itens_regionais(self, client, app):
+        """Testa listagem de itens de fornecedores regionais."""
+        with app.app_context():
+            create_user('Admin', 'admin-itens-regionais@example.com', 'senha', UserRoles.ADMIN, aprovado=True)
+            restaurante = Restaurante.query.first()
+            fornecedor_regional = Fornecedor(
+                nome="Fornecedor Regional Itens",
+                restaurante_id=restaurante.id,
+                compartilhado_regiao=True
+            )
+            fornecedor_privado = Fornecedor(
+                nome="Fornecedor Privado Itens",
+                restaurante_id=restaurante.id,
+                compartilhado_regiao=False
+            )
+            db.session.add(fornecedor_regional)
+            db.session.add(fornecedor_privado)
+            db.session.flush()
+            item_regional = Item(
+                nome="Item Regional",
+                unidade_medida="kg",
+                fornecedor_id=fornecedor_regional.id
+            )
+            item_privado = Item(
+                nome="Item Privado",
+                unidade_medida="kg",
+                fornecedor_id=fornecedor_privado.id
+            )
+            db.session.add(item_regional)
+            db.session.add(item_privado)
+            db.session.commit()
+            token = get_auth_token(client, 'admin-itens-regionais@example.com', 'senha')
+
+        response = client.get(
+            '/api/admin/itens-regionais',
+            headers={'Authorization': f'Bearer {token}'}
+        )
+
+        assert response.status_code == 200
+        data = response.get_json()
+        nomes = [item['nome'] for item in data.get('itens', [])]
+        assert "Item Regional" in nomes
+        assert "Item Privado" not in nomes
 
 
 class TestListaRoutes:
@@ -274,11 +436,126 @@ class TestListaRoutes:
         
         assert response.status_code == 201
 
+
+class TestNavbarLayoutRoutes:
+    """Testes para rotas de layout da navbar."""
+
+    def test_get_navbar_layout(self, client, app):
+        with app.app_context():
+            create_user('Admin', 'admin-layout@example.com', 'senha', UserRoles.ADMIN, aprovado=True)
+            token = get_auth_token(client, 'admin-layout@example.com', 'senha')
+
+        response = client.get(
+            '/api/auth/navbar-layout',
+            headers={'Authorization': f'Bearer {token}'}
+        )
+
+        assert response.status_code == 200
+        data = response.get_json()
+        assert 'layout' in data
+
+    def test_save_navbar_layout_requires_super_admin(self, client, app):
+        with app.app_context():
+            create_user('Admin', 'admin-no-layout@example.com', 'senha', UserRoles.ADMIN, aprovado=True)
+            token = get_auth_token(client, 'admin-no-layout@example.com', 'senha')
+
+        response = client.post(
+            '/api/auth/navbar-layout',
+            data=json.dumps({
+                'layout': {
+                    'groups': [],
+                    'hidden_items': []
+                }
+            }),
+            headers={'Authorization': f'Bearer {token}'},
+            content_type='application/json'
+        )
+
+        assert response.status_code == 403
+
+    def test_save_navbar_layout_super_admin(self, client, app):
+        with app.app_context():
+            create_user('Super', 'super-layout@example.com', 'senha', UserRoles.SUPER_ADMIN, aprovado=True)
+            token = get_auth_token(client, 'super-layout@example.com', 'senha')
+
+        response = client.post(
+            '/api/auth/navbar-layout',
+            data=json.dumps({
+                'layout': {
+                    'groups': [
+                        {'id': 'grupo-1', 'title': 'Grupo 1', 'items': []}
+                    ],
+                    'hidden_items': []
+                }
+            }),
+            headers={'Authorization': f'Bearer {token}'},
+            content_type='application/json'
+        )
+
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data.get('layout')
+
+
+class TestNavbarActivityRoutes:
+    """Testes para o histórico de acessos da navbar."""
+
+    def test_get_navbar_activity_empty(self, client, app):
+        with app.app_context():
+            create_user('User', 'user-history@example.com', 'senha', UserRoles.ADMIN, aprovado=True)
+            token = get_auth_token(client, 'user-history@example.com', 'senha')
+
+        response = client.get(
+            '/api/auth/navbar-activity',
+            headers={'Authorization': f'Bearer {token}'}
+        )
+
+        assert response.status_code == 200
+        data = response.get_json()
+        assert isinstance(data.get('items'), list)
+        assert data.get('items') == []
+
+    def test_log_navbar_activity_requires_item_key(self, client, app):
+        with app.app_context():
+            create_user('User', 'user-history2@example.com', 'senha', UserRoles.ADMIN, aprovado=True)
+            token = get_auth_token(client, 'user-history2@example.com', 'senha')
+
+        response = client.post(
+            '/api/auth/navbar-activity',
+            data=json.dumps({}),
+            headers={'Authorization': f'Bearer {token}'},
+            content_type='application/json'
+        )
+
+        assert response.status_code == 400
+
+    def test_log_navbar_activity(self, client, app):
+        with app.app_context():
+            create_user('User', 'user-history3@example.com', 'senha', UserRoles.ADMIN, aprovado=True)
+            token = get_auth_token(client, 'user-history3@example.com', 'senha')
+
+        response = client.post(
+            '/api/auth/navbar-activity',
+            data=json.dumps({'item_key': 'admin_dashboard'}),
+            headers={'Authorization': f'Bearer {token}'},
+            content_type='application/json'
+        )
+
+        assert response.status_code == 200
+        payload = client.get(
+            '/api/auth/navbar-activity',
+            headers={'Authorization': f'Bearer {token}'}
+        )
+        assert payload.status_code == 200
+        data = payload.get_json()
+        assert data.get('items')[0] == 'admin_dashboard'
+
     def test_listar_listas(self, client, app):
         """Testa listagem de listas"""
         with app.app_context():
             create_user('User', 'user@example.com', 'senha', UserRoles.ADMIN, aprovado=True)
-            lista = Lista(nome="Lista Teste")
+            restaurante = Restaurante.query.first()
+            lista = Lista(nome="Lista Teste", restaurante_id=restaurante.id)
             db.session.add(lista)
             db.session.commit()
             token = get_auth_token(client, 'user@example.com', 'senha')
@@ -294,7 +571,8 @@ class TestListaRoutes:
         """Testa exclusão lógica de lista"""
         with app.app_context():
             create_user('Admin', 'admin@example.com', 'senha', UserRoles.ADMIN, aprovado=True)
-            lista = Lista(nome="Lista Temp")
+            restaurante = Restaurante.query.first()
+            lista = Lista(nome="Lista Temp", restaurante_id=restaurante.id)
             db.session.add(lista)
             db.session.commit()
             lista_id = lista.id

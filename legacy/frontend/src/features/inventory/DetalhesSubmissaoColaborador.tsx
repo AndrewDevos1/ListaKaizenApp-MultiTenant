@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Button, Table, Alert, Badge, Card, Form, Modal } from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { formatarDataBrasilia } from '../../utils/dateFormatter';
 import {
     faArrowLeft,
     faCheckCircle,
@@ -13,6 +14,7 @@ import {
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import CustomSpinner from '../../components/Spinner';
+import { parseQuantidadeInput, parseSumExpression } from '../../utils/quantityParser';
 
 interface ItemEstoque {
     id: number;
@@ -54,7 +56,7 @@ const DetalhesSubmissaoColaborador: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [editMode, setEditMode] = useState(false);
-    const [quantidadesAtuais, setQuantidadesAtuais] = useState<{ [key: number]: number }>({});
+    const [quantidadesAtuais, setQuantidadesAtuais] = useState<{ [key: number]: string }>({});
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [successMessage, setSuccessMessage] = useState('');
 
@@ -85,9 +87,9 @@ const DetalhesSubmissaoColaborador: React.FC = () => {
                 setItensEstoque(responseEstoque.data);
                 
                 // Inicializar quantidades atuais
-                const qtds: { [key: number]: number } = {};
+                const qtds: { [key: number]: string } = {};
                 responseEstoque.data.forEach((item: ItemEstoque) => {
-                    qtds[item.item_id] = item.quantidade_atual;
+                    qtds[item.item_id] = String(item.quantidade_atual);
                 });
                 setQuantidadesAtuais(qtds);
             } catch (err) {
@@ -101,16 +103,20 @@ const DetalhesSubmissaoColaborador: React.FC = () => {
         }
     };
 
-    const handleQuantidadeChange = (itemId: number, valor: number) => {
+    const handleQuantidadeChange = (itemId: number, valor: string) => {
         setQuantidadesAtuais(prev => ({
             ...prev,
             [itemId]: valor
         }));
     };
 
-    const handleKeyDown = (e: React.KeyboardEvent, currentIndex: number) => {
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLElement>, currentIndex: number, itemId: number) => {
         if (e.key === 'Enter') {
             e.preventDefault();
+            const sum = parseSumExpression((e.currentTarget as HTMLInputElement).value);
+            if (sum !== null) {
+                handleQuantidadeChange(itemId, String(sum));
+            }
             const nextIndex = currentIndex + 1;
             const nextInput = document.getElementById(`qtd-input-${nextIndex}`);
             if (nextInput) {
@@ -126,7 +132,9 @@ const DetalhesSubmissaoColaborador: React.FC = () => {
         const item = itensEstoque.find(i => i.item_id === itemId);
         if (!item) return 0;
         
-        const qtdAtual = quantidadesAtuais[itemId] || 0;
+        const qtdAtualStr = quantidadesAtuais[itemId] ?? '';
+        const qtdAtualParsed = parseQuantidadeInput(qtdAtualStr);
+        const qtdAtual = qtdAtualParsed ?? 0;
         const qtdMinima = item.quantidade_minima || 0;
         
         return Math.max(0, qtdMinima - qtdAtual);
@@ -142,7 +150,7 @@ const DetalhesSubmissaoColaborador: React.FC = () => {
             // ATUALIZAR submissão existente (não criar nova)
             const itemsParaSubmeter = itensEstoque.map(item => ({
                 estoque_id: item.item_id,
-                quantidade_atual: quantidadesAtuais[item.item_id] || 0
+                quantidade_atual: parseQuantidadeInput(quantidadesAtuais[item.item_id] ?? '') ?? 0
             }));
 
             const response = await api.put(
@@ -184,14 +192,7 @@ const DetalhesSubmissaoColaborador: React.FC = () => {
     };
 
     const formatarData = (dataISO: string) => {
-        const data = new Date(dataISO);
-        return data.toLocaleString('pt-BR', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
+        return formatarDataBrasilia(dataISO);
     };
 
     if (loading) {
@@ -341,12 +342,12 @@ const DetalhesSubmissaoColaborador: React.FC = () => {
                                             <td className="text-center">
                                                 <Form.Control
                                                     id={`qtd-input-${idx}`}
-                                                    type="number"
-                                                    step="0.01"
-                                                    min="0"
-                                                    value={quantidadesAtuais[item.item_id] || 0}
-                                                    onChange={(e) => handleQuantidadeChange(item.item_id, parseFloat(e.target.value) || 0)}
-                                                    onKeyDown={(e) => handleKeyDown(e, idx)}
+                                                    type="text"
+                                                    inputMode="text"
+                                                    pattern="[0-9+.,]*"
+                                                    value={quantidadesAtuais[item.item_id] ?? ''}
+                                                    onChange={(e) => handleQuantidadeChange(item.item_id, e.target.value)}
+                                                    onKeyDown={(e) => handleKeyDown(e, idx, item.item_id)}
                                                     style={{ width: '120px', display: 'inline-block' }}
                                                     autoFocus={idx === 0}
                                                 />

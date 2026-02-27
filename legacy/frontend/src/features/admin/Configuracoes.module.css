@@ -121,6 +121,20 @@
   margin: 0;
 }
 
+.tutorialActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: flex-end;
+}
+
+.tutorialProgress {
+  margin-top: 0.75rem;
+  font-size: 0.9rem;
+  color: var(--text-muted, #7f8c8d);
+  text-align: right;
+}
+
 /* Formulário */
 .formGroup {
   margin-bottom: 1.5rem;
