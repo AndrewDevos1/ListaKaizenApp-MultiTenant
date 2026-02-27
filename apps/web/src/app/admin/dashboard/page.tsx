@@ -9,6 +9,7 @@ import styles from './Dashboard.module.css';
 import { FaBoxes, FaMapMarkerAlt, FaList, FaChartBar, FaUsers, FaCog } from 'react-icons/fa';
 import { Spinner } from 'react-bootstrap';
 import InstallAppButton from '@/components/InstallAppButton';
+import PushNotificationButton from '@/components/PushNotificationButton';
 
 export default function AdminDashboard() {
   const { user } = useAuth();
@@ -22,6 +23,7 @@ export default function AdminDashboard() {
             <p className={styles.pageSubtitle}>Bem-vindo, {user?.nome}!</p>
           </div>
           <div className="d-flex align-items-center gap-2">
+            <PushNotificationButton />
             <InstallAppButton />
           </div>
         </div>

@@ -9,6 +9,7 @@ import api from '@/lib/api';
 import { Lista } from 'shared';
 import { Spinner } from 'react-bootstrap';
 import InstallAppButton from '@/components/InstallAppButton';
+import PushNotificationButton from '@/components/PushNotificationButton';
 
 export default function CollaboratorDashboard() {
   const { user } = useAuth();
@@ -74,6 +75,7 @@ export default function CollaboratorDashboard() {
             <p className={styles.pageSubtitle}>Bem-vindo, {user?.nome}!</p>
           </div>
           <div className="d-flex align-items-center gap-2">
+            <PushNotificationButton />
             <InstallAppButton />
           </div>
         </div>
