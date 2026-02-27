@@ -472,13 +472,13 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
         label: 'Editar Perfil',
         href: isAdmin ? '/admin/editar-perfil' : '/collaborator/perfil',
         icon: <FaUserEdit />,
-        status: isAdmin ? 'soon' as const : 'available',
+        status: 'available',
       },
       {
         label: 'Mudar Senha',
         href: isAdmin ? '/admin/mudar-senha' : '/collaborator/mudar-senha',
         icon: <FaKey />,
-        status: isAdmin ? 'soon' as const : 'available',
+        status: 'available',
       },
       {
         label: 'Sair',
