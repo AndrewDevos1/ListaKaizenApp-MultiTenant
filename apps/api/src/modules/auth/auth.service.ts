@@ -11,6 +11,7 @@ import { ConvitesService } from '../convites/convites.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 
 @Injectable()
 export class AuthService {
@@ -136,6 +137,33 @@ export class AuthService {
       restaurante: user.restaurante
         ? { id: user.restaurante.id, nome: user.restaurante.nome }
         : null,
+    };
+  }
+
+  async updateProfile(userId: number, dto: UpdateProfileDto) {
+    const user = await this.prisma.usuario.findUnique({ where: { id: userId } });
+    if (!user) throw new UnauthorizedException('Usuário não encontrado');
+
+    // Check email uniqueness if changed
+    if (dto.email !== user.email) {
+      const existing = await this.prisma.usuario.findUnique({ where: { email: dto.email } });
+      if (existing) throw new ConflictException('Email já cadastrado');
+    }
+
+    // Check username uniqueness if changed
+    if (dto.username && dto.username !== user.username) {
+      const existing = await this.prisma.usuario.findUnique({ where: { username: dto.username } });
+      if (existing) throw new ConflictException('Username já em uso');
+    }
+
+    const updated = await this.prisma.usuario.update({
+      where: { id: userId },
+      data: { nome: dto.nome, email: dto.email, username: dto.username ?? null },
+    });
+
+    return {
+      message: 'Perfil atualizado com sucesso',
+      user: { id: updated.id, nome: updated.nome, email: updated.email, username: updated.username },
     };
   }
 

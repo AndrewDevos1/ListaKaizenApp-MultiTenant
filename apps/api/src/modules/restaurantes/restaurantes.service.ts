@@ -43,4 +43,36 @@ export class RestaurantesService {
       data: { ativo: false },
     });
   }
+
+  async getGlobalStats() {
+    const [restaurantes, totalUsuarios, totalListas, totalSubmissoes, submissoesPendentes] = await Promise.all([
+      this.prisma.restaurante.findMany({
+        include: {
+          _count: {
+            select: { usuarios: true, listas: true, submissoes: true },
+          },
+        },
+      }),
+      this.prisma.usuario.count(),
+      this.prisma.lista.count(),
+      this.prisma.submissao.count(),
+      this.prisma.submissao.count({ where: { status: 'PENDENTE' as any } }),
+    ]);
+
+    return {
+      totalRestaurantes: restaurantes.length,
+      totalUsuarios,
+      totalListas,
+      totalSubmissoes,
+      submissoesPendentes,
+      restaurantes: restaurantes.map((r) => ({
+        id: r.id,
+        nome: r.nome,
+        ativo: r.ativo,
+        usuarios: r._count.usuarios,
+        listas: r._count.listas,
+        submissoes: r._count.submissoes,
+      })),
+    };
+  }
 }
