@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Button, Table, Alert, Badge, Form, ButtonGroup, Modal } from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { formatarDataBrasilia } from '../../utils/dateFormatter';
 import {
     faCheck,
     faTimes,
@@ -14,6 +15,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import { Link } from 'react-router-dom';
 import api from '../../services/api';
+import { useLocalStorage } from '../../hooks/useLocalStorage';
 import styles from './GerenciarPedidos.module.css';
 
 interface Pedido {
@@ -43,7 +45,7 @@ const GerenciarPedidos: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
-    const [statusFilter, setStatusFilter] = useState<StatusFilter>('PENDENTE');
+    const [statusFilter, setStatusFilter] = useLocalStorage<StatusFilter>('admin:pedidos:statusFilter', 'PENDENTE');
     const [selectedIds, setSelectedIds] = useState<number[]>([]);
     const [actionLoading, setActionLoading] = useState(false);
 
@@ -378,7 +380,7 @@ const GerenciarPedidos: React.FC = () => {
                                         <td>{pedido.fornecedor?.nome || 'N/A'}</td>
                                         <td>{pedido.quantidade_solicitada} {pedido.item?.unidade_medida || ''}</td>
                                         <td>{pedido.usuario?.nome || 'N/A'}</td>
-                                        <td>{new Date(pedido.data_pedido).toLocaleString('pt-BR')}</td>
+                                        <td>{formatarDataBrasilia(pedido.data_pedido)}</td>
                                         <td>{getStatusBadge(pedido.status)}</td>
                                         <td className="text-center">
                                             <Button
@@ -446,7 +448,7 @@ const GerenciarPedidos: React.FC = () => {
                                 <p><strong>Fornecedor:</strong> {selectedPedido.fornecedor?.nome || 'N/A'}</p>
                                 <p><strong>Quantidade Solicitada:</strong> {selectedPedido.quantidade_solicitada} {selectedPedido.item?.unidade_medida || ''}</p>
                                 <p><strong>Solicitado por:</strong> {selectedPedido.usuario?.nome || 'N/A'}</p>
-                                <p><strong>Data do Pedido:</strong> {new Date(selectedPedido.data_pedido).toLocaleString('pt-BR')}</p>
+                                <p><strong>Data do Pedido:</strong> {formatarDataBrasilia(selectedPedido.data_pedido)}</p>
                                 <p><strong>Status:</strong> {getStatusBadge(selectedPedido.status)}</p>
                             </div>
                         )}

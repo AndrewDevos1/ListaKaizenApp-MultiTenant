@@ -1,7 +1,7 @@
 import pytest
 import json
 from kaizen_app import create_app, db
-from kaizen_app.models import Usuario, UserRoles
+from kaizen_app.models import Usuario, UserRoles, Restaurante
 from werkzeug.security import generate_password_hash
 
 @pytest.fixture(scope='function')
@@ -10,6 +10,10 @@ def app():
     app = create_app('testing')
     with app.app_context():
         db.create_all()
+        if not Restaurante.query.filter_by(slug='restaurante-teste').first():
+            restaurante = Restaurante(nome='Restaurante Teste', slug='restaurante-teste', ativo=True)
+            db.session.add(restaurante)
+            db.session.commit()
         yield app
         db.drop_all()
 
@@ -20,10 +24,20 @@ def client(app):
 
 # --- Helper Functions ---
 
-def create_user(nome, email, senha, role, aprovado=True):
+def create_user(nome, email, senha, role, aprovado=True, restaurante_id=None):
     """Helper para criar um usuário diretamente no banco para testes."""
     hashed_password = generate_password_hash(senha)
-    user = Usuario(nome=nome, email=email, senha_hash=hashed_password, role=role, aprovado=aprovado)
+    if role != UserRoles.SUPER_ADMIN and restaurante_id is None:
+        restaurante = Restaurante.query.first()
+        restaurante_id = restaurante.id if restaurante else None
+    user = Usuario(
+        nome=nome,
+        email=email,
+        senha_hash=hashed_password,
+        role=role,
+        aprovado=aprovado,
+        restaurante_id=restaurante_id
+    )
     db.session.add(user)
     db.session.commit()
     return user

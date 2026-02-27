@@ -106,9 +106,10 @@
 /* Grid de listas */
 .listasGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 2rem;
+  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+  gap: 2.25rem;
   margin-top: 2rem;
+  align-items: stretch;
 }
 
 /* Card de lista */
@@ -122,6 +123,7 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  height: 100%;
   animation: slideUp 0.5s ease-out backwards;
 }
 
@@ -189,6 +191,7 @@
   padding: 1.5rem 1.5rem 1rem;
   background: linear-gradient(135deg, var(--status-warning-soft-bg, #fff8e6) 0%, var(--bg-secondary, #ffffff) 100%);
   border-bottom: 1px solid var(--border-color, #f0f0f0);
+  gap: 1rem;
 }
 
 .cardIcon {
@@ -206,35 +209,55 @@
 
 .cardActions {
   display: flex;
+  gap: 0.65rem;
+  align-items: center;
+}
+
+.actionPrimary {
+  font-weight: 600;
+  border-radius: 999px;
+  padding: 0.4rem 0.9rem;
+  box-shadow: 0 6px 14px rgba(34, 197, 94, 0.25);
+  background: #2eb85c;
+  border-color: #2eb85c;
+}
+
+.actionPrimary:hover {
+  background: #249b4d;
+  border-color: #249b4d;
+}
+
+.actionDropdown {
+  border-radius: 999px;
+  padding: 0.4rem 0.85rem;
+  font-weight: 600;
+}
+
+.actionMenu {
+  min-width: 210px;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 14px 35px rgba(0, 0, 0, 0.2);
+}
+
+.actionMenu :global(.dropdown-item) {
+  display: flex;
   gap: 0.5rem;
+  align-items: center;
+  font-weight: 500;
 }
 
-.actionButton {
-  padding: 0.5rem;
-  border-radius: 6px;
-  transition: all 0.2s ease;
-  color: #667eea;
-}
-
-.actionButton:hover {
-  background: rgba(102, 126, 234, 0.1);
-  color: #5568d3;
-  transform: scale(1.1);
-}
-
-.deleteButton {
+.actionDanger {
   color: #e55353;
-}
-
-.deleteButton:hover {
-  background: rgba(229, 83, 83, 0.1);
-  color: var(--status-danger-text, #d32f2f);
+  font-weight: 600;
 }
 
 /* Conteúdo do card */
 .cardContent {
   flex: 1;
-  padding: 1.5rem;
+  padding: 1.6rem 1.5rem 1.8rem;
+  display: flex;
+  flex-direction: column;
 }
 
 .cardTitulo {
@@ -371,5 +394,16 @@
     width: 80px;
     height: 80px;
     font-size: 2.5rem;
+  }
+
+  .cardHeader {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .cardActions {
+    width: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
   }
 }

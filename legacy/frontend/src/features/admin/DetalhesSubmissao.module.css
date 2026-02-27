@@ -64,3 +64,95 @@
 .tableCard .card-header h5 {
     margin: 0;
 }
+
+.tableHeaderRow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.selectAllToggle {
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+/* ========================================
+   RESPONSIVIDADE MOBILE
+   ======================================== */
+
+@media (max-width: 767px) {
+  /* Container geral */
+  .container {
+    padding: 1rem !important;
+  }
+
+  /* Header */
+  .header {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 0.5rem;
+    margin-bottom: 1rem !important;
+  }
+
+  .header h2 {
+    font-size: 1.3rem !important;
+  }
+
+  /* Info card */
+  .infoCard {
+    margin-bottom: 1rem !important;
+    padding: 0.75rem !important;
+  }
+
+  /* Info grid - 2 colunas no mobile */
+  .infoGrid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 0.5rem !important;
+  }
+
+  .infoGrid > div {
+    padding: 0.5rem !important;
+  }
+
+  .infoGrid small {
+    font-size: 0.7rem !important;
+    margin-bottom: 0.25rem !important;
+  }
+
+  .infoGrid h5 {
+    font-size: 0.85rem !important;
+  }
+
+  /* Botões em grid 2x2 */
+  .actions {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 0.5rem !important;
+    margin-bottom: 1rem !important;
+  }
+
+  .actions button {
+    min-width: unset !important;
+    width: 100% !important;
+    padding: 0.5rem 0.25rem !important;
+    font-size: 0.75rem !important;
+    flex: unset !important;
+  }
+
+  .actions button i {
+    margin-right: 0.25rem !important;
+    font-size: 0.8rem;
+  }
+
+  /* Table card */
+  .tableCard {
+    padding: 0.75rem !important;
+  }
+
+  .tableCard .card-header h5 {
+    font-size: 1rem !important;
+    margin-bottom: 0.5rem !important;
+  }
+}

@@ -69,7 +69,15 @@
       "Bash(then grep -E \"flake8|pylint|black\" requirements.txt)",
       "Bash(fi)",
       "Bash(pytest:*)",
-      "Bash(../.venv/bin/python -m pytest:*)"
+      "Bash(../.venv/bin/python -m pytest:*)",
+      "Bash(git -C /home/devos/Codigos-vscode/ListaKaizenApp-MultiTenant/legacy rev-parse --show-toplevel)",
+      "Bash(git remote set-url origin https://github.com/AndrewDevos1/ListaKaizenApp-MultiTenant.git && git remote -v)",
+      "Bash(git stash pop 2>/dev/null || echo \"No stash to pop\")",
+      "Bash(git clone --depth=1 --branch master https://github.com/AndrewDevos1/ListaKaizenApp.git /tmp/legacy-clone 2>&1)",
+      "Bash(git -C /tmp/legacy-temp log --oneline -3 2>/dev/null; cat /tmp/legacy-clone/.git/FETCH_HEAD 2>/dev/null || git show /home/devos/Codigos-vscode/ListaKaizenApp-MultiTenant/legacy/CHANGELOG.md 2>/dev/null | head -10 || head -5 /home/devos/Codigos-vscode/ListaKaizenApp-MultiTenant/legacy/CHANGELOG.md)",
+      "Bash(cd /home/devos/Codigos-vscode/ListaKaizenApp-MultiTenant/apps/api && npx prisma migrate dev --name add-submissoes-pedidos 2>&1)",
+      "Bash(cd /home/devos/Codigos-vscode/ListaKaizenApp-MultiTenant/apps/api && npx prisma db push 2>&1)",
+      "Bash(npx prisma db push 2>&1)"
     ],
     "deny": [],
     "ask": []

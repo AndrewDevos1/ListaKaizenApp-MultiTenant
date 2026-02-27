@@ -28,24 +28,30 @@ import {
     faPlus,
     faDownload,
     faFileArchive,
+    faSyncAlt,
 } from '@fortawesome/free-solid-svg-icons';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useTutorial } from '../../context/TutorialContext';
 import api from '../../services/api';
 import InstallPWA from '../../components/InstallPWA';
 import styles from './Configuracoes.module.css';
 
 const Configuracoes: React.FC = () => {
     const navigate = useNavigate();
-    const { logout } = useAuth();
+    const { logout, user } = useAuth();
+    const { enabled: tutorialEnabled, enableTutorial, disableTutorial, progress } = useTutorial();
     const [sessionTimeout, setSessionTimeout] = useState(30); // Padrão: 30 minutos
     const [showSuccess, setShowSuccess] = useState(false);
+    const [refreshingApp, setRefreshingApp] = useState(false);
+    const [refreshError, setRefreshError] = useState('');
     const [showClearDbModal, setShowClearDbModal] = useState(false);
     const [clearDbPassword, setClearDbPassword] = useState('');
     const [clearDbLoading, setClearDbLoading] = useState(false);
     const [clearDbError, setClearDbError] = useState('');
     const [populateLoading, setPopulateLoading] = useState(false);
     const [, setPopulateSuccess] = useState(false);
+    const canUseMaintenanceTools = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
 
     // Estados para exportação em lote
     const [showExportModal, setShowExportModal] = useState(false);
@@ -113,6 +119,32 @@ const Configuracoes: React.FC = () => {
     const handleChangePassword = () => {
         // Navegar para página de mudar senha
         navigate('/admin/mudar-senha');
+    };
+
+    const handleHardRefresh = async () => {
+        if (refreshingApp) return;
+        setRefreshingApp(true);
+        setRefreshError('');
+
+        try {
+            if ('serviceWorker' in navigator) {
+                const registrations = await navigator.serviceWorker.getRegistrations();
+                await Promise.all(registrations.map((registration) => registration.unregister()));
+            }
+
+            if ('caches' in window) {
+                const cacheNames = await caches.keys();
+                await Promise.all(cacheNames.map((name) => caches.delete(name)));
+            }
+
+            const url = new URL(window.location.href);
+            url.searchParams.set('hardRefresh', Date.now().toString());
+            window.location.replace(url.toString());
+        } catch (error) {
+            console.error('[CONFIG] Falha ao atualizar o app:', error);
+            setRefreshError('Não foi possível limpar o cache. Tentando recarregar a página.');
+            window.location.reload();
+        }
     };
 
     const handleOpenClearDbModal = () => {
@@ -332,6 +364,87 @@ const Configuracoes: React.FC = () => {
 
                 {/* Card de Instalação do PWA */}
                 <InstallPWA />
+
+                {/* Card de Atualização do App */}
+                {canUseMaintenanceTools && (
+                    <div className={styles.configCard}>
+                        <div className={styles.cardHeader}>
+                            <div className={styles.cardIcon} style={{ backgroundColor: '#3498db' }}>
+                                <FontAwesomeIcon icon={faSyncAlt} />
+                            </div>
+                            <div>
+                                <h3 className={styles.cardTitle}>Atualizar App</h3>
+                                <p className={styles.cardDescription}>
+                                    Limpa caches e força o carregamento da versão mais recente.
+                                </p>
+                            </div>
+                        </div>
+
+                        {refreshError && (
+                            <Alert variant="warning" style={{ marginBottom: '1rem' }}>
+                                <FontAwesomeIcon icon={faExclamationTriangle} style={{ marginRight: '0.5rem' }} />
+                                {refreshError}
+                            </Alert>
+                        )}
+
+                        <div className={styles.userActions}>
+                            <Button
+                                variant="primary"
+                                className={styles.userActionButton}
+                                onClick={handleHardRefresh}
+                                disabled={refreshingApp}
+                            >
+                                {refreshingApp ? (
+                                    <>
+                                        <span className="spinner-border spinner-border-sm" style={{ marginRight: '0.5rem' }} />
+                                        Atualizando...
+                                    </>
+                                ) : (
+                                    <>
+                                        <FontAwesomeIcon icon={faSyncAlt} style={{ marginRight: '0.5rem' }} />
+                                        Atualizar agora
+                                    </>
+                                )}
+                            </Button>
+                        </div>
+                    </div>
+                )}
+
+                {/* Card de Tutorial */}
+                <div className={styles.configCard}>
+                    <div className={styles.cardHeader}>
+                        <div className={styles.cardIcon}>
+                            <FontAwesomeIcon icon={faInfoCircle} />
+                        </div>
+                        <div>
+                            <h3 className={styles.cardTitle}>Modo Tutorial</h3>
+                            <p className={styles.cardDescription}>
+                                Ative o passo a passo para conhecer cada tela. O modo se desativa automaticamente ao concluir todas as telas.
+                            </p>
+                        </div>
+                    </div>
+                    <div className={styles.tutorialActions}>
+                        <Button
+                            variant="primary"
+                            onClick={() => enableTutorial(true)}
+                        >
+                            {tutorialEnabled ? 'Reiniciar tutorial' : 'Ativar tutorial'}
+                        </Button>
+                        {tutorialEnabled && (
+                            <Button
+                                variant="outline-secondary"
+                                onClick={disableTutorial}
+                            >
+                                Desativar
+                            </Button>
+                        )}
+                    </div>
+                    {progress.total > 0 && (
+                        <div className={styles.tutorialProgress}>
+                            Progresso: {progress.seen} de {progress.total} telas concluídas
+                        </div>
+                    )}
+                </div>
 
                 {/* Card de Timeout de Sessão */}
                 <div className={styles.configCard}>

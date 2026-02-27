@@ -6,6 +6,17 @@ import { RestaurantesModule } from './modules/restaurantes/restaurantes.module';
 import { ItemsModule } from './modules/items/items.module';
 import { AreasModule } from './modules/areas/areas.module';
 import { ListasModule } from './modules/listas/listas.module';
+import { SubmissoesModule } from './modules/submissoes/submissoes.module';
+import { UsuariosModule } from './modules/usuarios/usuarios.module';
+import { FornecedoresModule } from './modules/fornecedores/fornecedores.module';
+import { CotacoesModule } from './modules/cotacoes/cotacoes.module';
+import { ChecklistsModule } from './modules/checklists/checklists.module';
+import { ListasRapidasModule } from './modules/listas-rapidas/listas-rapidas.module';
+import { SugestoesModule } from './modules/sugestoes/sugestoes.module';
+import { POPModule } from './modules/pop/pop.module';
+import { NotificacoesModule } from './modules/notificacoes/notificacoes.module';
+import { ConvitesModule } from './modules/convites/convites.module';
+import { LogsModule } from './modules/logs/logs.module';
 
 @Module({
   imports: [
@@ -16,6 +27,17 @@ import { ListasModule } from './modules/listas/listas.module';
     ItemsModule,
     AreasModule,
     ListasModule,
+    SubmissoesModule,
+    UsuariosModule,
+    FornecedoresModule,
+    CotacoesModule,
+    ChecklistsModule,
+    ListasRapidasModule,
+    SugestoesModule,
+    POPModule,
+    NotificacoesModule,
+    ConvitesModule,
+    LogsModule,
   ],
 })
 export class AppModule {}

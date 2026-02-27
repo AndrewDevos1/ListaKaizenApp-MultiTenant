@@ -1,0 +1,55 @@
+/* Estilos customizados para GerenciarChecklists */
+
+/* Mobile: < 768px */
+@media (max-width: 767px) {
+    /* Reduzir padding do container */
+    :global(.container-fluid) {
+        padding-left: 0.5rem !important;
+        padding-right: 0.5rem !important;
+    }
+
+    /* Reduzir espaçamento do header */
+    :global(.py-4) {
+        padding-top: 1rem !important;
+        padding-bottom: 1rem !important;
+    }
+
+    /* Reduzir tamanho do título */
+    :global(h2) {
+        font-size: 1.3rem !important;
+    }
+
+    /* Otimizar tabs de filtro */
+    :global(.nav-tabs) {
+        display: flex !important;
+        justify-content: space-between !important;
+        gap: 0.25rem !important;
+    }
+
+    :global(.nav-tabs .nav-item) {
+        flex: 1 !important;
+    }
+
+    :global(.nav-tabs .nav-link) {
+        font-size: 0.75rem !important;
+        padding: 0.5rem 0.25rem !important;
+        text-align: center !important;
+        white-space: nowrap !important;
+    }
+
+    /* Ícone menor nos tabs */
+    :global(.nav-tabs .nav-link svg) {
+        font-size: 0.7rem !important;
+        margin-right: 0.15rem !important;
+    }
+
+    /* Reduzir padding dos cards */
+    :global(.card-body) {
+        padding: 0.75rem !important;
+    }
+
+    /* Ajustar ícone do header */
+    :global(.fa-2x) {
+        font-size: 1.5rem !important;
+    }
+}

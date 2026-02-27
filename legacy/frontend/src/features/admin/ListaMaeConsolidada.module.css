@@ -167,6 +167,14 @@
     background-color: var(--status-warning-soft-bg, #fffbf0);
 }
 
+.selectedRow {
+    background-color: var(--status-info-subtle-bg, #e7f3ff) !important;
+}
+
+.selectedRow td {
+    background-color: var(--status-info-soft-bg, #f0f8ff) !important;
+}
+
 .submissaoCell {
     padding: 0.75rem;
     font-size: 0.85rem;

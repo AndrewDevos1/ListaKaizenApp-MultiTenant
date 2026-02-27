@@ -1,0 +1,54 @@
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+}
+
+.progressBox {
+  min-width: 220px;
+}
+
+.itemsList {
+  display: grid;
+  gap: 1rem;
+}
+
+.itemCard {
+  border-radius: 16px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+}
+
+.itemHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.photoPlaceholder {
+  margin-bottom: 1rem;
+}
+
+.desvioBox {
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+  border-radius: 12px;
+  background: rgba(255, 193, 7, 0.1);
+}
+
+.itemActions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  flex-wrap: wrap;
+}
+
+.footer {
+  margin-top: 2rem;
+  display: flex;
+  justify-content: flex-end;
+}

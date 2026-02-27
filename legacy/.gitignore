@@ -32,3 +32,6 @@ nul
 # Build files
 frontend/build/
 frontend/dist/ 
+
+# Docs artifacts
+manuais/planejamento/image.png

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../services/api';
 import styles from './GerenciarListasRapidas.module.css';
+import { formatarDataBrasilia } from '../../utils/dateFormatter';
 
 interface ListaRapida {
     id: number;
@@ -31,6 +32,8 @@ const GerenciarListasRapidas: React.FC = () => {
     const [modalAberto, setModalAberto] = useState(false);
     const [mensagemAdmin, setMensagemAdmin] = useState('');
     const [loading, setLoading] = useState(false);
+    const [mensagemFeedback, setMensagemFeedback] = useState('');
+    const [tipoFeedback, setTipoFeedback] = useState<'sucesso' | 'erro' | ''>('');
 
     useEffect(() => {
         carregarListasPendentes();
@@ -64,11 +67,20 @@ const GerenciarListasRapidas: React.FC = () => {
             await api.put(`/admin/listas-rapidas/${listaDetalhes.id}/aprovar`, {
                 mensagem_admin: mensagemAdmin
             });
-            alert('✅ Lista aprovada com sucesso!');
-            setModalAberto(false);
-            carregarListasPendentes();
+            setMensagemFeedback('✅ Lista aprovada com sucesso!');
+            setTipoFeedback('sucesso');
+
+            // Fechar modal e recarregar após um pequeno delay
+            setTimeout(() => {
+                setModalAberto(false);
+                setMensagemAdmin('');
+                setTipoFeedback('');
+                carregarListasPendentes();
+            }, 1500);
         } catch (error: any) {
-            alert(error.response?.data?.error || 'Erro ao aprovar lista');
+            setMensagemFeedback(error.response?.data?.error || 'Erro ao aprovar lista');
+            setTipoFeedback('erro');
+            setTimeout(() => setTipoFeedback(''), 3000);
         } finally {
             setLoading(false);
         }
@@ -78,7 +90,9 @@ const GerenciarListasRapidas: React.FC = () => {
         if (!listaDetalhes) return;
 
         if (!mensagemAdmin.trim()) {
-            alert('⚠️ Informe o motivo da rejeição!');
+            setMensagemFeedback('⚠️ Informe o motivo da rejeição!');
+            setTipoFeedback('erro');
+            setTimeout(() => setTipoFeedback(''), 3000);
             return;
         }
 
@@ -87,11 +101,20 @@ const GerenciarListasRapidas: React.FC = () => {
             await api.put(`/admin/listas-rapidas/${listaDetalhes.id}/rejeitar`, {
                 mensagem_admin: mensagemAdmin
             });
-            alert('❌ Lista rejeitada.');
-            setModalAberto(false);
-            carregarListasPendentes();
+            setMensagemFeedback('❌ Lista rejeitada com sucesso!');
+            setTipoFeedback('sucesso');
+
+            // Fechar modal e recarregar após um pequeno delay para o usuário ver a mensagem
+            setTimeout(() => {
+                setModalAberto(false);
+                setMensagemAdmin('');
+                setTipoFeedback('');
+                carregarListasPendentes();
+            }, 1500);
         } catch (error: any) {
-            alert(error.response?.data?.error || 'Erro ao rejeitar lista');
+            setMensagemFeedback(error.response?.data?.error || 'Erro ao rejeitar lista');
+            setTipoFeedback('erro');
+            setTimeout(() => setTipoFeedback(''), 3000);
         } finally {
             setLoading(false);
         }
@@ -118,6 +141,23 @@ const GerenciarListasRapidas: React.FC = () => {
                     <span className={styles.badge}>{listas.length} pendentes</span>
                 </div>
             </div>
+
+            {tipoFeedback && (
+                <div
+                    style={{
+                        padding: '12px 16px',
+                        marginBottom: '16px',
+                        borderRadius: '4px',
+                        backgroundColor: tipoFeedback === 'sucesso' ? '#d4edda' : '#f8d7da',
+                        color: tipoFeedback === 'sucesso' ? '#155724' : '#721c24',
+                        border: `1px solid ${tipoFeedback === 'sucesso' ? '#c3e6cb' : '#f5c6cb'}`,
+                        fontSize: '14px',
+                        fontWeight: '500'
+                    }}
+                >
+                    {mensagemFeedback}
+                </div>
+            )}
 
             {listas.length === 0 ? (
                 <div className={styles.vazio}>
@@ -153,7 +193,7 @@ const GerenciarListasRapidas: React.FC = () => {
                                 </div>
                                 <div className={styles.stat}>
                                     <i className="fas fa-calendar"></i>
-                                    <span>{new Date(lista.submetido_em!).toLocaleDateString('pt-BR')}</span>
+                                    <span>{formatarDataBrasilia(lista.submetido_em!)}</span>
                                 </div>
                             </div>
 
@@ -196,7 +236,7 @@ const GerenciarListasRapidas: React.FC = () => {
                                 )}
                                 <div className={styles.infoItem}>
                                     <strong>Data de Submissão:</strong>
-                                    <span>{new Date(listaDetalhes.submetido_em!).toLocaleString('pt-BR')}</span>
+                                    <span>{formatarDataBrasilia(listaDetalhes.submetido_em!)}</span>
                                 </div>
                             </div>
 

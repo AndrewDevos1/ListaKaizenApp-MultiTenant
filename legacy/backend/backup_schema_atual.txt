@@ -1,0 +1,72 @@
+                List of relations
+ Schema |         Name         | Type  |  Owner   
+--------+----------------------+-------+----------
+ public | alembic_version      | table | postgres
+ public | areas                | table | postgres
+ public | checklist_itens      | table | postgres
+ public | checklists           | table | postgres
+ public | cotacao_itens        | table | postgres
+ public | cotacoes             | table | postgres
+ public | estoques             | table | postgres
+ public | fornecedor_lista     | table | postgres
+ public | fornecedores         | table | postgres
+ public | itens                | table | postgres
+ public | lista_colaborador    | table | postgres
+ public | lista_item_ref       | table | postgres
+ public | lista_mae_itens      | table | postgres
+ public | listas               | table | postgres
+ public | listas_rapidas       | table | postgres
+ public | listas_rapidas_itens | table | postgres
+ public | navbar_preferences   | table | postgres
+ public | pedidos              | table | postgres
+ public | submissoes           | table | postgres
+ public | sugestoes_itens      | table | postgres
+ public | usuarios             | table | postgres
+(21 rows)
+
+=== USUÁRIOS EXISTENTES ===
+ id |      nome       |          email           |     role     | aprovado | ativo 
+----+-----------------+--------------------------+--------------+----------+-------
+  2 | Tayan Sakihama  | TayanSakihama@Kaizen.com | COLLABORATOR | t        | t
+  1 | AndrewDevos     | andrew.andyoo@gmail.com  | ADMIN        | t        | t
+  5 | Anna Zimmermann | Anna@kaizen.com          | ADMIN        | t        | t
+  4 | Cristiano Dutra | crisdutra@kaizen.com     | COLLABORATOR | t        | t
+  3 | Joya Victoria   | Joya@kaizen.com          | COLLABORATOR | t        | t
+(5 rows)
+
+
+=== SCHEMA USUARIOS ===
+                                        Table "public.usuarios"
+   Column   |            Type             | Collation | Nullable |               Default                
+------------+-----------------------------+-----------+----------+--------------------------------------
+ id         | integer                     |           | not null | nextval('usuarios_id_seq'::regclass)
+ nome       | character varying(100)      |           | not null | 
+ email      | character varying(120)      |           | not null | 
+ senha_hash | character varying(256)      |           | not null | 
+ role       | userroles                   |           | not null | 
+ aprovado   | boolean                     |           | not null | 
+ criado_em  | timestamp without time zone |           |          | 
+ username   | character varying(50)       |           |          | 
+ ativo      | boolean                     |           | not null | true
+Indexes:
+    "usuarios_pkey" PRIMARY KEY, btree (id)
+    "uq_usuarios_username" UNIQUE CONSTRAINT, btree (username)
+    "usuarios_email_key" UNIQUE CONSTRAINT, btree (email)
+Referenced by:
+    TABLE "estoques" CONSTRAINT "fk_estoque_usuario_submissao_id" FOREIGN KEY (usuario_ultima_submissao_id) REFERENCES usuarios(id)
+    TABLE "lista_colaborador" CONSTRAINT "lista_colaborador_usuario_id_fkey" FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
+    TABLE "listas_rapidas" CONSTRAINT "listas_rapidas_admin_id_fkey" FOREIGN KEY (admin_id) REFERENCES usuarios(id) ON DELETE SET NULL
+    TABLE "listas_rapidas" CONSTRAINT "listas_rapidas_usuario_id_fkey" FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
+    TABLE "navbar_preferences" CONSTRAINT "navbar_preferences_usuario_id_fkey" FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
+    TABLE "pedidos" CONSTRAINT "pedidos_usuario_id_fkey" FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
+    TABLE "submissoes" CONSTRAINT "submissoes_usuario_id_fkey" FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
+    TABLE "sugestoes_itens" CONSTRAINT "sugestoes_itens_admin_id_fkey" FOREIGN KEY (admin_id) REFERENCES usuarios(id) ON DELETE SET NULL
+    TABLE "sugestoes_itens" CONSTRAINT "sugestoes_itens_usuario_id_fkey" FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
+
+
+=== MIGRATION VERSION ===
+ version_num  
+--------------
+ f2f0961bd9e4
+(1 row)
+

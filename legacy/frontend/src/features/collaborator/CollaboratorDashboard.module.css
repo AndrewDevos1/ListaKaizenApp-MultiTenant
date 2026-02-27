@@ -194,6 +194,10 @@
   color: #e55353;
 }
 
+.trendHidden {
+  visibility: hidden;
+}
+
 .widgetLink {
   color: var(--link-color, #667eea);
   text-decoration: none;

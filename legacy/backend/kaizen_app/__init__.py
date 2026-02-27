@@ -16,6 +16,36 @@ def create_app(config_name='development'):
     migrate.init_app(app, db)
     jwt.init_app(app)
 
+    @jwt.token_in_blocklist_loader
+    def check_if_token_revoked(jwt_header, jwt_payload):
+        user_id = jwt_payload.get('sub')
+        session_token = jwt_payload.get('session_token')
+
+        if not user_id:
+            return True
+
+        try:
+            user_id_int = int(user_id)
+        except (TypeError, ValueError):
+            return True
+
+        from .models import Usuario
+        usuario = db.session.get(Usuario, user_id_int)
+        if not usuario:
+            return True
+
+        if usuario.session_token:
+            return session_token != usuario.session_token
+
+        return False
+
+    @jwt.revoked_token_loader
+    def revoked_token_callback(jwt_header, jwt_payload):
+        return jsonify({
+            "error": "Sessão substituída por um novo login.",
+            "code": "SESSION_SUPERSEDED"
+        }), 401
+
     # Configura CORS origins dinamicamente
     cors_origins = os.environ.get('CORS_ORIGINS', '*').split(',')
     cors_origins = [origin.strip() for origin in cors_origins]
@@ -117,6 +147,19 @@ def create_app(config_name='development'):
         print("=" * 30 + "\n")
         return response
 
+    def resolve_app_version():
+        for key in (
+            "KAIZEN_APP_VERSION",
+            "APP_VERSION",
+            "RAILWAY_GIT_COMMIT_SHA",
+            "GIT_SHA",
+            "COMMIT_SHA",
+        ):
+            value = os.getenv(key)
+            if value:
+                return value
+        return "dev"
+
     # ROTAS DE HEALTH CHECK
     @app.route("/", methods=["GET"])
     def health_check():
@@ -124,16 +167,17 @@ def create_app(config_name='development'):
         return jsonify({
             "status": "ok",
             "message": "Kaizen Lists API está rodando!",
-            "version": "1.0.0"
+            "version": resolve_app_version()
         }), 200
 
-    @app.route("/api/v1/health", methods=["GET"])
+    @app.route("/api/v1/health", methods=["GET", "HEAD"])
     def api_health():
         """Health check da API em /api/v1/health"""
         return jsonify({
             "status": "ok",
             "database": "connected",
-            "message": "API pronta!"
+            "message": "API pronta!",
+            "version": resolve_app_version()
         }), 200
 
     # Handler para erros 422
@@ -185,10 +229,12 @@ def create_app(config_name='development'):
 
     with app.app_context():
         # Importa e registra os Blueprints
-        from .controllers import auth_bp, admin_bp, api_bp, collaborator_bp
+        from .controllers import auth_bp, admin_bp, api_bp, collaborator_bp, public_bp, supplier_bp
         app.register_blueprint(auth_bp)
         app.register_blueprint(admin_bp)
         app.register_blueprint(api_bp)
         app.register_blueprint(collaborator_bp)
+        app.register_blueprint(public_bp)
+        app.register_blueprint(supplier_bp)
 
         return app

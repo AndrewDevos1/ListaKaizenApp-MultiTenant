@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Button, Table, Alert, Badge, Card, Form, Modal } from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { formatarDataBrasilia } from '../../utils/dateFormatter';
 import {
     faArrowLeft,
     faCheckCircle,
@@ -15,11 +16,17 @@ import {
     faSave,
     faUndo,
     faCopy,
+    faListCheck,
+    faFileLines,
+    faLink,
 } from '@fortawesome/free-solid-svg-icons';
+import MergeModal from './MergeModal';
 import { faWhatsapp } from '@fortawesome/free-brands-svg-icons';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import api from '../../services/api';
 import styles from './DetalhesSubmissao.module.css';
+import ResponsiveTable from '../../components/ResponsiveTable';
+import { parseQuantidadeInput, parseSumExpression } from '../../utils/quantityParser';
 
 interface Pedido {
     id: number;
@@ -54,6 +61,7 @@ interface Submissao {
     data_submissao: string;
     criado_em?: string;
     status: 'PENDENTE' | 'APROVADO' | 'REJEITADO' | 'PARCIALMENTE_APROVADO' | 'APROVADA' | 'REJEITADA';
+    arquivada?: boolean;
     total_pedidos: number;
     pedidos: Pedido[];
 }
@@ -67,10 +75,16 @@ const DetalhesSubmissao: React.FC = () => {
     const [error, setError] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
     const [actionLoading, setActionLoading] = useState(false);
+    const [desarquivando, setDesarquivando] = useState(false);
     const [selectedIds, setSelectedIds] = useState<number[]>([]);
     const [modoEdicao, setModoEdicao] = useState(false);
-    const [quantidadesAtuais, setQuantidadesAtuais] = useState<{ [key: number]: number }>({});
+    const [quantidadesAtuais, setQuantidadesAtuais] = useState<{ [key: number]: string }>({});
     const [showSuccessModal, setShowSuccessModal] = useState(false);
+    const [showConverterModal, setShowConverterModal] = useState(false);
+    const [showMergeModal, setShowMergeModal] = useState(false);
+    const [incluirFornecedor, setIncluirFornecedor] = useState(true);
+    const [incluirObservacoes, setIncluirObservacoes] = useState(true);
+    const [convertendoChecklist, setConvertendoChecklist] = useState(false);
     const [pedidosCriados, setPedidosCriados] = useState(0);
     const [modalMessage, setModalMessage] = useState('');
     const [modalType, setModalType] = useState<'success' | 'info' | 'warning'>('success');
@@ -94,9 +108,9 @@ const DetalhesSubmissao: React.FC = () => {
                 setItensEstoque(responseEstoque.data);
                 
                 // Inicializar quantidades atuais
-                const qtds: { [key: number]: number } = {};
+                const qtds: { [key: number]: string } = {};
                 responseEstoque.data.forEach((item: ItemEstoque) => {
-                    qtds[item.item_id] = item.quantidade_atual;
+                    qtds[item.item_id] = String(item.quantidade_atual);
                 });
                 setQuantidadesAtuais(qtds);
             } catch (err) {
@@ -109,81 +123,6 @@ const DetalhesSubmissao: React.FC = () => {
         }
     };
 
-    const handleAprovarTodos = async () => {
-        if (!submissao) return;
-        
-        if (!window.confirm(`Aprovar TODOS os ${submissao.total_pedidos} itens desta submissão?`)) {
-            return;
-        }
-
-        try {
-            setActionLoading(true);
-            setError('');
-            
-            // Detectar se é lista rápida
-            const isListaRapida = submissao.tipo === 'lista_rapida' || String(submissao.id).startsWith('LR-');
-            
-            if (isListaRapida) {
-                const listaId = String(submissao.id).replace('LR-', '');
-                await api.put(`/admin/listas-rapidas/${listaId}/aprovar`, {});
-            } else {
-                await api.post(`/admin/submissoes/${submissao.id}/aprovar`);
-            }
-            
-            // Mostrar modal de sucesso
-            setModalType('success');
-            setModalMessage(`${submissao.total_pedidos} pedido(s) aprovado(s)`);
-            setPedidosCriados(submissao.total_pedidos);
-            setShowSuccessModal(true);
-            
-            setTimeout(() => {
-                setShowSuccessModal(false);
-                navigate('/admin/submissoes');
-            }, 2000);
-        } catch (err: any) {
-            setError(err.response?.data?.error || 'Erro ao aprovar submissão');
-        } finally {
-            setActionLoading(false);
-        }
-    };
-
-    const handleRejeitarTodos = async () => {
-        if (!submissao) return;
-        
-        if (!window.confirm(`Rejeitar TODOS os ${submissao.total_pedidos} itens desta submissão?`)) {
-            return;
-        }
-
-        try {
-            setActionLoading(true);
-            setError('');
-            
-            // Detectar se é lista rápida
-            const isListaRapida = submissao.tipo === 'lista_rapida' || String(submissao.id).startsWith('LR-');
-            
-            if (isListaRapida) {
-                const listaId = String(submissao.id).replace('LR-', '');
-                await api.put(`/admin/listas-rapidas/${listaId}/rejeitar`, {});
-            } else {
-                await api.post(`/admin/submissoes/${submissao.id}/rejeitar`);
-            }
-            
-            // Mostrar modal de aviso
-            setModalType('warning');
-            setModalMessage(`${submissao.total_pedidos} pedido(s) rejeitado(s)`);
-            setPedidosCriados(submissao.total_pedidos);
-            setShowSuccessModal(true);
-            
-            setTimeout(() => {
-                setShowSuccessModal(false);
-                navigate('/admin/submissoes');
-            }, 2000);
-        } catch (err: any) {
-            setError(err.response?.data?.error || 'Erro ao rejeitar submissão');
-        } finally {
-            setActionLoading(false);
-        }
-    };
 
     const handleAprovarSelecionados = async () => {
         if (selectedIds.length === 0) {
@@ -194,19 +133,16 @@ const DetalhesSubmissao: React.FC = () => {
         try {
             setActionLoading(true);
             setError('');
-            
-            // Aprovar cada pedido selecionado
-            await Promise.all(
-                selectedIds.map(pedidoId => api.post(`/admin/pedidos/${pedidoId}/aprovar`))
-            );
-            
+
+            await api.post('/admin/pedidos/aprovar-lote', { pedido_ids: selectedIds });
+
             // Mostrar modal de sucesso
             setModalType('success');
             setModalMessage(`${selectedIds.length} item(ns) aprovado(s)`);
             setPedidosCriados(selectedIds.length);
             setShowSuccessModal(true);
             setSelectedIds([]);
-            
+
             setTimeout(() => {
                 setShowSuccessModal(false);
                 fetchSubmissao();
@@ -218,6 +154,67 @@ const DetalhesSubmissao: React.FC = () => {
         }
     };
 
+    const handleRejeitarSelecionados = async () => {
+        if (selectedIds.length === 0) {
+            setError('Selecione pelo menos um item');
+            return;
+        }
+
+        if (!window.confirm(`Rejeitar ${selectedIds.length} item(ns) selecionado(s)?`)) {
+            return;
+        }
+
+        try {
+            setActionLoading(true);
+            setError('');
+
+            // Rejeitar cada pedido selecionado
+            await Promise.all(
+                selectedIds.map(pedidoId => api.post(`/admin/pedidos/${pedidoId}/rejeitar`))
+            );
+
+            // Mostrar modal de sucesso
+            setModalType('warning');
+            setModalMessage(`${selectedIds.length} item(ns) rejeitado(s)`);
+            setPedidosCriados(selectedIds.length);
+            setShowSuccessModal(true);
+            setSelectedIds([]);
+
+            setTimeout(() => {
+                setShowSuccessModal(false);
+                fetchSubmissao();
+            }, 2000);
+        } catch (err: any) {
+            setError(err.response?.data?.error || 'Erro ao rejeitar itens');
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
+    const handleConverterParaChecklist = async () => {
+        if (!submissao) return;
+
+        try {
+            setConvertendoChecklist(true);
+            const response = await api.post(
+                `/admin/submissoes/${submissao.id}/converter-checklist`,
+                {
+                    incluir_fornecedor: incluirFornecedor,
+                    incluir_observacoes: incluirObservacoes
+                }
+            );
+
+            setSuccessMessage('Checklist criado com sucesso!');
+            setShowConverterModal(false);
+            navigate(`/admin/checklists/${response.data.id}`);
+        } catch (err: any) {
+            console.error('Erro ao criar checklist:', err);
+            setError(err.response?.data?.error || 'Erro ao criar checklist');
+        } finally {
+            setConvertendoChecklist(false);
+        }
+    };
+
     const toggleSelect = (pedidoId: number) => {
         if (selectedIds.includes(pedidoId)) {
             setSelectedIds(selectedIds.filter(id => id !== pedidoId));
@@ -226,17 +223,47 @@ const DetalhesSubmissao: React.FC = () => {
         }
     };
 
-    const toggleSelectAll = () => {
-        if (!submissao) return;
-        
-        if (selectedIds.length === submissao.pedidos.length) {
-            setSelectedIds([]);
-        } else {
-            setSelectedIds(submissao.pedidos.map(p => p.id));
+    const handleDesfazerRejeicao = async (pedidoId: number) => {
+        try {
+            setActionLoading(true);
+            setError('');
+
+            // Reverter pedido rejeitado para PENDENTE
+            await api.post(`/admin/pedidos/${pedidoId}/reverter`);
+
+            setModalType('success');
+            setModalMessage('Item revertido para PENDENTE');
+            setShowSuccessModal(true);
+
+            setTimeout(() => {
+                setShowSuccessModal(false);
+                fetchSubmissao();
+            }, 1500);
+        } catch (err: any) {
+            setError(err.response?.data?.error || 'Erro ao reverter rejeição');
+        } finally {
+            setActionLoading(false);
         }
     };
 
-    const handleAlterarQuantidade = (itemId: number, novaQuantidade: number) => {
+    const toggleSelectAll = () => {
+        if (!submissao) return;
+
+        const pendentes = submissao.pedidos.filter((pedido) => pedido.status === 'PENDENTE');
+        const pendentesIds = pendentes.map((pedido) => pedido.id);
+
+        if (pendentesIds.length === 0) {
+            return;
+        }
+
+        if (selectedIds.length === pendentesIds.length) {
+            setSelectedIds([]);
+        } else {
+            setSelectedIds(pendentesIds);
+        }
+    };
+
+    const handleAlterarQuantidade = (itemId: number, novaQuantidade: string) => {
         setQuantidadesAtuais(prev => ({
             ...prev,
             [itemId]: novaQuantidade
@@ -247,15 +274,21 @@ const DetalhesSubmissao: React.FC = () => {
         const item = itensEstoque.find(i => i.item_id === itemId);
         if (!item) return 0;
         
-        const qtdAtual = quantidadesAtuais[itemId] || 0;
+        const qtdAtualStr = quantidadesAtuais[itemId] ?? '';
+        const qtdAtualParsed = parseQuantidadeInput(qtdAtualStr);
+        const qtdAtual = qtdAtualParsed ?? 0;
         const qtdMinima = item.quantidade_minima || 0;
         
         return Math.max(0, qtdMinima - qtdAtual);
     };
 
-    const handleKeyDown = (e: React.KeyboardEvent, currentIndex: number) => {
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLElement>, currentIndex: number, itemId: number) => {
         if (e.key === 'Enter') {
             e.preventDefault();
+            const sum = parseSumExpression((e.currentTarget as HTMLInputElement).value);
+            if (sum !== null) {
+                handleAlterarQuantidade(itemId, String(sum));
+            }
             const nextIndex = currentIndex + 1;
             const nextInput = document.getElementById(`qtd-input-${nextIndex}`);
             if (nextInput) {
@@ -286,10 +319,15 @@ const DetalhesSubmissao: React.FC = () => {
             setError('');
             
             // Preparar payload (similar ao colaborador)
-            const items = itensEstoque.map(item => ({
-                item_id: item.item_id,
-                quantidade_atual: quantidadesAtuais[item.item_id] || 0
-            }));
+            const items = itensEstoque.map(item => {
+                const qtdAtualStr = quantidadesAtuais[item.item_id] ?? '';
+                const qtdAtualParsed = parseQuantidadeInput(qtdAtualStr);
+                const quantidade_atual = qtdAtualParsed ?? 0;
+                return {
+                    item_id: item.item_id,
+                    quantidade_atual
+                };
+            });
 
             console.log('[DetalhesSubmissao] Enviando edição:', { submissao_id: submissao.id, items });
             
@@ -346,6 +384,26 @@ const DetalhesSubmissao: React.FC = () => {
         }
     };
 
+    const handleDesarquivar = async () => {
+        if (!submissao) return;
+
+        if (!window.confirm('Desarquivar esta submissão?')) {
+            return;
+        }
+
+        try {
+            setDesarquivando(true);
+            setError('');
+            await api.post(`/admin/submissoes/${submissao.id}/desarquivar`);
+            localStorage.setItem('admin:submissoes:showArchived', JSON.stringify(false));
+            navigate('/admin/submissoes');
+        } catch (err: any) {
+            setError(err.response?.data?.error || 'Erro ao desarquivar submissão');
+        } finally {
+            setDesarquivando(false);
+        }
+    };
+
     const getStatusBadge = (status: string) => {
         switch (status) {
             case 'PENDENTE':
@@ -359,41 +417,70 @@ const DetalhesSubmissao: React.FC = () => {
         }
     };
 
+    const getStatusBadgeColor = (status: string) => {
+        switch (status) {
+            case 'APROVADO':
+                return 'success';
+            case 'REJEITADO':
+                return 'danger';
+            default:
+                return 'warning';
+        }
+    };
+
     const formatarData = (dataISO: string) => {
-        const data = new Date(dataISO);
-        return data.toLocaleString('pt-BR', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
+        return formatarDataBrasilia(dataISO);
+    };
+
+    const calcularStatusSubmissao = (sub: Submissao) => {
+        if (!sub.pedidos || sub.pedidos.length === 0) {
+            return sub.status;
+        }
+
+        const hasPendente = sub.pedidos.some((pedido) => pedido.status === 'PENDENTE');
+        if (hasPendente) {
+            return 'PENDENTE';
+        }
+
+        const hasAprovado = sub.pedidos.some((pedido) => pedido.status === 'APROVADO');
+        const hasRejeitado = sub.pedidos.some((pedido) => pedido.status === 'REJEITADO');
+
+        if (hasAprovado && hasRejeitado) {
+            return 'PARCIALMENTE_APROVADO';
+        }
+        if (hasAprovado) {
+            return 'APROVADO';
+        }
+        if (hasRejeitado) {
+            return 'REJEITADO';
+        }
+
+        return sub.status;
     };
 
     // Formatar mensagem para WhatsApp/Copiar
     const formatarMensagem = () => {
         if (!submissao) return '';
 
-        // Filtrar apenas itens com pedido > 0
-        const itensFiltrados = itensEstoque.filter(item => item.pedido > 0);
+        // Filtrar apenas pedidos APROVADOS (não incluir rejeitados)
+        const pedidosAprovados = submissao.pedidos.filter(pedido => pedido.status === 'APROVADO');
 
-        if (itensFiltrados.length === 0) {
-            return 'Nenhum item com pedido para enviar.';
+        if (pedidosAprovados.length === 0) {
+            return 'Nenhum item aprovado para enviar.';
         }
 
-        // Montar mensagem formatada
-        let mensagem = `📋 *Solicitação ${submissao.status} - ${submissao.lista_nome}*\n\n`;
+        // Montar mensagem formatada (sem mostrar status "PARCIALMENTE_APROVADO")
+        let mensagem = `📋 *Solicitação Aprovada - ${submissao.lista_nome}*\n\n`;
         mensagem += `*Lista:* ${submissao.lista_nome}\n`;
-        mensagem += `*Status:* ${submissao.status}\n`;
         mensagem += `*Solicitante:* ${submissao.usuario_nome}\n`;
         mensagem += `*Data:* ${formatarData(submissao.criado_em || submissao.data_submissao)}\n\n`;
-        mensagem += `*Itens Solicitados:*\n\n`;
+        mensagem += `*Itens Aprovados:*\n\n`;
 
-        itensFiltrados.forEach(item => {
-            mensagem += `• ${item.item.nome} - *Pedido: ${item.pedido} ${item.item.unidade_medida}*\n`;
+        pedidosAprovados.forEach(pedido => {
+            mensagem += `• ${pedido.item_nome} - *Pedido: ${pedido.quantidade_solicitada} ${pedido.unidade}*\n`;
         });
 
-        mensagem += `\n*Total:* ${itensFiltrados.length} ${itensFiltrados.length === 1 ? 'item' : 'itens'}\n\n`;
+        mensagem += `\n*Total:* ${pedidosAprovados.length} ${pedidosAprovados.length === 1 ? 'item' : 'itens'}\n\n`;
         mensagem += `---\n`;
         mensagem += `Sistema Kaizen - Lista de Reposição`;
 
@@ -426,6 +513,74 @@ const DetalhesSubmissao: React.FC = () => {
         window.open(urlWhatsApp, '_blank');
     };
 
+    // Formatar relatório completo (aprovados + rejeitados) para feedback da equipe
+    const formatarRelatorioCompleto = () => {
+        if (!submissao) return '';
+
+        const aprovados = submissao.pedidos.filter(pedido => pedido.status === 'APROVADO');
+        const rejeitados = submissao.pedidos.filter(pedido => pedido.status === 'REJEITADO');
+
+        let mensagem = `📊 *Relatório Completo - ${submissao.lista_nome}*\n\n`;
+        mensagem += `*Lista:* ${submissao.lista_nome}\n`;
+        mensagem += `*Solicitante:* ${submissao.usuario_nome}\n`;
+        mensagem += `*Data:* ${formatarData(submissao.criado_em || submissao.data_submissao)}\n\n`;
+
+        mensagem += `✅ *Itens Aprovados (${aprovados.length}):*\n\n`;
+        if (aprovados.length > 0) {
+            aprovados.forEach(pedido => {
+                mensagem += `• ${pedido.item_nome} - *${pedido.quantidade_solicitada} ${pedido.unidade}*\n`;
+            });
+        } else {
+            mensagem += `_Nenhum item aprovado._\n`;
+        }
+
+        mensagem += `\n`;
+
+        mensagem += `❌ *Itens Não Aceitos (${rejeitados.length}):*\n\n`;
+        if (rejeitados.length > 0) {
+            rejeitados.forEach(pedido => {
+                mensagem += `• ${pedido.item_nome} - ${pedido.quantidade_solicitada} ${pedido.unidade}\n`;
+            });
+        } else {
+            mensagem += `_Nenhum item rejeitado._\n`;
+        }
+
+        mensagem += `\n`;
+
+        const total = aprovados.length + rejeitados.length;
+        mensagem += `*Resumo:* ${aprovados.length}/${total} aprovado(s), ${rejeitados.length}/${total} não aceito(s)\n\n`;
+        mensagem += `---\n`;
+        mensagem += `Sistema Kaizen - Relatório de Submissão`;
+
+        return mensagem;
+    };
+
+    // Copiar relatório completo para clipboard
+    const handleCopiarRelatorio = async () => {
+        try {
+            const mensagem = formatarRelatorioCompleto();
+            await navigator.clipboard.writeText(mensagem);
+            setModalMessage('✅ Relatório copiado para a área de transferência!');
+            setModalType('success');
+            setShowSuccessModal(true);
+            setTimeout(() => setShowSuccessModal(false), 2000);
+        } catch (err) {
+            console.error('Erro ao copiar relatório:', err);
+            setModalMessage('❌ Erro ao copiar relatório. Tente novamente.');
+            setModalType('warning');
+            setShowSuccessModal(true);
+            setTimeout(() => setShowSuccessModal(false), 2000);
+        }
+    };
+
+    // Abrir WhatsApp com relatório completo
+    const handleWhatsAppRelatorio = () => {
+        const mensagem = formatarRelatorioCompleto();
+        const mensagemCodificada = encodeURIComponent(mensagem);
+        const urlWhatsApp = `https://wa.me/?text=${mensagemCodificada}`;
+        window.open(urlWhatsApp, '_blank');
+    };
+
     if (loading) {
         return (
             <Container className="mt-4">
@@ -450,6 +605,18 @@ const DetalhesSubmissao: React.FC = () => {
             </Container>
         );
     }
+
+    const isArquivada = Boolean(submissao.arquivada);
+    const statusCalculado = calcularStatusSubmissao(submissao);
+    const pedidosPendentes = submissao.pedidos.filter((pedido) => pedido.status === 'PENDENTE');
+    const totalPendentes = pedidosPendentes.length;
+    const todosPendentesSelecionados = totalPendentes > 0 && selectedIds.length === totalPendentes;
+    const pedidosComIndex = submissao.pedidos.map((pedido, idx) => ({
+        ...pedido,
+        _index: idx + 1
+    }));
+    const pedidosAtivos = pedidosComIndex.filter(p => p.status !== 'REJEITADO');
+    const pedidosRejeitados = pedidosComIndex.filter(p => p.status === 'REJEITADO');
 
     return (
         <Container fluid className={styles.container}>
@@ -496,6 +663,16 @@ const DetalhesSubmissao: React.FC = () => {
                 </Modal.Body>
             </Modal>
 
+            {/* Modal de Fundir Submissões */}
+            {submissao && (
+                <MergeModal
+                    show={showMergeModal}
+                    onHide={() => setShowMergeModal(false)}
+                    submissaoAtualId={Number(submissao.id)}
+                    listaAtualNome={submissao.lista_nome}
+                />
+            )}
+
             {/* Card de Informações */}
             <Card className={styles.infoCard}>
                 <Card.Body>
@@ -518,14 +695,24 @@ const DetalhesSubmissao: React.FC = () => {
                         </div>
                         <div>
                             <small className="text-muted">Status</small>
-                            <h5>{getStatusBadge(submissao.status)}</h5>
+                            <h5>{getStatusBadge(statusCalculado)}</h5>
                         </div>
                     </div>
                 </Card.Body>
             </Card>
 
             {/* Ações em Massa */}
-            {submissao.status === 'PENDENTE' ? (
+            {isArquivada ? (
+                <div className={styles.actions}>
+                    <Button
+                        variant="outline-secondary"
+                        onClick={handleDesarquivar}
+                        disabled={desarquivando}
+                    >
+                        <FontAwesomeIcon icon={faBox} /> Desarquivar
+                    </Button>
+                </div>
+            ) : statusCalculado === 'PENDENTE' ? (
                 <div className={styles.actions}>
                     {!modoEdicao ? (
                         <>
@@ -536,27 +723,24 @@ const DetalhesSubmissao: React.FC = () => {
                             >
                                 <FontAwesomeIcon icon={faEdit} /> Editar Quantidades
                             </Button>
-                            <Button
-                                variant="success"
-                                onClick={handleAprovarTodos}
-                                disabled={actionLoading}
-                            >
-                                <FontAwesomeIcon icon={faCheck} /> Aprovar Todos ({submissao.total_pedidos})
-                            </Button>
-                            <Button
-                                variant="primary"
-                                onClick={handleAprovarSelecionados}
-                                disabled={actionLoading || selectedIds.length === 0}
-                            >
-                                <FontAwesomeIcon icon={faCheck} /> Aprovar Selecionados ({selectedIds.length})
-                            </Button>
-                            <Button
-                                variant="danger"
-                                onClick={handleRejeitarTodos}
-                                disabled={actionLoading}
-                            >
-                                <FontAwesomeIcon icon={faTimes} /> Rejeitar Todos
-                            </Button>
+                            {selectedIds.length > 0 && (
+                                <>
+                                    <Button
+                                        variant="success"
+                                        onClick={handleAprovarSelecionados}
+                                        disabled={actionLoading}
+                                    >
+                                        <FontAwesomeIcon icon={faCheck} /> Aprovar Marcados ({selectedIds.length})
+                                    </Button>
+                                    <Button
+                                        variant="danger"
+                                        onClick={handleRejeitarSelecionados}
+                                        disabled={actionLoading}
+                                    >
+                                        <FontAwesomeIcon icon={faTimes} /> Rejeitar Marcados ({selectedIds.length})
+                                    </Button>
+                                </>
+                            )}
                         </>
                     ) : (
                         <>
@@ -581,6 +765,24 @@ const DetalhesSubmissao: React.FC = () => {
             ) : (
                 // Botões para submissão APROVADA ou REJEITADA
                 <div className={styles.actions}>
+                    {submissao.status === 'APROVADO' && (
+                        <Button
+                            variant="success"
+                            onClick={() => setShowConverterModal(true)}
+                            className="d-flex align-items-center gap-2"
+                        >
+                            <FontAwesomeIcon icon={faListCheck} /> Converter para Checklist
+                        </Button>
+                    )}
+                    {submissao.status === 'APROVADO' && (
+                        <Button
+                            variant="outline-primary"
+                            onClick={() => setShowMergeModal(true)}
+                            className="d-flex align-items-center gap-2"
+                        >
+                            <FontAwesomeIcon icon={faLink} /> Fundir com outras listas
+                        </Button>
+                    )}
                     <Button
                         variant="secondary"
                         onClick={handleCopiar}
@@ -598,49 +800,44 @@ const DetalhesSubmissao: React.FC = () => {
                     >
                         <FontAwesomeIcon icon={faWhatsapp} /> Enviar via WhatsApp
                     </Button>
-                    <Button
-                        variant="info"
-                        onClick={handleReverterParaPendente}
-                        disabled={actionLoading}
-                    >
-                        <FontAwesomeIcon icon={faUndo} /> Reverter para Pendente
-                    </Button>
+                    {submissao.status !== 'PENDENTE' && (
+                        <Button
+                            variant="info"
+                            onClick={handleReverterParaPendente}
+                            disabled={actionLoading}
+                        >
+                            <FontAwesomeIcon icon={faUndo} /> Reverter para Pendente
+                        </Button>
+                    )}
                 </div>
             )}
 
             {/* Tabela de Itens */}
             <Card className={styles.tableCard}>
                 <Card.Header>
-                    <h5>
-                        Itens Solicitados ({submissao.total_pedidos})
-                        {modoEdicao && <Badge bg="warning" className="ms-2">Modo Edição</Badge>}
-                    </h5>
+                    <div className={styles.tableHeaderRow}>
+                        <h5>
+                            Itens Solicitados ({pedidosAtivos.length})
+                            {modoEdicao && <Badge bg="warning" className="ms-2">Modo Edição</Badge>}
+                        </h5>
+                    </div>
                 </Card.Header>
                 <Card.Body className="p-0">
-                    <Table striped bordered hover responsive className="mb-0">
-                        <thead>
-                            <tr>
-                                {submissao.status === 'PENDENTE' && !modoEdicao && (
-                                    <th className="text-center">
-                                        <Form.Check
-                                            type="checkbox"
-                                            checked={selectedIds.length === submissao.pedidos.length}
-                                            onChange={toggleSelectAll}
-                                        />
-                                    </th>
-                                )}
-                                <th>#</th>
-                                <th>Item</th>
-                                <th className="text-center">Qtd Atual</th>
-                                <th className="text-center">Qtd Mínima</th>
-                                <th className="text-center">Pedido</th>
-                                <th className="text-center">Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {modoEdicao ? (
-                                // Modo Edição: mostra estoque editável
-                                itensEstoque.map((item, idx) => {
+                    {modoEdicao ? (
+                        // Modo Edição: mantém tabela HTML editável
+                        <Table striped bordered hover responsive className="mb-0">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Item</th>
+                                    <th className="text-center">Qtd Atual</th>
+                                    <th className="text-center">Qtd Mínima</th>
+                                    <th className="text-center">Pedido</th>
+                                    <th className="text-center">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {itensEstoque.map((item, idx) => {
                                     const pedido = calcularPedido(item.item_id);
                                     return (
                                         <tr key={item.item_id}>
@@ -649,15 +846,15 @@ const DetalhesSubmissao: React.FC = () => {
                                             <td className="text-center">
                                                 <Form.Control
                                                     id={`qtd-input-${idx}`}
-                                                    type="number"
-                                                    step="0.01"
-                                                    min="0"
-                                                    value={quantidadesAtuais[item.item_id] || 0}
+                                                    type="text"
+                                                    inputMode="text"
+                                                    pattern="[0-9+.,]*"
+                                                    value={quantidadesAtuais[item.item_id] ?? ''}
                                                     onChange={(e) => handleAlterarQuantidade(
                                                         item.item_id,
-                                                        parseFloat(e.target.value) || 0
+                                                        e.target.value
                                                     )}
-                                                    onKeyDown={(e) => handleKeyDown(e, idx)}
+                                                    onKeyDown={(e) => handleKeyDown(e, idx, item.item_id)}
                                                     style={{ width: '120px', display: 'inline-block' }}
                                                     autoFocus={idx === 0}
                                                 />
@@ -678,37 +875,61 @@ const DetalhesSubmissao: React.FC = () => {
                                             </td>
                                         </tr>
                                     );
-                                })
-                            ) : (
-                                // Modo Visualização: mostra pedidos da submissão
-                                submissao.pedidos.map((pedido, idx) => (
-                                    <tr key={pedido.id}>
-                                        {submissao.status === 'PENDENTE' && (
-                                            <td className="text-center">
-                                                <Form.Check
-                                                    type="checkbox"
-                                                    checked={selectedIds.includes(pedido.id)}
-                                                    onChange={() => toggleSelect(pedido.id)}
-                                                    disabled={pedido.status !== 'PENDENTE'}
-                                                />
-                                            </td>
-                                        )}
-                                        <td>{idx + 1}</td>
-                                        <td><strong>{pedido.item_nome}</strong></td>
-                                        <td className="text-center" colSpan={2}>
-                                            <em className="text-muted">Clique em "Editar" para ver</em>
-                                        </td>
-                                        <td className="text-center">
-                                            <strong>{pedido.quantidade_solicitada} {pedido.unidade}</strong>
-                                        </td>
-                                        <td className="text-center">
-                                            {getStatusBadge(pedido.status)}
-                                        </td>
-                                    </tr>
-                                ))
-                            )}
-                        </tbody>
-                    </Table>
+                                })}
+                            </tbody>
+                        </Table>
+                    ) : (
+                        // Modo Visualização: usa ResponsiveTable
+                        <ResponsiveTable
+                            data={pedidosAtivos}
+                            columns={[
+                                { header: '#', accessor: '_index' },
+                                { header: 'Item', accessor: 'item_nome' },
+                                {
+                                    header: 'Pedido',
+                                    accessor: (p) => `${p.quantidade_solicitada} ${p.unidade}`,
+                                    mobileLabel: 'Qtd'
+                                },
+                                {
+                                    header: 'Status',
+                                    accessor: (p) => (
+                                        <Badge bg={getStatusBadgeColor(p.status)}>
+                                            {p.status}
+                                        </Badge>
+                                    )
+                                }
+                            ]}
+                            keyExtractor={(p) => p.id.toString()}
+                            actionsHeader={
+                                statusCalculado === 'PENDENTE' ? (
+                                    <Form.Check
+                                        type="checkbox"
+                                        id="select-all-pending"
+                                        aria-label="Selecionar todos os pendentes"
+                                        title="Selecionar todos os pendentes"
+                                        checked={todosPendentesSelecionados}
+                                        onChange={toggleSelectAll}
+                                        disabled={actionLoading || totalPendentes === 0}
+                                        className={styles.selectAllToggle}
+                                    />
+                                ) : undefined
+                            }
+                            renderActions={(p) => {
+                                if (statusCalculado === 'PENDENTE' && p.status === 'PENDENTE') {
+                                    return (
+                                        <Form.Check
+                                            type="checkbox"
+                                            checked={selectedIds.includes(p.id)}
+                                            onChange={() => toggleSelect(p.id)}
+                                            disabled={actionLoading}
+                                        />
+                                    );
+                                }
+                                return null;
+                            }}
+                            emptyMessage="Nenhum item solicitado."
+                        />
+                    )}
                     {modoEdicao && (
                         <div className="p-3 bg-light border-top">
                             <small className="text-muted">
@@ -718,6 +939,111 @@ const DetalhesSubmissao: React.FC = () => {
                     )}
                 </Card.Body>
             </Card>
+
+            {/* Seção de Itens Não Aceitos */}
+            {pedidosRejeitados.length > 0 && (
+                <>
+                    <Card className={`${styles.tableCard} mt-3`}>
+                        <Card.Header className="bg-danger bg-opacity-10">
+                            <h5 className="text-danger mb-0">
+                                <FontAwesomeIcon icon={faTimesCircle} className="me-2" />
+                                Itens Não Aceitos ({pedidosRejeitados.length})
+                            </h5>
+                        </Card.Header>
+                        <Card.Body className="p-0">
+                            <ResponsiveTable
+                                data={pedidosRejeitados}
+                                columns={[
+                                    { header: '#', accessor: '_index' },
+                                    { header: 'Item', accessor: 'item_nome' },
+                                    {
+                                        header: 'Pedido',
+                                        accessor: (p) => `${p.quantidade_solicitada} ${p.unidade}`,
+                                        mobileLabel: 'Qtd'
+                                    },
+                                    {
+                                        header: 'Status',
+                                        accessor: () => (
+                                            <Badge bg="danger">REJEITADO</Badge>
+                                        )
+                                    }
+                                ]}
+                                keyExtractor={(p) => p.id.toString()}
+                                renderActions={(p) => (
+                                    <Button
+                                        variant="outline-warning"
+                                        size="sm"
+                                        onClick={() => handleDesfazerRejeicao(p.id)}
+                                        disabled={actionLoading}
+                                        title="Reverter para PENDENTE"
+                                    >
+                                        <FontAwesomeIcon icon={faUndo} /> Desfazer
+                                    </Button>
+                                )}
+                                emptyMessage=""
+                            />
+                        </Card.Body>
+                    </Card>
+
+                    {/* Botões de compartilhamento do relatório completo */}
+                    <div className={styles.actions} style={{ marginTop: '1rem' }}>
+                        <Button
+                            variant="outline-secondary"
+                            onClick={handleCopiarRelatorio}
+                            disabled={actionLoading}
+                            title="Copiar relatório completo com itens aprovados e rejeitados"
+                        >
+                            <FontAwesomeIcon icon={faFileLines} /> Copiar Relatório
+                        </Button>
+                        <Button
+                            variant="outline-success"
+                            onClick={handleWhatsAppRelatorio}
+                            disabled={actionLoading}
+                            title="Enviar relatório completo via WhatsApp"
+                            style={{ borderColor: '#25D366', color: '#25D366' }}
+                        >
+                            <FontAwesomeIcon icon={faWhatsapp} /> Enviar Relatório
+                        </Button>
+                    </div>
+                </>
+            )}
+
+            {/* Modal Converter para Checklist */}
+            <Modal show={showConverterModal} onHide={() => setShowConverterModal(false)}>
+                <Modal.Header closeButton>
+                    <Modal.Title>Converter para Checklist</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <p>Configure quais informações incluir no checklist:</p>
+                    <Form>
+                        <Form.Check
+                            type="checkbox"
+                            label="Incluir nome do fornecedor"
+                            checked={incluirFornecedor}
+                            onChange={(e) => setIncluirFornecedor(e.target.checked)}
+                            className="mb-2"
+                        />
+                        <Form.Check
+                            type="checkbox"
+                            label="Incluir observações dos pedidos"
+                            checked={incluirObservacoes}
+                            onChange={(e) => setIncluirObservacoes(e.target.checked)}
+                        />
+                    </Form>
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="secondary" onClick={() => setShowConverterModal(false)}>
+                        Cancelar
+                    </Button>
+                    <Button
+                        variant="success"
+                        onClick={handleConverterParaChecklist}
+                        disabled={convertendoChecklist}
+                    >
+                        {convertendoChecklist ? 'Criando...' : 'Criar Checklist'}
+                    </Button>
+                </Modal.Footer>
+            </Modal>
         </Container>
     );
 };

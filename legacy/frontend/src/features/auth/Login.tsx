@@ -25,6 +25,7 @@ import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEye, faEyeSlash } from '@fortawesome/free-solid-svg-icons';
+import { formatarDataHoraBrasilia } from '../../utils/dateFormatter';
 import styles from './Login.module.css';
 
 const Login: React.FC = () => {
@@ -35,7 +36,7 @@ const Login: React.FC = () => {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
-    const { login } = useAuth();
+    const { login, logout, isAuthenticated, user, loading: authLoading } = useAuth();
 
     // Carregar email salvo ao montar o componente
     useEffect(() => {
@@ -45,6 +46,30 @@ const Login: React.FC = () => {
             setRememberMe(true);
         }
     }, []);
+
+    useEffect(() => {
+        if (authLoading) return;
+        if (!isAuthenticated || !user) return;
+
+        const sessionExpiry = localStorage.getItem('sessionExpiry');
+        if (sessionExpiry) {
+            const expiryTime = parseInt(sessionExpiry, 10);
+            if (Date.now() > expiryTime) {
+                logout();
+                return;
+            }
+        }
+
+        if (user.role === 'SUPER_ADMIN') {
+            navigate('/admin/global');
+        } else if (user.role === 'ADMIN') {
+            navigate('/admin');
+        } else if (user.role === 'SUPPLIER') {
+            navigate('/supplier/dashboard');
+        } else if (user.role === 'COLLABORATOR') {
+            navigate('/collaborator');
+        }
+    }, [authLoading, isAuthenticated, user, logout, navigate]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -74,7 +99,7 @@ const Login: React.FC = () => {
             console.log('[LOGIN] Timeout de sessao configurado:', {
                 minutos: timeoutMinutes,
                 milliseconds: sessionTimeout,
-                expiraEm: new Date(expiryTime).toLocaleString(),
+                expiraEm: formatarDataHoraBrasilia(new Date(expiryTime).toISOString()),
             });
 
             // Decode token to get user role and redirect accordingly
@@ -87,9 +112,15 @@ const Login: React.FC = () => {
             console.log('[LOGIN] User ID:', userId);
             console.log('[LOGIN] Role:', role);
 
-            if (role === 'ADMIN') {
+            if (role === 'SUPER_ADMIN') {
+                console.log('[LOGIN] Redirecionando SUPER_ADMIN para /admin/global');
+                navigate('/admin/global');
+            } else if (role === 'ADMIN') {
                 console.log('[LOGIN] Redirecionando ADMIN para /admin');
                 navigate('/admin');
+            } else if (role === 'SUPPLIER') {
+                console.log('[LOGIN] Redirecionando SUPPLIER para /supplier/dashboard');
+                navigate('/supplier/dashboard');
             } else if (role === 'COLLABORATOR') {
                 console.log('[LOGIN] Redirecionando COLLABORATOR para /collaborator');
                 navigate('/collaborator');
@@ -216,6 +247,28 @@ const Login: React.FC = () => {
                                     <Link to="/register" className={styles.registerLink}>
                                         <i className="fas fa-user-plus me-2"></i>
                                         Não tem uma conta? Solicitar Cadastro
+                                    </Link>
+                                </div>
+
+                                {/* Link para solicitação de restaurante */}
+                                <div className="text-center mt-3">
+                                    <Link
+                                        to="/register-restaurant"
+                                        style={{
+                                            fontSize: '14px',
+                                            color: '#6c63ff',
+                                            textDecoration: 'none',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            gap: '8px',
+                                            transition: 'color 0.3s ease'
+                                        }}
+                                        onMouseEnter={(e) => (e.currentTarget.style.color = '#764ba2')}
+                                        onMouseLeave={(e) => (e.currentTarget.style.color = '#6c63ff')}
+                                    >
+                                        <i className="fas fa-store"></i>
+                                        Você tem um restaurante? Quer usar nosso sistema?
                                     </Link>
                                 </div>
                             </Card.Body>

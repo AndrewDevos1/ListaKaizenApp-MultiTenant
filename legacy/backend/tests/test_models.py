@@ -4,11 +4,11 @@ Testa a criação, validação e métodos dos modelos.
 """
 import pytest
 from decimal import Decimal
-from datetime import datetime, timezone
+from datetime import datetime
 from kaizen_app.models import (
-    Usuario, UserRoles, Item, Area, Fornecedor, Estoque,
+    Usuario, UserRoles, Item, Area, Fornecedor, Estoque, Restaurante,
     Pedido, PedidoStatus, Cotacao, CotacaoStatus, CotacaoItem,
-    Lista, ListaMaeItem
+    Lista, ListaMaeItem, brasilia_now
 )
 from werkzeug.security import generate_password_hash, check_password_hash
 
@@ -73,7 +73,8 @@ class TestItemModel:
         """Testa criação de um item"""
         with app.app_context():
             from kaizen_app import db
-            fornecedor = Fornecedor(nome="Fornecedor Teste", contato="123456")
+            restaurante = Restaurante.query.first()
+            fornecedor = Fornecedor(nome="Fornecedor Teste", contato="123456", restaurante_id=restaurante.id)
             db.session.add(fornecedor)
             db.session.flush()
             
@@ -103,12 +104,14 @@ class TestFornecedorModel:
     def test_criar_fornecedor_completo(self, app):
         """Testa criação de fornecedor com todos os campos"""
         with app.app_context():
+            restaurante = Restaurante.query.first()
             fornecedor = Fornecedor(
                 nome="Fornecedor ABC",
                 contato="11 99999-9999",
                 meio_envio="WhatsApp",
                 responsavel="João Silva",
-                observacao="Fornecedor preferencial"
+                observacao="Fornecedor preferencial",
+                restaurante_id=restaurante.id
             )
             assert fornecedor.nome == "Fornecedor ABC"
             assert fornecedor.contato == "11 99999-9999"
@@ -118,7 +121,8 @@ class TestFornecedorModel:
     def test_criar_fornecedor_minimo(self, app):
         """Testa criação de fornecedor apenas com nome"""
         with app.app_context():
-            fornecedor = Fornecedor(nome="Fornecedor Mínimo")
+            restaurante = Restaurante.query.first()
+            fornecedor = Fornecedor(nome="Fornecedor Mínimo", restaurante_id=restaurante.id)
             assert fornecedor.nome == "Fornecedor Mínimo"
             assert fornecedor.contato is None
 
@@ -150,7 +154,8 @@ class TestEstoqueModel:
         """Testa que to_dict inclui informações do item"""
         with app.app_context():
             from kaizen_app import db
-            fornecedor = Fornecedor(nome="Fornecedor")
+            restaurante = Restaurante.query.first()
+            fornecedor = Fornecedor(nome="Fornecedor", restaurante_id=restaurante.id)
             db.session.add(fornecedor)
             db.session.flush()
             
@@ -184,7 +189,7 @@ class TestPedidoModel:
         with app.app_context():
             pedido = Pedido(
                 quantidade_solicitada=Decimal('10.0'),
-                data_pedido=datetime.now(timezone.utc)
+                data_pedido=brasilia_now()
             )
             assert pedido.status == PedidoStatus.PENDENTE
 
@@ -204,14 +209,15 @@ class TestCotacaoModel:
     def test_criar_cotacao_status_padrao(self, app):
         """Testa que cotação é criada com status PENDENTE"""
         with app.app_context():
-            cotacao = Cotacao(data_cotacao=datetime.now(timezone.utc))
+            cotacao = Cotacao(data_cotacao=brasilia_now())
             assert cotacao.status == CotacaoStatus.PENDENTE
 
     def test_cotacao_to_dict_inclui_itens(self, app):
         """Testa que to_dict inclui lista de itens"""
         with app.app_context():
             from kaizen_app import db
-            fornecedor = Fornecedor(nome="Fornecedor")
+            restaurante = Restaurante.query.first()
+            fornecedor = Fornecedor(nome="Fornecedor", restaurante_id=restaurante.id)
             db.session.add(fornecedor)
             db.session.flush()
             
@@ -233,16 +239,18 @@ class TestListaModel:
     def test_criar_lista_basica(self, app):
         """Testa criação de lista básica"""
         with app.app_context():
-            lista = Lista(nome="Lista de Compras Semanal")
+            restaurante = Restaurante.query.first()
+            lista = Lista(nome="Lista de Compras Semanal", restaurante_id=restaurante.id)
             assert lista.nome == "Lista de Compras Semanal"
             assert lista.deletado is False
 
     def test_lista_soft_delete(self, app):
         """Testa soft delete de lista"""
         with app.app_context():
-            lista = Lista(nome="Lista Temporária")
+            restaurante = Restaurante.query.first()
+            lista = Lista(nome="Lista Temporária", restaurante_id=restaurante.id)
             lista.deletado = True
-            lista.data_delecao = datetime.now(timezone.utc)
+            lista.data_delecao = brasilia_now()
             assert lista.deletado is True
             assert lista.data_delecao is not None
 
@@ -254,11 +262,12 @@ class TestListaMaeItemModel:
         """Testa criação de item no catálogo global"""
         with app.app_context():
             from kaizen_app import db
-
+            restaurante = Restaurante.query.first()
             # ListaMaeItem agora é um catálogo global (não vinculado a lista específica)
             item = ListaMaeItem(
                 nome="Óleo de Soja",
-                unidade="litro"
+                unidade="litro",
+                restaurante_id=restaurante.id
             )
             db.session.add(item)
             db.session.commit()
