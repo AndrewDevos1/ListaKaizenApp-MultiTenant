@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { StatusSubmissao, StatusPedido } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { FilterSubmissoesDto } from './dto/filter-submissoes.dto';
@@ -133,6 +137,13 @@ export class SubmissoesService {
     });
     if (!pedido) {
       throw new NotFoundException('Pedido não encontrado');
+    }
+
+    // Apenas pedidos PENDENTE podem ter o status alterado individualmente
+    if (pedido.status !== StatusPedido.PENDENTE) {
+      throw new BadRequestException(
+        `Apenas pedidos PENDENTE podem ser alterados. Status atual: ${pedido.status}`,
+      );
     }
 
     const pedidoAtualizado = await this.prisma.pedido.update({

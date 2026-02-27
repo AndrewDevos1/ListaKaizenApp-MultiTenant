@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Alert, Spinner, Table, Button, Form } from 'react-bootstrap';
+import { Alert, Spinner, Table, Button, Form, Badge } from 'react-bootstrap';
 import api from '@/lib/api';
 import { Item } from 'shared';
 import styles from '@/app/admin/listas/[id]/ListaDetail.module.css';
@@ -23,6 +23,11 @@ interface ListaDetail {
 
 type RascunhoMap = Record<number, number>;
 
+function calcPedido(qtdAtual: number, qtdMinima: number): number {
+  if (qtdAtual >= qtdMinima) return 0;
+  return Math.max(0, qtdMinima - qtdAtual);
+}
+
 export default function CollaboratorListaDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -36,6 +41,8 @@ export default function CollaboratorListaDetailPage() {
 
   // qtdAtual editavel por itemRefId
   const [qtdMap, setQtdMap] = useState<RascunhoMap>({});
+  // Track string values to allow partial input (e.g. "1." while typing "1.5")
+  const [qtdRaw, setQtdRaw] = useState<Record<number, string>>({});
 
   const RASCUNHO_KEY = `rascunho-estoque-lista-${listaId}`;
 
@@ -46,15 +53,24 @@ export default function CollaboratorListaDetailPage() {
 
       // Carregar rascunho salvo ou usar valores atuais da API
       const rascunhoSalvo = localStorage.getItem(RASCUNHO_KEY);
+      const numMap: RascunhoMap = {};
+      const rawMap: Record<number, string> = {};
       if (rascunhoSalvo) {
-        setQtdMap(JSON.parse(rascunhoSalvo));
-      } else {
-        const inicial: RascunhoMap = {};
-        (data.itensRef as ItemRef[]).forEach((ir) => {
-          inicial[ir.id] = ir.quantidadeAtual ?? 0;
+        const parsed: RascunhoMap = JSON.parse(rascunhoSalvo);
+        Object.keys(parsed).forEach((k) => {
+          const id = Number(k);
+          numMap[id] = parsed[id];
+          rawMap[id] = String(parsed[id]);
         });
-        setQtdMap(inicial);
+        setQtdMap(numMap);
+      } else {
+        (data.itensRef as ItemRef[]).forEach((ir) => {
+          numMap[ir.id] = ir.quantidadeAtual ?? 0;
+          rawMap[ir.id] = String(ir.quantidadeAtual ?? 0);
+        });
+        setQtdMap(numMap);
       }
+      setQtdRaw(rawMap);
     } catch (err: any) {
       setError(err?.response?.data?.message || 'Erro ao carregar lista');
     } finally {
@@ -67,9 +83,21 @@ export default function CollaboratorListaDetailPage() {
   }, [fetchLista]);
 
   const handleQtdChange = (itemRefId: number, value: string) => {
-    const num = parseFloat(value);
-    setQtdMap((prev) => ({ ...prev, [itemRefId]: isNaN(num) ? 0 : num }));
+    setQtdRaw((prev) => ({ ...prev, [itemRefId]: value }));
+    const num = parseFloat(value.replace(',', '.'));
+    if (!isNaN(num) && num >= 0) {
+      setQtdMap((prev) => ({ ...prev, [itemRefId]: num }));
+    }
   };
+
+  const summary = useMemo(() => {
+    if (!lista) return { total: 0, emFalta: 0 };
+    const emFalta = lista.itensRef.filter((ir) => {
+      const qtd = qtdMap[ir.id] ?? ir.quantidadeAtual ?? 0;
+      return qtd < ir.quantidadeMinima;
+    }).length;
+    return { total: lista.itensRef.length, emFalta };
+  }, [lista, qtdMap]);
 
   const handleSalvarRascunho = () => {
     localStorage.setItem(RASCUNHO_KEY, JSON.stringify(qtdMap));
@@ -159,9 +187,20 @@ export default function CollaboratorListaDetailPage() {
 
         <div className={styles.tableSection}>
           <h2 className={styles.sectionTitle}>Preencher Estoque</h2>
-          <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem', fontSize: '0.9rem' }}>
-            Itens destacados em <strong style={{ color: '#856404' }}>amarelo</strong> ou <strong style={{ color: '#842029' }}>vermelho</strong> estão abaixo da quantidade mínima.
-          </p>
+
+          {/* Resumo */}
+          <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
+            <Badge bg="info" style={{ fontSize: '0.85rem', padding: '0.4rem 0.8rem' }}>
+              Total: {summary.total}
+            </Badge>
+            <Badge bg={summary.emFalta > 0 ? 'danger' : 'success'} style={{ fontSize: '0.85rem', padding: '0.4rem 0.8rem' }}>
+              Em falta / abaixo do mínimo: {summary.emFalta}
+            </Badge>
+            <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+              Itens em <strong style={{ color: '#856404' }}>amarelo</strong> ou <strong style={{ color: '#842029' }}>vermelho</strong> estão abaixo da quantidade mínima.
+            </span>
+          </div>
+
           <div className={styles.tableWrapper}>
             <Table bordered hover responsive className={styles.table}>
               <thead>
@@ -170,12 +209,13 @@ export default function CollaboratorListaDetailPage() {
                   <th className={styles.tableHeaderCell}>Unidade</th>
                   <th className={styles.tableHeaderCell}>Qtd Min</th>
                   <th className={styles.tableHeaderCell}>Qtd Atual</th>
-                  <th className={styles.tableHeaderCell}>Status</th>
+                  <th className={styles.tableHeaderCell}>Pedido</th>
                 </tr>
               </thead>
               <tbody>
                 {lista.itensRef.map((ir) => {
-                  const qtdAtual = qtdMap[ir.id] ?? 0;
+                  const qtdAtual = qtdMap[ir.id] ?? ir.quantidadeAtual ?? 0;
+                  const pedido = calcPedido(qtdAtual, ir.quantidadeMinima);
                   const baixo = qtdAtual < ir.quantidadeMinima;
                   const muitoBaixo = qtdAtual === 0 && ir.quantidadeMinima > 0;
                   const rowBg = muitoBaixo
@@ -195,23 +235,20 @@ export default function CollaboratorListaDetailPage() {
                       <td className={styles.tableCell}>{ir.quantidadeMinima}</td>
                       <td className={styles.tableCell} style={{ minWidth: '120px' }}>
                         <Form.Control
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          value={qtdMap[ir.id] ?? 0}
+                          type="text"
+                          inputMode="decimal"
+                          value={qtdRaw[ir.id] ?? String(qtdAtual)}
                           onChange={(e) => handleQtdChange(ir.id, e.target.value)}
                           style={{
                             borderColor: muitoBaixo ? '#dc3545' : baixo ? '#ffc107' : undefined,
                           }}
                         />
                       </td>
-                      <td className={styles.tableCell}>
-                        {muitoBaixo ? (
-                          <span style={{ color: '#842029', fontWeight: 600 }}>Sem estoque</span>
-                        ) : baixo ? (
-                          <span style={{ color: '#856404', fontWeight: 600 }}>Abaixo do mínimo</span>
+                      <td className={styles.tableCell} style={{ textAlign: 'center' }}>
+                        {pedido > 0 ? (
+                          <Badge bg="danger">{pedido}</Badge>
                         ) : (
-                          <span style={{ color: '#0f5132', fontWeight: 600 }}>OK</span>
+                          <Badge bg="success">0</Badge>
                         )}
                       </td>
                     </tr>

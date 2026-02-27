@@ -102,6 +102,16 @@ export class ListasRapidasService {
       );
     }
 
+    // Valida que a lista possui ao menos um item antes de submeter
+    const totalItens = await this.prisma.listaRapidaItem.count({
+      where: { listaRapidaId: id },
+    });
+    if (totalItens === 0) {
+      throw new BadRequestException(
+        'Adicione pelo menos um item antes de submeter.',
+      );
+    }
+
     return this.prisma.listaRapida.update({
       where: { id },
       data: { status: StatusListaRapida.PENDENTE },

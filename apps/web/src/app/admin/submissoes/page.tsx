@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Table, Alert, Spinner, Badge, Button, Tabs, Tab, Modal, Form } from 'react-bootstrap';
 import Link from 'next/link';
 import api from '@/lib/api';
@@ -58,6 +58,7 @@ export default function AdminSubmissoesPage() {
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState<string>('PENDENTE');
   const [arquivando, setArquivando] = useState<number | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Merge state
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
@@ -119,10 +120,11 @@ export default function AdminSubmissoesPage() {
   };
 
   const toggleSelectAll = () => {
-    if (selectedIds.size === submissoes.length) {
+    const allFilteredSelected = filteredSubmissoes.every((s) => selectedIds.has(s.id));
+    if (allFilteredSelected) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(submissoes.map((s) => s.id)));
+      setSelectedIds(new Set(filteredSubmissoes.map((s) => s.id)));
     }
   };
 
@@ -187,6 +189,18 @@ export default function AdminSubmissoesPage() {
 
   const selectedSubmissoes = submissoes.filter((s) => selectedIds.has(s.id));
 
+  const filteredSubmissoes = useMemo(() => {
+    if (!searchQuery.trim()) return submissoes;
+    const q = searchQuery.toLowerCase();
+    return submissoes.filter(
+      (s) =>
+        s.lista.nome.toLowerCase().includes(q) ||
+        s.colaborador.usuario.nome.toLowerCase().includes(q) ||
+        s.status.toLowerCase().includes(q) ||
+        String(s.id).includes(q),
+    );
+  }, [submissoes, searchQuery]);
+
   return (
     <div className={styles.pageWrapper}>
       <div className={styles.pageContainer}>
@@ -213,16 +227,34 @@ export default function AdminSubmissoesPage() {
           </Alert>
         )}
 
+        {/* Busca */}
+        <div style={{ marginBottom: '1rem', maxWidth: 420 }}>
+          <Form.Control
+            type="text"
+            placeholder="Buscar por lista, colaborador, status ou #id..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            size="sm"
+          />
+          {searchQuery && (
+            <small className="text-muted">
+              {filteredSubmissoes.length} resultado{filteredSubmissoes.length !== 1 ? 's' : ''}
+            </small>
+          )}
+        </div>
+
         <div className={styles.tableSection}>
           <Tabs
             activeKey={activeTab}
-            onSelect={(k) => k && setActiveTab(k)}
+            onSelect={(k) => {
+              k && setActiveTab(k);
+              setSearchQuery('');
+              setSelectedIds(new Set());
+            }}
             className="mb-3"
           >
             {TABS.map((tab) => (
-              <Tab key={tab.key} eventKey={tab.key} title={tab.label}>
-                {/* conteúdo abaixo */}
-              </Tab>
+              <Tab key={tab.key} eventKey={tab.key} title={tab.label} />
             ))}
           </Tabs>
 
@@ -238,7 +270,7 @@ export default function AdminSubmissoesPage() {
                     <th className={styles.tableHeaderCell} style={{ width: '2.5rem' }}>
                       <Form.Check
                         type="checkbox"
-                        checked={submissoes.length > 0 && selectedIds.size === submissoes.length}
+                        checked={filteredSubmissoes.length > 0 && filteredSubmissoes.every((s) => selectedIds.has(s.id))}
                         onChange={toggleSelectAll}
                         aria-label="Selecionar todas"
                       />
@@ -253,7 +285,7 @@ export default function AdminSubmissoesPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {submissoes.map((s) => (
+                  {filteredSubmissoes.map((s) => (
                     <tr key={s.id} className={styles.tableRow}>
                       <td className={styles.tableCell}>
                         <Form.Check
@@ -294,10 +326,10 @@ export default function AdminSubmissoesPage() {
                       </td>
                     </tr>
                   ))}
-                  {submissoes.length === 0 && (
+                  {filteredSubmissoes.length === 0 && (
                     <tr>
                       <td colSpan={8} className="text-center text-muted py-4">
-                        Nenhuma submissão encontrada
+                        {searchQuery ? 'Nenhuma submissão encontrada para essa busca' : 'Nenhuma submissão encontrada'}
                       </td>
                     </tr>
                   )}

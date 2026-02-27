@@ -1,13 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Table, Alert, Spinner, Badge } from 'react-bootstrap';
+import { useState, useEffect, useMemo } from 'react';
+import { Table, Alert, Spinner, Badge, Form } from 'react-bootstrap';
 import Link from 'next/link';
 import api from '@/lib/api';
 import styles from '@/app/admin/listas/[id]/ListaDetail.module.css';
 import { FaClipboardList } from 'react-icons/fa';
 
 type StatusSubmissao = 'PENDENTE' | 'APROVADO' | 'REJEITADO' | 'PARCIAL' | 'ARQUIVADO';
+type FilterStatus = StatusSubmissao | 'TODOS';
 
 interface MinhaSubmissao {
   id: number;
@@ -39,6 +40,7 @@ export default function CollaboratorSubmissoesPage() {
   const [submissoes, setSubmissoes] = useState<MinhaSubmissao[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [filterStatus, setFilterStatus] = useState<FilterStatus>('TODOS');
 
   useEffect(() => {
     const fetchSubmissoes = async () => {
@@ -53,6 +55,11 @@ export default function CollaboratorSubmissoesPage() {
     };
     fetchSubmissoes();
   }, []);
+
+  const filteredSubmissoes = useMemo(() => {
+    if (filterStatus === 'TODOS') return submissoes;
+    return submissoes.filter((s) => s.status === filterStatus);
+  }, [submissoes, filterStatus]);
 
   if (loading) {
     return (
@@ -76,13 +83,36 @@ export default function CollaboratorSubmissoesPage() {
 
         {error && <Alert variant="danger" dismissible onClose={() => setError('')}>{error}</Alert>}
 
+        {/* Filtro de status */}
+        <div style={{ marginBottom: '1rem', maxWidth: 260 }}>
+          <Form.Group>
+            <Form.Label style={{ fontSize: '0.9rem', fontWeight: 600 }}>Filtrar por status:</Form.Label>
+            <Form.Select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value as FilterStatus)}
+              size="sm"
+            >
+              <option value="TODOS">Todos</option>
+              <option value="PENDENTE">Pendente</option>
+              <option value="APROVADO">Aprovado</option>
+              <option value="REJEITADO">Rejeitado</option>
+              <option value="PARCIAL">Parcialmente Aprovado</option>
+              <option value="ARQUIVADO">Arquivado</option>
+            </Form.Select>
+          </Form.Group>
+        </div>
+
         <div className={styles.tableSection}>
-          {submissoes.length === 0 ? (
+          {filteredSubmissoes.length === 0 ? (
             <div className={styles.emptyState}>
               <div className={styles.emptyIcon}>
                 <FaClipboardList />
               </div>
-              <p className={styles.emptyText}>Você ainda não submeteu nenhuma lista</p>
+              <p className={styles.emptyText}>
+                {filterStatus === 'TODOS'
+                  ? 'Você ainda não submeteu nenhuma lista'
+                  : `Nenhuma submissão com status "${filterStatus}"`}
+              </p>
             </div>
           ) : (
             <div className={styles.tableWrapper}>
@@ -98,7 +128,7 @@ export default function CollaboratorSubmissoesPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {submissoes.map((s) => (
+                  {filteredSubmissoes.map((s) => (
                     <tr key={s.id} className={styles.tableRow}>
                       <td className={styles.tableCell}>{s.id}</td>
                       <td className={`${styles.tableCell} ${styles.cellBold}`}>{s.lista.nome}</td>

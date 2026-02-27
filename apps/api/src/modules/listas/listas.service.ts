@@ -164,6 +164,19 @@ export class ListasService {
     // Verifica que a lista pertence ao restaurante do usuário
     await this.findOne(listaId, restauranteId);
 
+    // Verifica que cada itemRefId pertence à lista informada (isolamento multi-tenant)
+    const itemRefIds = dto.itens.map((i) => i.itemRefId);
+    const refsValidas = await this.prisma.listaItemRef.findMany({
+      where: { id: { in: itemRefIds }, listaId },
+      select: { id: true },
+    });
+
+    if (refsValidas.length !== itemRefIds.length) {
+      throw new NotFoundException(
+        'Um ou mais itens não pertencem à lista informada',
+      );
+    }
+
     const atualizados = await Promise.all(
       dto.itens.map((item) =>
         this.prisma.listaItemRef.update({
