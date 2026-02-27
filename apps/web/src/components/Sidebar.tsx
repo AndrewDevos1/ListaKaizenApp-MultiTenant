@@ -677,7 +677,7 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
                 <FaQuestionCircle />
                 Ajuda & Suporte
               </Link>
-              <Link href={isAdmin ? '/admin/convites' : '#'} className={styles.footerLink}>
+              <Link href={isAdmin ? '/admin/configuracoes' : '/collaborator/configuracoes'} className={styles.footerLink}>
                 <FaCog />
                 Configurações
               </Link>
@@ -687,7 +687,7 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
               <Link href="#" className={`${styles.footerIconLink} ${styles.footerLinkDisabled}`} title="Ajuda & Suporte (em breve)">
                 <FaQuestionCircle />
               </Link>
-              <Link href={isAdmin ? '/admin/convites' : '#'} className={styles.footerIconLink} title="Configurações">
+              <Link href={isAdmin ? '/admin/configuracoes' : '/collaborator/configuracoes'} className={styles.footerIconLink} title="Configurações">
                 <FaCog />
               </Link>
             </div>
