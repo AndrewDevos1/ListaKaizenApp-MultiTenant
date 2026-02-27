@@ -7,7 +7,7 @@ import { AuthUser, LoginResponse } from 'shared';
 interface AuthContextType {
   user: AuthUser | null;
   loading: boolean;
-  login: (email: string, senha: string) => Promise<void>;
+  login: (email: string, senha: string, manterConectado?: boolean) => Promise<void>;
   logout: () => void;
   isAdmin: boolean;
   isSuperAdmin: boolean;
@@ -15,29 +15,51 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+function getToken(): string | null {
+  return localStorage.getItem('accessToken') ?? sessionStorage.getItem('accessToken');
+}
+
+function getUser(): AuthUser | null {
+  const raw = localStorage.getItem('user') ?? sessionStorage.getItem('user');
+  if (!raw) return null;
+  try { return JSON.parse(raw); } catch { return null; }
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    const token = localStorage.getItem('accessToken');
-    if (storedUser && token) {
-      setUser(JSON.parse(storedUser));
+    const token = getToken();
+    const storedUser = getUser();
+    if (token && storedUser) {
+      setUser(storedUser);
     }
     setLoading(false);
   }, []);
 
-  const login = useCallback(async (email: string, senha: string) => {
+  const login = useCallback(async (email: string, senha: string, manterConectado = false) => {
     const { data } = await api.post<LoginResponse>('/v1/auth/login', { email, senha });
-    localStorage.setItem('accessToken', data.accessToken);
-    localStorage.setItem('user', JSON.stringify(data.user));
+
+    const storage = manterConectado ? localStorage : sessionStorage;
+
+    // Limpar ambos antes de gravar no correto
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('user');
+    sessionStorage.removeItem('accessToken');
+    sessionStorage.removeItem('user');
+
+    storage.setItem('accessToken', data.accessToken);
+    storage.setItem('user', JSON.stringify(data.user));
+
     setUser(data.user);
   }, []);
 
   const logout = useCallback(() => {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('user');
+    sessionStorage.removeItem('accessToken');
+    sessionStorage.removeItem('user');
     setUser(null);
     window.location.href = '/login';
   }, []);

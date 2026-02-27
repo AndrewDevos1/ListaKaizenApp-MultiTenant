@@ -120,6 +120,59 @@
   color: #adb5bd;
 }
 
+/* Password field with eye button */
+.passwordWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.formInputWithBtn {
+  padding-right: 2.75rem;
+}
+
+.eyeButton {
+  position: absolute;
+  right: 0.875rem;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: #7f8c8d;
+  display: flex;
+  align-items: center;
+  font-size: 1rem;
+  transition: color var(--transition-fast);
+}
+
+.eyeButton:hover {
+  color: #667eea;
+}
+
+/* Checkbox row (Salvar email / Manter conectado) */
+.checkboxRow {
+  display: flex;
+  gap: 1.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  color: #555;
+  cursor: pointer;
+  user-select: none;
+}
+
+.checkboxLabel input[type='checkbox'] {
+  accent-color: #667eea;
+  width: 14px;
+  height: 14px;
+  cursor: pointer;
+}
+
 /* Login Button */
 .loginButton {
   width: 100%;
