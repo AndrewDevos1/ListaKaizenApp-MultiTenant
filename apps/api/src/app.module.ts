@@ -18,6 +18,7 @@ import { NotificacoesModule } from './modules/notificacoes/notificacoes.module';
 import { ConvitesModule } from './modules/convites/convites.module';
 import { LogsModule } from './modules/logs/logs.module';
 import { PushModule } from './modules/push/push.module';
+import { ImportModule } from './modules/import/import.module';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { PushModule } from './modules/push/push.module';
     ConvitesModule,
     LogsModule,
     PushModule,
+    ImportModule,
   ],
 })
 export class AppModule {}
