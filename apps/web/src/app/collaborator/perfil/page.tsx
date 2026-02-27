@@ -119,6 +119,31 @@ export default function PerfilColaborador() {
     e.target.value = '';
   };
 
+  const PRESET_AVATARS = [
+    '/avatars/preset-1.png',
+    '/avatars/preset-2.png',
+    '/avatars/preset-3.png',
+    '/avatars/preset-4.png',
+    '/avatars/preset-5.png',
+    '/avatars/preset-6.png',
+    '/avatars/preset-7.png',
+    '/avatars/preset-8.png',
+  ];
+
+  const handleSelectPreset = async (url: string) => {
+    setSavingAvatar(true);
+    try {
+      await api.put('/v1/auth/avatar', { avatarBase64: url });
+      setAvatarUrl(url);
+      updateAvatarUrl(url);
+      success('Avatar atualizado', 'Seu avatar foi salvo com sucesso');
+    } catch {
+      error('Erro ao salvar', 'Não foi possível aplicar o avatar selecionado');
+    } finally {
+      setSavingAvatar(false);
+    }
+  };
+
   const handleCropConfirm = async (base64: string) => {
     setShowCropModal(false);
     setSavingAvatar(true);
@@ -195,14 +220,14 @@ export default function PerfilColaborador() {
 
             <div className="d-flex flex-column gap-2">
               <Button variant="outline-primary" size="sm" onClick={() => fileInputRef.current?.click()} disabled={savingAvatar}>
-                <FaCamera className="me-1" /> Alterar foto
+                <FaCamera className="me-1" /> Enviar foto
               </Button>
               {avatarUrl && (
                 <Button variant="outline-danger" size="sm" onClick={handleRemoveAvatar} disabled={savingAvatar}>
                   Remover foto
                 </Button>
               )}
-              <small className="text-muted">JPG, PNG · Max 5MB</small>
+              <small className="text-muted">JPG, PNG · Máx 5MB</small>
             </div>
 
             {/* Hidden file input */}
@@ -214,6 +239,30 @@ export default function PerfilColaborador() {
               onChange={handleFileChange}
             />
           </Card.Body>
+
+          {/* Preset avatars */}
+          <Card.Footer className="bg-transparent">
+            <small className="text-muted d-block mb-2">Ou escolha um avatar:</small>
+            <div className="d-flex flex-wrap gap-2">
+              {PRESET_AVATARS.map((url) => (
+                <img
+                  key={url}
+                  src={url}
+                  alt="Avatar predefinido"
+                  onClick={() => !savingAvatar && handleSelectPreset(url)}
+                  style={{
+                    width: 44, height: 44, borderRadius: '50%', cursor: 'pointer',
+                    objectFit: 'cover',
+                    border: avatarUrl === url ? '3px solid #0d6efd' : '2px solid #dee2e6',
+                    opacity: savingAvatar ? 0.5 : 1,
+                    transition: 'border 0.15s, transform 0.15s',
+                  }}
+                  onMouseEnter={(e) => { if (!savingAvatar) (e.currentTarget.style.transform = 'scale(1.12)'); }}
+                  onMouseLeave={(e) => { (e.currentTarget.style.transform = 'scale(1)'); }}
+                />
+              ))}
+            </div>
+          </Card.Footer>
         </Card>
 
         {/* Informações Pessoais */}
