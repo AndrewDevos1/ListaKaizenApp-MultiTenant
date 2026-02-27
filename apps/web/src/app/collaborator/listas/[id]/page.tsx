@@ -1,45 +1,111 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useEffect, useState, useCallback } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Alert, Spinner, Table } from 'react-bootstrap';
+import { Alert, Spinner, Table, Button, Form } from 'react-bootstrap';
 import api from '@/lib/api';
 import { Item } from 'shared';
 import styles from '@/app/admin/listas/[id]/ListaDetail.module.css';
 
+interface ItemRef {
+  id: number;
+  quantidadeMinima: number;
+  quantidadeAtual: number;
+  item: Item;
+}
+
 interface ListaDetail {
   id: number;
   nome: string;
-  itensRef: Array<{
-    id: number;
-    quantidadeMinima: number;
-    quantidadeAtual: number;
-    item: Item;
-  }>;
+  itensRef: ItemRef[];
 }
+
+type RascunhoMap = Record<number, number>;
 
 export default function CollaboratorListaDetailPage() {
   const params = useParams();
+  const router = useRouter();
   const listaId = params.id as string;
 
   const [lista, setLista] = useState<ListaDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  // qtdAtual editavel por itemRefId
+  const [qtdMap, setQtdMap] = useState<RascunhoMap>({});
+
+  const RASCUNHO_KEY = `rascunho-estoque-lista-${listaId}`;
+
+  const fetchLista = useCallback(async () => {
+    try {
+      const { data } = await api.get(`/v1/listas/${listaId}`);
+      setLista(data);
+
+      // Carregar rascunho salvo ou usar valores atuais da API
+      const rascunhoSalvo = localStorage.getItem(RASCUNHO_KEY);
+      if (rascunhoSalvo) {
+        setQtdMap(JSON.parse(rascunhoSalvo));
+      } else {
+        const inicial: RascunhoMap = {};
+        (data.itensRef as ItemRef[]).forEach((ir) => {
+          inicial[ir.id] = ir.quantidadeAtual ?? 0;
+        });
+        setQtdMap(inicial);
+      }
+    } catch (err: any) {
+      setError(err?.response?.data?.message || 'Erro ao carregar lista');
+    } finally {
+      setLoading(false);
+    }
+  }, [listaId, RASCUNHO_KEY]);
 
   useEffect(() => {
-    const fetchLista = async () => {
-      try {
-        const { data } = await api.get(`/v1/listas/${listaId}`);
-        setLista(data);
-      } catch (err: any) {
-        setError(err?.response?.data?.message || 'Erro ao carregar lista');
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchLista();
-  }, [listaId]);
+  }, [fetchLista]);
+
+  const handleQtdChange = (itemRefId: number, value: string) => {
+    const num = parseFloat(value);
+    setQtdMap((prev) => ({ ...prev, [itemRefId]: isNaN(num) ? 0 : num }));
+  };
+
+  const handleSalvarRascunho = () => {
+    localStorage.setItem(RASCUNHO_KEY, JSON.stringify(qtdMap));
+    setSuccess('Rascunho salvo localmente.');
+    setTimeout(() => setSuccess(''), 3000);
+  };
+
+  const handleSubmeter = async () => {
+    if (!lista) return;
+    if (!confirm('Submeter a lista de estoque? Esta acao criará uma submissão para o administrador revisar.')) return;
+
+    setError('');
+    setSuccess('');
+    setSubmitting(true);
+    try {
+      // Salvar estoque
+      const itens = lista.itensRef.map((ir) => ({
+        itemRefId: ir.id,
+        quantidadeAtual: qtdMap[ir.id] ?? ir.quantidadeAtual ?? 0,
+      }));
+      await api.put(`/v1/collaborator/listas/${listaId}/estoque`, { itens });
+
+      // Submeter lista
+      await api.post(`/v1/collaborator/listas/${listaId}/submeter`);
+
+      // Limpar rascunho após submissão bem-sucedida
+      localStorage.removeItem(RASCUNHO_KEY);
+
+      setSuccess('Lista submetida com sucesso! Redirecionando para suas submissões...');
+      setTimeout(() => router.push('/collaborator/submissoes'), 2000);
+    } catch (err: any) {
+      setError(err?.response?.data?.message || 'Erro ao submeter lista');
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -70,40 +136,113 @@ export default function CollaboratorListaDetailPage() {
               </div>
             </div>
           </div>
+          <div className={styles.headerActions}>
+            <Button
+              variant="outline-secondary"
+              onClick={handleSalvarRascunho}
+              disabled={submitting}
+            >
+              Salvar Rascunho
+            </Button>
+            <Button
+              variant="primary"
+              onClick={handleSubmeter}
+              disabled={submitting}
+            >
+              {submitting ? <><Spinner animation="border" size="sm" /> Submetendo...</> : 'Submeter Lista'}
+            </Button>
+          </div>
         </div>
 
         {error && <Alert variant="danger" dismissible onClose={() => setError('')}>{error}</Alert>}
+        {success && <Alert variant="success" dismissible onClose={() => setSuccess('')}>{success}</Alert>}
 
         <div className={styles.tableSection}>
-          <h2 className={styles.sectionTitle}>Itens da Lista</h2>
+          <h2 className={styles.sectionTitle}>Preencher Estoque</h2>
+          <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem', fontSize: '0.9rem' }}>
+            Itens destacados em <strong style={{ color: '#856404' }}>amarelo</strong> ou <strong style={{ color: '#842029' }}>vermelho</strong> estão abaixo da quantidade mínima.
+          </p>
           <div className={styles.tableWrapper}>
-            <Table striped bordered hover responsive className={styles.table}>
+            <Table bordered hover responsive className={styles.table}>
               <thead>
                 <tr className={styles.tableHeader}>
                   <th className={styles.tableHeaderCell}>Item</th>
                   <th className={styles.tableHeaderCell}>Unidade</th>
                   <th className={styles.tableHeaderCell}>Qtd Min</th>
                   <th className={styles.tableHeaderCell}>Qtd Atual</th>
+                  <th className={styles.tableHeaderCell}>Status</th>
                 </tr>
               </thead>
               <tbody>
-                {lista.itensRef.map((ir) => (
-                  <tr key={ir.id} className={styles.tableRow}>
-                    <td className={styles.tableCell}>{ir.item.nome}</td>
-                    <td className={styles.tableCell}>{ir.item.unidadeMedida}</td>
-                    <td className={styles.tableCell}>{ir.quantidadeMinima}</td>
-                    <td className={styles.tableCell}>{ir.quantidadeAtual}</td>
-                  </tr>
-                ))}
+                {lista.itensRef.map((ir) => {
+                  const qtdAtual = qtdMap[ir.id] ?? 0;
+                  const baixo = qtdAtual < ir.quantidadeMinima;
+                  const muitoBaixo = qtdAtual === 0 && ir.quantidadeMinima > 0;
+                  const rowBg = muitoBaixo
+                    ? '#f8d7da'
+                    : baixo
+                    ? '#fff3cd'
+                    : undefined;
+
+                  return (
+                    <tr
+                      key={ir.id}
+                      className={styles.tableRow}
+                      style={{ backgroundColor: rowBg }}
+                    >
+                      <td className={`${styles.tableCell} ${styles.cellBold}`}>{ir.item.nome}</td>
+                      <td className={styles.tableCell}>{ir.item.unidadeMedida}</td>
+                      <td className={styles.tableCell}>{ir.quantidadeMinima}</td>
+                      <td className={styles.tableCell} style={{ minWidth: '120px' }}>
+                        <Form.Control
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={qtdMap[ir.id] ?? 0}
+                          onChange={(e) => handleQtdChange(ir.id, e.target.value)}
+                          style={{
+                            borderColor: muitoBaixo ? '#dc3545' : baixo ? '#ffc107' : undefined,
+                          }}
+                        />
+                      </td>
+                      <td className={styles.tableCell}>
+                        {muitoBaixo ? (
+                          <span style={{ color: '#842029', fontWeight: 600 }}>Sem estoque</span>
+                        ) : baixo ? (
+                          <span style={{ color: '#856404', fontWeight: 600 }}>Abaixo do mínimo</span>
+                        ) : (
+                          <span style={{ color: '#0f5132', fontWeight: 600 }}>OK</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
                 {lista.itensRef.length === 0 && (
                   <tr>
-                    <td colSpan={4} className="text-center text-muted">
+                    <td colSpan={5} className="text-center text-muted py-4">
                       Nenhum item na lista
                     </td>
                   </tr>
                 )}
               </tbody>
             </Table>
+          </div>
+
+          <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem', justifyContent: 'flex-end' }}>
+            <Button
+              variant="outline-secondary"
+              onClick={handleSalvarRascunho}
+              disabled={submitting}
+            >
+              Salvar Rascunho
+            </Button>
+            <Button
+              variant="primary"
+              onClick={handleSubmeter}
+              disabled={submitting}
+            >
+              {submitting ? <><Spinner animation="border" size="sm" /> Submetendo...</> : 'Submeter Lista'}
+            </Button>
           </div>
         </div>
       </div>

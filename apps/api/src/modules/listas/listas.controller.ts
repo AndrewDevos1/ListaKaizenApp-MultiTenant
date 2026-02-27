@@ -16,6 +16,7 @@ import { CreateListaDto } from './dto/create-lista.dto';
 import { UpdateListaDto } from './dto/update-lista.dto';
 import { AddColaboradorDto } from './dto/add-colaborador.dto';
 import { AddItemRefDto } from './dto/add-item-ref.dto';
+import { AtualizarEstoqueDto } from './dto/atualizar-estoque.dto';
 import { CurrentUser, Roles, TenantId } from '../../common/decorators';
 import { RolesGuard, TenantGuard } from '../../common/guards';
 
@@ -137,7 +138,7 @@ export class ListasController {
 
 @ApiTags('Colaborador')
 @Controller('v1/collaborator')
-@UseGuards(AuthGuard('jwt'))
+@UseGuards(AuthGuard('jwt'), RolesGuard, TenantGuard)
 @ApiBearerAuth()
 export class CollaboratorListasController {
   constructor(private listasService: ListasService) {}
@@ -146,5 +147,25 @@ export class CollaboratorListasController {
   @ApiOperation({ summary: 'Listas atribuídas ao colaborador logado' })
   getMinhasListas(@CurrentUser('id') userId: number) {
     return this.listasService.getMinhasListas(userId);
+  }
+
+  @Put('listas/:id/estoque')
+  @ApiOperation({ summary: 'Atualizar quantidades de estoque da lista' })
+  atualizarEstoque(
+    @Param('id', ParseIntPipe) listaId: number,
+    @TenantId() restauranteId: number,
+    @Body() dto: AtualizarEstoqueDto,
+  ) {
+    return this.listasService.atualizarEstoque(listaId, restauranteId, dto);
+  }
+
+  @Post('listas/:id/submeter')
+  @ApiOperation({ summary: 'Submeter lista para aprovação do admin' })
+  submeterLista(
+    @Param('id', ParseIntPipe) listaId: number,
+    @TenantId() restauranteId: number,
+    @CurrentUser('id') userId: number,
+  ) {
+    return this.listasService.submeterLista(listaId, restauranteId, userId);
   }
 }

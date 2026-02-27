@@ -6,6 +6,8 @@ import { RestaurantesModule } from './modules/restaurantes/restaurantes.module';
 import { ItemsModule } from './modules/items/items.module';
 import { AreasModule } from './modules/areas/areas.module';
 import { ListasModule } from './modules/listas/listas.module';
+import { SubmissoesModule } from './modules/submissoes/submissoes.module';
+import { UsuariosModule } from './modules/usuarios/usuarios.module';
 
 @Module({
   imports: [
@@ -16,6 +18,8 @@ import { ListasModule } from './modules/listas/listas.module';
     ItemsModule,
     AreasModule,
     ListasModule,
+    SubmissoesModule,
+    UsuariosModule,
   ],
 })
 export class AppModule {}

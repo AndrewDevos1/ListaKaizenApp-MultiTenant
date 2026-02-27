@@ -2,10 +2,13 @@ import {
   Injectable,
   NotFoundException,
   ConflictException,
+  UnprocessableEntityException,
 } from '@nestjs/common';
+import { StatusSubmissao } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateListaDto } from './dto/create-lista.dto';
 import { UpdateListaDto } from './dto/update-lista.dto';
+import { AtualizarEstoqueDto } from './dto/atualizar-estoque.dto';
 
 @Injectable()
 export class ListasService {
@@ -149,5 +152,80 @@ export class ListasService {
       },
       orderBy: { nome: 'asc' },
     });
+  }
+
+  // Tarefa 1.1 — Atualizar estoque (colaborador)
+  async atualizarEstoque(
+    listaId: number,
+    restauranteId: number,
+    dto: AtualizarEstoqueDto,
+  ) {
+    // Verifica que a lista pertence ao restaurante do usuário
+    await this.findOne(listaId, restauranteId);
+
+    const atualizados = await Promise.all(
+      dto.itens.map((item) =>
+        this.prisma.listaItemRef.update({
+          where: { id: item.itemRefId },
+          data: { quantidadeAtual: item.quantidadeAtual },
+          include: { item: true },
+        }),
+      ),
+    );
+
+    return atualizados;
+  }
+
+  // Tarefa 1.3 — Submeter lista (colaborador)
+  async submeterLista(
+    listaId: number,
+    restauranteId: number,
+    usuarioId: number,
+  ) {
+    // Busca todos os itensRef da lista
+    await this.findOne(listaId, restauranteId);
+
+    const itensRef = await this.prisma.listaItemRef.findMany({
+      where: { listaId },
+      include: { item: true },
+    });
+
+    // Calcula qtdSolicitada para cada item
+    const itensSolicitados = itensRef
+      .map((ref) => ({
+        itemId: ref.itemId,
+        qtdSolicitada: Math.max(0, ref.quantidadeMinima - ref.quantidadeAtual),
+      }))
+      .filter((i) => i.qtdSolicitada > 0);
+
+    // Se nenhum item precisar de reposição, retorna 422
+    if (itensSolicitados.length === 0) {
+      throw new UnprocessableEntityException(
+        'Todos os itens estão acima do mínimo',
+      );
+    }
+
+    // Cria a Submissao com os Pedidos em uma transação
+    const submissao = await this.prisma.submissao.create({
+      data: {
+        listaId,
+        usuarioId,
+        restauranteId,
+        status: StatusSubmissao.PENDENTE,
+        pedidos: {
+          create: itensSolicitados.map((i) => ({
+            itemId: i.itemId,
+            qtdSolicitada: i.qtdSolicitada,
+          })),
+        },
+      },
+      include: {
+        pedidos: {
+          include: { item: true },
+        },
+      },
+    });
+
+    return submissao;
   }
 }

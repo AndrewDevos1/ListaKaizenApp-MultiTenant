@@ -14,6 +14,20 @@ enum UserRole {
   SUPPLIER
 }
 
+enum StatusSubmissao {
+  PENDENTE
+  APROVADO
+  REJEITADO
+  PARCIAL
+  ARQUIVADO
+}
+
+enum StatusPedido {
+  PENDENTE
+  APROVADO
+  REJEITADO
+}
+
 model Restaurante {
   id       Int      @id @default(autoincrement())
   nome     String
@@ -21,10 +35,11 @@ model Restaurante {
   ativo    Boolean  @default(true)
   criadoEm DateTime @default(now()) @map("criado_em")
 
-  usuarios Usuario[]
-  items    Item[]
-  areas    Area[]
-  listas   Lista[]
+  usuarios   Usuario[]
+  items      Item[]
+  areas      Area[]
+  listas     Lista[]
+  submissoes Submissao[]
 
   @@map("restaurantes")
 }
@@ -42,8 +57,9 @@ model Usuario {
   sessionToken  String?   @map("session_token")
   criadoEm      DateTime  @default(now()) @map("criado_em")
 
-  restaurante Restaurante?     @relation(fields: [restauranteId], references: [id])
-  listas      ListaColaborador[]
+  restaurante  Restaurante?       @relation(fields: [restauranteId], references: [id])
+  listas       ListaColaborador[]
+  submissoes   Submissao[]
 
   @@map("usuarios")
 }
@@ -58,6 +74,7 @@ model Item {
 
   restaurante Restaurante  @relation(fields: [restauranteId], references: [id])
   listasRef   ListaItemRef[]
+  pedidos     Pedido[]
 
   @@map("itens")
 }
@@ -80,9 +97,10 @@ model Lista {
   deletado      Boolean  @default(false)
   criadoEm      DateTime @default(now()) @map("criado_em")
 
-  restaurante   Restaurante      @relation(fields: [restauranteId], references: [id])
+  restaurante   Restaurante        @relation(fields: [restauranteId], references: [id])
   colaboradores ListaColaborador[]
   itensRef      ListaItemRef[]
+  submissoes    Submissao[]
 
   @@map("listas")
 }
@@ -111,4 +129,37 @@ model ListaItemRef {
 
   @@unique([listaId, itemId])
   @@map("lista_item_ref")
+}
+
+model Submissao {
+  id            Int             @id @default(autoincrement())
+  listaId       Int             @map("lista_id")
+  usuarioId     Int             @map("usuario_id")
+  restauranteId Int             @map("restaurante_id")
+  status        StatusSubmissao @default(PENDENTE)
+  arquivada     Boolean         @default(false)
+  criadoEm      DateTime        @default(now()) @map("criado_em")
+  atualizadoEm  DateTime        @updatedAt @map("atualizado_em")
+
+  lista       Lista       @relation(fields: [listaId], references: [id])
+  usuario     Usuario     @relation(fields: [usuarioId], references: [id])
+  restaurante Restaurante @relation(fields: [restauranteId], references: [id])
+  pedidos     Pedido[]
+
+  @@map("submissoes")
+}
+
+model Pedido {
+  id            Int          @id @default(autoincrement())
+  submissaoId   Int          @map("submissao_id")
+  itemId        Int          @map("item_id")
+  qtdSolicitada Float        @map("qtd_solicitada")
+  status        StatusPedido @default(PENDENTE)
+  criadoEm      DateTime     @default(now()) @map("criado_em")
+  atualizadoEm  DateTime     @updatedAt @map("atualizado_em")
+
+  submissao Submissao @relation(fields: [submissaoId], references: [id])
+  item      Item      @relation(fields: [itemId], references: [id])
+
+  @@map("pedidos")
 }
