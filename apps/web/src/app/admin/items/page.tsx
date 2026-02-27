@@ -118,7 +118,7 @@ export default function ItemsPage() {
 
   const handleExportarCsv = async () => {
     try {
-      const { data } = await api.get('/v1/admin/itens/exportar-csv', {
+      const { data } = await api.get('/v1/items/exportar-csv', {
         responseType: 'blob',
       });
       const url = window.URL.createObjectURL(new Blob([data]));

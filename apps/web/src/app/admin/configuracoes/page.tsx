@@ -63,7 +63,7 @@ export default function ConfiguracoesAdmin() {
   const handleExportItens = async () => {
     setExportingItens(true);
     try {
-      const { data } = await api.get('/v1/admin/itens/exportar-csv', { responseType: 'blob' });
+      const { data } = await api.get('/v1/items/exportar-csv', { responseType: 'blob' });
       const url = window.URL.createObjectURL(new Blob([data]));
       const link = document.createElement('a');
       link.href = url;
