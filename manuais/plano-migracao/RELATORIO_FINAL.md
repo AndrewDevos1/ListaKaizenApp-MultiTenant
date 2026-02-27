@@ -1,6 +1,7 @@
 # Relatório Final — Migração Legacy → Multi-Tenant
 
 **Data de conclusão:** 2026-02-27
+**Última atualização:** 2026-02-27
 **Branch:** `restaurando-design`
 **Commits de checkpoint:**
 
@@ -12,6 +13,11 @@
 | Fase 4 | `1068990` | Listas Rápidas, Sugestões, POPs |
 | Fase 5 | `9680bfd` | Notificações, Convites, Export CSV, Auditoria |
 | Revisão | `52f0800` | Correções pós-revisão de paridade com legado |
+| Pós-migração | `b51db5a` | Navbar paridade com legado + correções runtime |
+| Pós-migração | `4699363` | Fix hydration mismatch no body |
+| Pós-migração | `c565ea4` | Perfil/senha colaborador + Dashboard Global SUPER_ADMIN |
+| Pós-migração | `90c57de` | Fix campo `usuario` em submissões + Editar Perfil/Mudar Senha admin |
+| Pós-migração | `8467985` | Catálogo Global, Estatísticas de Estoque, endpoint /estatisticas |
 
 ---
 
@@ -189,6 +195,41 @@ AppLog
 
 ---
 
+## Páginas Implementadas (Pós-Migração)
+
+Páginas adicionais criadas após a revisão de paridade com o legado:
+
+| Página | Rota | Quem acessa |
+|--------|------|-------------|
+| Editar Perfil | `/admin/editar-perfil` | Admin |
+| Mudar Senha | `/admin/mudar-senha` | Admin |
+| Editar Perfil | `/collaborator/perfil` | Colaborador |
+| Mudar Senha | `/collaborator/mudar-senha` | Colaborador |
+| Dashboard Global | `/admin/global` | SUPER_ADMIN |
+| Catálogo Global | `/admin/catalogo-global` | Admin |
+| Estatísticas | `/admin/estatisticas` | Admin |
+
+**Endpoint adicionado:** `PUT /v1/auth/profile` — atualizar nome/email/username do usuário logado.
+
+**Endpoint adicionado:** `GET /v1/items/estatisticas` — retorna resumo de estoque, submissões por status e lista de itens com situação de estoque.
+
+**Endpoint adicionado:** `GET /v1/restaurantes/stats/global` — retorna totais globais e lista de restaurantes (SUPER_ADMIN).
+
+---
+
+## Bugs Corrigidos (Pós-Migração)
+
+| Bug | Arquivo(s) | Descrição |
+|-----|-----------|-----------|
+| `user.sub` undefined | pop, sugestoes, listas-rapidas controllers | JwtStrategy retorna `id`, não `sub` |
+| Auth prefix `/v1/auth` | auth.controller.ts + AuthContext.tsx | Prefixo de versão estava ausente |
+| Campo `usuario` vs `colaborador` | admin/submissoes + [id]/page.tsx | Interface TypeScript usava `colaborador.usuario` mas API retorna `usuario` direto |
+| TipoPOP enum errado | pop/templates, collaborator/pop | `PREPARACAO/SEGURANCA` não existem — correto: `OPERACIONAL/PERSONALIZADO` |
+| Hydration mismatch body | layout.tsx | VS Code adiciona `vsc-initialized` ao body; corrigido com `suppressHydrationWarning` |
+| Route `PUT /v1/admin/listas` | admin/listas/[id]/page.tsx | Rota correta é `PUT /v1/listas/:id/itens/:itemRefId` |
+
+---
+
 ## Lacunas Menores (Baixa Prioridade)
 
 Os seguintes itens do legado **não foram portados** por serem edge cases ou de baixa prioridade:
@@ -202,6 +243,8 @@ Os seguintes itens do legado **não foram portados** por serem edge cases ou de 
 - Edição inline de quantidades solicitadas na submissão (expressões matemáticas "5+3")
 - Modal de sucesso com redirect automático pós-submissão de estoque
 - Sugestão de item integrada na tela de atualização de estoque
+- Dashboard Global com drag-and-drop e múltiplos gráficos (versão simplificada implementada)
+- GerenciarRestaurantes com painel completo de impersonação e logs por restaurante
 
 ---
 
@@ -223,11 +266,27 @@ cd apps/api && npx prisma db push
 
 ---
 
+## Dados de Teste (Seed)
+
+Execute `npx ts-node apps/api/prisma/seed.ts` para popular o banco.
+
+| Credencial | Email | Senha | Role |
+|-----------|-------|-------|------|
+| Super Admin | `superadmin@kaizen.com` | `admin123` | SUPER_ADMIN |
+| Super Admin (legacy) | `admin@kaizen.com` | `admin123` | SUPER_ADMIN |
+| Admin Demo | `admin@demo.com` | `admin123` | ADMIN |
+| Colaborador 1 | `colab1@demo.com` | `admin123` | COLLABORATOR |
+| Colaborador 2 | `colab2@demo.com` | `admin123` | COLLABORATOR |
+
+Dados incluídos: 5 fornecedores, 10 itens, 2 áreas, 2 listas, 2 submissões (PENDENTE + APROVADA), 1 lista rápida, 1 sugestão, 1 template POP, 3 convites.
+
+---
+
 ## Próximos Passos Sugeridos
 
 1. **Testes automatizados**: Criar testes unitários para os services críticos (`submissoes`, `listas`, `listas-rapidas`)
 2. **E2E com Playwright**: Testar fluxo completo de submissão de ponta a ponta
 3. **PWA/Offline** (Fase 5.5): Service Worker + IndexedDB para uso offline
-4. **Seed de dados**: Expandir `seed_data` para cobrir todos os novos modelos
-5. **Import CSV**: Implementar importação de itens e fornecedores via CSV
-6. **Notificações automáticas**: Integrar `NotificacoesService` nos demais services (submissões aprovadas, sugestões etc.)
+4. **Import CSV**: Implementar importação de itens e fornecedores via CSV
+5. **Notificações automáticas**: Integrar `NotificacoesService` nos demais services (submissões aprovadas, sugestões etc.)
+6. **GerenciarRestaurantes**: Tela completa de gestão de restaurantes para SUPER_ADMIN (CRUD + impersonação)
