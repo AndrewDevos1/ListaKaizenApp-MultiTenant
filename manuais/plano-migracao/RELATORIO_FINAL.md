@@ -18,6 +18,9 @@
 | Pós-migração | `c565ea4` | Perfil/senha colaborador + Dashboard Global SUPER_ADMIN |
 | Pós-migração | `90c57de` | Fix campo `usuario` em submissões + Editar Perfil/Mudar Senha admin |
 | Pós-migração | `8467985` | Catálogo Global, Estatísticas de Estoque, endpoint /estatisticas |
+| Pós-migração | `cc76a20` | Mudar Senha unificado dentro do Editar Perfil |
+| Melhoria UX | `48379ae` | Sistema global de Toast estilo macOS |
+| Infra | `993eb2c` | Seed de dados completo + manual PWA |
 
 ---
 
@@ -227,6 +230,39 @@ Páginas adicionais criadas após a revisão de paridade com o legado:
 | TipoPOP enum errado | pop/templates, collaborator/pop | `PREPARACAO/SEGURANCA` não existem — correto: `OPERACIONAL/PERSONALIZADO` |
 | Hydration mismatch body | layout.tsx | VS Code adiciona `vsc-initialized` ao body; corrigido com `suppressHydrationWarning` |
 | Route `PUT /v1/admin/listas` | admin/listas/[id]/page.tsx | Rota correta é `PUT /v1/listas/:id/itens/:itemRefId` |
+
+---
+
+## Melhorias de UX Implementadas
+
+### Toast Global (estilo macOS)
+
+**Commit:** `48379ae`
+
+Sistema de notificações não-intrusivas implementado globalmente via `ToastProvider` + `ToastContainer`.
+
+| Arquivo | Papel |
+|---------|-------|
+| `contexts/ToastContext.tsx` | Provider + hook `useToast` com atalhos `success/error/warning/info` |
+| `components/ToastContainer.tsx` | Renderiza toasts via `createPortal` no `document.body` |
+| `components/ToastContainer.module.css` | Estilo + animações (slide + fade, barra de progresso) |
+
+**Características:**
+- Posição: canto inferior esquerdo
+- Animação: slide da esquerda + easing elástico na entrada, fade + encolhe na saída
+- Barra de progresso animada indicando tempo restante
+- Auto-dismiss: 4s padrão · 6s para erros · 0 = persistente
+- Empilhamento vertical sem sobreposição
+- `aria-live="polite"` para leitores de tela
+- Tema dark nativo; override automático para `prefers-color-scheme: light`
+
+**Como usar em qualquer página:**
+```tsx
+const { success, error, warning, info } = useToast();
+
+success('Salvo!', 'Registro criado com sucesso');
+error('Falha', 'Não foi possível conectar');
+```
 
 ---
 
