@@ -9,9 +9,11 @@ import {
   Query,
   ParseIntPipe,
   UseGuards,
+  Res,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Response } from 'express';
 import { ItemsService } from './items.service';
 import { CreateItemDto } from './dto/create-item.dto';
 import { UpdateItemDto } from './dto/update-item.dto';
@@ -46,6 +48,19 @@ export class ItemsController {
   @ApiOperation({ summary: 'Buscar itens' })
   search(@Query('q') query: string, @TenantId() restauranteId: number) {
     return this.itemsService.search(query || '', restauranteId);
+  }
+
+  @Get('exportar-csv')
+  @Roles('ADMIN' as any, 'SUPER_ADMIN' as any)
+  @ApiOperation({ summary: 'Exportar itens em CSV' })
+  async exportarCsv(
+    @TenantId() restauranteId: number,
+    @Res() res: Response,
+  ) {
+    const csv = await this.itemsService.exportarCsv(restauranteId);
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename=itens.csv');
+    res.send(csv);
   }
 
   @Get(':id')

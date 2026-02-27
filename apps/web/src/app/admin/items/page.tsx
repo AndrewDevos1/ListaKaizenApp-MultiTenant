@@ -116,6 +116,24 @@ export default function ItemsPage() {
     }
   };
 
+  const handleExportarCsv = async () => {
+    try {
+      const { data } = await api.get('/v1/admin/itens/exportar-csv', {
+        responseType: 'blob',
+      });
+      const url = window.URL.createObjectURL(new Blob([data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'itens.csv');
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch {
+      setError('Erro ao exportar CSV');
+    }
+  };
+
   const filtered = items.filter((i) =>
     i.nome.toLowerCase().includes(search.toLowerCase()),
   );
@@ -133,9 +151,14 @@ export default function ItemsPage() {
       <div className={styles.pageContainer}>
         <div className={styles.pageHeader}>
           <h2 className={styles.pageTitle}>Itens</h2>
-          <Button variant="primary" onClick={() => openModal()}>
-            + Novo Item
-          </Button>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <Button variant="outline-secondary" onClick={handleExportarCsv}>
+              Exportar CSV
+            </Button>
+            <Button variant="primary" onClick={() => openModal()}>
+              + Novo Item
+            </Button>
+          </div>
         </div>
 
         {error && <Alert variant="danger" dismissible onClose={() => setError('')}>{error}</Alert>}

@@ -9,9 +9,11 @@ import {
   Query,
   ParseIntPipe,
   UseGuards,
+  Res,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
+import { Response } from 'express';
 import { FornecedoresService } from './fornecedores.service';
 import { CreateFornecedorDto } from './dto/create-fornecedor.dto';
 import { UpdateFornecedorDto } from './dto/update-fornecedor.dto';
@@ -36,6 +38,19 @@ export class FornecedoresController {
     const ativoBool =
       ativo === 'true' ? true : ativo === 'false' ? false : undefined;
     return this.fornecedoresService.findAll(restauranteId, ativoBool);
+  }
+
+  @Get('exportar-csv')
+  @Roles('ADMIN' as any, 'SUPER_ADMIN' as any)
+  @ApiOperation({ summary: 'Exportar fornecedores em CSV' })
+  async exportarCsv(
+    @TenantId() restauranteId: number,
+    @Res() res: Response,
+  ) {
+    const csv = await this.fornecedoresService.exportarCsv(restauranteId);
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename=fornecedores.csv');
+    res.send(csv);
   }
 
   @Get(':id')

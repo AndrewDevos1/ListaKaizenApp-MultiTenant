@@ -82,6 +82,17 @@
   display: none;
 }
 
+/* Header actions (sino + collapse) */
+.sidebarHeaderActions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm, 0.5rem);
+}
+
+.wrapper.collapsed .sidebarHeaderActions {
+  flex-direction: column;
+}
+
 /* Collapse Button */
 .collapseBtn {
   background: rgba(255, 255, 255, 0.15);

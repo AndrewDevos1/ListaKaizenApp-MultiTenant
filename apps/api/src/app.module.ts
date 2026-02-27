@@ -14,6 +14,9 @@ import { ChecklistsModule } from './modules/checklists/checklists.module';
 import { ListasRapidasModule } from './modules/listas-rapidas/listas-rapidas.module';
 import { SugestoesModule } from './modules/sugestoes/sugestoes.module';
 import { POPModule } from './modules/pop/pop.module';
+import { NotificacoesModule } from './modules/notificacoes/notificacoes.module';
+import { ConvitesModule } from './modules/convites/convites.module';
+import { LogsModule } from './modules/logs/logs.module';
 
 @Module({
   imports: [
@@ -32,6 +35,9 @@ import { POPModule } from './modules/pop/pop.module';
     ListasRapidasModule,
     SugestoesModule,
     POPModule,
+    NotificacoesModule,
+    ConvitesModule,
+    LogsModule,
   ],
 })
 export class AppModule {}

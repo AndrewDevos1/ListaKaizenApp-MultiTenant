@@ -51,4 +51,18 @@ export class FornecedoresService {
       data: { ativo: false },
     });
   }
+
+  async exportarCsv(restauranteId: number): Promise<string> {
+    const fornecedores = await this.prisma.fornecedor.findMany({
+      where: { restauranteId },
+      orderBy: { nome: 'asc' },
+    });
+
+    const header = 'id,nome,cnpj,telefone,email,ativo';
+    const rows = fornecedores.map((f) => {
+      return `${f.id},"${f.nome}","${f.cnpj ?? ''}","${f.telefone ?? ''}","${f.email ?? ''}",${f.ativo}`;
+    });
+
+    return [header, ...rows].join('\n');
+  }
 }

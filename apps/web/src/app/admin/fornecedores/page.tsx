@@ -46,6 +46,24 @@ export default function FornecedoresPage() {
   const [saving, setSaving] = useState(false);
   const [togglingId, setTogglingId] = useState<number | null>(null);
 
+  const handleExportarCsv = async () => {
+    try {
+      const { data } = await api.get('/v1/admin/fornecedores/exportar-csv', {
+        responseType: 'blob',
+      });
+      const url = window.URL.createObjectURL(new Blob([data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'fornecedores.csv');
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch {
+      setError('Erro ao exportar CSV');
+    }
+  };
+
   const fetchFornecedores = async () => {
     try {
       setLoading(true);
@@ -147,9 +165,14 @@ export default function FornecedoresPage() {
       <div className={styles.pageContainer}>
         <div className={styles.pageHeader}>
           <h2 className={styles.pageTitle}>Fornecedores</h2>
-          <Button variant="primary" onClick={() => openModal()}>
-            <FaPlus className="me-1" /> Novo Fornecedor
-          </Button>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <Button variant="outline-secondary" onClick={handleExportarCsv}>
+              Exportar CSV
+            </Button>
+            <Button variant="primary" onClick={() => openModal()}>
+              <FaPlus className="me-1" /> Novo Fornecedor
+            </Button>
+          </div>
         </div>
 
         {error && (

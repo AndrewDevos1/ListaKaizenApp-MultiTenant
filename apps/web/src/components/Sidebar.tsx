@@ -35,9 +35,12 @@ import {
   FaTruckLoading,
   FaFileInvoiceDollar,
   FaClipboard,
+  FaEnvelope,
+  FaHistory,
 } from 'react-icons/fa';
 import styles from './Sidebar.module.css';
 import Breadcrumbs from './Breadcrumbs';
+import NotificationBell from './NotificationBell';
 
 interface MenuItem {
   label: string;
@@ -100,6 +103,7 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
           itens: true,
           'listas-compras': true,
           fornecedores: true,
+          configuracoes: true,
           perfil: true,
         }
       : { dashboard: true, atividades: true, perfil: true };
@@ -339,6 +343,24 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
         },
       ],
     },
+    {
+      id: 'configuracoes',
+      label: 'CONFIGURAÇÕES',
+      items: [
+        {
+          label: 'Convites',
+          href: '/admin/convites',
+          icon: <FaEnvelope />,
+          status: 'available',
+        },
+        {
+          label: 'Logs',
+          href: '/admin/logs',
+          icon: <FaHistory />,
+          status: 'available',
+        },
+      ],
+    },
   ];
 
   const collaboratorMenuGroups: MenuGroup[] = [
@@ -445,14 +467,17 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
         {/* Header */}
         <div className={styles.sidebarHeader}>
           <h1>Kaizen</h1>
-          <button
-            className={styles.collapseBtn}
-            onClick={handleToggleCollapse}
-            aria-label={isCollapsed ? 'Expandir menu' : 'Recolher menu'}
-            title={isCollapsed ? 'Expandir menu' : 'Recolher menu'}
-          >
-            <FaChevronRight style={{ transform: isCollapsed ? 'rotate(180deg)' : 'rotate(0deg)' }} />
-          </button>
+          <div className={styles.sidebarHeaderActions}>
+            <NotificationBell />
+            <button
+              className={styles.collapseBtn}
+              onClick={handleToggleCollapse}
+              aria-label={isCollapsed ? 'Expandir menu' : 'Recolher menu'}
+              title={isCollapsed ? 'Expandir menu' : 'Recolher menu'}
+            >
+              <FaChevronRight style={{ transform: isCollapsed ? 'rotate(180deg)' : 'rotate(0deg)' }} />
+            </button>
+          </div>
         </div>
 
         {/* User Info */}

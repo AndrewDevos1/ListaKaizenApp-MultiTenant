@@ -59,4 +59,20 @@ export class ItemsService {
       take: 20,
     });
   }
+
+  async exportarCsv(restauranteId: number): Promise<string> {
+    const itens = await this.prisma.item.findMany({
+      where: { restauranteId },
+      include: { fornecedor: { select: { nome: true } } },
+      orderBy: { nome: 'asc' },
+    });
+
+    const header = 'id,nome,unidadeMedida,ativo,fornecedor';
+    const rows = itens.map((item) => {
+      const fornecedor = item.fornecedor?.nome ?? '';
+      return `${item.id},"${item.nome}","${item.unidadeMedida ?? ''}",${item.ativo},"${fornecedor}"`;
+    });
+
+    return [header, ...rows].join('\n');
+  }
 }
