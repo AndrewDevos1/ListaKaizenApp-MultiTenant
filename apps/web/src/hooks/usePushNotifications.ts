@@ -9,7 +9,7 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
   const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
   const rawData = window.atob(base64);
-  return Uint8Array.from([...rawData].map((char) => char.charCodeAt(0)));
+  return new Uint8Array([...rawData].map((char) => char.charCodeAt(0)));
 }
 
 export function usePushNotifications() {
@@ -53,7 +53,7 @@ export function usePushNotifications() {
       const reg = await navigator.serviceWorker.ready;
       const subscription = await reg.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey,
+        applicationServerKey: applicationServerKey as unknown as ArrayBuffer,
       });
 
       const sub = subscription.toJSON() as {
