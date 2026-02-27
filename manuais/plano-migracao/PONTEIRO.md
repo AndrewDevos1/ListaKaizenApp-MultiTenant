@@ -3,9 +3,9 @@
 ## Status Atual
 
 **Fase:** PÓS-MIGRAÇÃO — MELHORIAS ATIVAS ✅
-**Última tarefa concluída:** Web Push Notifications (VAPID + service worker + hook + botão)
+**Última tarefa concluída:** Avatares predefinidos na tela de perfil (admin + colaborador)
 **Próximo passo:** Testes automatizados / GerenciarRestaurantes
-**Última branch/commit:** `0ac7e08` (restaurando-design)
+**Última branch/commit:** `2b9c190` (restaurando-design)
 
 ---
 
@@ -32,6 +32,11 @@
 | 2026-02-27 | PWA | `f50f79f` | Ícones PWA 192x512 gerados do logo Kaizen |
 | 2026-02-27 | Fix | `f74c945` | Corrigir stale closure no hook usePWAInstall |
 | 2026-02-27 | PWA | `0ac7e08` | Web Push Notifications com VAPID, PushModule e service worker handler |
+| 2026-02-27 | Fix Login | `9f33ea8` | Ver senha, salvar email e manter conectado no login |
+| 2026-02-27 | Fix | `ce6fc26` | suppressHydrationWarning no html além do body |
+| 2026-02-27 | Fix Navbar | `f719b0f` | Configurações funcional e botões do footer menores |
+| 2026-02-27 | Avatar | `95235d0` | Upload de avatar com modal de recorte circular |
+| 2026-02-27 | Avatar | `2b9c190` | Avatares predefinidos na tela de perfil |
 
 ---
 

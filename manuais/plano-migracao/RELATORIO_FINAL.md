@@ -25,6 +25,11 @@
 | PWA | `f50f79f` | Ícones PWA 192×512 gerados do logo Kaizen |
 | Fix | `f74c945` | Corrigir stale closure no hook usePWAInstall |
 | PWA | `0ac7e08` | Web Push Notifications com VAPID, PushModule e SW handler |
+| Fix Login | `9f33ea8` | Ver senha, salvar email e manter conectado no login |
+| Fix | `ce6fc26` | suppressHydrationWarning no html além do body |
+| Fix Navbar | `f719b0f` | Configurações funcional e botões do footer menores |
+| Avatar | `95235d0` | Upload de avatar com modal de recorte circular |
+| Avatar | `2b9c190` | Avatares predefinidos na tela de perfil |
 
 ---
 
@@ -336,6 +341,45 @@ NEXT_PUBLIC_VAPID_PUBLIC_KEY=<mesma_chave_publica>
 2. Clicar em "Ativar notificações" — browser solicita permissão
 3. Aceitar → assinatura salva no banco
 4. Qualquer ação que gere uma `Notificacao` no backend dispara push automaticamente
+
+---
+
+## Avatar de Perfil (`95235d0`, `2b9c190`)
+
+Upload, recorte e avatares predefinidos para todos os usuários.
+
+**Backend:**
+
+| Arquivo | Papel |
+|---------|-------|
+| Prisma: `avatarUrl String?` em `Usuario` | Campo para URL ou base64 do avatar |
+| `auth.service.ts` — `updateAvatar()` / `removeAvatar()` | Salva/remove base64 ou URL no banco |
+| `PUT /v1/auth/avatar` | Aceita `{ avatarBase64: string }` — base64 ou URL estática |
+| `DELETE /v1/auth/avatar` | Remove avatar (seta null) |
+
+**Frontend:**
+
+| Arquivo | Papel |
+|---------|-------|
+| `components/AvatarCropModal.tsx` | Canvas 300×300 · círculo 120px · drag/touch · zoom 0.5×–4× · saída 200×200 JPEG |
+| `contexts/AuthContext.tsx` — `updateAvatarUrl()` | Atualiza avatar no estado e no storage ativo sem reload |
+| `components/Sidebar.tsx` | Exibe avatar do usuário (imagem ou inicial do nome) |
+| `app/admin/editar-perfil/page.tsx` | Card de foto de perfil com upload, remoção e seleção de preset |
+| `app/collaborator/perfil/page.tsx` | Idêntico ao admin |
+| `public/avatars/preset-1.png` … `preset-8.png` | 8 avatares PNG 200×200 gerados com Pillow |
+
+**Fluxo de upload próprio:**
+1. Usuário clica no avatar ou no botão "Enviar foto"
+2. Seletor de arquivo abre (JPG/PNG/WebP · máx 5MB)
+3. Modal de recorte abre com a imagem carregada
+4. Usuário arrasta para reposicionar, usa slider de zoom, clica "Confirmar"
+5. Canvas gera JPEG 200×200 em base64 → `PUT /v1/auth/avatar`
+6. Sidebar atualiza em tempo real via `updateAvatarUrl()`
+
+**Fluxo de preset:**
+1. Card mostra 8 avatares predefinidos em grade de círculos 44px
+2. Clique chama `PUT /v1/auth/avatar` com URL estática (`/avatars/preset-N.png`)
+3. Avatar selecionado fica com borda azul destacada
 
 ---
 
