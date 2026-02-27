@@ -3,6 +3,7 @@ import { StatusSubmissao, StatusPedido } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { FilterSubmissoesDto } from './dto/filter-submissoes.dto';
 import { UpdatePedidoStatusDto } from './dto/update-pedido-status.dto';
+import { MergePreviewDto } from './dto/merge-preview.dto';
 
 @Injectable()
 export class SubmissoesService {
@@ -170,6 +171,81 @@ export class SubmissoesService {
     });
 
     return this.findOneAdmin(id, restauranteId);
+  }
+
+  // ─── Merge endpoints ───────────────────────────────────────────────────────
+
+  async mergePreview(submissaoIds: number[], restauranteId: number) {
+    const submissoes = await this.prisma.submissao.findMany({
+      where: { id: { in: submissaoIds }, restauranteId },
+      include: {
+        usuario: { select: { id: true, nome: true } },
+        pedidos: {
+          where: { status: StatusPedido.APROVADO },
+          include: {
+            item: { select: { id: true, nome: true, unidadeMedida: true } },
+          },
+        },
+      },
+    });
+
+    // Agrupar por item.nome
+    const grupos = new Map<
+      string,
+      {
+        itemNome: string;
+        unidade: string;
+        qtdTotal: number;
+        breakdown: { submissaoId: number; colaboradorNome: string; qtd: number }[];
+      }
+    >();
+
+    for (const submissao of submissoes) {
+      for (const pedido of submissao.pedidos) {
+        const chave = pedido.item.nome;
+        if (!grupos.has(chave)) {
+          grupos.set(chave, {
+            itemNome: pedido.item.nome,
+            unidade: pedido.item.unidadeMedida,
+            qtdTotal: 0,
+            breakdown: [],
+          });
+        }
+        const grupo = grupos.get(chave)!;
+        grupo.qtdTotal += pedido.qtdSolicitada;
+        grupo.breakdown.push({
+          submissaoId: submissao.id,
+          colaboradorNome: submissao.usuario.nome,
+          qtd: pedido.qtdSolicitada,
+        });
+      }
+    }
+
+    return Array.from(grupos.values()).sort((a, b) =>
+      a.itemNome.localeCompare(b.itemNome, 'pt-BR'),
+    );
+  }
+
+  async mergeWhatsApp(
+    submissaoIds: number[],
+    restauranteId: number,
+    titulo?: string,
+  ) {
+    const grupos = await this.mergePreview(submissaoIds, restauranteId);
+    const data = new Date().toLocaleDateString('pt-BR');
+
+    let texto = `*Pedido — ${data}*\n`;
+    if (titulo) texto += `${titulo}\n`;
+    texto += '\n';
+
+    for (const g of grupos) {
+      texto += `• *${g.itemNome}*: ${g.qtdTotal} ${g.unidade}\n`;
+      if (g.breakdown.length > 1) {
+        texto += `  _(${g.breakdown.map((b) => `${b.colaboradorNome}: ${b.qtd}`).join(', ')})_\n`;
+      }
+    }
+
+    return { texto };
   }
 
   // ─── Colaborador endpoints ─────────────────────────────────────────────────

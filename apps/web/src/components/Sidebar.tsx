@@ -33,6 +33,7 @@ import {
   FaBolt,
   FaTruck,
   FaTruckLoading,
+  FaFileInvoiceDollar,
 } from 'react-icons/fa';
 import styles from './Sidebar.module.css';
 import Breadcrumbs from './Breadcrumbs';
@@ -297,9 +298,16 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
           status: 'available',
         },
         {
+          label: 'Cotações',
+          href: '/admin/cotacoes',
+          icon: <FaFileInvoiceDollar />,
+          status: 'available',
+        },
+        {
           label: 'Checklists de Compras',
-          status: 'soon',
+          href: '/admin/checklists',
           icon: <FaClipboardList />,
+          status: 'available',
         },
       ],
     },

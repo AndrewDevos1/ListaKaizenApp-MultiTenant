@@ -9,6 +9,8 @@ import { ListasModule } from './modules/listas/listas.module';
 import { SubmissoesModule } from './modules/submissoes/submissoes.module';
 import { UsuariosModule } from './modules/usuarios/usuarios.module';
 import { FornecedoresModule } from './modules/fornecedores/fornecedores.module';
+import { CotacoesModule } from './modules/cotacoes/cotacoes.module';
+import { ChecklistsModule } from './modules/checklists/checklists.module';
 
 @Module({
   imports: [
@@ -22,6 +24,8 @@ import { FornecedoresModule } from './modules/fornecedores/fornecedores.module';
     SubmissoesModule,
     UsuariosModule,
     FornecedoresModule,
+    CotacoesModule,
+    ChecklistsModule,
   ],
 })
 export class AppModule {}

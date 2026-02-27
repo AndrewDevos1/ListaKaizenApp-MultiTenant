@@ -2,10 +2,10 @@
 
 ## Status Atual
 
-**Fase:** FASE 1 — não iniciada
-**Última tarefa concluída:** (nenhuma)
-**Próximo passo:** Iniciar Fase 1 — Tarefa 1.1
-**Última branch/commit de checkpoint:** (nenhum)
+**Fase:** FASE 4 — não iniciada
+**Última tarefa concluída:** 3.5 — Checklists
+**Próximo passo:** Iniciar Fase 4 — Tarefa 4.1
+**Última branch/commit de checkpoint:** `<pendente>` (restaurando-design)
 
 ---
 
@@ -13,7 +13,8 @@
 
 | Data | Fase | Commit | Branch |
 |------|------|--------|--------|
-| —    | —    | —      | —      |
+| 2026-02-27 | Fase 1 concluída | `1e0917d` | `restaurando-design` |
+| 2026-02-27 | Fase 2 concluída | `776dfe0` | `restaurando-design` |
 
 ---
 

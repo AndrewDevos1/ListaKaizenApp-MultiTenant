@@ -14,6 +14,34 @@ enum UserRole {
   SUPPLIER
 }
 
+enum StatusListaRapida {
+  RASCUNHO
+  PENDENTE
+  APROVADO
+  REJEITADO
+  ARQUIVADO
+}
+
+enum StatusSugestao {
+  PENDENTE
+  APROVADO
+  REJEITADO
+}
+
+enum TipoPOP {
+  ABERTURA
+  FECHAMENTO
+  LIMPEZA
+  OPERACIONAL
+  PERSONALIZADO
+}
+
+enum StatusPOPExecucao {
+  EM_ANDAMENTO
+  CONCLUIDO
+  CANCELADO
+}
+
 enum StatusCotacao {
   ABERTA
   FECHADA

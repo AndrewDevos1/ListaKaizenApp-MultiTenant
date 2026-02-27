@@ -14,6 +14,7 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { SubmissoesService } from './submissoes.service';
 import { FilterSubmissoesDto } from './dto/filter-submissoes.dto';
 import { UpdatePedidoStatusDto } from './dto/update-pedido-status.dto';
+import { MergePreviewDto } from './dto/merge-preview.dto';
 import { CurrentUser, Roles, TenantId } from '../../common/decorators';
 import { RolesGuard, TenantGuard } from '../../common/guards';
 
@@ -34,6 +35,30 @@ export class AdminSubmissoesController {
     @Query() filter: FilterSubmissoesDto,
   ) {
     return this.submissoesService.findAllAdmin(restauranteId, filter);
+  }
+
+  @Post('submissoes/merge-preview')
+  @Roles('ADMIN' as any, 'SUPER_ADMIN' as any)
+  @ApiOperation({ summary: 'Preview do merge de submissões agrupado por item' })
+  mergePreview(
+    @TenantId() restauranteId: number,
+    @Body() dto: MergePreviewDto,
+  ) {
+    return this.submissoesService.mergePreview(dto.submissaoIds, restauranteId);
+  }
+
+  @Post('submissoes/merge-whatsapp')
+  @Roles('ADMIN' as any, 'SUPER_ADMIN' as any)
+  @ApiOperation({ summary: 'Gerar texto formatado para WhatsApp com merge de submissões' })
+  mergeWhatsApp(
+    @TenantId() restauranteId: number,
+    @Body() dto: MergePreviewDto,
+  ) {
+    return this.submissoesService.mergeWhatsApp(
+      dto.submissaoIds,
+      restauranteId,
+      dto.titulo,
+    );
   }
 
   @Get('submissoes/:id')

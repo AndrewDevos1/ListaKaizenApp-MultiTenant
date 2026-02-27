@@ -1,12 +1,12 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Table, Alert, Spinner, Badge, Button } from 'react-bootstrap';
 import api from '@/lib/api';
 import styles from '@/app/admin/listas/[id]/ListaDetail.module.css';
-import { FaClipboardCheck } from 'react-icons/fa';
+import { FaClipboardCheck, FaClipboardList } from 'react-icons/fa';
 
 type StatusSubmissao = 'PENDENTE' | 'APROVADO' | 'REJEITADO' | 'PARCIAL' | 'ARQUIVADO';
 type StatusPedido = 'PENDENTE' | 'APROVADO' | 'REJEITADO';
@@ -58,6 +58,7 @@ function formatDate(dateStr: string) {
 
 export default function AdminSubmissaoDetailPage() {
   const params = useParams();
+  const router = useRouter();
   const submissaoId = params.id as string;
 
   const [submissao, setSubmissao] = useState<SubmissaoDetail | null>(null);
@@ -138,6 +139,19 @@ export default function AdminSubmissaoDetailPage() {
       () => api.put(`/v1/admin/submissoes/${submissaoId}/arquivar`),
       'Submissão arquivada',
     );
+  };
+
+  const handleCriarChecklist = async () => {
+    setError('');
+    setSuccess('');
+    setActionLoading('criar-checklist');
+    try {
+      const { data } = await api.post('/v1/admin/checklists', { submissaoId: Number(submissaoId) });
+      router.push(`/admin/checklists/${data.id}`);
+    } catch (err: any) {
+      setError(err?.response?.data?.message || 'Erro ao criar checklist');
+      setActionLoading(null);
+    }
   };
 
   if (loading) {
@@ -232,6 +246,18 @@ export default function AdminSubmissaoDetailPage() {
             >
               {isLoading('arquivar') ? <Spinner animation="border" size="sm" /> : 'Arquivar Submissão'}
             </Button>
+            {(submissao.status === 'APROVADO' || submissao.status === 'PARCIAL') && !submissao.arquivada && (
+              <Button
+                variant="outline-info"
+                size="sm"
+                onClick={handleCriarChecklist}
+                disabled={!!actionLoading}
+              >
+                {isLoading('criar-checklist') ? <Spinner animation="border" size="sm" /> : (
+                  <><FaClipboardList style={{ marginRight: '0.3rem' }} />Criar Checklist</>
+                )}
+              </Button>
+            )}
           </div>
         </div>
 
