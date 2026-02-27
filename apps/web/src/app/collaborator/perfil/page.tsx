@@ -5,6 +5,7 @@ import { Container, Form, Button, Alert, Spinner, Card, Badge, Row, Col } from '
 import { FaUser, FaEnvelope, FaIdCard, FaSignOutAlt, FaSave, FaLock, FaKey } from 'react-icons/fa';
 import api from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/contexts/ToastContext';
 
 interface Profile {
   id: number;
@@ -18,16 +19,14 @@ interface Profile {
 
 export default function PerfilColaborador() {
   const { logout } = useAuth();
+  const { success, error } = useToast();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [formData, setFormData] = useState({ nome: '', username: '', email: '' });
-  const [profileError, setProfileError] = useState('');
-  const [profileSuccess, setProfileSuccess] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
   const [senhaData, setSenhaData] = useState({ senhaAtual: '', novaSenha: '', confirmar: '' });
   const [senhaError, setSenhaError] = useState('');
-  const [senhaSuccess, setSenhaSuccess] = useState('');
   const [savingSenha, setSavingSenha] = useState(false);
 
   useEffect(() => {
@@ -49,19 +48,17 @@ export default function PerfilColaborador() {
   const handleProfileSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.nome.trim() || !formData.email.trim()) {
-      setProfileError('Nome e email são obrigatórios');
+      error('Campos obrigatórios', 'Nome e email são obrigatórios');
       return;
     }
     setSaving(true);
-    setProfileError('');
-    setProfileSuccess('');
     try {
       await api.put('/v1/auth/profile', formData);
-      setProfileSuccess('Perfil atualizado com sucesso!');
+      success('Perfil atualizado', 'Suas informações foram salvas com sucesso');
       const r = await api.get('/v1/auth/profile');
       setProfile(r.data);
     } catch (err: any) {
-      setProfileError(err.response?.data?.message ?? 'Erro ao atualizar perfil');
+      error('Erro ao salvar', err.response?.data?.message ?? 'Não foi possível atualizar o perfil');
     } finally {
       setSaving(false);
     }
@@ -70,7 +67,6 @@ export default function PerfilColaborador() {
   const handleSenhaSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSenhaError('');
-    setSenhaSuccess('');
     if (!senhaData.senhaAtual || !senhaData.novaSenha) {
       setSenhaError('Preencha todos os campos');
       return;
@@ -89,7 +85,7 @@ export default function PerfilColaborador() {
         senhaAtual: senhaData.senhaAtual,
         novaSenha: senhaData.novaSenha,
       });
-      setSenhaSuccess('Senha alterada com sucesso!');
+      success('Senha alterada', 'Sua nova senha já está ativa');
       setSenhaData({ senhaAtual: '', novaSenha: '', confirmar: '' });
     } catch (err: any) {
       setSenhaError(err.response?.data?.message ?? 'Erro ao alterar senha');
@@ -116,8 +112,6 @@ export default function PerfilColaborador() {
       <Card className="mb-4 shadow-sm">
         <Card.Header><strong>Informações Pessoais</strong></Card.Header>
         <Card.Body>
-          {profileError && <Alert variant="danger" dismissible onClose={() => setProfileError('')}>{profileError}</Alert>}
-          {profileSuccess && <Alert variant="success" dismissible onClose={() => setProfileSuccess('')}>{profileSuccess}</Alert>}
           <Form onSubmit={handleProfileSubmit}>
             <Form.Group className="mb-3">
               <Form.Label><FaIdCard className="me-1" /> Nome Completo *</Form.Label>
@@ -175,7 +169,6 @@ export default function PerfilColaborador() {
         <Card.Header><strong><FaKey className="me-2" />Mudar Senha</strong></Card.Header>
         <Card.Body>
           {senhaError && <Alert variant="danger" dismissible onClose={() => setSenhaError('')}>{senhaError}</Alert>}
-          {senhaSuccess && <Alert variant="success" dismissible onClose={() => setSenhaSuccess('')}>{senhaSuccess}</Alert>}
           <Form onSubmit={handleSenhaSubmit}>
             <Form.Group className="mb-3">
               <Form.Label><FaLock className="me-1" /> Senha Atual *</Form.Label>

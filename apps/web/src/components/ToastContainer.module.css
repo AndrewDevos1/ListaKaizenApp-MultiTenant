@@ -1,0 +1,182 @@
+/* ── Viewport anchor ─────────────────────────────────────── */
+.region {
+  position: fixed;
+  bottom: 1.5rem;
+  left: 1.5rem;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column-reverse; /* newest on top */
+  gap: 0.625rem;
+  pointer-events: none;
+  max-width: min(22rem, calc(100vw - 3rem));
+}
+
+/* ── Individual toast ────────────────────────────────────── */
+.toast {
+  pointer-events: all;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.875rem 1rem;
+  border-radius: 0.75rem;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  background: rgba(30, 30, 32, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.35),
+    0 2px 8px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  color: #f2f2f7;
+  animation: slideIn 0.28s cubic-bezier(0.34, 1.2, 0.64, 1) both;
+  will-change: transform, opacity;
+}
+
+.toast.exiting {
+  animation: slideOut 0.22s cubic-bezier(0.4, 0, 0.6, 1) both;
+}
+
+/* ── Entry / exit animations ────────────────────────────── */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-1.5rem) translateY(0.5rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) translateY(0);
+  }
+}
+
+@keyframes slideOut {
+  from {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-1rem) scale(0.96);
+  }
+}
+
+/* ── Icon area ───────────────────────────────────────────── */
+.iconWrap {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+}
+
+.success .iconWrap { background: rgba(52, 199, 89, 0.18); color: #34c759; }
+.error   .iconWrap { background: rgba(255, 69, 58, 0.18);  color: #ff453a; }
+.warning .iconWrap { background: rgba(255, 159, 10, 0.18); color: #ff9f0a; }
+.info    .iconWrap { background: rgba(10, 132, 255, 0.18); color: #0a84ff; }
+
+/* ── Left accent bar ─────────────────────────────────────── */
+.toast::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.75rem;
+  bottom: 0.75rem;
+  width: 3px;
+  border-radius: 0 2px 2px 0;
+}
+.toast { position: relative; }
+
+.success::before { background: #34c759; }
+.error::before   { background: #ff453a; }
+.warning::before { background: #ff9f0a; }
+.info::before    { background: #0a84ff; }
+
+/* ── Text ────────────────────────────────────────────────── */
+.body {
+  flex: 1;
+  min-width: 0;
+}
+
+.title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: #f2f2f7;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.description {
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: rgba(235, 235, 245, 0.65);
+  margin-top: 0.15rem;
+}
+
+/* ── Close button ────────────────────────────────────────── */
+.close {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: rgba(235, 235, 245, 0.4);
+  padding: 0;
+  line-height: 1;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  transition: color 0.15s ease;
+  margin-top: 0.1rem;
+}
+
+.close:hover { color: rgba(235, 235, 245, 0.85); }
+
+/* ── Progress bar ────────────────────────────────────────── */
+.progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  border-radius: 0 0 0.75rem 0.75rem;
+  animation: drain linear both;
+}
+
+.success .progress { background: #34c759; }
+.error   .progress { background: #ff453a; }
+.warning .progress { background: #ff9f0a; }
+.info    .progress { background: #0a84ff; }
+
+@keyframes drain {
+  from { width: 100%; }
+  to   { width: 0%; }
+}
+
+/* ── Light mode overrides ────────────────────────────────── */
+@media (prefers-color-scheme: light) {
+  .toast {
+    background: rgba(252, 252, 252, 0.92);
+    border-color: rgba(0, 0, 0, 0.08);
+    box-shadow:
+      0 8px 32px rgba(0, 0, 0, 0.12),
+      0 2px 8px rgba(0, 0, 0, 0.08);
+    color: #1c1c1e;
+  }
+
+  .title    { color: #1c1c1e; }
+  .close    { color: rgba(60, 60, 67, 0.3); }
+  .close:hover { color: rgba(60, 60, 67, 0.7); }
+  .description { color: rgba(60, 60, 67, 0.6); }
+}
+
+/* ── Responsive ──────────────────────────────────────────── */
+@media (max-width: 480px) {
+  .region {
+    bottom: 1rem;
+    left: 1rem;
+    right: 1rem;
+    max-width: none;
+  }
+}
