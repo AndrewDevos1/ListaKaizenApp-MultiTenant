@@ -5,7 +5,7 @@
 **Fase:** MIGRAÇÃO CONCLUÍDA ✅
 **Última tarefa concluída:** 5.4 — Auditoria/Logs
 **Próximo passo:** Revisão e testes
-**Última branch/commit de checkpoint:** `<pendente>` (restaurando-design)
+**Última branch/commit de checkpoint:** `9680bfd` (restaurando-design)
 
 ---
 
@@ -17,6 +17,7 @@
 | 2026-02-27 | Fase 2 concluída | `776dfe0` | `restaurando-design` |
 | 2026-02-27 | Fase 3 concluída | `3fee2c8` | `restaurando-design` |
 | 2026-02-27 | Fase 4 concluída | `1068990` | `restaurando-design` |
+| 2026-02-27 | Fase 5 concluída | `9680bfd` | `restaurando-design` |
 
 ---
 
