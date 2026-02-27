@@ -30,6 +30,9 @@
 | Fix Navbar | `f719b0f` | Configurações funcional e botões do footer menores |
 | Avatar | `95235d0` | Upload de avatar com modal de recorte circular |
 | Avatar | `2b9c190` | Avatares predefinidos na tela de perfil |
+| Config | `305054f` | Páginas de configurações admin e colaborador |
+| Fix | `d43bf0a` | Corrigir rota de exportação CSV de itens |
+| Import | `9556759` | Importação de dados do legado em 2 fases |
 
 ---
 
@@ -380,6 +383,48 @@ Upload, recorte e avatares predefinidos para todos os usuários.
 1. Card mostra 8 avatares predefinidos em grade de círculos 44px
 2. Clique chama `PUT /v1/auth/avatar` com URL estática (`/avatars/preset-N.png`)
 3. Avatar selecionado fica com borda azul destacada
+
+---
+
+## Importação de Dados do Legado (`9556759`)
+
+Ferramenta de migração disponível em **Configurações → Importar Dados do Legado**.
+
+### Fase 1 — ZIP de backup
+
+O admin exporta o backup completo do sistema antigo via Configurações → Exportar Dados (selecionando Áreas, Itens, Fornecedores e Listas). O ZIP é enviado para `POST /v1/admin/import/backup-zip`.
+
+**Ordem de importação (respeita FKs):**
+1. `fornecedores.csv` → cria Fornecedores (nome + telefone + email)
+2. `areas.csv` → cria Áreas (nome)
+3. `itens.csv` → cria Itens (nome + unidadeMedida + fornecedor por nome)
+4. `listas.csv` → cria Listas (nome)
+
+**Comportamento:** idempotente — registros já existentes são ignorados (contados separadamente no resultado).
+
+### Fase 2 — CSV por lista
+
+Para cada lista, o admin exporta o CSV individual no sistema antigo (botão "Exportar CSV" na tela da lista). O CSV é enviado para `POST /v1/admin/import/lista-csv/:listaId`.
+
+**Formato do CSV:** `nome, unidade, quantidade_atual, quantidade_minima`
+
+**Resultado:** cria `ListaItemRef` com `quantidadeAtual` e `quantidadeMinima`. Itens não encontrados no catálogo são listados como avisos (não bloqueiam os demais).
+
+### Endpoints
+
+| Endpoint | Método | Papel |
+|----------|--------|-------|
+| `POST /v1/admin/import/backup-zip` | multipart/form-data | Importa ZIP com 4 CSVs |
+| `POST /v1/admin/import/lista-csv/:listaId` | multipart/form-data | Vincula itens à lista |
+| `GET /v1/admin/import/listas` | GET | Lista listas disponíveis (dropdown Fase 2) |
+
+### O que NÃO é importado (limitações do formato de export do legado)
+
+| Dado | Motivo |
+|------|--------|
+| Itens dentro das listas via ZIP | O `estoque.csv` do legado não tem coluna `Lista` |
+| Colaboradores vinculados às listas | Coluna "Colaboradores" tem só nomes, não IDs |
+| Áreas vinculadas a colaboradores | Relacionamento many-to-many removido no multi-tenant |
 
 ---
 

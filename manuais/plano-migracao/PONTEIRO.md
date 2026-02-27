@@ -3,9 +3,9 @@
 ## Status Atual
 
 **Fase:** PÓS-MIGRAÇÃO — MELHORIAS ATIVAS ✅
-**Última tarefa concluída:** Avatares predefinidos na tela de perfil (admin + colaborador)
+**Última tarefa concluída:** Importação de dados do legado em 2 fases (ZIP + CSV por lista)
 **Próximo passo:** Testes automatizados / GerenciarRestaurantes
-**Última branch/commit:** `2b9c190` (restaurando-design)
+**Última branch/commit:** `9556759` (restaurando-design)
 
 ---
 
@@ -37,6 +37,9 @@
 | 2026-02-27 | Fix Navbar | `f719b0f` | Configurações funcional e botões do footer menores |
 | 2026-02-27 | Avatar | `95235d0` | Upload de avatar com modal de recorte circular |
 | 2026-02-27 | Avatar | `2b9c190` | Avatares predefinidos na tela de perfil |
+| 2026-02-27 | Config | `305054f` | Paginas de configuracoes para admin e colaborador |
+| 2026-02-27 | Fix | `d43bf0a` | Corrigir rota de exportacao CSV de itens |
+| 2026-02-27 | Import | `9556759` | Importacao de dados do legado em 2 fases (ZIP + CSV) |
 
 ---
 
