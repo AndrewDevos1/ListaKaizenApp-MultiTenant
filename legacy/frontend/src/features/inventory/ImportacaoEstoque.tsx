@@ -83,7 +83,7 @@ const ImportacaoEstoque: React.FC<ImportacaoEstoqueProps> = ({ show, onHide, onS
     const fetchAreas = async () => {
         try {
             setLoadingAreas(true);
-            const response = await api.get('/areas');
+            const response = await api.get('/v1/areas');
             setAreas(response.data);
         } catch (err: any) {
             console.error('Erro ao buscar áreas:', err);
@@ -95,7 +95,7 @@ const ImportacaoEstoque: React.FC<ImportacaoEstoqueProps> = ({ show, onHide, onS
     const fetchFornecedores = async () => {
         try {
             setLoadingFornecedores(true);
-            const response = await api.get('/fornecedores');
+            const response = await api.get('/v1/fornecedores');
             setFornecedores(response.data);
         } catch (err: any) {
             console.error('Erro ao buscar fornecedores:', err);

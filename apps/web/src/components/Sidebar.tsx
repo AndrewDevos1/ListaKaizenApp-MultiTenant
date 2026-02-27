@@ -33,15 +33,21 @@ import {
   FaBolt,
   FaTruck,
   FaTruckLoading,
+  FaFileInvoiceDollar,
+  FaClipboard,
+  FaEnvelope,
+  FaHistory,
 } from 'react-icons/fa';
 import styles from './Sidebar.module.css';
 import Breadcrumbs from './Breadcrumbs';
+import NotificationBell from './NotificationBell';
 
 interface MenuItem {
   label: string;
-  href: string;
+  href?: string;
   icon: React.ReactNode;
   onClick?: () => void;
+  status?: 'available' | 'soon';
 }
 
 interface MenuGroup {
@@ -90,13 +96,14 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
 
   // Initialize expanded groups from localStorage
   useEffect(() => {
-    const defaultGroups = isAdmin
+    const defaultGroups: Record<string, boolean> = isAdmin
       ? {
           'visao-geral': true,
           pop: true,
           itens: true,
           'listas-compras': true,
           fornecedores: true,
+          configuracoes: true,
           perfil: true,
         }
       : { dashboard: true, atividades: true, perfil: true };
@@ -221,16 +228,19 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
           label: 'Dashboard Admin',
           href: '/admin/dashboard',
           icon: <FaTachometerAlt />,
+          status: 'available',
         },
         {
           label: 'Submissões',
           href: '/admin/submissoes',
           icon: <FaClipboardCheck />,
+          status: 'available',
         },
         {
           label: 'Gerenciar Usuários',
-          href: '/admin/gerenciar-usuarios',
+          href: '/admin/usuarios',
           icon: <FaUsersCog />,
+          status: 'available',
         },
       ],
     },
@@ -239,18 +249,20 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
       label: 'POP',
       items: [
         {
-          label: 'POP Listas',
-          href: '/admin/pop-listas',
-          icon: <FaListAlt />,
+          label: 'Templates POP',
+          href: '/admin/pop/templates',
+          icon: <FaClipboard />,
+          status: 'available',
         },
         {
-          label: 'POP Auditoria',
-          href: '/admin/pop-auditoria',
-          icon: <FaClipboardCheck />,
+          label: 'Execucoes POP',
+          href: '/admin/pop/execucoes',
+          icon: <FaListAlt />,
+          status: 'available',
         },
         {
           label: 'POP Atividades',
-          href: '/admin/pop-atividades',
+          status: 'soon',
           icon: <FaTasks />,
         },
       ],
@@ -261,18 +273,20 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
       items: [
         {
           label: 'Itens Regionais',
-          href: '/admin/itens-regionais',
+          status: 'soon',
           icon: <FaGlobeAmericas />,
         },
         {
           label: 'Itens Cadastrados',
           href: '/admin/items',
           icon: <FaBoxes />,
+          status: 'available',
         },
         {
-          label: 'Sugestões de Itens',
+          label: 'Sugestoes de Itens',
           href: '/admin/sugestoes',
           icon: <FaLightbulb />,
+          status: 'available',
         },
       ],
     },
@@ -281,19 +295,28 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
       label: 'LISTAS & COMPRAS',
       items: [
         {
-          label: 'Lista Rápida',
-          href: '/admin/lista-rapida',
+          label: 'Listas Rapidas',
+          href: '/admin/listas-rapidas',
           icon: <FaBolt />,
+          status: 'available',
         },
         {
           label: 'Listas de Compras',
           href: '/admin/listas',
           icon: <FaList />,
+          status: 'available',
+        },
+        {
+          label: 'Cotações',
+          href: '/admin/cotacoes',
+          icon: <FaFileInvoiceDollar />,
+          status: 'available',
         },
         {
           label: 'Checklists de Compras',
           href: '/admin/checklists',
           icon: <FaClipboardList />,
+          status: 'available',
         },
       ],
     },
@@ -305,16 +328,36 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
           label: 'Áreas',
           href: '/admin/areas',
           icon: <FaMapMarkerAlt />,
+          status: 'available',
         },
         {
           label: 'Fornecedores',
           href: '/admin/fornecedores',
           icon: <FaTruck />,
+          status: 'available',
         },
         {
           label: 'Fornecedores da Região',
-          href: '/admin/fornecedores-regiao',
+          status: 'soon',
           icon: <FaTruckLoading />,
+        },
+      ],
+    },
+    {
+      id: 'configuracoes',
+      label: 'CONFIGURAÇÕES',
+      items: [
+        {
+          label: 'Convites',
+          href: '/admin/convites',
+          icon: <FaEnvelope />,
+          status: 'available',
+        },
+        {
+          label: 'Logs',
+          href: '/admin/logs',
+          icon: <FaHistory />,
+          status: 'available',
         },
       ],
     },
@@ -341,6 +384,29 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
           href: '/collaborator/listas',
           icon: <FaClipboardList />,
         },
+        {
+          label: 'Minhas Submissoes',
+          href: '/collaborator/submissoes',
+          icon: <FaClipboardCheck />,
+        },
+        {
+          label: 'Listas Rapidas',
+          href: '/collaborator/listas-rapidas',
+          icon: <FaBolt />,
+          status: 'available',
+        },
+        {
+          label: 'Sugestoes de Itens',
+          href: '/collaborator/sugestoes',
+          icon: <FaLightbulb />,
+          status: 'available',
+        },
+        {
+          label: 'POPs',
+          href: '/collaborator/pop',
+          icon: <FaClipboard />,
+          status: 'available',
+        },
       ],
     },
   ];
@@ -351,13 +417,15 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
     items: [
       {
         label: 'Editar Perfil',
-        href: isAdmin ? '/admin/editar-perfil' : '/collaborator/perfil',
+        href: isAdmin ? undefined : '/collaborator/perfil',
         icon: <FaUserEdit />,
+        status: isAdmin ? 'soon' : 'available',
       },
       {
         label: 'Mudar Senha',
-        href: isAdmin ? '/admin/mudar-senha' : '/collaborator/mudar-senha',
+        href: isAdmin ? undefined : '/collaborator/mudar-senha',
         icon: <FaKey />,
+        status: isAdmin ? 'soon' : 'available',
       },
       {
         label: 'Sair',
@@ -399,14 +467,17 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
         {/* Header */}
         <div className={styles.sidebarHeader}>
           <h1>Kaizen</h1>
-          <button
-            className={styles.collapseBtn}
-            onClick={handleToggleCollapse}
-            aria-label={isCollapsed ? 'Expandir menu' : 'Recolher menu'}
-            title={isCollapsed ? 'Expandir menu' : 'Recolher menu'}
-          >
-            <FaChevronRight style={{ transform: isCollapsed ? 'rotate(180deg)' : 'rotate(0deg)' }} />
-          </button>
+          <div className={styles.sidebarHeaderActions}>
+            <NotificationBell />
+            <button
+              className={styles.collapseBtn}
+              onClick={handleToggleCollapse}
+              aria-label={isCollapsed ? 'Expandir menu' : 'Recolher menu'}
+              title={isCollapsed ? 'Expandir menu' : 'Recolher menu'}
+            >
+              <FaChevronRight style={{ transform: isCollapsed ? 'rotate(180deg)' : 'rotate(0deg)' }} />
+            </button>
+          </div>
         </div>
 
         {/* User Info */}
@@ -465,34 +536,63 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
               </button>
               {expandedGroups[group.id] && (
                 <div className={styles.menuItems}>
-                  {group.items.map((item, itemIndex) =>
-                    item.onClick ? (
-                      <button
-                        key={itemIndex}
-                        type="button"
-                        className={`${styles.menuItem} ${styles.menuItemButton}`}
-                        onClick={() => {
-                          item.onClick?.();
-                          closeMobileMenu();
-                        }}
-                        title={isCollapsed ? item.label : undefined}
-                      >
-                        {item.icon}
-                        <span className={styles.menuItemLabel}>{item.label}</span>
-                      </button>
-                    ) : (
+                  {group.items.map((item, itemIndex) => {
+                    const isDisabled = item.status === 'soon' || !item.href;
+                    const title = isCollapsed
+                      ? item.status === 'soon'
+                        ? `${item.label} (em breve)`
+                        : item.label
+                      : item.status === 'soon'
+                        ? 'Em breve'
+                        : undefined;
+
+                    if (item.onClick) {
+                      return (
+                        <button
+                          key={itemIndex}
+                          type="button"
+                          className={`${styles.menuItem} ${styles.menuItemButton}`}
+                          onClick={() => {
+                            item.onClick?.();
+                            closeMobileMenu();
+                          }}
+                          title={title}
+                        >
+                          {item.icon}
+                          <span className={styles.menuItemLabel}>{item.label}</span>
+                        </button>
+                      );
+                    }
+
+                    if (isDisabled) {
+                      return (
+                        <div
+                          key={itemIndex}
+                          className={`${styles.menuItem} ${styles.menuItemDisabled}`}
+                          title={title}
+                          role="button"
+                          aria-disabled="true"
+                        >
+                          {item.icon}
+                          <span className={styles.menuItemLabel}>{item.label}</span>
+                          <span className={styles.menuItemTag}>Em breve</span>
+                        </div>
+                      );
+                    }
+
+                    return (
                       <Link
                         key={itemIndex}
-                        href={item.href}
-                        className={`${styles.menuItem} ${isMenuItemActive(item.href) ? styles.active : ''}`}
+                        href={item.href!}
+                        className={`${styles.menuItem} ${isMenuItemActive(item.href!) ? styles.active : ''}`}
                         onClick={closeMobileMenu}
-                        title={isCollapsed ? item.label : undefined}
+                        title={title}
                       >
                         {item.icon}
                         <span className={styles.menuItemLabel}>{item.label}</span>
                       </Link>
-                    ),
-                  )}
+                    );
+                  })}
                 </div>
               )}
             </div>

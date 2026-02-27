@@ -17,15 +17,18 @@ import {
     faExclamationTriangle,
     faClipboardList,
     faPlus,
+    faSearch,
     faEdit,
     faTrash,
     faCheck,
     faTruck,
     faArrowRight,
     faCopy,
-    faExchangeAlt as faExchange
+    faExchangeAlt as faExchange,
+    faCog
 } from '@fortawesome/free-solid-svg-icons';
 import api from '../../services/api';
+import { formatarDataBrasiliaSemHora } from '../../utils/dateFormatter';
 import styles from './ListaMaeConsolidada.module.css';
 
 // Interface do Item
@@ -36,6 +39,8 @@ interface ListaMaeItem {
     quantidade_atual: number;
     quantidade_minima: number;
     pedido?: number;
+    usa_threshold?: boolean;
+    quantidade_por_fardo?: number;
 }
 
 interface ListaMae {
@@ -57,6 +62,25 @@ interface Fornecedor {
     observacao?: string;
 }
 
+interface ItemBuscaUnificada {
+    id: string;
+    nome: string;
+    unidade: string;
+    origem: 'lista_global' | 'regional';
+    origem_display: string;
+    fornecedor_id: number | null;
+    fornecedor_nome: string | null;
+    ja_na_lista_global: boolean;
+    item_fornecedor_id: number | null;
+}
+
+interface NovoItemForm {
+    nome: string;
+    unidade: 'Kg' | 'Litro' | 'Unidade';
+    quantidade_atual: string;
+    quantidade_minima: string;
+}
+
 const ListaMaeConsolidada: React.FC = () => {
     const { listaId } = useParams<{ listaId: string }>();
     const navigate = useNavigate();
@@ -67,11 +91,11 @@ const ListaMaeConsolidada: React.FC = () => {
     const [success, setSuccess] = useState<string | null>(null);
 
     // Estado para adicionar novo item
-    const [novoItem, setNovoItem] = useState<ListaMaeItem>({
+    const [novoItem, setNovoItem] = useState<NovoItemForm>({
         nome: '',
         unidade: 'Kg',
-        quantidade_atual: 0,
-        quantidade_minima: 0
+        quantidade_atual: '',
+        quantidade_minima: ''
     });
 
     // Estado para edição inline
@@ -80,7 +104,7 @@ const ListaMaeConsolidada: React.FC = () => {
     
     // Estado para modo de edição em lote
     const [modoEdicaoLote, setModoEdicaoLote] = useState(false);
-    const [quantidadesLote, setQuantidadesLote] = useState<{ [key: number]: number }>({});
+    const [quantidadesLote, setQuantidadesLote] = useState<{ [key: number]: string }>({});
     
     // Refs para campos editáveis
     const campoEditavelRef = useRef<HTMLInputElement | null>(null);
@@ -98,6 +122,15 @@ const ListaMaeConsolidada: React.FC = () => {
     const [mostrarModalImportacao, setMostrarModalImportacao] = useState(false);
     const [textoImportacao, setTextoImportacao] = useState('');
     const [carregandoImportacao, setCarregandoImportacao] = useState(false);
+
+    // Estados para configuração de threshold/fardo
+    const [mostrarModalConfig, setMostrarModalConfig] = useState(false);
+    const [itemConfigurando, setItemConfigurando] = useState<ListaMaeItem | null>(null);
+    const [configForm, setConfigForm] = useState({
+        quantidade_minima: '',
+        quantidade_por_fardo: ''
+    });
+    const [salvandoConfig, setSalvandoConfig] = useState(false);
 
     // Estados para Copiar/Mover itens
     const [mostrarModalCopiar, setMostrarModalCopiar] = useState(false);
@@ -117,6 +150,26 @@ const ListaMaeConsolidada: React.FC = () => {
     const [filtroUnidade, setFiltroUnidade] = useState('');
     const [filtroPedidoMin, setFiltroPedidoMin] = useState('');
     const [filtroPedidoMax, setFiltroPedidoMax] = useState('');
+
+    // Estado para ordenação de colunas
+    const [ordenacao, setOrdenacao] = useState<{ campo: string; direcao: 'asc' | 'desc' }>({
+        campo: 'nome',
+        direcao: 'asc'
+    });
+
+    // Estado para seção de itens inativos
+    const [mostrarItensInativos, setMostrarItensInativos] = useState(false);
+
+    // Estados para busca de itens da lista global e fornecedores regionais
+    const [mostrarModalBuscaItens, setMostrarModalBuscaItens] = useState(false);
+    const [itensBusca, setItensBusca] = useState<ItemBuscaUnificada[]>([]);
+    const [itensBuscaFiltrados, setItensBuscaFiltrados] = useState<ItemBuscaUnificada[]>([]);
+    const [buscaItensTermo, setBuscaItensTermo] = useState('');
+    const [filtroOrigemBusca, setFiltroOrigemBusca] = useState<'todas' | 'lista_global' | 'regional'>('todas');
+    const [erroBuscaItens, setErroBuscaItens] = useState<string | null>(null);
+    const [carregandoBuscaItens, setCarregandoBuscaItens] = useState(false);
+    const [carregandoAdicionarBusca, setCarregandoAdicionarBusca] = useState(false);
+    const [itensSelecionadosBusca, setItensSelecionadosBusca] = useState<Map<string, string>>(new Map());
 
     useEffect(() => {
         if (listaId) {
@@ -149,6 +202,165 @@ const ListaMaeConsolidada: React.FC = () => {
         }
     };
 
+    const normalizeTexto = (valor: string) =>
+        valor.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+
+    const fetchItensBusca = async () => {
+        if (!listaId) return;
+        try {
+            setCarregandoBuscaItens(true);
+            setErroBuscaItens(null);
+
+            const [catalogoResponse, regionaisResponse] = await Promise.all([
+                api.get('/admin/catalogo-global'),
+                api.get('/admin/itens-regionais')
+            ]);
+
+            const itensCatalogo = catalogoResponse.data?.itens || [];
+            const itensRegionais = regionaisResponse.data?.itens || [];
+
+            const nomesGlobais = new Set(
+                itensCatalogo.map((item: any) => normalizeTexto(item.nome))
+            );
+
+            const itensUnificados: ItemBuscaUnificada[] = [
+                ...itensCatalogo.map((item: any) => ({
+                    id: `global_${item.id}`,
+                    nome: item.nome,
+                    unidade: item.unidade,
+                    origem: 'lista_global',
+                    origem_display: 'Lista Global',
+                    fornecedor_id: null,
+                    fornecedor_nome: null,
+                    ja_na_lista_global: true,
+                    item_fornecedor_id: null
+                })),
+                ...itensRegionais.map((item: any) => ({
+                    id: `fornecedor_${item.id}`,
+                    nome: item.nome,
+                    unidade: item.unidade_medida,
+                    origem: 'regional',
+                    origem_display: item.fornecedor_nome || 'Fornecedor Regional',
+                    fornecedor_id: item.fornecedor_id,
+                    fornecedor_nome: item.fornecedor_nome,
+                    ja_na_lista_global: nomesGlobais.has(normalizeTexto(item.nome)),
+                    item_fornecedor_id: item.id
+                }))
+            ].sort((a, b) => a.nome.localeCompare(b.nome));
+
+            setItensBusca(itensUnificados);
+        } catch (err: any) {
+            setErroBuscaItens(err.response?.data?.error || 'Erro ao buscar itens.');
+        } finally {
+            setCarregandoBuscaItens(false);
+        }
+    };
+
+    const aplicarFiltrosBuscaItens = () => {
+        let resultado = [...itensBusca];
+
+        if (buscaItensTermo.trim()) {
+            const termo = normalizeTexto(buscaItensTermo);
+            resultado = resultado.filter((item) =>
+                normalizeTexto(item.nome).includes(termo) ||
+                normalizeTexto(item.fornecedor_nome || '').includes(termo)
+            );
+        }
+
+        if (filtroOrigemBusca !== 'todas') {
+            resultado = resultado.filter((item) => item.origem === filtroOrigemBusca);
+        }
+
+        setItensBuscaFiltrados(resultado);
+    };
+
+    useEffect(() => {
+        aplicarFiltrosBuscaItens();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [buscaItensTermo, filtroOrigemBusca, itensBusca]);
+
+    const handleAbrirModalBuscaItens = () => {
+        setMostrarModalBuscaItens(true);
+        setBuscaItensTermo('');
+        setFiltroOrigemBusca('todas');
+        setItensSelecionadosBusca(new Map());
+        fetchItensBusca();
+    };
+
+    const handleFecharModalBuscaItens = () => {
+        setMostrarModalBuscaItens(false);
+        setBuscaItensTermo('');
+        setFiltroOrigemBusca('todas');
+        setItensSelecionadosBusca(new Map());
+        setErroBuscaItens(null);
+    };
+
+    const handleToggleItemBusca = (item: ItemBuscaUnificada, quantidadeMinima: string | null) => {
+        const novosSelecionados = new Map(itensSelecionadosBusca);
+        if (quantidadeMinima === null) {
+            novosSelecionados.delete(item.id);
+        } else {
+            novosSelecionados.set(item.id, quantidadeMinima);
+        }
+        setItensSelecionadosBusca(novosSelecionados);
+    };
+
+    const handleAdicionarItensBusca = async () => {
+        if (!listaId) return;
+        if (itensSelecionadosBusca.size === 0) {
+            setErroBuscaItens('Selecione ao menos um item para adicionar.');
+            return;
+        }
+
+        try {
+            setCarregandoAdicionarBusca(true);
+            setErroBuscaItens(null);
+
+            const itens = Array.from(itensSelecionadosBusca.entries()).map(([id, quantidadeMinimaStr]) => {
+                const quantidadeMinimaParsed = quantidadeMinimaStr === '' ? 0 : parseFloat(quantidadeMinimaStr);
+                const quantidade_minima = Number.isNaN(quantidadeMinimaParsed) ? 0 : quantidadeMinimaParsed;
+                return {
+                    id,
+                    quantidade_minima
+                };
+            });
+
+            const response = await api.post(`/admin/listas/${listaId}/itens?skip_if_exists=1`, { itens });
+            const erros = response.data?.errors || [];
+
+            if (erros.length > 0) {
+                setErroBuscaItens(erros[0].error || 'Erro ao adicionar itens.');
+                return;
+            }
+
+            handleFecharModalBuscaItens();
+            await fetchListaMae();
+            setSuccess('Itens adicionados à lista.');
+            setTimeout(() => setSuccess(null), 3000);
+        } catch (err: any) {
+            setErroBuscaItens(err.response?.data?.error || 'Erro ao adicionar itens.');
+        } finally {
+            setCarregandoAdicionarBusca(false);
+        }
+    };
+
+    const getOrigemBadgeBusca = (item: ItemBuscaUnificada) => {
+        if (item.origem === 'lista_global') {
+            return <Badge bg="success">Lista Global</Badge>;
+        }
+
+        return (
+            <>
+                <Badge bg="primary">{item.origem_display}</Badge>
+                {item.ja_na_lista_global && (
+                    <Badge bg="success" className="ms-1">
+                        Já na lista global
+                    </Badge>
+                )}
+            </>
+        );
+    };
+
     const handleAdicionarItem = async () => {
         // Validações do nome
         const nomeTrimmed = novoItem.nome.trim();
@@ -174,8 +386,17 @@ const ListaMaeConsolidada: React.FC = () => {
         }
 
         try {
-            console.log('[LISTA MAE] Adicionando item:', novoItem);
-            const response = await api.post(`/admin/listas/${listaId}/mae-itens`, novoItem);
+            const quantidadeAtualParsed = novoItem.quantidade_atual === '' ? 0 : parseFloat(novoItem.quantidade_atual);
+            const quantidadeMinimaParsed = novoItem.quantidade_minima === '' ? 0 : parseFloat(novoItem.quantidade_minima);
+            const payload = {
+                nome: nomeTrimmed,
+                unidade: novoItem.unidade,
+                quantidade_atual: Number.isNaN(quantidadeAtualParsed) ? 0 : quantidadeAtualParsed,
+                quantidade_minima: Number.isNaN(quantidadeMinimaParsed) ? 0 : quantidadeMinimaParsed
+            };
+
+            console.log('[LISTA MAE] Adicionando item:', payload);
+            const response = await api.post(`/admin/listas/${listaId}/mae-itens`, payload);
             console.log('[LISTA MAE] Item adicionado com sucesso:', response.data);
 
             if (listaMae) {
@@ -189,8 +410,8 @@ const ListaMaeConsolidada: React.FC = () => {
             setNovoItem({
                 nome: '',
                 unidade: 'Kg',
-                quantidade_atual: 0,
-                quantidade_minima: 0
+                quantidade_atual: '',
+                quantidade_minima: ''
             });
             setError(null);
             setSuccess('Item adicionado com sucesso!');
@@ -366,8 +587,69 @@ const ListaMaeConsolidada: React.FC = () => {
         }
     };
 
-    const calcularPedido = (qtdMin: number, qtdAtual: number) => {
-        return Math.max(0, qtdMin - qtdAtual);
+    const calcularPedido = (qtdMin: number, qtdAtual: number, qtdPorFardo: number = 1) => {
+        // Nova lógica simplificada: se estoque <= mínimo, pede quantidade_por_fardo
+        if (qtdAtual <= qtdMin) {
+            return qtdPorFardo;
+        }
+        return 0;
+    };
+
+    // Funções para configuração de threshold/fardo
+    const abrirModalConfig = (item: ListaMaeItem) => {
+        setItemConfigurando(item);
+        setConfigForm({
+            quantidade_minima: String(item.quantidade_minima ?? 1),
+            quantidade_por_fardo: String(item.quantidade_por_fardo ?? 1)
+        });
+        setMostrarModalConfig(true);
+    };
+
+    const salvarConfig = async () => {
+        if (!itemConfigurando?.id || !listaId) return;
+
+        // Converter strings para números (com fallback para valores default)
+        const qtdMinima = parseFloat(configForm.quantidade_minima) || 1;
+        const qtdPorFardo = parseFloat(configForm.quantidade_por_fardo) || 1;
+
+        try {
+            setSalvandoConfig(true);
+            setError(null);
+
+            await api.put(`/admin/listas/${listaId}/itens/${itemConfigurando.id}/config`, {
+                quantidade_minima: qtdMinima,
+                quantidade_por_fardo: qtdPorFardo
+            });
+
+            // Atualizar o item localmente
+            if (listaMae) {
+                const itensAtualizados = listaMae.itens.map(item => {
+                    if (item.id === itemConfigurando.id) {
+                        // Recalcular o pedido com a nova lógica simplificada
+                        const pedido = item.quantidade_atual <= qtdMinima
+                            ? qtdPorFardo
+                            : 0;
+                        return {
+                            ...item,
+                            quantidade_minima: qtdMinima,
+                            quantidade_por_fardo: qtdPorFardo,
+                            pedido
+                        };
+                    }
+                    return item;
+                });
+                setListaMae({ ...listaMae, itens: itensAtualizados });
+            }
+
+            setMostrarModalConfig(false);
+            setItemConfigurando(null);
+            setSuccess('Configuração salva com sucesso!');
+            setTimeout(() => setSuccess(null), 3000);
+        } catch (err: any) {
+            setError(err.response?.data?.error || 'Erro ao salvar configuração');
+        } finally {
+            setSalvandoConfig(false);
+        }
     };
 
     // Iniciar edição com duplo clique
@@ -429,11 +711,25 @@ const ListaMaeConsolidada: React.FC = () => {
             };
 
             const response = await api.put(`/admin/listas/${listaId}/mae-itens/${editandoCampo.itemId}`, dataToSend);
+            const itemAtualizado: ListaMaeItem = response.data?.item
+                ? {
+                    id: response.data.item.id ?? response.data.item_id ?? item.id,
+                    nome: response.data.item.nome ?? item.nome,
+                    unidade: response.data.item.unidade ?? item.unidade,
+                    quantidade_atual: response.data.quantidade_atual ?? item.quantidade_atual,
+                    quantidade_minima: response.data.quantidade_minima ?? item.quantidade_minima,
+                    pedido: response.data.pedido ?? calcularPedido(
+                        response.data.quantidade_minima ?? item.quantidade_minima,
+                        response.data.quantidade_atual ?? item.quantidade_atual,
+                        response.data.quantidade_por_fardo ?? item.quantidade_por_fardo ?? 1
+                    )
+                }
+                : response.data;
 
             if (listaMae) {
                 setListaMae({
                     ...listaMae,
-                    itens: listaMae.itens.map(i => i.id === editandoCampo.itemId ? response.data : i)
+                    itens: listaMae.itens.map(i => i.id === editandoCampo.itemId ? itemAtualizado : i)
                 });
             }
 
@@ -464,10 +760,10 @@ const ListaMaeConsolidada: React.FC = () => {
 
     // Ativar modo de edição em lote
     const ativarModoLote = () => {
-        const qtds: { [key: number]: number } = {};
+        const qtds: { [key: number]: string } = {};
         listaMae?.itens.forEach(item => {
             if (item.id) {
-                qtds[item.id] = item.quantidade_minima;
+                qtds[item.id] = String(item.quantidade_minima);
             }
         });
         setQuantidadesLote(qtds);
@@ -485,9 +781,11 @@ const ListaMaeConsolidada: React.FC = () => {
         try {
             setError(null);
             
-            const promises = Object.entries(quantidadesLote).map(async ([itemIdStr, qtdMinima]) => {
+            const promises = Object.entries(quantidadesLote).map(async ([itemIdStr, qtdMinimaStr]) => {
                 const itemId = parseInt(itemIdStr);
                 const item = listaMae?.itens.find(i => i.id === itemId);
+                const qtdMinimaParsed = qtdMinimaStr === '' ? 0 : parseFloat(qtdMinimaStr);
+                const qtdMinima = Number.isNaN(qtdMinimaParsed) ? 0 : qtdMinimaParsed;
                 
                 if (item && item.quantidade_minima !== qtdMinima) {
                     const dataToSend = {
@@ -541,7 +839,12 @@ const ListaMaeConsolidada: React.FC = () => {
     const getItensFiltrados = () => {
         if (!listaMae?.itens) return [];
 
-        return listaMae.itens.filter(item => {
+        const resultado = listaMae.itens.filter(item => {
+            // NOVO: Excluir itens inativos (quantidade_minima <= 0)
+            if (item.quantidade_minima <= 0) {
+                return false;
+            }
+
             // Filtro por nome (busca)
             if (buscaNome && !item.nome.toLowerCase().includes(buscaNome.toLowerCase())) {
                 return false;
@@ -553,7 +856,7 @@ const ListaMaeConsolidada: React.FC = () => {
             }
 
             // Filtro por intervalo de pedido
-            const pedido = calcularPedido(item.quantidade_minima, item.quantidade_atual);
+            const pedido = item.pedido ?? calcularPedido(item.quantidade_minima, item.quantidade_atual, item.quantidade_por_fardo ?? 1);
             if (filtroPedidoMin && pedido < parseFloat(filtroPedidoMin)) {
                 return false;
             }
@@ -563,6 +866,15 @@ const ListaMaeConsolidada: React.FC = () => {
 
             return true;
         });
+
+        // Aplicar ordenação
+        return ordenarItens(resultado);
+    };
+
+    // NOVO: Função para obter itens inativos (quantidade_minima = 0)
+    const getItensInativos = () => {
+        if (!listaMae?.itens) return [];
+        return listaMae.itens.filter(item => item.quantidade_minima <= 0);
     };
 
     // Obter lista de unidades únicas
@@ -571,6 +883,40 @@ const ListaMaeConsolidada: React.FC = () => {
         const unidades = new Set(listaMae.itens.map(item => item.unidade));
         return Array.from(unidades).sort();
     };
+
+    // Função de ordenação de colunas
+    const handleOrdenar = (campo: string) => {
+        setOrdenacao(prev => ({
+            campo,
+            direcao: prev.campo === campo && prev.direcao === 'asc' ? 'desc' : 'asc'
+        }));
+    };
+
+    const ordenarItens = (itens: ListaMaeItem[]) => {
+        return [...itens].sort((a, b) => {
+            let valorA: string | number;
+            let valorB: string | number;
+
+            if (ordenacao.campo === 'pedido') {
+                valorA = a.pedido ?? calcularPedido(a.quantidade_minima, a.quantidade_atual, a.quantidade_por_fardo ?? 1);
+                valorB = b.pedido ?? calcularPedido(b.quantidade_minima, b.quantidade_atual, b.quantidade_por_fardo ?? 1);
+            } else {
+                valorA = a[ordenacao.campo as keyof ListaMaeItem] as string | number;
+                valorB = b[ordenacao.campo as keyof ListaMaeItem] as string | number;
+            }
+
+            // Comparação para strings
+            if (typeof valorA === 'string' && typeof valorB === 'string') {
+                const comparacao = valorA.localeCompare(valorB, 'pt-BR', { sensitivity: 'base' });
+                return ordenacao.direcao === 'asc' ? comparacao : -comparacao;
+            }
+
+            // Comparação para números
+            const comparacao = ((valorA as number) ?? 0) - ((valorB as number) ?? 0);
+            return ordenacao.direcao === 'asc' ? comparacao : -comparacao;
+        });
+    };
+
 
     const handleImportarItemsEmLote = async () => {
         if (!textoImportacao.trim()) {
@@ -755,28 +1101,36 @@ const ListaMaeConsolidada: React.FC = () => {
 
             {/* Resumo */}
             <Row className="mb-4 g-3">
-                <Col md={4}>
+                <Col md={3}>
                     <Card className={styles.statsCard}>
                         <Card.Body className="text-center">
-                            <h3 className={styles.statValue}>{listaMae.total_itens}</h3>
-                            <p className={styles.statLabel}>Total de Itens</p>
+                            <h3 className={styles.statValue}>{listaMae.total_itens - getItensInativos().length}</h3>
+                            <p className={styles.statLabel}>Itens Ativos</p>
                         </Card.Body>
                     </Card>
                 </Col>
-                <Col md={4}>
+                <Col md={3}>
+                    <Card className={styles.statsCard}>
+                        <Card.Body className="text-center">
+                            <h3 className={styles.statValue} style={{ color: '#6c757d' }}>{getItensInativos().length}</h3>
+                            <p className={styles.statLabel}>Itens Inativos</p>
+                        </Card.Body>
+                    </Card>
+                </Col>
+                <Col md={3}>
                     <Card className={styles.statsCard}>
                         <Card.Body className="text-center">
                             <h3 className={styles.statValue}>{itensSelecionados.size}</h3>
-                            <p className={styles.statLabel}>Itens Selecionados</p>
+                            <p className={styles.statLabel}>Selecionados</p>
                         </Card.Body>
                     </Card>
                 </Col>
-                <Col md={4}>
+                <Col md={3}>
                     <Card className={styles.statsCard}>
                         <Card.Body className="text-center">
                             <small className="text-muted">Criada em</small>
                             <p className={styles.statDate}>
-                                {new Date(listaMae.data_criacao).toLocaleDateString('pt-BR')}
+                                {formatarDataBrasiliaSemHora(listaMae.data_criacao)}
                             </p>
                         </Card.Body>
                     </Card>
@@ -845,6 +1199,14 @@ const ListaMaeConsolidada: React.FC = () => {
                         onClick={() => setMostrarModalImportacao(true)}
                     >
                         <FontAwesomeIcon icon={faPlus} /> Importar Itens em Lote
+                    </Button>
+                    <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={handleAbrirModalBuscaItens}
+                        className="ms-2"
+                    >
+                        <FontAwesomeIcon icon={faSearch} /> Buscar Itens
                     </Button>
                 </Col>
             </Row>
@@ -936,17 +1298,58 @@ const ListaMaeConsolidada: React.FC = () => {
                                     title="Selecionar todos"
                                 />
                             </th>
-                            <th>Nome</th>
-                            <th className="text-center" style={{ width: '100px' }}>Unidade</th>
-                            <th className="text-center" style={{ width: '120px' }}>Qtd Atual</th>
-                            <th className="text-center" style={{ width: '120px' }}>
+                            <th
+                                onClick={() => handleOrdenar('nome')}
+                                style={{ cursor: 'pointer', userSelect: 'none' }}
+                            >
+                                Nome
+                                {ordenacao.campo === 'nome' && (
+                                    <span className="ms-1">
+                                        {ordenacao.direcao === 'asc' ? '▲' : '▼'}
+                                    </span>
+                                )}
+                            </th>
+                            <th
+                                onClick={() => handleOrdenar('unidade')}
+                                style={{ cursor: 'pointer', userSelect: 'none', width: '100px' }}
+                                className="text-center"
+                            >
+                                Unidade
+                                {ordenacao.campo === 'unidade' && (
+                                    <span className="ms-1">
+                                        {ordenacao.direcao === 'asc' ? '▲' : '▼'}
+                                    </span>
+                                )}
+                            </th>
+                            <th
+                                onClick={() => handleOrdenar('quantidade_atual')}
+                                style={{ cursor: 'pointer', userSelect: 'none', width: '120px' }}
+                                className="text-center"
+                            >
+                                Qtd Atual
+                                {ordenacao.campo === 'quantidade_atual' && (
+                                    <span className="ms-1">
+                                        {ordenacao.direcao === 'asc' ? '▲' : '▼'}
+                                    </span>
+                                )}
+                            </th>
+                            <th
+                                onClick={() => handleOrdenar('quantidade_minima')}
+                                style={{ cursor: 'pointer', userSelect: 'none', width: '120px' }}
+                                className="text-center"
+                            >
                                 Qtd Mín
+                                {ordenacao.campo === 'quantidade_minima' && (
+                                    <span className="ms-1">
+                                        {ordenacao.direcao === 'asc' ? '▲' : '▼'}
+                                    </span>
+                                )}
                                 {!modoEdicaoLote ? (
                                     <Button
                                         variant="outline-light"
                                         size="sm"
                                         className="ms-2"
-                                        onClick={ativarModoLote}
+                                        onClick={(e) => { e.stopPropagation(); ativarModoLote(); }}
                                         title="Editar todas as quantidades mínimas"
                                     >
                                         <FontAwesomeIcon icon={faEdit} />
@@ -957,7 +1360,7 @@ const ListaMaeConsolidada: React.FC = () => {
                                             variant="success"
                                             size="sm"
                                             className="ms-1"
-                                            onClick={salvarQuantidadesLote}
+                                            onClick={(e) => { e.stopPropagation(); salvarQuantidadesLote(); }}
                                             title="Salvar todas"
                                         >
                                             ✓
@@ -966,7 +1369,7 @@ const ListaMaeConsolidada: React.FC = () => {
                                             variant="secondary"
                                             size="sm"
                                             className="ms-1"
-                                            onClick={cancelarModoLote}
+                                            onClick={(e) => { e.stopPropagation(); cancelarModoLote(); }}
                                             title="Cancelar"
                                         >
                                             ✕
@@ -974,7 +1377,18 @@ const ListaMaeConsolidada: React.FC = () => {
                                     </>
                                 )}
                             </th>
-                            <th className="text-center" style={{ width: '100px' }}>Pedido</th>
+                            <th
+                                onClick={() => handleOrdenar('pedido')}
+                                style={{ cursor: 'pointer', userSelect: 'none', width: '100px' }}
+                                className="text-center"
+                            >
+                                Pedido
+                                {ordenacao.campo === 'pedido' && (
+                                    <span className="ms-1">
+                                        {ordenacao.direcao === 'asc' ? '▲' : '▼'}
+                                    </span>
+                                )}
+                            </th>
                             <th className="text-center" style={{ width: '100px' }}>Ações</th>
                         </tr>
                     </thead>
@@ -1009,7 +1423,7 @@ const ListaMaeConsolidada: React.FC = () => {
                                     className="form-control form-control-sm"
                                     placeholder="0"
                                     value={novoItem.quantidade_atual}
-                                    onChange={(e) => setNovoItem({ ...novoItem, quantidade_atual: parseFloat(e.target.value) || 0 })}
+                                    onChange={(e) => setNovoItem({ ...novoItem, quantidade_atual: e.target.value })}
                                 />
                             </td>
                             <td>
@@ -1019,12 +1433,18 @@ const ListaMaeConsolidada: React.FC = () => {
                                     className="form-control form-control-sm"
                                     placeholder="0"
                                     value={novoItem.quantidade_minima}
-                                    onChange={(e) => setNovoItem({ ...novoItem, quantidade_minima: parseFloat(e.target.value) || 0 })}
+                                    onChange={(e) => setNovoItem({ ...novoItem, quantidade_minima: e.target.value })}
                                 />
                             </td>
                             <td className="text-center">
                                 <Badge bg="info">
-                                    {calcularPedido(novoItem.quantidade_minima, novoItem.quantidade_atual)}
+                                    {(() => {
+                                        const qtdMinParsed = novoItem.quantidade_minima === '' ? 0 : parseFloat(novoItem.quantidade_minima);
+                                        const qtdAtualParsed = novoItem.quantidade_atual === '' ? 0 : parseFloat(novoItem.quantidade_atual);
+                                        const qtdMin = Number.isNaN(qtdMinParsed) ? 0 : qtdMinParsed;
+                                        const qtdAtual = Number.isNaN(qtdAtualParsed) ? 0 : qtdAtualParsed;
+                                        return calcularPedido(qtdMin, qtdAtual);
+                                    })()}
                                 </Badge>
                             </td>
                             <td className="text-center">
@@ -1041,12 +1461,18 @@ const ListaMaeConsolidada: React.FC = () => {
 
                         {/* Itens salvos */}
                         {getItensFiltrados().length > 0 ? (
-                            getItensFiltrados().map((item) => (
-                                <tr key={item.id} className={item.pedido && item.pedido > 0 ? styles.warningRow : ''}>
+                            getItensFiltrados().map((item) => {
+                                const isSelected = item.id ? itensSelecionados.has(item.id) : false;
+                                const rowClassName = [
+                                    item.pedido && item.pedido > 0 ? styles.warningRow : '',
+                                    isSelected ? styles.selectedRow : ''
+                                ].filter(Boolean).join(' ');
+                                return (
+                                <tr key={item.id} className={rowClassName}>
                                     <td className="text-center">
                                         <input
                                             type="checkbox"
-                                            checked={item.id ? itensSelecionados.has(item.id) : false}
+                                            checked={isSelected}
                                             onChange={() => toggleItemSelecionado(item.id)}
                                         />
                                     </td>
@@ -1090,12 +1516,12 @@ const ListaMaeConsolidada: React.FC = () => {
                                                 step="0.01"
                                                 min="0"
                                                 className="form-control form-control-sm"
-                                                value={quantidadesLote[item.id] ?? item.quantidade_minima}
+                                                value={quantidadesLote[item.id] ?? String(item.quantidade_minima)}
                                                 onChange={(e) => {
                                                     if (item.id) {
                                                         setQuantidadesLote({
                                                             ...quantidadesLote,
-                                                            [item.id]: parseFloat(e.target.value) || 0
+                                                            [item.id]: e.target.value
                                                         });
                                                     }
                                                 }}
@@ -1126,6 +1552,15 @@ const ListaMaeConsolidada: React.FC = () => {
                                     </td>
                                     <td className="text-center">
                                         <Button
+                                            variant={item.usa_threshold ? "secondary" : "outline-secondary"}
+                                            size="sm"
+                                            onClick={() => abrirModalConfig(item)}
+                                            title="Configurar threshold/fardo"
+                                            className="me-1"
+                                        >
+                                            <FontAwesomeIcon icon={faCog} />
+                                        </Button>
+                                        <Button
                                             variant="outline-danger"
                                             size="sm"
                                             onClick={() => item.id && handleDeletarItem(item.id)}
@@ -1135,12 +1570,14 @@ const ListaMaeConsolidada: React.FC = () => {
                                         </Button>
                                     </td>
                                 </tr>
-                            ))
+                            )})
                         ) : (
                             <tr>
                                 <td colSpan={7} className="text-center text-muted py-5">
                                     {listaMae.itens && listaMae.itens.length > 0
-                                        ? '❌ Nenhum item corresponde aos filtros aplicados'
+                                        ? (getItensInativos().length === listaMae.itens.length
+                                            ? '📋 Todos os itens estão inativos (veja seção abaixo)'
+                                            : '❌ Nenhum item corresponde aos filtros aplicados')
                                         : 'Nenhum item adicionado ainda'}
                                 </td>
                             </tr>
@@ -1157,6 +1594,85 @@ const ListaMaeConsolidada: React.FC = () => {
                     {filtroUnidade && ` • Unidade: ${filtroUnidade}`}
                     {(filtroPedidoMin || filtroPedidoMax) && ` • Pedido: ${filtroPedidoMin || '0'} - ${filtroPedidoMax || '∞'}`}
                 </Alert>
+            )}
+
+            {/* Seção de Itens Inativos (quantidade_minima = 0) */}
+            {getItensInativos().length > 0 && (
+                <Card className="mt-4">
+                    <Card.Header
+                        onClick={() => setMostrarItensInativos(!mostrarItensInativos)}
+                        style={{ cursor: 'pointer' }}
+                        className="d-flex justify-content-between align-items-center"
+                    >
+                        <div>
+                            <Badge bg="secondary" className="me-2">{getItensInativos().length}</Badge>
+                            <strong>Itens Inativos</strong>
+                            <small className="text-muted ms-2">(quantidade mínima = 0, não visíveis para colaboradores)</small>
+                        </div>
+                        <span>{mostrarItensInativos ? '▲' : '▼'}</span>
+                    </Card.Header>
+                    {mostrarItensInativos && (
+                        <Card.Body className="p-0">
+                            <Table striped bordered hover responsive size="sm" className="mb-0">
+                                <thead>
+                                    <tr className="bg-light">
+                                        <th>Nome</th>
+                                        <th className="text-center" style={{ width: '100px' }}>Unidade</th>
+                                        <th className="text-center" style={{ width: '120px' }}>Qtd Mín</th>
+                                        <th className="text-center" style={{ width: '100px' }}>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {getItensInativos().map((item) => (
+                                        <tr key={item.id}>
+                                            <td>{item.nome}</td>
+                                            <td className="text-center">
+                                                <Badge bg="light" text="dark">{item.unidade}</Badge>
+                                            </td>
+                                            <td
+                                                className="text-center"
+                                                onDoubleClick={() => item.id && iniciarEdicao(item.id, 'quantidade_minima', item.quantidade_minima)}
+                                                style={{ cursor: 'pointer' }}
+                                                title="Duplo clique para editar e reativar"
+                                            >
+                                                {(editandoCampo && editandoCampo.itemId === item.id && editandoCampo.campo === 'quantidade_minima') ? (
+                                                    <input
+                                                        ref={campoEditavelRef}
+                                                        type="number"
+                                                        step="0.01"
+                                                        min="0"
+                                                        className="form-control form-control-sm"
+                                                        value={valorEditando}
+                                                        onChange={(e) => setValorEditando(e.target.value)}
+                                                        onKeyDown={handleKeyDown}
+                                                        onBlur={salvarEdicao}
+                                                    />
+                                                ) : (
+                                                    <Badge bg="secondary">{item.quantidade_minima.toFixed(2)}</Badge>
+                                                )}
+                                            </td>
+                                            <td className="text-center">
+                                                <Button
+                                                    variant="outline-danger"
+                                                    size="sm"
+                                                    onClick={() => item.id && handleDeletarItem(item.id)}
+                                                    title="Remover item da lista"
+                                                >
+                                                    <FontAwesomeIcon icon={faTrash} />
+                                                </Button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </Table>
+                            <div className="p-2 bg-light border-top">
+                                <small className="text-muted">
+                                    💡 <strong>Dica:</strong> Para reativar um item, dê duplo clique na quantidade mínima e defina um valor maior que 0.
+                                </small>
+                            </div>
+                        </Card.Body>
+                    )}
+                </Card>
             )}
 
             {/* Ações finais */}
@@ -1233,6 +1749,231 @@ const ListaMaeConsolidada: React.FC = () => {
                             <>
                                 <FontAwesomeIcon icon={faCheck} /> Confirmar
                             </>
+                        )}
+                    </Button>
+                </Modal.Footer>
+            </Modal>
+
+            {/* Modal de Configuração de Threshold/Fardo */}
+            <Modal show={mostrarModalConfig} onHide={() => setMostrarModalConfig(false)} centered>
+                <Modal.Header closeButton>
+                    <Modal.Title>
+                        <FontAwesomeIcon icon={faCog} /> Configurar Item
+                    </Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    {itemConfigurando && (
+                        <>
+                            <Alert variant="info" className="mb-3">
+                                <strong>Item:</strong> {itemConfigurando.nome}
+                            </Alert>
+
+                            <Form.Group className="mb-3">
+                                <Form.Label><strong>Quando estoque ≤</strong></Form.Label>
+                                <Form.Control
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                    value={configForm.quantidade_minima}
+                                    onChange={(e) => setConfigForm({...configForm, quantidade_minima: e.target.value})}
+                                />
+                                <Form.Text className="text-muted">
+                                    Quando o estoque atingir esse valor, será gerado um pedido.
+                                </Form.Text>
+                            </Form.Group>
+
+                            <Form.Group className="mb-3">
+                                <Form.Label><strong>Pedir quantas unidades</strong></Form.Label>
+                                <Form.Control
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                    value={configForm.quantidade_por_fardo}
+                                    onChange={(e) => setConfigForm({...configForm, quantidade_por_fardo: e.target.value})}
+                                />
+                                <Form.Text className="text-muted">
+                                    Quantidade a ser pedida quando atingir o mínimo.
+                                </Form.Text>
+                            </Form.Group>
+
+                            <Alert variant="info">
+                                <small>
+                                    <strong>Resumo:</strong> Quando estoque ≤ {configForm.quantidade_minima || '?'},
+                                    pedir {configForm.quantidade_por_fardo || '?'} unidades.
+                                </small>
+                            </Alert>
+                        </>
+                    )}
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="secondary" onClick={() => setMostrarModalConfig(false)}>
+                        Cancelar
+                    </Button>
+                    <Button
+                        variant="primary"
+                        onClick={salvarConfig}
+                        disabled={salvandoConfig}
+                    >
+                        {salvandoConfig ? (
+                            <>
+                                <Spinner as="span" animation="border" size="sm" className="me-2" />
+                                Salvando...
+                            </>
+                        ) : (
+                            <>
+                                <FontAwesomeIcon icon={faCheck} /> Salvar
+                            </>
+                        )}
+                    </Button>
+                </Modal.Footer>
+            </Modal>
+
+            {/* Modal de Busca de Itens */}
+            <Modal show={mostrarModalBuscaItens} onHide={handleFecharModalBuscaItens} size="lg" centered>
+                <Modal.Header closeButton>
+                    <Modal.Title>
+                        <FontAwesomeIcon icon={faSearch} /> Buscar Itens
+                    </Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    {erroBuscaItens && (
+                        <Alert variant="danger" dismissible onClose={() => setErroBuscaItens(null)}>
+                            {erroBuscaItens}
+                        </Alert>
+                    )}
+
+                    <Form.Group className="mb-3">
+                        <Form.Label><strong>Pesquisar itens</strong></Form.Label>
+                        <Form.Control
+                            type="text"
+                            placeholder="Buscar por item ou fornecedor..."
+                            value={buscaItensTermo}
+                            onChange={(e) => setBuscaItensTermo(e.target.value)}
+                        />
+                    </Form.Group>
+
+                    <div className="d-flex flex-wrap align-items-center gap-2 mb-3">
+                        <div className="btn-group" role="group" aria-label="Filtro de origem">
+                            <Button
+                                type="button"
+                                variant={filtroOrigemBusca === 'lista_global' ? 'primary' : 'outline-primary'}
+                                onClick={() => setFiltroOrigemBusca('lista_global')}
+                            >
+                                Lista Global
+                            </Button>
+                            <Button
+                                type="button"
+                                variant={filtroOrigemBusca === 'regional' ? 'primary' : 'outline-primary'}
+                                onClick={() => setFiltroOrigemBusca('regional')}
+                            >
+                                Fornecedores Regionais
+                            </Button>
+                            <Button
+                                type="button"
+                                variant={filtroOrigemBusca === 'todas' ? 'primary' : 'outline-primary'}
+                                onClick={() => setFiltroOrigemBusca('todas')}
+                            >
+                                Ambos
+                            </Button>
+                        </div>
+                        <div className="text-muted ms-auto">
+                            <small>
+                                Mostrando {itensBuscaFiltrados.length} de {itensBusca.length} itens
+                            </small>
+                        </div>
+                    </div>
+
+                    {carregandoBuscaItens ? (
+                        <div className="text-center py-4">
+                            <Spinner animation="border" />
+                            <p className="mt-2">Carregando itens...</p>
+                        </div>
+                    ) : itensBuscaFiltrados.length === 0 ? (
+                        <Alert variant="info">
+                            Nenhum item encontrado. Ajuste os filtros ou a busca.
+                        </Alert>
+                    ) : (
+                        <div
+                            style={{
+                                maxHeight: '360px',
+                                overflowY: 'auto',
+                                border: '1px solid #dee2e6',
+                                borderRadius: '4px'
+                            }}
+                        >
+                            <Table hover className="mb-0">
+                                <thead style={{ position: 'sticky', top: 0, backgroundColor: '#fff', zIndex: 1 }}>
+                                    <tr>
+                                        <th style={{ width: '40px' }}></th>
+                                        <th>Item</th>
+                                        <th style={{ width: '120px' }}>Unidade</th>
+                                        <th>Origem</th>
+                                        <th style={{ width: '130px' }}>Qtd. Mín.</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {itensBuscaFiltrados.map((item) => {
+                                        const isSelected = itensSelecionadosBusca.has(item.id);
+                                        const quantidade = itensSelecionadosBusca.get(item.id) ?? '1';
+
+                                        return (
+                                            <tr key={item.id} className={isSelected ? styles.selectedRow : ''}>
+                                                <td>
+                                                    <Form.Check
+                                                        type="checkbox"
+                                                        checked={isSelected}
+                                                        onChange={(e) => {
+                                                            if (e.target.checked) {
+                                                                handleToggleItemBusca(item, '1');
+                                                            } else {
+                                                                handleToggleItemBusca(item, null);
+                                                            }
+                                                        }}
+                                                    />
+                                                </td>
+                                                <td><strong>{item.nome}</strong></td>
+                                                <td>{item.unidade}</td>
+                                                <td>{getOrigemBadgeBusca(item)}</td>
+                                                <td>
+                                                    {isSelected && (
+                                                        <Form.Control
+                                                            type="number"
+                                                            min="0.01"
+                                                            step="0.01"
+                                                            value={quantidade}
+                                                            onChange={(e) => handleToggleItemBusca(item, e.target.value)}
+                                                            size="sm"
+                                                        />
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </Table>
+                        </div>
+                    )}
+
+                    <div className="mt-2 text-muted">
+                        <small>{itensSelecionadosBusca.size} selecionado(s)</small>
+                    </div>
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="secondary" onClick={handleFecharModalBuscaItens}>
+                        Cancelar
+                    </Button>
+                    <Button
+                        variant="primary"
+                        onClick={handleAdicionarItensBusca}
+                        disabled={carregandoAdicionarBusca || itensSelecionadosBusca.size === 0}
+                    >
+                        {carregandoAdicionarBusca ? (
+                            <>
+                                <Spinner as="span" animation="border" size="sm" className="me-2" />
+                                Adicionando...
+                            </>
+                        ) : (
+                            'Adicionar Selecionados'
                         )}
                     </Button>
                 </Modal.Footer>

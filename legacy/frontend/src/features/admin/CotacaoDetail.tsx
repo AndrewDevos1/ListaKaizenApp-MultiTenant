@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { Table, Button, Form, Spinner, Alert, Card, Col, Row } from 'react-bootstrap';
 import api from '../../services/api';
+import { formatarDataBrasiliaSemHora } from '../../utils/dateFormatter';
 
 interface CotacaoItem {
     id: number;
@@ -99,7 +100,7 @@ const CotacaoDetail: React.FC = () => {
                 <Card.Body>
                     <Row>
                         <Col md={6}><strong>Fornecedor:</strong> {cotacao.fornecedor.nome}</Col>
-                        <Col md={6}><strong>Data:</strong> {new Date(cotacao.data_cotacao).toLocaleDateString()}</Col>
+                        <Col md={6}><strong>Data:</strong> {formatarDataBrasiliaSemHora(cotacao.data_cotacao)}</Col>
                     </Row>
                 </Card.Body>
             </Card>

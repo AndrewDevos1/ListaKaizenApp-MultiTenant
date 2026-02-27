@@ -1,0 +1,8 @@
+.itemMarcado {
+    background-color: #f8f9fa;
+    opacity: 0.7;
+}
+
+.itemMarcado:hover {
+    background-color: #e9ecef !important;
+}

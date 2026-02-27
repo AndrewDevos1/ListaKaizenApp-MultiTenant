@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Alert, Button, Card } from 'react-bootstrap';
+import { formatarDataHoraBrasilia } from '../utils/dateFormatter';
 
 const AuthDebug: React.FC = () => {
     const [tokenInfo, setTokenInfo] = useState<any>(null);
@@ -41,7 +42,7 @@ const AuthDebug: React.FC = () => {
                 valid: !expired,
                 token: token.substring(0, 50) + '...',
                 payload: payload,
-                expiresAt: new Date(payload.exp * 1000).toLocaleString(),
+                expiresAt: formatarDataHoraBrasilia(new Date(payload.exp * 1000).toISOString()),
                 expired: expired,
                 user: { id: payload.sub, role: payload.role }, // Novo formato
                 message: expired ? '[DEBUG] Token EXPIRADO!' : '[DEBUG] Token valido'

@@ -13,9 +13,14 @@ export class ItemsService {
     });
   }
 
-  async findAll(restauranteId: number) {
+  async findAll(restauranteId: number, fornecedorId?: number) {
     return this.prisma.item.findMany({
-      where: { restauranteId, ativo: true },
+      where: {
+        restauranteId,
+        ativo: true,
+        ...(fornecedorId ? { fornecedorId } : {}),
+      },
+      include: { fornecedor: { select: { id: true, nome: true } } },
       orderBy: { nome: 'asc' },
     });
   }
@@ -53,5 +58,21 @@ export class ItemsService {
       orderBy: { nome: 'asc' },
       take: 20,
     });
+  }
+
+  async exportarCsv(restauranteId: number): Promise<string> {
+    const itens = await this.prisma.item.findMany({
+      where: { restauranteId },
+      include: { fornecedor: { select: { nome: true } } },
+      orderBy: { nome: 'asc' },
+    });
+
+    const header = 'id,nome,unidadeMedida,ativo,fornecedor';
+    const rows = itens.map((item) => {
+      const fornecedor = item.fornecedor?.nome ?? '';
+      return `${item.id},"${item.nome}","${item.unidadeMedida ?? ''}",${item.ativo},"${fornecedor}"`;
+    });
+
+    return [header, ...rows].join('\n');
   }
 }

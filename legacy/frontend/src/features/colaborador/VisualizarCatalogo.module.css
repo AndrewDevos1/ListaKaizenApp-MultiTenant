@@ -1,0 +1,73 @@
+.container {
+    padding: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.header {
+    margin-bottom: 24px;
+}
+
+.searchBox {
+    margin-bottom: 16px;
+}
+
+.badges {
+    margin-bottom: 16px;
+}
+
+.tableDesktop {
+    display: table;
+}
+
+.cardsMobile {
+    display: none;
+}
+
+.itemCard {
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 12px;
+}
+
+.cardRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.cardRow:last-child {
+    border-bottom: none;
+}
+
+.cardLabel {
+    font-weight: 600;
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.cardValue {
+    text-align: right;
+    color: #333;
+}
+
+.loadingState,
+.emptyState {
+    text-align: center;
+    padding: 40px 20px;
+    color: #666;
+}
+
+@media (max-width: 768px) {
+    .tableDesktop {
+        display: none;
+    }
+
+    .cardsMobile {
+        display: block;
+    }
+}

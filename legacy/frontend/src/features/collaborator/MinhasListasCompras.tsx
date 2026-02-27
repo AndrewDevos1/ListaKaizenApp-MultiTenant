@@ -19,6 +19,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../../services/api';
+import { formatarDataBrasiliaSemHora } from '../../utils/dateFormatter';
 import styles from './MinhasListasCompras.module.css';
 
 // Interfaces TypeScript
@@ -69,7 +70,7 @@ const MinhasListasCompras: React.FC = () => {
     // Função para formatar data
     const formatarData = (data: string): string => {
         try {
-            return new Date(data).toLocaleDateString('pt-BR');
+            return formatarDataBrasiliaSemHora(data);
         } catch {
             return 'Data inválida';
         }

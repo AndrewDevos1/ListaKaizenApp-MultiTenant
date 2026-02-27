@@ -1,5 +1,5 @@
 import json
-from kaizen_app.models import Usuario, UserRoles, Lista
+from kaizen_app.models import Usuario, UserRoles, Lista, Restaurante, Fornecedor, Item
 from kaizen_app.extensions import db
 from .conftest import create_user, get_auth_token
 
@@ -35,9 +35,10 @@ def test_create_list_as_collaborator_fails(client, app):
 def test_get_all_lists_as_admin(client, app):
     """Testa se um admin consegue buscar todas as listas."""
     with app.app_context():
+        restaurante = Restaurante.query.first()
         create_user('admin_user_2', 'admin2@test.com', 'adminpass', UserRoles.ADMIN)
         admin_token = get_auth_token(client, 'admin2@test.com', 'adminpass')
-        db.session.add(Lista(nome="Lista para GET"))
+        db.session.add(Lista(nome="Lista para GET", restaurante_id=restaurante.id))
         db.session.commit()
 
         response = client.get('/api/v1/listas', 
@@ -52,10 +53,11 @@ def test_get_all_lists_as_admin(client, app):
 def test_assign_collaborators_to_list(client, app):
     """Testa se um admin consegue atribuir colaboradores a uma lista."""
     with app.app_context():
+        restaurante = Restaurante.query.first()
         create_user('admin_user_3', 'admin3@test.com', 'adminpass', UserRoles.ADMIN)
         admin_token = get_auth_token(client, 'admin3@test.com', 'adminpass')
         colab = create_user('colab_user_2', 'colab2@test.com', 'colabpass', UserRoles.COLLABORATOR)
-        lista = Lista(nome='Lista para Atribuição')
+        lista = Lista(nome='Lista para Atribuição', restaurante_id=restaurante.id)
         db.session.add(lista)
         db.session.commit()
 
@@ -74,11 +76,12 @@ def test_assign_collaborators_to_list(client, app):
 def test_get_dashboard_summary(client, app):
     """Testa o endpoint de resumo do dashboard."""
     with app.app_context():
+        restaurante = Restaurante.query.first()
         create_user('admin_user_4', 'admin4@test.com', 'adminpass', UserRoles.ADMIN)
         admin_token = get_auth_token(client, 'admin4@test.com', 'adminpass')
         # Cria um usuário pendente para o teste
         create_user('pending_user', 'pending@test.com', 'password', UserRoles.COLLABORATOR, aprovado=False)
-        db.session.add(Lista(nome="Outra Lista"))
+        db.session.add(Lista(nome="Outra Lista", restaurante_id=restaurante.id))
         db.session.commit()
 
         response = client.get('/api/admin/dashboard-summary', 
@@ -90,3 +93,30 @@ def test_get_dashboard_summary(client, app):
         assert data['total_users'] == 2
         assert data['pending_users'] == 1
         assert data['total_lists'] == 1
+
+def test_dashboard_summary_itens_por_restaurante(client, app):
+    """Admin deve ver apenas itens do seu restaurante no dashboard."""
+    with app.app_context():
+        rest1 = Restaurante(nome='Rest 1', slug='rest-1', ativo=True)
+        rest2 = Restaurante(nome='Rest 2', slug='rest-2', ativo=True)
+        db.session.add_all([rest1, rest2])
+        db.session.commit()
+
+        create_user('admin_r1', 'adminr1@test.com', 'adminpass', UserRoles.ADMIN, restaurante_id=rest1.id)
+        admin_token = get_auth_token(client, 'adminr1@test.com', 'adminpass')
+
+        fornecedor_r2 = Fornecedor(nome='Fornecedor R2', restaurante_id=rest2.id)
+        db.session.add(fornecedor_r2)
+        db.session.flush()
+        item_r2 = Item(nome='Item R2', unidade_medida='kg', fornecedor_id=fornecedor_r2.id)
+        db.session.add(item_r2)
+        db.session.commit()
+
+    response = client.get(
+        '/api/admin/dashboard-summary',
+        headers={'Authorization': f'Bearer {admin_token}'}
+    )
+
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data['total_items'] == 0

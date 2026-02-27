@@ -1,13 +1,14 @@
 /**
- * Fornecedor Detalhes - Gestão de itens e estoques por fornecedor
+ * Fornecedor Detalhes - Gestão de itens e vinculo com listas
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Container, Card, Table, Button, Modal, Form, Alert, Spinner, Row, Col, Badge } from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faArrowLeft, faEdit, faBox, faPencil, faCheckCircle, faExclamationCircle, faClipboardList } from '@fortawesome/free-solid-svg-icons';
+import { faArrowLeft, faBox, faPlus, faCheckCircle, faExclamationCircle, faClipboardList } from '@fortawesome/free-solid-svg-icons';
 import api from '../../services/api';
+import { formatarDataBrasiliaSemHora } from '../../utils/dateFormatter';
 import styles from './FornecedorDetalhes.module.css';
 
 interface Fornecedor {
@@ -23,6 +24,11 @@ interface Fornecedor {
     }[];
 }
 
+interface Lista {
+    id: number;
+    nome: string;
+}
+
 interface Item {
     id: number;
     nome: string;
@@ -30,35 +36,23 @@ interface Item {
     fornecedor_id: number;
 }
 
-interface Estoque {
-    id: number;
-    item_id: number;
-    quantidade_atual: number;
-    quantidade_minima: number;
-    pedido: number;
-    area_id: number;
-    area?: {
-        id: number;
-        nome: string;
-    };
-    item?: Item;
-}
-
 const FornecedorDetalhes: React.FC = () => {
     const { fornecedorId } = useParams();
     const navigate = useNavigate();
     const [fornecedor, setFornecedor] = useState<Fornecedor | null>(null);
     const [itens, setItens] = useState<Item[]>([]);
-    const [estoques, setEstoques] = useState<{ [key: number]: Estoque[] }>({});
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
+    const [searchTerm, setSearchTerm] = useState('');
 
-    // Estados para modal de editar estoque mínimo
-    const [showEditModal, setShowEditModal] = useState(false);
-    const [editingEstoque, setEditingEstoque] = useState<Estoque | null>(null);
-    const [novoMinimo, setNovoMinimo] = useState('');
-    const [editingLoading, setEditingLoading] = useState(false);
+    // Estados para modal de adicionar item na lista
+    const [showAddModal, setShowAddModal] = useState(false);
+    const [selectedItem, setSelectedItem] = useState<Item | null>(null);
+    const [listas, setListas] = useState<Lista[]>([]);
+    const [listaSelecionadaId, setListaSelecionadaId] = useState('');
+    const [listasLoading, setListasLoading] = useState(false);
+    const [addingItem, setAddingItem] = useState(false);
 
     // Estados para modal de exportação
     const [showExportModal, setShowExportModal] = useState(false);
@@ -75,30 +69,11 @@ const FornecedorDetalhes: React.FC = () => {
             setLoading(true);
             setError(null);
 
-            // Buscar fornecedor
-            const fornRes = await api.get(`/v1/fornecedores/${fornecedorId}`);
-            setFornecedor(fornRes.data);
+            const response = await api.get(`/v1/fornecedores/${fornecedorId}/detalhes-estoque`);
+            const data = response.data || {};
 
-            // Buscar todos os itens
-            const itensRes = await api.get('/v1/items');
-            const itensFornecedor = itensRes.data.filter(
-                (item: Item) => item.fornecedor_id === Number(fornecedorId)
-            );
-            setItens(itensFornecedor);
-
-            // Para cada item, buscar estoques
-            const estoquesMap: { [key: number]: Estoque[] } = {};
-            for (const item of itensFornecedor) {
-                try {
-                    const estRes = await api.get('/v1/estoques', {
-                        params: { item_id: item.id }
-                    });
-                    estoquesMap[item.id] = estRes.data || [];
-                } catch (err) {
-                    estoquesMap[item.id] = [];
-                }
-            }
-            setEstoques(estoquesMap);
+            setFornecedor(data.fornecedor || null);
+            setItens(data.itens || []);
         } catch (err: any) {
             setError(err.response?.data?.error || 'Erro ao carregar dados do fornecedor');
             console.error('Erro ao carregar dados:', err);
@@ -107,30 +82,81 @@ const FornecedorDetalhes: React.FC = () => {
         }
     };
 
-    const handleEditarMinimo = (estoque: Estoque) => {
-        setEditingEstoque(estoque);
-        setNovoMinimo(estoque.quantidade_minima.toString());
-        setShowEditModal(true);
+    const normalizeTexto = (valor: string) =>
+        valor.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+
+    const itensFiltrados = useMemo(() => {
+        if (!searchTerm.trim()) {
+            return itens;
+        }
+        const termo = normalizeTexto(searchTerm);
+        return itens.filter((item) => normalizeTexto(item.nome).includes(termo));
+    }, [itens, searchTerm]);
+
+    const fetchListas = async () => {
+        try {
+            setListasLoading(true);
+            const response = await api.get('/v1/listas');
+            const listasResponse = response.data || [];
+            setListas(listasResponse);
+            if (!listaSelecionadaId && listasResponse.length > 0) {
+                setListaSelecionadaId(String(listasResponse[0].id));
+            }
+        } catch (err: any) {
+            setError(err.response?.data?.error || 'Erro ao carregar listas.');
+        } finally {
+            setListasLoading(false);
+        }
     };
 
-    const handleSalvarMinimo = async () => {
-        if (!editingEstoque || !novoMinimo) return;
+    const handleOpenAddModal = (item: Item) => {
+        setSelectedItem(item);
+        setShowAddModal(true);
+        if (listas.length === 0 && !listasLoading) {
+            fetchListas();
+        }
+    };
+
+    const handleCloseAddModal = () => {
+        setShowAddModal(false);
+        setSelectedItem(null);
+    };
+
+    const handleAdicionarNaLista = async () => {
+        if (!selectedItem || !listaSelecionadaId) {
+            setError('Selecione uma lista para adicionar o item.');
+            return;
+        }
 
         try {
-            setEditingLoading(true);
-            await api.put(`/v1/estoques/${editingEstoque.id}`, {
-                quantidade_minima: parseFloat(novoMinimo)
-            });
-            setSuccessMessage('Estoque mínimo atualizado com sucesso!');
-            setShowEditModal(false);
-            await fetchData();
+            setAddingItem(true);
+            setError(null);
+            const response = await api.post(
+                `/admin/listas/${listaSelecionadaId}/itens?skip_if_exists=1`,
+                {
+                    itens: [
+                        {
+                            id: `fornecedor_${selectedItem.id}`,
+                            quantidade_minima: 1
+                        }
+                    ]
+                }
+            );
+            const data = response.data || {};
+            if (data.errors && data.errors.length > 0) {
+                setError(data.errors[0].error || 'Erro ao adicionar item na lista.');
+                return;
+            }
 
+            const mensagem = data.resultados?.[0]?.message || 'Item adicionado à lista.';
+            setSuccessMessage(mensagem);
+            setShowAddModal(false);
+            setSelectedItem(null);
             setTimeout(() => setSuccessMessage(null), 3000);
         } catch (err: any) {
-            setError(err.response?.data?.error || 'Erro ao atualizar estoque mínimo');
-            console.error('Erro ao salvar:', err);
+            setError(err.response?.data?.error || 'Erro ao adicionar item na lista.');
         } finally {
-            setEditingLoading(false);
+            setAddingItem(false);
         }
     };
 
@@ -155,7 +181,7 @@ const FornecedorDetalhes: React.FC = () => {
             const data = response.data;
 
             let csvContent = '';
-            const now = new Date().toLocaleDateString('pt-BR');
+            const now = formatarDataBrasiliaSemHora(new Date().toISOString());
 
             if (exportType === 'consolidado') {
                 // Exportação consolidada
@@ -338,14 +364,28 @@ const FornecedorDetalhes: React.FC = () => {
 
             {/* Tabela de Itens */}
             <div className={styles.itensSection}>
-                <h4 className={styles.sectionTitle}>
-                    <FontAwesomeIcon icon={faBox} style={{ marginRight: '0.5rem' }} />
-                    Itens deste Fornecedor ({itens.length})
-                </h4>
+                <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3">
+                    <h4 className={styles.sectionTitle}>
+                        <FontAwesomeIcon icon={faBox} style={{ marginRight: '0.5rem' }} />
+                        Itens deste Fornecedor (
+                        {searchTerm ? `${itensFiltrados.length} de ${itens.length}` : itens.length})
+                    </h4>
+                    <Form.Control
+                        type="text"
+                        placeholder="Buscar item..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        style={{ maxWidth: '320px' }}
+                    />
+                </div>
 
                 {itens.length === 0 ? (
                     <Alert variant="info">
                         <p className="mb-0">Nenhum item cadastrado para este fornecedor.</p>
+                    </Alert>
+                ) : itensFiltrados.length === 0 ? (
+                    <Alert variant="info">
+                        <p className="mb-0">Nenhum item encontrado para esse filtro.</p>
                     </Alert>
                 ) : (
                     <div className={styles.tableWrapper}>
@@ -354,119 +394,75 @@ const FornecedorDetalhes: React.FC = () => {
                                 <tr>
                                     <th>Nome do Item</th>
                                     <th>Unidade</th>
-                                    <th>Área</th>
-                                    <th className={styles.thNumero}>Estoque Atual</th>
-                                    <th className={styles.thNumero}>Estoque Mínimo</th>
-                                    <th className={styles.thNumero}>Pedido</th>
                                     <th>Ações</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {itens.map(item => {
-                                    const itemEstoques = estoques[item.id] || [];
-
-                                    if (itemEstoques.length === 0) {
-                                        return (
-                                            <tr key={item.id} className={styles.rowSemEstoque}>
-                                                <td><strong>{item.nome}</strong></td>
-                                                <td>{item.unidade_medida}</td>
-                                                <td colSpan={5} className="text-muted">
-                                                    Sem estoque cadastrado
-                                                </td>
-                                            </tr>
-                                        );
-                                    }
-
-                                    return itemEstoques.map((estoque, idx) => (
-                                        <tr key={`${item.id}-${estoque.id}`} className={styles.rowEstoque}>
-                                            {idx === 0 && (
-                                                <>
-                                                    <td rowSpan={itemEstoques.length} className={styles.tdItemNome}>
-                                                        <strong>{item.nome}</strong>
-                                                    </td>
-                                                    <td rowSpan={itemEstoques.length}>{item.unidade_medida}</td>
-                                                </>
-                                            )}
-                                            <td>{estoque.area?.nome || 'Sem área'}</td>
-                                            <td className={`${styles.tdNumero} ${styles.tdAtual}`}>
-                                                {estoque.quantidade_atual}
-                                            </td>
-                                            <td className={`${styles.tdNumero} ${styles.tdMinimo}`}>
-                                                {estoque.quantidade_minima}
-                                            </td>
-                                            <td
-                                                className={`${styles.tdNumero} ${
-                                                    estoque.pedido > 0 ? styles.tdPedidoAtivo : styles.tdPedidoZero
-                                                }`}
+                                {itensFiltrados.map((item) => (
+                                    <tr key={item.id}>
+                                        <td className={styles.tdItemNome}>
+                                            <strong>{item.nome}</strong>
+                                        </td>
+                                        <td>{item.unidade_medida}</td>
+                                        <td className={styles.tdAcoes}>
+                                            <Button
+                                                size="sm"
+                                                variant="success"
+                                                onClick={() => handleOpenAddModal(item)}
+                                                title="Adicionar item na lista"
                                             >
-                                                <strong>{estoque.pedido}</strong>
-                                            </td>
-                                            <td className={styles.tdAcoes}>
-                                                <Button
-                                                    size="sm"
-                                                    variant="warning"
-                                                    onClick={() => handleEditarMinimo(estoque)}
-                                                    title="Editar estoque mínimo"
-                                                >
-                                                    <FontAwesomeIcon icon={faPencil} />
-                                                </Button>
-                                            </td>
-                                        </tr>
-                                    ));
-                                })}
+                                                <FontAwesomeIcon icon={faPlus} />
+                                            </Button>
+                                        </td>
+                                    </tr>
+                                ))}
                             </tbody>
                         </Table>
                     </div>
                 )}
             </div>
 
-            {/* Modal Editar Estoque Mínimo */}
-            <Modal show={showEditModal} onHide={() => setShowEditModal(false)} centered>
+            {/* Modal Adicionar Item em Lista */}
+            <Modal show={showAddModal} onHide={handleCloseAddModal} centered>
                 <Modal.Header closeButton>
-                    <Modal.Title>
-                        <FontAwesomeIcon icon={faEdit} style={{ marginRight: '0.5rem' }} />
-                        Editar Estoque Mínimo
-                    </Modal.Title>
+                    <Modal.Title>Adicionar item na lista</Modal.Title>
                 </Modal.Header>
                 <Modal.Body>
-                    <Form>
-                        <Form.Group className="mb-3">
-                            <Form.Label>
-                                <strong>Item:</strong> {editingEstoque?.item?.nome}
-                            </Form.Label>
+                    <p className="mb-3">
+                        <strong>Item:</strong> {selectedItem?.nome || '-'}
+                    </p>
+                    {listasLoading ? (
+                        <div className="text-center py-3">
+                            <Spinner animation="border" />
+                        </div>
+                    ) : listas.length === 0 ? (
+                        <Alert variant="info">Nenhuma lista encontrada.</Alert>
+                    ) : (
+                        <Form.Group>
+                            <Form.Label>Lista de destino</Form.Label>
+                            <Form.Select
+                                value={listaSelecionadaId}
+                                onChange={(e) => setListaSelecionadaId(e.target.value)}
+                            >
+                                {listas.map((lista) => (
+                                    <option key={lista.id} value={String(lista.id)}>
+                                        {lista.nome}
+                                    </option>
+                                ))}
+                            </Form.Select>
                         </Form.Group>
-                        <Form.Group className="mb-3">
-                            <Form.Label>
-                                <strong>Estoque Atual:</strong> {editingEstoque?.quantidade_atual}
-                            </Form.Label>
-                        </Form.Group>
-                        <Form.Group className="mb-3">
-                            <Form.Label>Quantidade Mínima *</Form.Label>
-                            <Form.Control
-                                type="number"
-                                step="0.01"
-                                value={novoMinimo}
-                                onChange={(e) => setNovoMinimo(e.target.value)}
-                                placeholder="Digite a quantidade mínima"
-                                required
-                            />
-                        </Form.Group>
-                        {editingEstoque && (
-                            <Form.Group className="mb-3">
-                                <Form.Label className={styles.pedidoPreview}>
-                                    <strong>Pedido (calculado automaticamente):</strong>{' '}
-                                    {Math.max(parseFloat(novoMinimo || '0') - editingEstoque.quantidade_atual, 0)}
-                                </Form.Label>
-                            </Form.Group>
-                        )}
-                    </Form>
+                    )}
                 </Modal.Body>
                 <Modal.Footer>
-                    <Button variant="secondary" onClick={() => setShowEditModal(false)} disabled={editingLoading}>
+                    <Button variant="secondary" onClick={handleCloseAddModal}>
                         Cancelar
                     </Button>
-                    <Button variant="primary" onClick={handleSalvarMinimo} disabled={editingLoading || !novoMinimo}>
-                        {editingLoading ? 'Salvando...' : 'Salvar'}
+                    <Button
+                        variant="primary"
+                        onClick={handleAdicionarNaLista}
+                        disabled={addingItem || listasLoading || listas.length === 0}
+                    >
+                        {addingItem ? 'Adicionando...' : 'Adicionar'}
                     </Button>
                 </Modal.Footer>
             </Modal>

@@ -1,5 +1,5 @@
-import { IsNotEmpty, IsString } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { IsInt, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateItemDto {
   @ApiProperty({ example: 'Arroz 5kg' })
@@ -11,4 +11,9 @@ export class CreateItemDto {
   @IsString()
   @IsNotEmpty()
   unidadeMedida: string;
+
+  @ApiPropertyOptional({ example: 1 })
+  @IsInt()
+  @IsOptional()
+  fornecedorId?: number;
 }

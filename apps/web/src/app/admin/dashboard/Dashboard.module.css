@@ -38,6 +38,11 @@
   margin-bottom: 3rem;
 }
 
+.widgetLinkCard {
+  text-decoration: none;
+  color: inherit;
+}
+
 /* Widget Card */
 .widgetCard {
   background: var(--bg-secondary);
@@ -139,6 +144,16 @@
   margin-bottom: 1rem;
 }
 
+.widgetLabel {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 0;
+  line-height: 1.4;
+}
+
 /* Widget Title */
 .widgetTitle {
   font-size: 0.85rem;
@@ -188,6 +203,73 @@
 .widgetChangePercent {
   font-size: 0.75rem;
   opacity: 0.8;
+}
+
+.cardBox {
+  background: var(--bg-secondary);
+  border-radius: 16px;
+  box-shadow: var(--card-shadow);
+  padding: 1.25rem;
+  margin-bottom: 2rem;
+}
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.cardBodyCentered {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--text-secondary);
+}
+
+.cardLink {
+  color: var(--color-primary);
+  text-decoration: none;
+  font-weight: 700;
+}
+
+.tableWrapper {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th,
+.table td {
+  padding: 0.75rem 0.5rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.emptyCell {
+  text-align: center;
+  color: var(--text-secondary);
+  padding: 1rem 0.5rem;
+}
+
+.errorBox {
+  background: #fff3f3;
+  color: #b02020;
+  border: 1px solid #ffcaca;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  margin-bottom: 1rem;
+}
+
+.loadingBox {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--text-secondary);
+  margin-bottom: 1rem;
 }
 
 /* Quick Actions */

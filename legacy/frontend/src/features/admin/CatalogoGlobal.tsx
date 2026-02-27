@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Table, Spinner, Alert, Badge, Form, InputGroup, Button, Modal } from 'react-bootstrap';
 import api from '../../services/api';
+import { formatarDataBrasiliaSemHora } from '../../utils/dateFormatter';
 import styles from './CatalogoGlobal.module.css';
+import { useAuth } from '../../context/AuthContext';
 
 interface CatalogoItem {
     id: number;
@@ -17,7 +19,14 @@ interface CatalogoResponse {
     total: number;
 }
 
+interface Restaurante {
+    id: number;
+    nome: string;
+}
+
 const CatalogoGlobal: React.FC = () => {
+    const { user } = useAuth();
+    const isSuperAdmin = user?.role === 'SUPER_ADMIN';
     const [itens, setItens] = useState<CatalogoItem[]>([]);
     const [filteredItens, setFilteredItens] = useState<CatalogoItem[]>([]);
     const [isLoading, setIsLoading] = useState(false);
@@ -28,13 +37,31 @@ const CatalogoGlobal: React.FC = () => {
     const [nomeEdit, setNomeEdit] = useState('');
     const [unidadeEdit, setUnidadeEdit] = useState('');
     const [isSaving, setIsSaving] = useState(false);
+    const [showAddModal, setShowAddModal] = useState(false);
+    const [nomeNovo, setNomeNovo] = useState('');
+    const [unidadeNova, setUnidadeNova] = useState('');
+    const [restaurantes, setRestaurantes] = useState<Restaurante[]>([]);
+    const [restauranteSelecionado, setRestauranteSelecionado] = useState<string>('all');
 
-    const fetchData = async () => {
+    const fetchRestaurantes = useCallback(async () => {
+        try {
+            const response = await api.get('/admin/restaurantes');
+            setRestaurantes(response.data.restaurantes || []);
+        } catch (err: any) {
+            console.error('[CatalogoGlobal] Erro ao carregar restaurantes:', err);
+            setError(err.response?.data?.error || 'Erro ao carregar restaurantes.');
+        }
+    }, []);
+
+    const fetchData = useCallback(async () => {
         setIsLoading(true);
         setError('');
         try {
             console.log('[CatalogoGlobal] Buscando catálogo...');
-            const response = await api.get<CatalogoResponse>('/admin/catalogo-global');
+            const params = isSuperAdmin && restauranteSelecionado !== 'all'
+                ? { restaurante_id: restauranteSelecionado }
+                : undefined;
+            const response = await api.get<CatalogoResponse>('/admin/catalogo-global', { params });
             console.log('[CatalogoGlobal] Resposta:', response.data);
 
             const itensData = response.data.itens || [];
@@ -48,11 +75,17 @@ const CatalogoGlobal: React.FC = () => {
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [isSuperAdmin, restauranteSelecionado]);
+
+    useEffect(() => {
+        if (isSuperAdmin) {
+            fetchRestaurantes();
+        }
+    }, [isSuperAdmin, fetchRestaurantes]);
 
     useEffect(() => {
         fetchData();
-    }, []);
+    }, [fetchData]);
 
     useEffect(() => {
         if (!itens || !Array.isArray(itens)) {
@@ -73,8 +106,7 @@ const CatalogoGlobal: React.FC = () => {
 
     const formatDate = (dateStr: string | null) => {
         if (!dateStr) return '-';
-        const date = new Date(dateStr);
-        return date.toLocaleDateString('pt-BR');
+        return formatarDataBrasiliaSemHora(dateStr);
     };
 
     const handleEditClick = (item: CatalogoItem) => {
@@ -133,6 +165,55 @@ const CatalogoGlobal: React.FC = () => {
         }
     };
 
+    const handleAddItem = async () => {
+        if (!nomeNovo.trim()) {
+            setError('Nome do item é obrigatório.');
+            return;
+        }
+        if (!unidadeNova.trim()) {
+            setError('Unidade é obrigatória.');
+            return;
+        }
+        if (isSuperAdmin && restauranteSelecionado === 'all') {
+            setError('Selecione um restaurante para adicionar o item.');
+            return;
+        }
+
+        setIsSaving(true);
+        setError('');
+        try {
+            const payload: Record<string, any> = {
+                nome: nomeNovo.trim(),
+                unidade: unidadeNova.trim()
+            };
+            if (isSuperAdmin) {
+                payload.restaurante_id = Number(restauranteSelecionado);
+            }
+            const response = await api.post('/admin/catalogo-global', payload);
+
+            const novoItem = response.data.item;
+            const updatedItens = [...itens, novoItem];
+            setItens(updatedItens);
+            setFilteredItens(updatedItens);
+
+            setShowAddModal(false);
+            setNomeNovo('');
+            setUnidadeNova('');
+        } catch (err: any) {
+            console.error('[CatalogoGlobal] Erro ao criar item:', err);
+            setError(err.response?.data?.error || 'Erro ao criar item.');
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleCloseAddModal = () => {
+        setShowAddModal(false);
+        setNomeNovo('');
+        setUnidadeNova('');
+        setError('');
+    };
+
     return (
         <div className={styles.container}>
             <div className={styles.header}>
@@ -144,6 +225,31 @@ const CatalogoGlobal: React.FC = () => {
             </div>
 
             {error && <Alert variant="danger" onClose={() => setError('')} dismissible>{error}</Alert>}
+
+            <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                <Button
+                    variant="success"
+                    onClick={() => setShowAddModal(true)}
+                >
+                    <i className="fas fa-plus me-2"></i>
+                    Adicionar Item
+                </Button>
+                {isSuperAdmin && (
+                    <Form.Select
+                        aria-label="Selecionar restaurante"
+                        value={restauranteSelecionado}
+                        onChange={(e) => setRestauranteSelecionado(e.target.value)}
+                        style={{ maxWidth: 320 }}
+                    >
+                        <option value="all">Todos os restaurantes</option>
+                        {restaurantes.map((restaurante) => (
+                            <option key={restaurante.id} value={restaurante.id}>
+                                {restaurante.nome}
+                            </option>
+                        ))}
+                    </Form.Select>
+                )}
+            </div>
 
             <InputGroup className={styles.searchBox}>
                 <InputGroup.Text>
@@ -316,6 +422,60 @@ const CatalogoGlobal: React.FC = () => {
                             <>
                                 <i className="fas fa-save me-1"></i>
                                 Salvar
+                            </>
+                        )}
+                    </Button>
+                </Modal.Footer>
+            </Modal>
+
+            {/* Modal de Adicionar Item */}
+            <Modal show={showAddModal} onHide={handleCloseAddModal}>
+                <Modal.Header closeButton>
+                    <Modal.Title>Adicionar Novo Item ao Catálogo</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    {error && <Alert variant="danger">{error}</Alert>}
+                    <Form>
+                        <Form.Group className="mb-3">
+                            <Form.Label>Nome do Item *</Form.Label>
+                            <Form.Control
+                                type="text"
+                                value={nomeNovo}
+                                onChange={(e) => setNomeNovo(e.target.value)}
+                                placeholder="Ex: Arroz Integral"
+                                disabled={isSaving}
+                                autoFocus
+                            />
+                            <Form.Text className="text-muted">
+                                O nome deve ser único no sistema.
+                            </Form.Text>
+                        </Form.Group>
+                        <Form.Group className="mb-3">
+                            <Form.Label>Unidade *</Form.Label>
+                            <Form.Control
+                                type="text"
+                                value={unidadeNova}
+                                onChange={(e) => setUnidadeNova(e.target.value)}
+                                placeholder="Ex: kg, un, litro"
+                                disabled={isSaving}
+                            />
+                        </Form.Group>
+                    </Form>
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="secondary" onClick={handleCloseAddModal} disabled={isSaving}>
+                        Cancelar
+                    </Button>
+                    <Button variant="success" onClick={handleAddItem} disabled={isSaving}>
+                        {isSaving ? (
+                            <>
+                                <Spinner as="span" animation="border" size="sm" className="me-2" />
+                                Criando...
+                            </>
+                        ) : (
+                            <>
+                                <i className="fas fa-plus me-1"></i>
+                                Criar Item
                             </>
                         )}
                     </Button>

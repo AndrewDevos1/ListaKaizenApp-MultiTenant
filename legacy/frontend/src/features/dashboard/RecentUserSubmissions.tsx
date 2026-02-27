@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, Table, Alert } from 'react-bootstrap';
 import api from '../../services/api';
 import Spinner from '../../components/Spinner';
+import { formatarDataBrasiliaSemHora } from '../../utils/dateFormatter';
 
 interface Pedido {
   id: number;
@@ -61,7 +62,7 @@ const RecentUserSubmissions: React.FC = () => {
                 <tr key={submission.id}>
                   <td>{submission.id}</td>
                   <td>{submission.item.nome}</td>
-                  <td>{new Date(submission.data_pedido).toLocaleDateString()}</td>
+                  <td>{formatarDataBrasiliaSemHora(submission.data_pedido)}</td>
                   <td>{submission.status}</td>
                 </tr>
               ))}

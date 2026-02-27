@@ -6,7 +6,7 @@ import pytest
 from decimal import Decimal
 from kaizen_app import db
 from kaizen_app.models import (
-    Usuario, UserRoles, Item, Area, Fornecedor, 
+    Usuario, UserRoles, Item, Area, Fornecedor, Restaurante,
     Estoque, Lista, ListaMaeItem, Pedido, Cotacao
 )
 from .conftest import create_user
@@ -32,11 +32,13 @@ def colaborador_user(app):
 def fornecedor_padrao(app):
     """Cria um fornecedor padrão para testes"""
     with app.app_context():
+        restaurante = Restaurante.query.first()
         fornecedor = Fornecedor(
             nome="Fornecedor Teste",
             contato="11 99999-9999",
             meio_envio="WhatsApp",
-            responsavel="João Silva"
+            responsavel="João Silva",
+            restaurante_id=restaurante.id
         )
         db.session.add(fornecedor)
         db.session.commit()
@@ -109,7 +111,9 @@ def estoque_sem_deficit(app, fornecedor_padrao, area_padrao):
 def lista_com_itens(app):
     """Cria uma lista com múltiplos itens"""
     with app.app_context():
-        lista = Lista(nome="Lista Completa", descricao="Lista de teste")
+        from kaizen_app.models import ListaItemRef
+        restaurante = Restaurante.query.first()
+        lista = Lista(nome="Lista Completa", descricao="Lista de teste", restaurante_id=restaurante.id)
         db.session.add(lista)
         db.session.flush()
         
@@ -121,13 +125,20 @@ def lista_com_itens(app):
         
         for item_data in itens_data:
             item = ListaMaeItem(
-                lista_mae_id=lista.id,
                 nome=item_data["nome"],
                 unidade=item_data["unidade"],
+                restaurante_id=restaurante.id
+            )
+            db.session.add(item)
+            db.session.flush()
+
+            ref = ListaItemRef(
+                lista_id=lista.id,
+                item_id=item.id,
                 quantidade_atual=item_data["qtd_atual"],
                 quantidade_minima=item_data["qtd_min"]
             )
-            db.session.add(item)
+            db.session.add(ref)
         
         db.session.commit()
         return lista
@@ -157,8 +168,9 @@ def setup_completo_estoque(app):
     Útil para testes de integração.
     """
     with app.app_context():
+        restaurante = Restaurante.query.first()
         # Fornecedor
-        fornecedor = Fornecedor(nome="Fornecedor Completo")
+        fornecedor = Fornecedor(nome="Fornecedor Completo", restaurante_id=restaurante.id)
         db.session.add(fornecedor)
         db.session.flush()
         

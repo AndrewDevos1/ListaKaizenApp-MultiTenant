@@ -1,0 +1,48 @@
+name: Bump frontend version
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  bump-frontend-version:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Bump frontend patch version
+        run: |
+          cd frontend
+          COMMIT_MSG="$(git log -1 --pretty=%B)"
+          if echo "$COMMIT_MSG" | grep -qi "\[major\]"; then
+            BUMP_TYPE="major"
+          elif echo "$COMMIT_MSG" | grep -qi "\[minor\]"; then
+            BUMP_TYPE="minor"
+          else
+            BUMP_TYPE="patch"
+          fi
+          npm version "$BUMP_TYPE" --no-git-tag-version
+
+      - name: Commit and push
+        run: |
+          if git diff --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add frontend/package.json frontend/package-lock.json
+          git commit -m "chore: bump frontend version [skip ci]"
+          git push

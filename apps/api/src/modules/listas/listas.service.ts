@@ -2,10 +2,14 @@ import {
   Injectable,
   NotFoundException,
   ConflictException,
+  UnprocessableEntityException,
 } from '@nestjs/common';
+import { StatusSubmissao } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateListaDto } from './dto/create-lista.dto';
 import { UpdateListaDto } from './dto/update-lista.dto';
+import { AtualizarEstoqueDto } from './dto/atualizar-estoque.dto';
+import { UpdateItemRefDto } from './dto/update-item-ref.dto';
 
 @Injectable()
 export class ListasService {
@@ -149,5 +153,118 @@ export class ListasService {
       },
       orderBy: { nome: 'asc' },
     });
+  }
+
+  // Tarefa 1.1 — Atualizar estoque (colaborador)
+  async atualizarEstoque(
+    listaId: number,
+    restauranteId: number,
+    dto: AtualizarEstoqueDto,
+  ) {
+    // Verifica que a lista pertence ao restaurante do usuário
+    await this.findOne(listaId, restauranteId);
+
+    // Verifica que cada itemRefId pertence à lista informada (isolamento multi-tenant)
+    const itemRefIds = dto.itens.map((i) => i.itemRefId);
+    const refsValidas = await this.prisma.listaItemRef.findMany({
+      where: { id: { in: itemRefIds }, listaId },
+      select: { id: true },
+    });
+
+    if (refsValidas.length !== itemRefIds.length) {
+      throw new NotFoundException(
+        'Um ou mais itens não pertencem à lista informada',
+      );
+    }
+
+    const atualizados = await Promise.all(
+      dto.itens.map((item) =>
+        this.prisma.listaItemRef.update({
+          where: { id: item.itemRefId },
+          data: { quantidadeAtual: item.quantidadeAtual },
+          include: { item: true },
+        }),
+      ),
+    );
+
+    return atualizados;
+  }
+
+  // Tarefa 2.4 — Atualizar configuração de item ref (usaThreshold, qtdFardo, quantidadeMinima)
+  async updateItemRef(
+    listaId: number,
+    itemRefId: number,
+    dto: UpdateItemRefDto,
+    restauranteId: number,
+  ) {
+    // Verificar que a lista pertence ao restaurante
+    await this.findOne(listaId, restauranteId);
+
+    // Verificar que o itemRef pertence à lista
+    const itemRef = await this.prisma.listaItemRef.findFirst({
+      where: { id: itemRefId, listaId },
+    });
+    if (!itemRef) {
+      throw new NotFoundException('Item não encontrado nesta lista');
+    }
+
+    return this.prisma.listaItemRef.update({
+      where: { id: itemRefId },
+      data: dto,
+      include: { item: { select: { id: true, nome: true, unidadeMedida: true } } },
+    });
+  }
+
+  // Tarefa 1.3 — Submeter lista (colaborador)
+  async submeterLista(
+    listaId: number,
+    restauranteId: number,
+    usuarioId: number,
+  ) {
+    // Busca todos os itensRef da lista
+    await this.findOne(listaId, restauranteId);
+
+    const itensRef = await this.prisma.listaItemRef.findMany({
+      where: { listaId },
+      include: { item: true },
+    });
+
+    // Calcula qtdSolicitada para cada item
+    const itensSolicitados = itensRef
+      .map((ref) => ({
+        itemId: ref.itemId,
+        qtdSolicitada: Math.max(0, ref.quantidadeMinima - ref.quantidadeAtual),
+      }))
+      .filter((i) => i.qtdSolicitada > 0);
+
+    // Se nenhum item precisar de reposição, retorna 422
+    if (itensSolicitados.length === 0) {
+      throw new UnprocessableEntityException(
+        'Todos os itens estão acima do mínimo',
+      );
+    }
+
+    // Cria a Submissao com os Pedidos em uma transação
+    const submissao = await this.prisma.submissao.create({
+      data: {
+        listaId,
+        usuarioId,
+        restauranteId,
+        status: StatusSubmissao.PENDENTE,
+        pedidos: {
+          create: itensSolicitados.map((i) => ({
+            itemId: i.itemId,
+            qtdSolicitada: i.qtdSolicitada,
+          })),
+        },
+      },
+      include: {
+        pedidos: {
+          include: { item: true },
+        },
+      },
+    });
+
+    return submissao;
   }
 }

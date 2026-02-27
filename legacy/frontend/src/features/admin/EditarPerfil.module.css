@@ -180,6 +180,11 @@
   color: var(--link-hover-color, #0056b3);
 }
 
+.infoBadge[data-role="SUPER_ADMIN"] {
+  background-color: #fff3cd;
+  color: #a65c00;
+}
+
 .infoBadge[data-role="COLLABORATOR"] {
   background-color: var(--status-success-soft-bg, #e8f5e9);
   color: var(--status-success-text, #2e7d32);
@@ -224,34 +229,110 @@
 }
 
 /* Responsividade */
-@media (max-width: 768px) {
+@media (max-width: 767px) {
   .container {
-    margin: 1rem auto;
+    margin: 0.5rem auto !important;
+    padding: 0.5rem !important;
+  }
+
+  .header {
+    margin-bottom: 1rem !important;
+  }
+
+  .backButton {
+    font-size: 0.85rem !important;
+    padding: 0.4rem 0.75rem !important;
   }
 
   .pageTitle {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 1rem;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 0.75rem !important;
+    margin-bottom: 1rem !important;
+    padding-bottom: 0.75rem !important;
+  }
+
+  .titleIcon {
+    width: 40px !important;
+    height: 40px !important;
+    font-size: 1.2rem !important;
+    border-radius: 10px !important;
+    flex-shrink: 0;
   }
 
   .pageTitle h1 {
-    font-size: 1.5rem;
+    font-size: 1.25rem !important;
+  }
+
+  .subtitle {
+    font-size: 0.85rem !important;
+    margin-top: 0.15rem !important;
   }
 
   .formCard {
-    padding: 1.5rem;
+    padding: 1rem !important;
+    border-radius: 10px !important;
+  }
+
+  .formGroup {
+    margin-bottom: 1rem !important;
+  }
+
+  .formGroup label {
+    font-size: 0.9rem !important;
+  }
+
+  .input {
+    font-size: 0.9rem !important;
+    padding: 0.6rem 0.75rem !important;
+  }
+
+  .hint {
+    font-size: 0.75rem !important;
+  }
+
+  .infoSection {
+    margin-top: 1.5rem !important;
+    padding-top: 1.5rem !important;
+  }
+
+  .infoSection h3 {
+    font-size: 1rem !important;
+    margin-bottom: 1rem !important;
   }
 
   .infoGrid {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 0.75rem !important;
+  }
+
+  .infoItem {
+    padding: 0.75rem !important;
+  }
+
+  .infoLabel {
+    font-size: 0.75rem !important;
+  }
+
+  .infoValue {
+    font-size: 0.9rem !important;
+  }
+
+  .infoBadge {
+    font-size: 0.75rem !important;
+    padding: 0.3rem 0.6rem !important;
   }
 
   .actions {
-    flex-direction: column-reverse;
+    flex-direction: column-reverse !important;
+    gap: 0.5rem !important;
+    margin-top: 1.5rem !important;
+    padding-top: 1rem !important;
   }
 
   .actions button {
-    width: 100%;
+    width: 100% !important;
+    padding: 0.6rem 1rem !important;
+    font-size: 0.9rem !important;
   }
 }

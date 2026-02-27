@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Table, Alert, Form, Badge, Container, Button } from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { formatarDataBrasilia, parseISODate } from '../../utils/dateFormatter';
 import { faArrowLeft, faClipboardList, faCheckCircle, faTimesCircle, faClock } from '@fortawesome/free-solid-svg-icons';
 import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
@@ -61,7 +62,7 @@ const MinhasSubmissoes: React.FC = () => {
 
                 // Combinar e ordenar por data
                 const todasSubmissoes = [...submissoesNormais, ...listasRapidas]
-                    .sort((a, b) => new Date(b.data_submissao).getTime() - new Date(a.data_submissao).getTime());
+                    .sort((a, b) => parseISODate(b.data_submissao).getTime() - parseISODate(a.data_submissao).getTime());
                 
                 setSubmissoes(todasSubmissoes);
             } catch (err) {
@@ -98,14 +99,7 @@ const MinhasSubmissoes: React.FC = () => {
     };
 
     const formatarData = (dataISO: string) => {
-        const data = new Date(dataISO);
-        return data.toLocaleString('pt-BR', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
+        return formatarDataBrasilia(dataISO);
     };
 
     const filteredSubmissoes = useMemo(() => {

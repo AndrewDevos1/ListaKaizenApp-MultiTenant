@@ -15,6 +15,8 @@ class Config:
     JWT_HEADER_TYPE = 'Bearer'
     JWT_IDENTITY_CLAIM = 'sub'
     JWT_ERROR_MESSAGE_KEY = 'msg'
+    JWT_BLACKLIST_ENABLED = True
+    JWT_BLOCKLIST_ENABLED = True
 
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     

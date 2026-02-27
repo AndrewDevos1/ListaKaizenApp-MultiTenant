@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import styles from './ListaRapida.module.css';
@@ -11,11 +11,13 @@ interface ItemGlobal {
 
 interface ItemSelecionado {
     id?: number;
-    item_global_id: number;
+    item_global_id?: number;  // Optional para itens temporários
     item_nome: string;
     item_unidade: string;
     prioridade: 'prevencao' | 'precisa_comprar' | 'urgente';
     observacao: string;
+    is_temporario?: boolean;  // Flag para identificar itens temporários
+    cadastrar_no_sistema?: boolean;  // Flag para identificar sugestões
 }
 
 const EditarListaRapida: React.FC = () => {
@@ -29,11 +31,13 @@ const EditarListaRapida: React.FC = () => {
     const [itensSelecionados, setItensSelecionados] = useState<ItemSelecionado[]>([]);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        carregarDados();
-    }, [id]);
+    // Estados para o modal de sugestão
+    const [mostrarModalSugestao, setMostrarModalSugestao] = useState(false);
+    const [novoItemNome, setNovoItemNome] = useState('');
+    const [novoItemUnidade, setNovoItemUnidade] = useState('');
+    const [cadastrarNoSistema, setCadastrarNoSistema] = useState(true);
 
-    const carregarDados = async () => {
+    const carregarDados = useCallback(async () => {
         try {
             console.log('[EditarListaRapida] Carregando dados...');
             const listaRes = await api.get(`/auth/listas-rapidas/${id}`);
@@ -44,7 +48,7 @@ const EditarListaRapida: React.FC = () => {
             setStatus(lista.status);
 
             // Verifica se pode editar
-            if (lista.status === 'APROVADO') {
+            if (lista.status === 'aprovada') {
                 alert('⚠️ Esta lista já foi aprovada e não pode mais ser editada');
                 navigate('/collaborator/minhas-listas-rapidas');
                 return;
@@ -72,7 +76,11 @@ const EditarListaRapida: React.FC = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [id, navigate]);
+
+    useEffect(() => {
+        carregarDados();
+    }, [carregarDados]);
 
     // Função para normalizar string (remove acentos e converte para minúsculas)
     const normalizarString = (str: string): string => {
@@ -95,6 +103,40 @@ const EditarListaRapida: React.FC = () => {
             prioridade: 'precisa_comprar',
             observacao: ''
         }]);
+    };
+
+    const handleSugerirItem = () => {
+        if (!novoItemNome.trim()) {
+            alert('⚠️ Preencha o nome do item!');
+            return;
+        }
+
+        if (!novoItemUnidade.trim()) {
+            alert('⚠️ Preencha a unidade do item!');
+            return;
+        }
+
+        // Adicionar item à lista de selecionados com flags especiais
+        const novoItem: ItemSelecionado = {
+            item_nome: novoItemNome.trim(),
+            item_unidade: novoItemUnidade.trim(),
+            prioridade: 'prevencao',
+            observacao: '',
+            is_temporario: !cadastrarNoSistema,
+            cadastrar_no_sistema: cadastrarNoSistema
+        };
+
+        setItensSelecionados([...itensSelecionados, novoItem]);
+
+        // Limpar e fechar modal
+        setNovoItemNome('');
+        setNovoItemUnidade('');
+        setCadastrarNoSistema(true);
+        setMostrarModalSugestao(false);
+
+        alert(cadastrarNoSistema
+            ? '✅ Item adicionado! Será enviado para aprovação do admin ao salvar a lista.'
+            : '✅ Item temporário adicionado à lista!');
     };
 
     const removerItem = async (index: number) => {
@@ -130,17 +172,43 @@ const EditarListaRapida: React.FC = () => {
                 });
             }
 
-            // Adiciona novos itens
-            const novosItens = itensSelecionados.filter(item => !item.id).map(item => ({
-                item_global_id: item.item_global_id,
-                nome: item.item_nome,
-                unidade: item.item_unidade,
-                prioridade: item.prioridade,
-                observacao: item.observacao || ''
-            }));
-            
-            if (novosItens.length > 0) {
-                await api.post(`/auth/listas-rapidas/${id}/itens`, { itens: novosItens });
+            // Separar novos itens por tipo
+            const novosItens = itensSelecionados.filter(item => !item.id);
+            const itensDoCatalogo = novosItens.filter(item => item.item_global_id);
+            const itensTemporarios = novosItens.filter(item => item.is_temporario);
+            const sugestoes = novosItens.filter(item => item.cadastrar_no_sistema);
+
+            // Adicionar itens do catálogo global
+            if (itensDoCatalogo.length > 0) {
+                const itensParaAdicionar = itensDoCatalogo.map(item => ({
+                    item_global_id: item.item_global_id,
+                    nome: item.item_nome,
+                    unidade: item.item_unidade,
+                    prioridade: item.prioridade,
+                    observacao: item.observacao || ''
+                }));
+                await api.post(`/auth/listas-rapidas/${id}/itens`, { itens: itensParaAdicionar });
+            }
+
+            // Adicionar itens temporários
+            for (const item of itensTemporarios) {
+                await api.post(`/auth/listas-rapidas/${id}/itens/temporario`, {
+                    nome_item: item.item_nome,
+                    unidade: item.item_unidade,
+                    prioridade: item.prioridade,
+                    observacao: item.observacao || ''
+                });
+            }
+
+            // Criar sugestões
+            for (const item of sugestoes) {
+                await api.post('/auth/sugestoes', {
+                    lista_rapida_id: parseInt(id!),
+                    nome_item: item.item_nome,
+                    unidade: item.item_unidade,
+                    quantidade: 1,
+                    mensagem_usuario: `Item sugerido durante edição de lista rápida`
+                });
             }
 
             alert('✅ Lista atualizada com sucesso!');
@@ -209,7 +277,24 @@ const EditarListaRapida: React.FC = () => {
 
                 {busca && (
                     <div className={styles.itensDisponiveis}>
-                        <h4>Itens Disponíveis</h4>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                            <h4>Itens Disponíveis</h4>
+                            <button
+                                type="button"
+                                onClick={() => setMostrarModalSugestao(true)}
+                                style={{
+                                    padding: '5px 10px',
+                                    fontSize: '14px',
+                                    backgroundColor: '#28a745',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '4px',
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                <i className="fas fa-plus-circle"></i> Sugerir Novo Item
+                            </button>
+                        </div>
                         {itensDisponiveis.length === 0 ? (
                             <p className={styles.vazio}>Nenhum item encontrado</p>
                         ) : (
@@ -254,7 +339,35 @@ const EditarListaRapida: React.FC = () => {
                             <tbody>
                                 {itensSelecionados.map((item, index) => (
                                     <tr key={index}>
-                                        <td><strong>{item.item_nome}</strong></td>
+                                        <td>
+                                            <strong>{item.item_nome}</strong>
+                                            {item.is_temporario && (
+                                                <span style={{
+                                                    marginLeft: '8px',
+                                                    padding: '2px 6px',
+                                                    backgroundColor: '#ffc107',
+                                                    color: '#000',
+                                                    borderRadius: '3px',
+                                                    fontSize: '10px',
+                                                    fontWeight: 'bold'
+                                                }}>
+                                                    TEMPORÁRIO
+                                                </span>
+                                            )}
+                                            {item.cadastrar_no_sistema && (
+                                                <span style={{
+                                                    marginLeft: '8px',
+                                                    padding: '2px 6px',
+                                                    backgroundColor: '#17a2b8',
+                                                    color: '#fff',
+                                                    borderRadius: '3px',
+                                                    fontSize: '10px',
+                                                    fontWeight: 'bold'
+                                                }}>
+                                                    SUGESTÃO
+                                                </span>
+                                            )}
+                                        </td>
                                         <td>{item.item_unidade}</td>
                                         <td>
                                             <select
@@ -304,7 +417,7 @@ const EditarListaRapida: React.FC = () => {
                     <button onClick={() => navigate('/collaborator/minhas-listas-rapidas')} className={styles.btnSecondary}>
                         Cancelar
                     </button>
-                    {status === 'RASCUNHO' && (
+                    {status === 'rascunho' && (
                         <>
                             <button onClick={salvar} className={styles.btnPrimary}>
                                 <i className="fas fa-save"></i> Salvar Alterações
@@ -316,6 +429,129 @@ const EditarListaRapida: React.FC = () => {
                     )}
                 </div>
             </div>
+
+            {/* Modal de Sugestão */}
+            {mostrarModalSugestao && (
+                <div style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 1000
+                }}>
+                    <div style={{
+                        backgroundColor: 'white',
+                        padding: '30px',
+                        borderRadius: '8px',
+                        maxWidth: '500px',
+                        width: '90%',
+                        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+                    }}>
+                        <h3 style={{ marginTop: 0, marginBottom: '20px' }}>Sugerir Novo Item</h3>
+
+                        <div style={{ marginBottom: '15px' }}>
+                            <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+                                Nome do Item *
+                            </label>
+                            <input
+                                type="text"
+                                value={novoItemNome}
+                                onChange={(e) => setNovoItemNome(e.target.value)}
+                                placeholder="Ex: Abacaxi"
+                                style={{
+                                    width: '100%',
+                                    padding: '8px',
+                                    borderRadius: '4px',
+                                    border: '1px solid #ccc',
+                                    fontSize: '14px'
+                                }}
+                            />
+                        </div>
+
+                        <div style={{ marginBottom: '15px' }}>
+                            <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+                                Unidade *
+                            </label>
+                            <input
+                                type="text"
+                                value={novoItemUnidade}
+                                onChange={(e) => setNovoItemUnidade(e.target.value)}
+                                placeholder="Ex: kg, un, L"
+                                style={{
+                                    width: '100%',
+                                    padding: '8px',
+                                    borderRadius: '4px',
+                                    border: '1px solid #ccc',
+                                    fontSize: '14px'
+                                }}
+                            />
+                        </div>
+
+                        <div style={{ marginBottom: '20px' }}>
+                            <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+                                <input
+                                    type="checkbox"
+                                    checked={cadastrarNoSistema}
+                                    onChange={(e) => setCadastrarNoSistema(e.target.checked)}
+                                    style={{ marginRight: '8px' }}
+                                />
+                                <span>Cadastrar este item no sistema (requer aprovação do admin)</span>
+                            </label>
+                            {!cadastrarNoSistema && (
+                                <p style={{
+                                    marginTop: '8px',
+                                    marginLeft: '24px',
+                                    fontSize: '13px',
+                                    color: '#666'
+                                }}>
+                                    Item será usado apenas nesta lista e não ficará disponível para outros usuários.
+                                </p>
+                            )}
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                            <button
+                                onClick={() => {
+                                    setMostrarModalSugestao(false);
+                                    setNovoItemNome('');
+                                    setNovoItemUnidade('');
+                                    setCadastrarNoSistema(true);
+                                }}
+                                style={{
+                                    padding: '8px 16px',
+                                    backgroundColor: '#6c757d',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '4px',
+                                    cursor: 'pointer',
+                                    fontSize: '14px'
+                                }}
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={handleSugerirItem}
+                                style={{
+                                    padding: '8px 16px',
+                                    backgroundColor: '#007bff',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '4px',
+                                    cursor: 'pointer',
+                                    fontSize: '14px'
+                                }}
+                            >
+                                Confirmar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

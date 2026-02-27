@@ -4,9 +4,25 @@ Testa as funções de negócio sem dependência de rotas.
 """
 import pytest
 from decimal import Decimal
-from datetime import datetime, timezone
+from datetime import datetime
 from kaizen_app import services, db
-from kaizen_app.models import Usuario, UserRoles, Item, Area, Fornecedor, Estoque, Lista, ListaMaeItem
+from kaizen_app.models import (
+    Usuario,
+    UserRoles,
+    Item,
+    Area,
+    Fornecedor,
+    Estoque,
+    Lista,
+    ListaMaeItem,
+    Restaurante,
+    SolicitacaoRestaurante,
+    StatusSolicitacaoRestaurante,
+    Submissao,
+    SubmissaoStatus,
+    AppLog,
+    brasilia_now
+)
 from werkzeug.security import check_password_hash
 
 
@@ -198,6 +214,71 @@ class TestAuthenticateUser:
             assert status == 401
             assert 'credenciais' in response['error'].lower()
 
+
+class TestSuperDashboardData:
+    """Testes para dados do dashboard global do super admin."""
+
+    def test_super_dashboard_usa_submissoes_e_usuarios_ativos(self, app):
+        with app.app_context():
+            restaurante = Restaurante.query.first()
+            admin = Usuario(
+                nome='Admin',
+                email='admin-dashboard@example.com',
+                senha_hash='hash',
+                role=UserRoles.ADMIN,
+                aprovado=True,
+                ativo=True,
+                restaurante_id=restaurante.id
+            )
+            colaborador = Usuario(
+                nome='Colaborador',
+                email='colab-dashboard@example.com',
+                senha_hash='hash',
+                role=UserRoles.COLLABORATOR,
+                aprovado=True,
+                ativo=True,
+                restaurante_id=restaurante.id
+            )
+            db.session.add_all([admin, colaborador])
+            db.session.commit()
+
+            lista = Lista(nome='Lista Dashboard', restaurante_id=restaurante.id)
+            db.session.add(lista)
+            db.session.commit()
+
+            submissao_valida = Submissao(
+                lista_id=lista.id,
+                usuario_id=colaborador.id,
+                status=SubmissaoStatus.PENDENTE,
+                arquivada=False,
+                data_submissao=brasilia_now()
+            )
+            submissao_arquivada = Submissao(
+                lista_id=lista.id,
+                usuario_id=colaborador.id,
+                status=SubmissaoStatus.APROVADO,
+                arquivada=True,
+                data_submissao=brasilia_now()
+            )
+            db.session.add_all([submissao_valida, submissao_arquivada])
+            db.session.commit()
+
+            db.session.add_all([
+                AppLog(acao='login', usuario_id=admin.id, restaurante_id=restaurante.id),
+                AppLog(acao='login', usuario_id=colaborador.id, restaurante_id=restaurante.id),
+                AppLog(acao='login', usuario_id=colaborador.id, restaurante_id=restaurante.id)
+            ])
+            db.session.commit()
+
+            data, status = services.get_super_dashboard_data(restaurante_id=restaurante.id, period=7)
+
+            assert status == 200
+            assert data['summary']['total_submissoes'] == 1
+            assert data['summary']['submissoes_hoje'] == 1
+            assert data['temporal']['submissions_per_day']['data'][-1] == 1
+            assert data['temporal']['submission_status_distribution']['data'][0] == 1
+            assert data['temporal']['users_active_per_month']['data'][-1] == 2
+
     def test_login_senha_incorreta(self, app):
         """Testa login com senha incorreta"""
         with app.app_context():
@@ -280,7 +361,8 @@ class TestEstoqueServices:
         """Testa cálculo de necessidades de estoque"""
         with app.app_context():
             # Setup: criar fornecedor, item, área e estoque
-            fornecedor = Fornecedor(nome="Fornecedor Teste")
+            restaurante = Restaurante.query.first()
+            fornecedor = Fornecedor(nome="Fornecedor Teste", restaurante_id=restaurante.id)
             db.session.add(fornecedor)
             db.session.flush()
             
@@ -314,15 +396,16 @@ class TestListaServices:
         """Testa criação de lista com itens via catálogo global"""
         with app.app_context():
             from kaizen_app.models import ListaItemRef
+            restaurante = Restaurante.query.first()
 
             # Criar lista
-            lista = Lista(nome="Lista de Teste", descricao="Teste")
+            lista = Lista(nome="Lista de Teste", descricao="Teste", restaurante_id=restaurante.id)
             db.session.add(lista)
             db.session.flush()
 
             # Criar itens no catálogo global
-            item1 = ListaMaeItem(nome="Feijão", unidade="kg")
-            item2 = ListaMaeItem(nome="Arroz", unidade="kg")
+            item1 = ListaMaeItem(nome="Feijão", unidade="kg", restaurante_id=restaurante.id)
+            item2 = ListaMaeItem(nome="Arroz", unidade="kg", restaurante_id=restaurante.id)
             db.session.add_all([item1, item2])
             db.session.flush()
 
@@ -355,16 +438,50 @@ class TestListaServices:
         with app.app_context():
             from datetime import datetime
             
-            lista = Lista(nome="Lista Temp")
+            restaurante = Restaurante.query.first()
+            lista = Lista(nome="Lista Temp", restaurante_id=restaurante.id)
             db.session.add(lista)
             db.session.commit()
             
             # Marca como deletada
             lista.deletado = True
-            lista.data_delecao = datetime.now(timezone.utc)
+            lista.data_delecao = brasilia_now()
             db.session.commit()
             
             # Verifica
             lista_db = db.session.get(Lista, lista.id)
             assert lista_db.deletado is True
             assert lista_db.data_delecao is not None
+
+
+class TestDeletarRestaurante:
+    """Testes para deleção de restaurante (hard delete)"""
+
+    def test_deletar_restaurante_hard_delete(self, app):
+        """Testa que deletar restaurante remove fisicamente do banco"""
+        with app.app_context():
+            import uuid
+            # Cria um restaurante com nome único
+            nome_unico = f'Restaurante Teste {uuid.uuid4().hex[:8]}'
+            slug_unico = f'restaurante-teste-{uuid.uuid4().hex[:8]}'
+
+            restaurante = Restaurante(
+                nome=nome_unico,
+                slug=slug_unico,
+                ativo=True
+            )
+            db.session.add(restaurante)
+            db.session.commit()
+
+            restaurante_id = restaurante.id
+
+            # Deleta o restaurante
+            response, status = services.deletar_restaurante(restaurante_id)
+
+            # Verifica que retornou sucesso
+            assert status == 200
+            assert 'permanentemente' in response['message'].lower()
+
+            # Verifica que o restaurante foi removido fisicamente do banco
+            restaurante_db = Restaurante.query.filter_by(id=restaurante_id).first()
+            assert restaurante_db is None  # Não existe mais no banco

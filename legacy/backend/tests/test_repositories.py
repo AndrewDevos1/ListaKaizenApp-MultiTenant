@@ -5,7 +5,7 @@ Testa as operações de acesso ao banco de dados.
 import pytest
 from decimal import Decimal
 from kaizen_app import repositories, db
-from kaizen_app.models import Usuario, UserRoles, Item, Area, Fornecedor, Estoque, Lista
+from kaizen_app.models import Usuario, UserRoles, Item, Area, Fornecedor, Estoque, Lista, Restaurante, brasilia_now
 
 
 class TestUsuarioRepository:
@@ -49,7 +49,8 @@ class TestItemRepository:
     def test_criar_item(self, app):
         """Testa criação de item via repositório"""
         with app.app_context():
-            fornecedor = Fornecedor(nome="Fornecedor")
+            restaurante = Restaurante.query.first()
+            fornecedor = Fornecedor(nome="Fornecedor", restaurante_id=restaurante.id)
             db.session.add(fornecedor)
             db.session.commit()
             
@@ -65,7 +66,8 @@ class TestItemRepository:
     def test_listar_itens(self, app):
         """Testa listagem de todos os itens"""
         with app.app_context():
-            fornecedor = Fornecedor(nome="Fornecedor")
+            restaurante = Restaurante.query.first()
+            fornecedor = Fornecedor(nome="Fornecedor", restaurante_id=restaurante.id)
             db.session.add(fornecedor)
             db.session.flush()
             
@@ -80,7 +82,8 @@ class TestItemRepository:
     def test_buscar_item_por_nome(self, app):
         """Testa busca de item por nome"""
         with app.app_context():
-            fornecedor = Fornecedor(nome="Fornecedor")
+            restaurante = Restaurante.query.first()
+            fornecedor = Fornecedor(nome="Fornecedor", restaurante_id=restaurante.id)
             db.session.add(fornecedor)
             db.session.flush()
             
@@ -169,7 +172,8 @@ class TestEstoqueRepository:
         """Testa busca de estoque específico"""
         with app.app_context():
             # Setup
-            fornecedor = Fornecedor(nome="Fornecedor")
+            restaurante = Restaurante.query.first()
+            fornecedor = Fornecedor(nome="Fornecedor", restaurante_id=restaurante.id)
             db.session.add(fornecedor)
             db.session.flush()
             
@@ -196,7 +200,8 @@ class TestEstoqueRepository:
         """Testa listagem de itens com estoque abaixo do mínimo"""
         with app.app_context():
             # Setup
-            fornecedor = Fornecedor(nome="Fornecedor")
+            restaurante = Restaurante.query.first()
+            fornecedor = Fornecedor(nome="Fornecedor", restaurante_id=restaurante.id)
             db.session.add(fornecedor)
             db.session.flush()
             
@@ -224,7 +229,8 @@ class TestEstoqueRepository:
         """Testa atualização de quantidade em estoque"""
         with app.app_context():
             # Setup
-            fornecedor = Fornecedor(nome="Fornecedor")
+            restaurante = Restaurante.query.first()
+            fornecedor = Fornecedor(nome="Fornecedor", restaurante_id=restaurante.id)
             db.session.add(fornecedor)
             db.session.flush()
             
@@ -257,9 +263,11 @@ class TestListaRepository:
     def test_criar_lista(self, app):
         """Testa criação de lista"""
         with app.app_context():
+            restaurante = Restaurante.query.first()
             lista = repositories.criar_lista(
                 nome="Lista Mensal",
-                descricao="Compras do mês"
+                descricao="Compras do mês",
+                restaurante_id=restaurante.id
             )
             assert lista.id is not None
             assert lista.nome == "Lista Mensal"
@@ -267,14 +275,15 @@ class TestListaRepository:
     def test_listar_listas_ativas(self, app):
         """Testa listagem apenas de listas não deletadas"""
         with app.app_context():
+            restaurante = Restaurante.query.first()
             # Lista ativa
-            lista_ativa = repositories.criar_lista("Lista Ativa")
+            lista_ativa = repositories.criar_lista("Lista Ativa", restaurante_id=restaurante.id)
             
             # Lista deletada
             from datetime import datetime, timezone
-            lista_deletada = Lista(nome="Lista Deletada")
+            lista_deletada = Lista(nome="Lista Deletada", restaurante_id=restaurante.id)
             lista_deletada.deletado = True
-            lista_deletada.data_delecao = datetime.now(timezone.utc)
+            lista_deletada.data_delecao = brasilia_now()
             db.session.add(lista_deletada)
             db.session.commit()
             
@@ -288,7 +297,8 @@ class TestListaRepository:
     def test_soft_delete_lista(self, app):
         """Testa exclusão lógica de lista"""
         with app.app_context():
-            lista = repositories.criar_lista("Lista Temp")
+            restaurante = Restaurante.query.first()
+            lista = repositories.criar_lista("Lista Temp", restaurante_id=restaurante.id)
             lista_id = lista.id
             
             repositories.soft_delete_lista(lista_id)
@@ -303,7 +313,8 @@ class TestListaRepository:
         with app.app_context():
             from .conftest import create_user
             
-            lista = repositories.criar_lista("Lista Compartilhada")
+            restaurante = Restaurante.query.first()
+            lista = repositories.criar_lista("Lista Compartilhada", restaurante_id=restaurante.id)
             user = create_user('Colab', 'colab@example.com', 'senha', UserRoles.COLLABORATOR)
             
             repositories.adicionar_colaborador_lista(lista.id, user.id)

@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Button, Modal, Form, Spinner, Alert } from 'react-bootstrap';
+import { Button, Modal, Form, Spinner, Alert } from 'react-bootstrap';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faEdit, faTrash, faPlus } from '@fortawesome/free-solid-svg-icons';
 import api from '../../services/api';
+import ResponsiveTable from '../../components/ResponsiveTable';
 
 interface Item {
     id: number;
@@ -119,42 +122,39 @@ const ItemManagement: React.FC = () => {
             <h2>Gestão de Itens</h2>
             {error && <Alert variant="danger" onClose={() => setError('')} dismissible>{error}</Alert>}
             <Button variant="primary" onClick={() => handleShowModal()} className="mb-3">
-                <i className="fas fa-plus me-2"></i>Adicionar Item
+                <FontAwesomeIcon icon={faPlus} className="me-2" />Adicionar Item
             </Button>
 
-            <Table striped bordered hover responsive>
-                <thead className="table-dark">
-                    <tr>
-                        <th>#</th>
-                        <th>Nome</th>
-                        <th>Unidade de Medida</th>
-                        <th>Fornecedor</th>
-                        <th>Ações</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {isLoading ? (
-                        <tr>
-                            <td colSpan={5} className="text-center"><Spinner animation="border" /></td>
-                        </tr>
-                    ) : items.map(item => (
-                        <tr key={item.id}>
-                            <td>{item.id}</td>
-                            <td>{item.nome}</td>
-                            <td>{item.unidade_medida}</td>
-                            <td>{item.fornecedor?.nome || fornecedores.find(f => f.id === item.fornecedor_id)?.nome || 'N/A'}</td>
-                            <td>
-                                <Button variant="warning" size="sm" onClick={() => handleShowModal(item)}>
-                                    <i className="fas fa-edit"></i>
-                                </Button>
-                                <Button variant="danger" size="sm" onClick={() => handleShowDeleteModal(item)} className="ms-2">
-                                    <i className="fas fa-trash"></i>
-                                </Button>
-                            </td>
-                        </tr>
-                    ))}
-                </tbody>
-            </Table>
+            {isLoading ? (
+                <div className="text-center p-4">
+                    <Spinner animation="border" />
+                </div>
+            ) : (
+                <ResponsiveTable
+                    data={items}
+                    columns={[
+                        { header: '#', accessor: 'id' },
+                        { header: 'Nome', accessor: 'nome' },
+                        { header: 'Unidade de Medida', accessor: 'unidade_medida', mobileLabel: 'Unidade' },
+                        {
+                            header: 'Fornecedor',
+                            accessor: (item: Item) => item.fornecedor?.nome || fornecedores.find(f => f.id === item.fornecedor_id)?.nome || 'N/A'
+                        }
+                    ]}
+                    keyExtractor={(item) => item.id.toString()}
+                    renderActions={(item) => (
+                        <>
+                            <Button variant="warning" size="sm" onClick={() => handleShowModal(item)} className="me-1">
+                                <FontAwesomeIcon icon={faEdit} className="me-1" />Editar
+                            </Button>
+                            <Button variant="danger" size="sm" onClick={() => handleShowDeleteModal(item)}>
+                                <FontAwesomeIcon icon={faTrash} className="me-1" />Excluir
+                            </Button>
+                        </>
+                    )}
+                    emptyMessage="Nenhum item cadastrado."
+                />
+            )}
 
             {/* Modal de Adicionar/Editar */}
             <Modal show={showModal} onHide={handleCloseModal}>
