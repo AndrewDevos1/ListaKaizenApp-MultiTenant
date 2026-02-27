@@ -18,7 +18,7 @@ import {
   FaUserShield,
   FaUser,
   FaUserEdit,
-  FaKey,
+
   FaQuestionCircle,
   FaCog,
   FaGripLinesVertical,
@@ -472,12 +472,6 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
         label: 'Editar Perfil',
         href: isAdmin ? '/admin/editar-perfil' : '/collaborator/perfil',
         icon: <FaUserEdit />,
-        status: 'available',
-      },
-      {
-        label: 'Mudar Senha',
-        href: isAdmin ? '/admin/mudar-senha' : '/collaborator/mudar-senha',
-        icon: <FaKey />,
         status: 'available',
       },
       {

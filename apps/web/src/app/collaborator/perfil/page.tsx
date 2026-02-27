@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Container, Form, Button, Alert, Spinner, Card, Badge, Row, Col } from 'react-bootstrap';
-import { FaUser, FaEnvelope, FaIdCard, FaSignOutAlt, FaSave } from 'react-icons/fa';
+import { FaUser, FaEnvelope, FaIdCard, FaSignOutAlt, FaSave, FaLock, FaKey } from 'react-icons/fa';
 import api from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -20,10 +20,15 @@ export default function PerfilColaborador() {
   const { logout } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [formData, setFormData] = useState({ nome: '', username: '', email: '' });
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+  const [profileError, setProfileError] = useState('');
+  const [profileSuccess, setProfileSuccess] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+
+  const [senhaData, setSenhaData] = useState({ senhaAtual: '', novaSenha: '', confirmar: '' });
+  const [senhaError, setSenhaError] = useState('');
+  const [senhaSuccess, setSenhaSuccess] = useState('');
+  const [savingSenha, setSavingSenha] = useState(false);
 
   useEffect(() => {
     api.get('/v1/auth/profile')
@@ -31,7 +36,7 @@ export default function PerfilColaborador() {
         setProfile(r.data);
         setFormData({ nome: r.data.nome, username: r.data.username ?? '', email: r.data.email });
       })
-      .catch(() => setError('Erro ao carregar perfil'))
+      .catch(() => setProfileError('Erro ao carregar perfil'))
       .finally(() => setLoading(false));
   }, []);
 
@@ -41,25 +46,55 @@ export default function PerfilColaborador() {
       formData.username !== (profile.username ?? '')
     : false;
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleProfileSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.nome.trim() || !formData.email.trim()) {
-      setError('Nome e email são obrigatórios');
+      setProfileError('Nome e email são obrigatórios');
       return;
     }
     setSaving(true);
-    setError('');
-    setSuccess('');
+    setProfileError('');
+    setProfileSuccess('');
     try {
       await api.put('/v1/auth/profile', formData);
-      setSuccess('Perfil atualizado com sucesso!');
-      // Refresh profile
+      setProfileSuccess('Perfil atualizado com sucesso!');
       const r = await api.get('/v1/auth/profile');
       setProfile(r.data);
     } catch (err: any) {
-      setError(err.response?.data?.message ?? 'Erro ao atualizar perfil');
+      setProfileError(err.response?.data?.message ?? 'Erro ao atualizar perfil');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleSenhaSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSenhaError('');
+    setSenhaSuccess('');
+    if (!senhaData.senhaAtual || !senhaData.novaSenha) {
+      setSenhaError('Preencha todos os campos');
+      return;
+    }
+    if (senhaData.novaSenha.length < 6) {
+      setSenhaError('A nova senha deve ter pelo menos 6 caracteres');
+      return;
+    }
+    if (senhaData.novaSenha !== senhaData.confirmar) {
+      setSenhaError('As senhas não coincidem');
+      return;
+    }
+    setSavingSenha(true);
+    try {
+      await api.post('/v1/auth/change-password', {
+        senhaAtual: senhaData.senhaAtual,
+        novaSenha: senhaData.novaSenha,
+      });
+      setSenhaSuccess('Senha alterada com sucesso!');
+      setSenhaData({ senhaAtual: '', novaSenha: '', confirmar: '' });
+    } catch (err: any) {
+      setSenhaError(err.response?.data?.message ?? 'Erro ao alterar senha');
+    } finally {
+      setSavingSenha(false);
     }
   };
 
@@ -77,13 +112,13 @@ export default function PerfilColaborador() {
     <Container className="py-4" style={{ maxWidth: 640 }}>
       <h2 className="mb-4"><FaUser className="me-2" />Meu Perfil</h2>
 
-      {error && <Alert variant="danger" dismissible onClose={() => setError('')}>{error}</Alert>}
-      {success && <Alert variant="success" dismissible onClose={() => setSuccess('')}>{success}</Alert>}
-
+      {/* Informações Pessoais */}
       <Card className="mb-4 shadow-sm">
         <Card.Header><strong>Informações Pessoais</strong></Card.Header>
         <Card.Body>
-          <Form onSubmit={handleSubmit}>
+          {profileError && <Alert variant="danger" dismissible onClose={() => setProfileError('')}>{profileError}</Alert>}
+          {profileSuccess && <Alert variant="success" dismissible onClose={() => setProfileSuccess('')}>{profileSuccess}</Alert>}
+          <Form onSubmit={handleProfileSubmit}>
             <Form.Group className="mb-3">
               <Form.Label><FaIdCard className="me-1" /> Nome Completo *</Form.Label>
               <Form.Control
@@ -123,7 +158,7 @@ export default function PerfilColaborador() {
               </Button>
               <Button variant="outline-secondary" onClick={() => {
                 if (profile) setFormData({ nome: profile.nome, username: profile.username ?? '', email: profile.email });
-                setError(''); setSuccess('');
+                setProfileError(''); setProfileSuccess('');
               }} disabled={saving || !hasChanges}>
                 Resetar
               </Button>
@@ -135,6 +170,57 @@ export default function PerfilColaborador() {
         </Card.Body>
       </Card>
 
+      {/* Mudar Senha */}
+      <Card className="mb-4 shadow-sm">
+        <Card.Header><strong><FaKey className="me-2" />Mudar Senha</strong></Card.Header>
+        <Card.Body>
+          {senhaError && <Alert variant="danger" dismissible onClose={() => setSenhaError('')}>{senhaError}</Alert>}
+          {senhaSuccess && <Alert variant="success" dismissible onClose={() => setSenhaSuccess('')}>{senhaSuccess}</Alert>}
+          <Form onSubmit={handleSenhaSubmit}>
+            <Form.Group className="mb-3">
+              <Form.Label><FaLock className="me-1" /> Senha Atual *</Form.Label>
+              <Form.Control
+                type="password"
+                value={senhaData.senhaAtual}
+                onChange={(e) => setSenhaData((p) => ({ ...p, senhaAtual: e.target.value }))}
+                disabled={savingSenha}
+                autoComplete="current-password"
+              />
+            </Form.Group>
+
+            <Form.Group className="mb-3">
+              <Form.Label><FaLock className="me-1" /> Nova Senha * (mín. 6 caracteres)</Form.Label>
+              <Form.Control
+                type="password"
+                value={senhaData.novaSenha}
+                onChange={(e) => setSenhaData((p) => ({ ...p, novaSenha: e.target.value }))}
+                disabled={savingSenha}
+                autoComplete="new-password"
+              />
+            </Form.Group>
+
+            <Form.Group className="mb-4">
+              <Form.Label><FaLock className="me-1" /> Confirmar Nova Senha *</Form.Label>
+              <Form.Control
+                type="password"
+                value={senhaData.confirmar}
+                onChange={(e) => setSenhaData((p) => ({ ...p, confirmar: e.target.value }))}
+                disabled={savingSenha}
+                autoComplete="new-password"
+                isInvalid={!!senhaData.confirmar && senhaData.confirmar !== senhaData.novaSenha}
+              />
+              <Form.Control.Feedback type="invalid">As senhas não coincidem</Form.Control.Feedback>
+            </Form.Group>
+
+            <Button type="submit" variant="warning" disabled={savingSenha}>
+              <FaKey className="me-1" />
+              {savingSenha ? 'Alterando...' : 'Alterar Senha'}
+            </Button>
+          </Form>
+        </Card.Body>
+      </Card>
+
+      {/* Informações da Conta */}
       {profile && (
         <Card className="shadow-sm">
           <Card.Header><strong>Informações da Conta</strong></Card.Header>
