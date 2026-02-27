@@ -15,7 +15,7 @@ interface SubmissaoSummary {
   criadoEm: string;
   arquivada: boolean;
   lista: { id: number; nome: string };
-  colaborador: { id: number; usuario: { nome: string } };
+  usuario: { id: number; nome: string; email: string };
   _count: { pedidos: number };
 }
 
@@ -195,7 +195,7 @@ export default function AdminSubmissoesPage() {
     return submissoes.filter(
       (s) =>
         s.lista.nome.toLowerCase().includes(q) ||
-        s.colaborador.usuario.nome.toLowerCase().includes(q) ||
+        s.usuario.nome.toLowerCase().includes(q) ||
         s.status.toLowerCase().includes(q) ||
         String(s.id).includes(q),
     );
@@ -297,7 +297,7 @@ export default function AdminSubmissoesPage() {
                       </td>
                       <td className={styles.tableCell}>{s.id}</td>
                       <td className={`${styles.tableCell} ${styles.cellBold}`}>{s.lista.nome}</td>
-                      <td className={styles.tableCell}>{s.colaborador.usuario.nome}</td>
+                      <td className={styles.tableCell}>{s.usuario.nome}</td>
                       <td className={styles.tableCell}>{formatDate(s.criadoEm)}</td>
                       <td className={styles.tableCell}>{s._count.pedidos}</td>
                       <td className={styles.tableCell}>
@@ -378,7 +378,7 @@ export default function AdminSubmissoesPage() {
                     <tr key={s.id}>
                       <td>{s.id}</td>
                       <td>{s.lista.nome}</td>
-                      <td>{s.colaborador.usuario.nome}</td>
+                      <td>{s.usuario.nome}</td>
                       <td>{formatDate(s.criadoEm)}</td>
                     </tr>
                   ))}

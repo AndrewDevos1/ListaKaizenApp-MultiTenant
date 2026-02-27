@@ -28,7 +28,7 @@ interface SubmissaoDetail {
   criadoEm: string;
   arquivada: boolean;
   lista: { id: number; nome: string };
-  colaborador: { id: number; usuario: { nome: string; email: string } };
+  usuario: { id: number; nome: string; email: string };
   pedidos: Pedido[];
 }
 
@@ -185,11 +185,11 @@ export default function AdminSubmissaoDetailPage() {
             <div className={styles.listMeta}>
               <div className={styles.metaItem}>
                 <span className={styles.metaLabel}>Colaborador:</span>
-                {submissao.colaborador.usuario.nome}
+                {submissao.usuario.nome}
               </div>
               <div className={styles.metaItem}>
                 <span className={styles.metaLabel}>Email:</span>
-                {submissao.colaborador.usuario.email}
+                {submissao.usuario.email}
               </div>
               <div className={styles.metaItem}>
                 <span className={styles.metaLabel}>Data:</span>

@@ -40,28 +40,34 @@ Ver tabela completa abaixo.
 
 ## Tabela de Módulos
 
-| Módulo | Backend | Frontend | Prioridade |
-|--------|---------|----------|------------|
-| Auth + JWT | ✅ | ✅ | — |
-| Listas (CRUD admin) | ✅ | ✅ | — |
-| Itens / Catálogo | ✅ | ✅ | — |
-| Áreas | ✅ | ✅ | — |
-| Atualização de estoque (colaborador) | ❌ | ❌ | FASE 1 |
-| Submissões + Aprovação | ❌ | ❌ | FASE 1 |
-| Gerenciar Usuários (aprovação) | ❌ | ❌ | FASE 1 |
-| Fornecedores (CRUD) | ❌ | ❌ | FASE 2 |
-| Vínculo Item ↔ Fornecedor | ❌ | ❌ | FASE 2 |
-| Cotações | ❌ | ❌ | FASE 3 |
-| Merge WhatsApp | ❌ | ❌ | FASE 3 |
-| Checklists | ❌ | ❌ | FASE 3 |
-| Listas Rápidas | ❌ | ❌ | FASE 4 |
-| Sugestões de Itens | ❌ | ❌ | FASE 4 |
-| POPs | ❌ | ❌ | FASE 4 |
-| Notificações | ❌ | ❌ | FASE 5 |
-| Convites | ❌ | ❌ | FASE 5 |
-| Import / Export CSV | ❌ | ❌ | FASE 5 |
-| Auditoria / Logs | ❌ | ❌ | FASE 5 |
-| Offline / PWA | ❌ | ❌ | FASE 5 |
+| Módulo | Backend | Frontend | Status |
+|--------|---------|----------|--------|
+| Auth + JWT | ✅ | ✅ | Concluído |
+| Listas (CRUD admin) | ✅ | ✅ | Concluído |
+| Itens / Catálogo | ✅ | ✅ | Concluído |
+| Áreas | ✅ | ✅ | Concluído |
+| Atualização de estoque (colaborador) | ✅ | ✅ | Fase 1 |
+| Submissões + Aprovação | ✅ | ✅ | Fase 1 |
+| Gerenciar Usuários (aprovação) | ✅ | ✅ | Fase 1 |
+| Fornecedores (CRUD) | ✅ | ✅ | Fase 2 |
+| Vínculo Item ↔ Fornecedor | ✅ | ✅ | Fase 2 |
+| Cotações | ✅ | ✅ | Fase 3 |
+| Merge WhatsApp | ✅ | ✅ | Fase 3 |
+| Checklists | ✅ | ✅ | Fase 3 |
+| Listas Rápidas | ✅ | ✅ | Fase 4 |
+| Sugestões de Itens | ✅ | ✅ | Fase 4 |
+| POPs | ✅ | ✅ | Fase 4 |
+| Notificações | ✅ | ✅ | Fase 5 |
+| Convites | ✅ | ✅ | Fase 5 |
+| Export CSV | ✅ | ✅ | Fase 5 |
+| Auditoria / Logs | ✅ | ✅ | Fase 5 |
+| Editar Perfil + Mudar Senha | ✅ | ✅ | Pós-migração |
+| Dashboard Global (SUPER_ADMIN) | ✅ | ✅ | Pós-migração |
+| Catálogo Global | ✅ | ✅ | Pós-migração |
+| Estatísticas de Estoque | ✅ | ✅ | Pós-migração |
+| Toast global (UX) | — | ✅ | Melhoria UX |
+| Import CSV | ✅ | ⏳ | Pendente |
+| Offline / PWA | — | ⏳ | Planejado |
 
 ---
 
@@ -96,19 +102,32 @@ Ver tabela completa abaixo.
 ## Como Rodar o Projeto Localmente
 
 ```bash
-# Backend
-cd backend
-cp .env.example .env   # configurar DATABASE_URL e JWT secrets
-pnpm install
-npx prisma migrate dev
-pnpm run start:dev
+# Na raiz do monorepo — roda API (porta 3001) e Web (porta 3000) juntos
+npm run dev
 
-# Frontend
-cd frontend
-cp .env.example .env.local   # configurar NEXT_PUBLIC_API_URL
-pnpm install
-pnpm run dev
+# Apenas Backend
+cd apps/api
+npm run start:dev
+
+# Apenas Frontend
+cd apps/web
+npm run dev
+
+# Популando o banco com dados de teste
+npx ts-node apps/api/prisma/seed.ts
+
+# Aplicar mudanças de schema no banco (sem migrations)
+cd apps/api && npx prisma db push
 ```
+
+### Credenciais de Teste
+
+| Usuário | Email | Senha | Role |
+|---------|-------|-------|------|
+| Super Admin | `superadmin@kaizen.com` | `admin123` | SUPER_ADMIN |
+| Admin Demo | `admin@demo.com` | `admin123` | ADMIN |
+| Colaborador 1 | `colab1@demo.com` | `admin123` | COLLABORATOR |
+| Colaborador 2 | `colab2@demo.com` | `admin123` | COLLABORATOR |
 
 ---
 

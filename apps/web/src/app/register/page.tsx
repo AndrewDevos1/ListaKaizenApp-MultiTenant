@@ -22,7 +22,7 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
-      const { data } = await api.post('/auth/register', { nome, email, senha });
+      const { data } = await api.post('/v1/auth/register', { nome, email, senha });
       setSuccess(data.message);
       setTimeout(() => router.push('/login'), 3000);
     } catch (err: any) {

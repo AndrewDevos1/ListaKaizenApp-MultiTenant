@@ -8,16 +8,16 @@ import api from '@/lib/api';
 import styles from './POPTemplateDetail.module.css';
 import { FaClipboard, FaEdit, FaTrash, FaPlus } from 'react-icons/fa';
 
-type TipoPOP = 'ABERTURA' | 'FECHAMENTO' | 'LIMPEZA' | 'PREPARACAO' | 'SEGURANCA';
+type TipoPOP = 'ABERTURA' | 'FECHAMENTO' | 'LIMPEZA' | 'OPERACIONAL' | 'PERSONALIZADO';
 
-const TIPOS: TipoPOP[] = ['ABERTURA', 'FECHAMENTO', 'LIMPEZA', 'PREPARACAO', 'SEGURANCA'];
+const TIPOS: TipoPOP[] = ['ABERTURA', 'FECHAMENTO', 'LIMPEZA', 'OPERACIONAL', 'PERSONALIZADO'];
 
 const TIPO_VARIANT: Record<TipoPOP, string> = {
   ABERTURA: 'primary',
   FECHAMENTO: 'secondary',
   LIMPEZA: 'info',
-  PREPARACAO: 'warning',
-  SEGURANCA: 'danger',
+  OPERACIONAL: 'warning',
+  PERSONALIZADO: 'danger',
 };
 
 interface Passo {

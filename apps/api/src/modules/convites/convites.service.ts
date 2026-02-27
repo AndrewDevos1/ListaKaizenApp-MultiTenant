@@ -3,6 +3,7 @@ import {
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
+import { randomUUID } from 'crypto';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateConviteDto } from './dto/create-convite.dto';
 import { UserRole } from '@prisma/client';
@@ -12,7 +13,7 @@ export class ConvitesService {
   constructor(private prisma: PrismaService) {}
 
   async gerarConvite(restauranteId: number, dto: CreateConviteDto) {
-    const token = crypto.randomUUID();
+    const token = randomUUID();
     const expiresInDays = dto.expiresInDays ?? 7;
     const role = dto.role ?? UserRole.COLLABORATOR;
 

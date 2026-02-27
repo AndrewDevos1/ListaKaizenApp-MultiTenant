@@ -1,6 +1,7 @@
 # Relatório Final — Migração Legacy → Multi-Tenant
 
 **Data de conclusão:** 2026-02-27
+**Última atualização:** 2026-02-27
 **Branch:** `restaurando-design`
 **Commits de checkpoint:**
 
@@ -12,6 +13,26 @@
 | Fase 4 | `1068990` | Listas Rápidas, Sugestões, POPs |
 | Fase 5 | `9680bfd` | Notificações, Convites, Export CSV, Auditoria |
 | Revisão | `52f0800` | Correções pós-revisão de paridade com legado |
+| Pós-migração | `b51db5a` | Navbar paridade com legado + correções runtime |
+| Pós-migração | `4699363` | Fix hydration mismatch no body |
+| Pós-migração | `c565ea4` | Perfil/senha colaborador + Dashboard Global SUPER_ADMIN |
+| Pós-migração | `90c57de` | Fix campo `usuario` em submissões + Editar Perfil/Mudar Senha admin |
+| Pós-migração | `8467985` | Catálogo Global, Estatísticas de Estoque, endpoint /estatisticas |
+| Pós-migração | `cc76a20` | Mudar Senha unificado dentro do Editar Perfil |
+| Melhoria UX | `48379ae` | Sistema global de Toast estilo macOS |
+| Infra | `993eb2c` | Seed de dados completo + manual PWA |
+| PWA | `d8c8768` | Botão de instalação PWA + Service Worker + manifest |
+| PWA | `f50f79f` | Ícones PWA 192×512 gerados do logo Kaizen |
+| Fix | `f74c945` | Corrigir stale closure no hook usePWAInstall |
+| PWA | `0ac7e08` | Web Push Notifications com VAPID, PushModule e SW handler |
+| Fix Login | `9f33ea8` | Ver senha, salvar email e manter conectado no login |
+| Fix | `ce6fc26` | suppressHydrationWarning no html além do body |
+| Fix Navbar | `f719b0f` | Configurações funcional e botões do footer menores |
+| Avatar | `95235d0` | Upload de avatar com modal de recorte circular |
+| Avatar | `2b9c190` | Avatares predefinidos na tela de perfil |
+| Config | `305054f` | Páginas de configurações admin e colaborador |
+| Fix | `d43bf0a` | Corrigir rota de exportação CSV de itens |
+| Import | `9556759` | Importação de dados do legado em 2 fases |
 
 ---
 
@@ -189,6 +210,224 @@ AppLog
 
 ---
 
+## Páginas Implementadas (Pós-Migração)
+
+Páginas adicionais criadas após a revisão de paridade com o legado:
+
+| Página | Rota | Quem acessa |
+|--------|------|-------------|
+| Editar Perfil | `/admin/editar-perfil` | Admin |
+| Mudar Senha | `/admin/mudar-senha` | Admin |
+| Editar Perfil | `/collaborator/perfil` | Colaborador |
+| Mudar Senha | `/collaborator/mudar-senha` | Colaborador |
+| Dashboard Global | `/admin/global` | SUPER_ADMIN |
+| Catálogo Global | `/admin/catalogo-global` | Admin |
+| Estatísticas | `/admin/estatisticas` | Admin |
+
+**Endpoint adicionado:** `PUT /v1/auth/profile` — atualizar nome/email/username do usuário logado.
+
+**Endpoint adicionado:** `GET /v1/items/estatisticas` — retorna resumo de estoque, submissões por status e lista de itens com situação de estoque.
+
+**Endpoint adicionado:** `GET /v1/restaurantes/stats/global` — retorna totais globais e lista de restaurantes (SUPER_ADMIN).
+
+---
+
+## Bugs Corrigidos (Pós-Migração)
+
+| Bug | Arquivo(s) | Descrição |
+|-----|-----------|-----------|
+| `user.sub` undefined | pop, sugestoes, listas-rapidas controllers | JwtStrategy retorna `id`, não `sub` |
+| Auth prefix `/v1/auth` | auth.controller.ts + AuthContext.tsx | Prefixo de versão estava ausente |
+| Campo `usuario` vs `colaborador` | admin/submissoes + [id]/page.tsx | Interface TypeScript usava `colaborador.usuario` mas API retorna `usuario` direto |
+| TipoPOP enum errado | pop/templates, collaborator/pop | `PREPARACAO/SEGURANCA` não existem — correto: `OPERACIONAL/PERSONALIZADO` |
+| Hydration mismatch body | layout.tsx | VS Code adiciona `vsc-initialized` ao body; corrigido com `suppressHydrationWarning` |
+| Route `PUT /v1/admin/listas` | admin/listas/[id]/page.tsx | Rota correta é `PUT /v1/listas/:id/itens/:itemRefId` |
+
+---
+
+## Melhorias de UX Implementadas
+
+### Toast Global (estilo macOS)
+
+**Commit:** `48379ae`
+
+Sistema de notificações não-intrusivas implementado globalmente via `ToastProvider` + `ToastContainer`.
+
+| Arquivo | Papel |
+|---------|-------|
+| `contexts/ToastContext.tsx` | Provider + hook `useToast` com atalhos `success/error/warning/info` |
+| `components/ToastContainer.tsx` | Renderiza toasts via `createPortal` no `document.body` |
+| `components/ToastContainer.module.css` | Estilo + animações (slide + fade, barra de progresso) |
+
+**Características:**
+- Posição: canto inferior esquerdo
+- Animação: slide da esquerda + easing elástico na entrada, fade + encolhe na saída
+- Barra de progresso animada indicando tempo restante
+- Auto-dismiss: 4s padrão · 6s para erros · 0 = persistente
+- Empilhamento vertical sem sobreposição
+- `aria-live="polite"` para leitores de tela
+- Tema dark nativo; override automático para `prefers-color-scheme: light`
+
+**Como usar em qualquer página:**
+```tsx
+const { success, error, warning, info } = useToast();
+
+success('Salvo!', 'Registro criado com sucesso');
+error('Falha', 'Não foi possível conectar');
+```
+
+---
+
+---
+
+## PWA — Progressive Web App
+
+### Instalação como App (`d8c8768`, `f50f79f`, `f74c945`)
+
+| Arquivo | Papel |
+|---------|-------|
+| `apps/web/public/sw.js` | Service Worker: network-first, cache de assets estáticos, handlers push e notificationclick |
+| `apps/web/src/app/manifest.ts` | Manifest Next.js 15: nome, tema, ícones, `display: standalone` |
+| `apps/web/public/icons/icon-192.png` | Ícone PWA 192×192 (logo Kaizen em fundo branco) |
+| `apps/web/public/icons/icon-512.png` | Ícone PWA 512×512 (logo Kaizen em fundo branco) |
+| `apps/web/src/hooks/usePWAInstall.ts` | Hook: detecta `beforeinstallprompt`, iOS Safari, standalone mode, timeout 3s |
+| `apps/web/src/components/InstallAppButton.tsx` | Botão visível apenas quando instalável; iOS mostra dialog manual |
+| `apps/web/src/components/SwRegister.tsx` | Registra o SW após `page load` (não bloqueia carregamento) |
+
+**Compatibilidade:**
+
+| Plataforma | Comportamento |
+|------------|---------------|
+| Chrome/Edge (desktop/Android) | Prompt nativo de instalação |
+| Safari (iOS/iPadOS) | Dialog passo-a-passo manual |
+| Firefox | Botão oculto (sem suporte nativo) |
+| App já instalado | Botão oculto automaticamente |
+
+---
+
+### Web Push Notifications (`0ac7e08`)
+
+Notificações nativas do OS que aparecem mesmo com o app fechado.
+
+**Backend:**
+
+| Arquivo | Papel |
+|---------|-------|
+| `apps/api/src/modules/push/push.service.ts` | Inicializa VAPID, salva/remove assinaturas, envia push via `web-push` |
+| `apps/api/src/modules/push/push.controller.ts` | `GET /v1/push/vapid-public-key`, `POST/DELETE /v1/push/subscribe` |
+| `apps/api/src/modules/push/push.module.ts` | Módulo NestJS exportando `PushService` |
+| Prisma: `PushSubscription` | Armazena endpoint, p256dh e auth por dispositivo/usuário |
+
+`NotificacoesService.criar()` chama `PushService.sendToUser()` automaticamente após gravar cada notificação no banco (fire-and-forget). Assinaturas inválidas (HTTP 410/404) são removidas automaticamente.
+
+**Frontend:**
+
+| Arquivo | Papel |
+|---------|-------|
+| `apps/web/src/hooks/usePushNotifications.ts` | Gerencia permissão, subscribe, unsubscribe; estados: `idle | loading | subscribed | denied | unsupported` |
+| `apps/web/src/components/PushNotificationButton.tsx` | Botão "Ativar notificações" nos dashboards; muda para "Notificações ativas" quando subscrito |
+| `apps/web/public/sw.js` | Handlers `push` (exibe notificação nativa) e `notificationclick` (foca/abre aba) |
+
+**Variáveis de ambiente necessárias:**
+```env
+# apps/api/.env
+VAPID_PUBLIC_KEY=<chave_publica>
+VAPID_PRIVATE_KEY=<chave_privada>
+VAPID_SUBJECT=mailto:admin@kaizenlists.com
+
+# apps/web/.env.local
+NEXT_PUBLIC_VAPID_PUBLIC_KEY=<mesma_chave_publica>
+```
+
+**Como testar:**
+1. Abrir dashboard no Chrome (desktop ou Android)
+2. Clicar em "Ativar notificações" — browser solicita permissão
+3. Aceitar → assinatura salva no banco
+4. Qualquer ação que gere uma `Notificacao` no backend dispara push automaticamente
+
+---
+
+## Avatar de Perfil (`95235d0`, `2b9c190`)
+
+Upload, recorte e avatares predefinidos para todos os usuários.
+
+**Backend:**
+
+| Arquivo | Papel |
+|---------|-------|
+| Prisma: `avatarUrl String?` em `Usuario` | Campo para URL ou base64 do avatar |
+| `auth.service.ts` — `updateAvatar()` / `removeAvatar()` | Salva/remove base64 ou URL no banco |
+| `PUT /v1/auth/avatar` | Aceita `{ avatarBase64: string }` — base64 ou URL estática |
+| `DELETE /v1/auth/avatar` | Remove avatar (seta null) |
+
+**Frontend:**
+
+| Arquivo | Papel |
+|---------|-------|
+| `components/AvatarCropModal.tsx` | Canvas 300×300 · círculo 120px · drag/touch · zoom 0.5×–4× · saída 200×200 JPEG |
+| `contexts/AuthContext.tsx` — `updateAvatarUrl()` | Atualiza avatar no estado e no storage ativo sem reload |
+| `components/Sidebar.tsx` | Exibe avatar do usuário (imagem ou inicial do nome) |
+| `app/admin/editar-perfil/page.tsx` | Card de foto de perfil com upload, remoção e seleção de preset |
+| `app/collaborator/perfil/page.tsx` | Idêntico ao admin |
+| `public/avatars/preset-1.png` … `preset-8.png` | 8 avatares PNG 200×200 gerados com Pillow |
+
+**Fluxo de upload próprio:**
+1. Usuário clica no avatar ou no botão "Enviar foto"
+2. Seletor de arquivo abre (JPG/PNG/WebP · máx 5MB)
+3. Modal de recorte abre com a imagem carregada
+4. Usuário arrasta para reposicionar, usa slider de zoom, clica "Confirmar"
+5. Canvas gera JPEG 200×200 em base64 → `PUT /v1/auth/avatar`
+6. Sidebar atualiza em tempo real via `updateAvatarUrl()`
+
+**Fluxo de preset:**
+1. Card mostra 8 avatares predefinidos em grade de círculos 44px
+2. Clique chama `PUT /v1/auth/avatar` com URL estática (`/avatars/preset-N.png`)
+3. Avatar selecionado fica com borda azul destacada
+
+---
+
+## Importação de Dados do Legado (`9556759`)
+
+Ferramenta de migração disponível em **Configurações → Importar Dados do Legado**.
+
+### Fase 1 — ZIP de backup
+
+O admin exporta o backup completo do sistema antigo via Configurações → Exportar Dados (selecionando Áreas, Itens, Fornecedores e Listas). O ZIP é enviado para `POST /v1/admin/import/backup-zip`.
+
+**Ordem de importação (respeita FKs):**
+1. `fornecedores.csv` → cria Fornecedores (nome + telefone + email)
+2. `areas.csv` → cria Áreas (nome)
+3. `itens.csv` → cria Itens (nome + unidadeMedida + fornecedor por nome)
+4. `listas.csv` → cria Listas (nome)
+
+**Comportamento:** idempotente — registros já existentes são ignorados (contados separadamente no resultado).
+
+### Fase 2 — CSV por lista
+
+Para cada lista, o admin exporta o CSV individual no sistema antigo (botão "Exportar CSV" na tela da lista). O CSV é enviado para `POST /v1/admin/import/lista-csv/:listaId`.
+
+**Formato do CSV:** `nome, unidade, quantidade_atual, quantidade_minima`
+
+**Resultado:** cria `ListaItemRef` com `quantidadeAtual` e `quantidadeMinima`. Itens não encontrados no catálogo são listados como avisos (não bloqueiam os demais).
+
+### Endpoints
+
+| Endpoint | Método | Papel |
+|----------|--------|-------|
+| `POST /v1/admin/import/backup-zip` | multipart/form-data | Importa ZIP com 4 CSVs |
+| `POST /v1/admin/import/lista-csv/:listaId` | multipart/form-data | Vincula itens à lista |
+| `GET /v1/admin/import/listas` | GET | Lista listas disponíveis (dropdown Fase 2) |
+
+### O que NÃO é importado (limitações do formato de export do legado)
+
+| Dado | Motivo |
+|------|--------|
+| Itens dentro das listas via ZIP | O `estoque.csv` do legado não tem coluna `Lista` |
+| Colaboradores vinculados às listas | Coluna "Colaboradores" tem só nomes, não IDs |
+| Áreas vinculadas a colaboradores | Relacionamento many-to-many removido no multi-tenant |
+
+---
+
 ## Lacunas Menores (Baixa Prioridade)
 
 Os seguintes itens do legado **não foram portados** por serem edge cases ou de baixa prioridade:
@@ -202,6 +441,8 @@ Os seguintes itens do legado **não foram portados** por serem edge cases ou de 
 - Edição inline de quantidades solicitadas na submissão (expressões matemáticas "5+3")
 - Modal de sucesso com redirect automático pós-submissão de estoque
 - Sugestão de item integrada na tela de atualização de estoque
+- Dashboard Global com drag-and-drop e múltiplos gráficos (versão simplificada implementada)
+- GerenciarRestaurantes com painel completo de impersonação e logs por restaurante
 
 ---
 
@@ -223,11 +464,27 @@ cd apps/api && npx prisma db push
 
 ---
 
+## Dados de Teste (Seed)
+
+Execute `npx ts-node apps/api/prisma/seed.ts` para popular o banco.
+
+| Credencial | Email | Senha | Role |
+|-----------|-------|-------|------|
+| Super Admin | `superadmin@kaizen.com` | `admin123` | SUPER_ADMIN |
+| Super Admin (legacy) | `admin@kaizen.com` | `admin123` | SUPER_ADMIN |
+| Admin Demo | `admin@demo.com` | `admin123` | ADMIN |
+| Colaborador 1 | `colab1@demo.com` | `admin123` | COLLABORATOR |
+| Colaborador 2 | `colab2@demo.com` | `admin123` | COLLABORATOR |
+
+Dados incluídos: 5 fornecedores, 10 itens, 2 áreas, 2 listas, 2 submissões (PENDENTE + APROVADA), 1 lista rápida, 1 sugestão, 1 template POP, 3 convites.
+
+---
+
 ## Próximos Passos Sugeridos
 
 1. **Testes automatizados**: Criar testes unitários para os services críticos (`submissoes`, `listas`, `listas-rapidas`)
 2. **E2E com Playwright**: Testar fluxo completo de submissão de ponta a ponta
-3. **PWA/Offline** (Fase 5.5): Service Worker + IndexedDB para uso offline
-4. **Seed de dados**: Expandir `seed_data` para cobrir todos os novos modelos
-5. **Import CSV**: Implementar importação de itens e fornecedores via CSV
-6. **Notificações automáticas**: Integrar `NotificacoesService` nos demais services (submissões aprovadas, sugestões etc.)
+3. **PWA/Offline** ✅ Implementado: Service Worker + manifest + botão de instalação + Web Push
+4. **Import CSV**: Implementar importação de itens e fornecedores via CSV
+5. **Notificações push** ✅ Implementado: `NotificacoesService` dispara push automático em cada notificação criada
+6. **GerenciarRestaurantes**: Tela completa de gestão de restaurantes para SUPER_ADMIN (CRUD + impersonação)

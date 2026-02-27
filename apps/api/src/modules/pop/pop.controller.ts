@@ -119,19 +119,19 @@ export class CollaboratorPOPController {
   @ApiOperation({ summary: 'Iniciar execução de um template POP' })
   iniciarExecucao(
     @TenantId() restauranteId: number,
-    @CurrentUser() user: any,
+    @CurrentUser('id') userId: number,
     @Body() dto: IniciarExecucaoDto,
   ) {
-    return this.service.iniciarExecucao(user.sub, restauranteId, dto);
+    return this.service.iniciarExecucao(userId, restauranteId, dto);
   }
 
   @Get('execucoes')
   @ApiOperation({ summary: 'Listar minhas execuções POP' })
   findAllExecucoes(
     @TenantId() restauranteId: number,
-    @CurrentUser() user: any,
+    @CurrentUser('id') userId: number,
   ) {
-    return this.service.findAllExecucoesColaborador(user.sub, restauranteId);
+    return this.service.findAllExecucoesColaborador(userId, restauranteId);
   }
 
   @Get('execucoes/:id')
@@ -159,9 +159,9 @@ export class CollaboratorPOPController {
   concluirExecucao(
     @Param('id', ParseIntPipe) id: number,
     @TenantId() restauranteId: number,
-    @CurrentUser() user: any,
+    @CurrentUser('id') userId: number,
   ) {
-    return this.service.concluirExecucao(id, user.sub, restauranteId);
+    return this.service.concluirExecucao(id, userId, restauranteId);
   }
 
   @Put('execucoes/:id/cancelar')
@@ -169,8 +169,8 @@ export class CollaboratorPOPController {
   cancelarExecucao(
     @Param('id', ParseIntPipe) id: number,
     @TenantId() restauranteId: number,
-    @CurrentUser() user: any,
+    @CurrentUser('id') userId: number,
   ) {
-    return this.service.cancelarExecucao(id, user.sub, restauranteId);
+    return this.service.cancelarExecucao(id, userId, restauranteId);
   }
 }

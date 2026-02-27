@@ -63,6 +63,12 @@ export class ItemsController {
     res.send(csv);
   }
 
+  @Get('estatisticas')
+  @ApiOperation({ summary: 'Estatísticas de estoque' })
+  getEstatisticas(@TenantId() restauranteId: number) {
+    return this.itemsService.getEstatisticas(restauranteId);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Detalhes do item' })
   findOne(

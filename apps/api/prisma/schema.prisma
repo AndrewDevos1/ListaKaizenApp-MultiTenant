@@ -102,15 +102,17 @@ model Usuario {
   ativo         Boolean   @default(true)
   restauranteId Int?      @map("restaurante_id")
   sessionToken  String?   @map("session_token")
+  avatarUrl     String?   @map("avatar_url")
   criadoEm      DateTime  @default(now()) @map("criado_em")
 
-  restaurante   Restaurante?       @relation(fields: [restauranteId], references: [id])
-  listas        ListaColaborador[]
-  submissoes    Submissao[]
-  listaRapidas  ListaRapida[]
-  sugestoes     SugestaoItem[]
-  popExecucoes  POPExecucao[]
-  notificacoes  Notificacao[]
+  restaurante       Restaurante?       @relation(fields: [restauranteId], references: [id])
+  listas            ListaColaborador[]
+  submissoes        Submissao[]
+  listaRapidas      ListaRapida[]
+  sugestoes         SugestaoItem[]
+  popExecucoes      POPExecucao[]
+  notificacoes      Notificacao[]
+  pushSubscriptions PushSubscription[]
 
   @@map("usuarios")
 }
@@ -473,4 +475,17 @@ model AppLog {
   criadoEm      DateTime @default(now()) @map("criado_em")
 
   @@map("app_logs")
+}
+
+model PushSubscription {
+  id        Int      @id @default(autoincrement())
+  usuarioId Int      @map("usuario_id")
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  criadoEm  DateTime @default(now()) @map("criado_em")
+
+  usuario   Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@map("push_subscriptions")
 }

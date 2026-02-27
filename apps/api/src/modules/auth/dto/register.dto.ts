@@ -24,4 +24,9 @@ export class RegisterDto {
   @ApiProperty({ example: 1, required: false })
   @IsOptional()
   restauranteId?: number;
+
+  @ApiProperty({ example: 'abc-123-token', required: false })
+  @IsString()
+  @IsOptional()
+  conviteToken?: string;
 }
