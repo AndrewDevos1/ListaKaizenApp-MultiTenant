@@ -3,9 +3,9 @@
 ## Status Atual
 
 **Fase:** PÓS-MIGRAÇÃO — MELHORIAS ATIVAS ✅
-**Última tarefa concluída:** Toast global estilo macOS + documentação atualizada
-**Próximo passo:** PWA / offline (instalação como app)
-**Última branch/commit:** `993eb2c` (restaurando-design)
+**Última tarefa concluída:** Web Push Notifications (VAPID + service worker + hook + botão)
+**Próximo passo:** Testes automatizados / GerenciarRestaurantes
+**Última branch/commit:** `0ac7e08` (restaurando-design)
 
 ---
 
@@ -28,6 +28,10 @@
 | 2026-02-27 | Pós-migração | `cc76a20` | Mudar senha unificado no Editar Perfil |
 | 2026-02-27 | Melhoria UX | `48379ae` | Toast global estilo macOS |
 | 2026-02-27 | Infra | `993eb2c` | Seed atualizado + manual PWA |
+| 2026-02-27 | PWA | `d8c8768` | Botão de instalação PWA + Service Worker + manifest |
+| 2026-02-27 | PWA | `f50f79f` | Ícones PWA 192x512 gerados do logo Kaizen |
+| 2026-02-27 | Fix | `f74c945` | Corrigir stale closure no hook usePWAInstall |
+| 2026-02-27 | PWA | `0ac7e08` | Web Push Notifications com VAPID, PushModule e service worker handler |
 
 ---
 

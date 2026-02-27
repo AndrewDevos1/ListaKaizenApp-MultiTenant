@@ -21,6 +21,10 @@
 | Pós-migração | `cc76a20` | Mudar Senha unificado dentro do Editar Perfil |
 | Melhoria UX | `48379ae` | Sistema global de Toast estilo macOS |
 | Infra | `993eb2c` | Seed de dados completo + manual PWA |
+| PWA | `d8c8768` | Botão de instalação PWA + Service Worker + manifest |
+| PWA | `f50f79f` | Ícones PWA 192×512 gerados do logo Kaizen |
+| Fix | `f74c945` | Corrigir stale closure no hook usePWAInstall |
+| PWA | `0ac7e08` | Web Push Notifications com VAPID, PushModule e SW handler |
 
 ---
 
@@ -266,6 +270,75 @@ error('Falha', 'Não foi possível conectar');
 
 ---
 
+---
+
+## PWA — Progressive Web App
+
+### Instalação como App (`d8c8768`, `f50f79f`, `f74c945`)
+
+| Arquivo | Papel |
+|---------|-------|
+| `apps/web/public/sw.js` | Service Worker: network-first, cache de assets estáticos, handlers push e notificationclick |
+| `apps/web/src/app/manifest.ts` | Manifest Next.js 15: nome, tema, ícones, `display: standalone` |
+| `apps/web/public/icons/icon-192.png` | Ícone PWA 192×192 (logo Kaizen em fundo branco) |
+| `apps/web/public/icons/icon-512.png` | Ícone PWA 512×512 (logo Kaizen em fundo branco) |
+| `apps/web/src/hooks/usePWAInstall.ts` | Hook: detecta `beforeinstallprompt`, iOS Safari, standalone mode, timeout 3s |
+| `apps/web/src/components/InstallAppButton.tsx` | Botão visível apenas quando instalável; iOS mostra dialog manual |
+| `apps/web/src/components/SwRegister.tsx` | Registra o SW após `page load` (não bloqueia carregamento) |
+
+**Compatibilidade:**
+
+| Plataforma | Comportamento |
+|------------|---------------|
+| Chrome/Edge (desktop/Android) | Prompt nativo de instalação |
+| Safari (iOS/iPadOS) | Dialog passo-a-passo manual |
+| Firefox | Botão oculto (sem suporte nativo) |
+| App já instalado | Botão oculto automaticamente |
+
+---
+
+### Web Push Notifications (`0ac7e08`)
+
+Notificações nativas do OS que aparecem mesmo com o app fechado.
+
+**Backend:**
+
+| Arquivo | Papel |
+|---------|-------|
+| `apps/api/src/modules/push/push.service.ts` | Inicializa VAPID, salva/remove assinaturas, envia push via `web-push` |
+| `apps/api/src/modules/push/push.controller.ts` | `GET /v1/push/vapid-public-key`, `POST/DELETE /v1/push/subscribe` |
+| `apps/api/src/modules/push/push.module.ts` | Módulo NestJS exportando `PushService` |
+| Prisma: `PushSubscription` | Armazena endpoint, p256dh e auth por dispositivo/usuário |
+
+`NotificacoesService.criar()` chama `PushService.sendToUser()` automaticamente após gravar cada notificação no banco (fire-and-forget). Assinaturas inválidas (HTTP 410/404) são removidas automaticamente.
+
+**Frontend:**
+
+| Arquivo | Papel |
+|---------|-------|
+| `apps/web/src/hooks/usePushNotifications.ts` | Gerencia permissão, subscribe, unsubscribe; estados: `idle | loading | subscribed | denied | unsupported` |
+| `apps/web/src/components/PushNotificationButton.tsx` | Botão "Ativar notificações" nos dashboards; muda para "Notificações ativas" quando subscrito |
+| `apps/web/public/sw.js` | Handlers `push` (exibe notificação nativa) e `notificationclick` (foca/abre aba) |
+
+**Variáveis de ambiente necessárias:**
+```env
+# apps/api/.env
+VAPID_PUBLIC_KEY=<chave_publica>
+VAPID_PRIVATE_KEY=<chave_privada>
+VAPID_SUBJECT=mailto:admin@kaizenlists.com
+
+# apps/web/.env.local
+NEXT_PUBLIC_VAPID_PUBLIC_KEY=<mesma_chave_publica>
+```
+
+**Como testar:**
+1. Abrir dashboard no Chrome (desktop ou Android)
+2. Clicar em "Ativar notificações" — browser solicita permissão
+3. Aceitar → assinatura salva no banco
+4. Qualquer ação que gere uma `Notificacao` no backend dispara push automaticamente
+
+---
+
 ## Lacunas Menores (Baixa Prioridade)
 
 Os seguintes itens do legado **não foram portados** por serem edge cases ou de baixa prioridade:
@@ -322,7 +395,7 @@ Dados incluídos: 5 fornecedores, 10 itens, 2 áreas, 2 listas, 2 submissões (P
 
 1. **Testes automatizados**: Criar testes unitários para os services críticos (`submissoes`, `listas`, `listas-rapidas`)
 2. **E2E com Playwright**: Testar fluxo completo de submissão de ponta a ponta
-3. **PWA/Offline** (Fase 5.5): Service Worker + IndexedDB para uso offline
+3. **PWA/Offline** ✅ Implementado: Service Worker + manifest + botão de instalação + Web Push
 4. **Import CSV**: Implementar importação de itens e fornecedores via CSV
-5. **Notificações automáticas**: Integrar `NotificacoesService` nos demais services (submissões aprovadas, sugestões etc.)
+5. **Notificações push** ✅ Implementado: `NotificacoesService` dispara push automático em cada notificação criada
 6. **GerenciarRestaurantes**: Tela completa de gestão de restaurantes para SUPER_ADMIN (CRUD + impersonação)
