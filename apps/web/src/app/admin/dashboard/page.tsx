@@ -8,6 +8,7 @@ import { Area, Item, Lista } from 'shared';
 import styles from './Dashboard.module.css';
 import { FaBoxes, FaMapMarkerAlt, FaList, FaChartBar, FaUsers, FaCog } from 'react-icons/fa';
 import { Spinner } from 'react-bootstrap';
+import InstallAppButton from '@/components/InstallAppButton';
 
 export default function AdminDashboard() {
   const { user } = useAuth();
@@ -19,6 +20,9 @@ export default function AdminDashboard() {
           <div>
             <h1 className={styles.pageTitle}>Dashboard Admin</h1>
             <p className={styles.pageSubtitle}>Bem-vindo, {user?.nome}!</p>
+          </div>
+          <div className="d-flex align-items-center gap-2">
+            <InstallAppButton />
           </div>
         </div>
 

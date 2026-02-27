@@ -4,6 +4,7 @@ import type { Metadata } from 'next';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { ToastProvider } from '@/contexts/ToastContext';
 import ToastContainer from '@/components/ToastContainer';
+import SwRegister from '@/components/SwRegister';
 
 export const metadata: Metadata = {
   title: 'Kaizen Lists',
@@ -17,6 +18,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <ToastProvider>
           <AuthProvider>{children}</AuthProvider>
           <ToastContainer />
+          <SwRegister />
         </ToastProvider>
       </body>
     </html>
