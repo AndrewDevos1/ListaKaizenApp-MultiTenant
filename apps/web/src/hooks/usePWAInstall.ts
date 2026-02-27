@@ -58,9 +58,12 @@ export function usePWAInstall(): PWAInstallResult {
 
     console.log("[PWA Install] Aguardando evento 'beforeinstallprompt'... (timeout de 3s)");
 
+    let received = false;
+
     const handler = (e: Event) => {
       e.preventDefault();
       deferredPrompt = e as BeforeInstallPromptEvent;
+      received = true;
       console.log("[PWA Install] Evento 'beforeinstallprompt' recebido! Botão VISÍVEL.");
       setState('installable');
     };
@@ -68,7 +71,7 @@ export function usePWAInstall(): PWAInstallResult {
     window.addEventListener('beforeinstallprompt', handler);
 
     const timer = setTimeout(() => {
-      if (state === 'loading') {
+      if (!received) {
         console.log("[PWA Install] Timeout de 3s atingido. Evento 'beforeinstallprompt' NÃO recebido.");
         console.log("[PWA Install] Estado: 'unsupported'. Botão ficará OCULTO.");
         setState('unsupported');
