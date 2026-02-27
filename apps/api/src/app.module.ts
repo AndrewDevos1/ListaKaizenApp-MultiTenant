@@ -11,6 +11,9 @@ import { UsuariosModule } from './modules/usuarios/usuarios.module';
 import { FornecedoresModule } from './modules/fornecedores/fornecedores.module';
 import { CotacoesModule } from './modules/cotacoes/cotacoes.module';
 import { ChecklistsModule } from './modules/checklists/checklists.module';
+import { ListasRapidasModule } from './modules/listas-rapidas/listas-rapidas.module';
+import { SugestoesModule } from './modules/sugestoes/sugestoes.module';
+import { POPModule } from './modules/pop/pop.module';
 
 @Module({
   imports: [
@@ -26,6 +29,9 @@ import { ChecklistsModule } from './modules/checklists/checklists.module';
     FornecedoresModule,
     CotacoesModule,
     ChecklistsModule,
+    ListasRapidasModule,
+    SugestoesModule,
+    POPModule,
   ],
 })
 export class AppModule {}

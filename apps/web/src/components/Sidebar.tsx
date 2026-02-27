@@ -34,6 +34,7 @@ import {
   FaTruck,
   FaTruckLoading,
   FaFileInvoiceDollar,
+  FaClipboard,
 } from 'react-icons/fa';
 import styles from './Sidebar.module.css';
 import Breadcrumbs from './Breadcrumbs';
@@ -244,14 +245,16 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
       label: 'POP',
       items: [
         {
-          label: 'POP Listas',
-          status: 'soon',
-          icon: <FaListAlt />,
+          label: 'Templates POP',
+          href: '/admin/pop/templates',
+          icon: <FaClipboard />,
+          status: 'available',
         },
         {
-          label: 'POP Auditoria',
-          status: 'soon',
-          icon: <FaClipboardCheck />,
+          label: 'Execucoes POP',
+          href: '/admin/pop/execucoes',
+          icon: <FaListAlt />,
+          status: 'available',
         },
         {
           label: 'POP Atividades',
@@ -276,9 +279,10 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
           status: 'available',
         },
         {
-          label: 'Sugestões de Itens',
-          status: 'soon',
+          label: 'Sugestoes de Itens',
+          href: '/admin/sugestoes',
           icon: <FaLightbulb />,
+          status: 'available',
         },
       ],
     },
@@ -287,9 +291,10 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
       label: 'LISTAS & COMPRAS',
       items: [
         {
-          label: 'Lista Rápida',
-          status: 'soon',
+          label: 'Listas Rapidas',
+          href: '/admin/listas-rapidas',
           icon: <FaBolt />,
+          status: 'available',
         },
         {
           label: 'Listas de Compras',
@@ -358,9 +363,27 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
           icon: <FaClipboardList />,
         },
         {
-          label: 'Minhas Submissões',
+          label: 'Minhas Submissoes',
           href: '/collaborator/submissoes',
           icon: <FaClipboardCheck />,
+        },
+        {
+          label: 'Listas Rapidas',
+          href: '/collaborator/listas-rapidas',
+          icon: <FaBolt />,
+          status: 'available',
+        },
+        {
+          label: 'Sugestoes de Itens',
+          href: '/collaborator/sugestoes',
+          icon: <FaLightbulb />,
+          status: 'available',
+        },
+        {
+          label: 'POPs',
+          href: '/collaborator/pop',
+          icon: <FaClipboard />,
+          status: 'available',
         },
       ],
     },

@@ -73,14 +73,20 @@ model Restaurante {
   ativo    Boolean  @default(true)
   criadoEm DateTime @default(now()) @map("criado_em")
 
-  usuarios     Usuario[]
-  items        Item[]
-  areas        Area[]
-  listas       Lista[]
-  submissoes   Submissao[]
-  fornecedores Fornecedor[]
-  cotacoes     Cotacao[]
-  checklists   Checklist[]
+  usuarios       Usuario[]
+  items          Item[]
+  areas          Area[]
+  listas         Lista[]
+  submissoes     Submissao[]
+  fornecedores   Fornecedor[]
+  cotacoes       Cotacao[]
+  checklists     Checklist[]
+  listaRapidas   ListaRapida[]
+  sugestoes      SugestaoItem[]
+  popTemplates   POPTemplate[]
+  popExecucoes   POPExecucao[]
+  notificacoes   Notificacao[]
+  conviteTokens  ConviteToken[]
 
   @@map("restaurantes")
 }
@@ -98,9 +104,13 @@ model Usuario {
   sessionToken  String?   @map("session_token")
   criadoEm      DateTime  @default(now()) @map("criado_em")
 
-  restaurante  Restaurante?       @relation(fields: [restauranteId], references: [id])
-  listas       ListaColaborador[]
-  submissoes   Submissao[]
+  restaurante   Restaurante?       @relation(fields: [restauranteId], references: [id])
+  listas        ListaColaborador[]
+  submissoes    Submissao[]
+  listaRapidas  ListaRapida[]
+  sugestoes     SugestaoItem[]
+  popExecucoes  POPExecucao[]
+  notificacoes  Notificacao[]
 
   @@map("usuarios")
 }
@@ -116,10 +126,12 @@ model Item {
   restaurante  Restaurante   @relation(fields: [restauranteId], references: [id])
   fornecedor   Fornecedor?   @relation(fields: [fornecedorId], references: [id])
   fornecedorId Int?          @map("fornecedor_id")
-  listasRef    ListaItemRef[]
-  pedidos      Pedido[]
-  cotacaoItens CotacaoItem[]
-  checklistItens ChecklistItem[]
+  listasRef       ListaItemRef[]
+  pedidos         Pedido[]
+  cotacaoItens    CotacaoItem[]
+  checklistItens  ChecklistItem[]
+  listaRapidaItens ListaRapidaItem[]
+  sugestoesCriadas SugestaoItem[]
 
   @@map("itens")
 }
@@ -288,4 +300,177 @@ model ChecklistItem {
   item      Item      @relation(fields: [itemId], references: [id])
 
   @@map("checklist_itens")
+}
+
+// ============================================================
+// FASE 4 — Listas Rápidas, Sugestões de Itens, POPs
+// ============================================================
+
+model ListaRapida {
+  id            Int               @id @default(autoincrement())
+  restauranteId Int               @map("restaurante_id")
+  usuarioId     Int               @map("usuario_id")
+  nome          String
+  status        StatusListaRapida @default(RASCUNHO)
+  criadoEm      DateTime          @default(now()) @map("criado_em")
+  atualizadoEm  DateTime          @updatedAt @map("atualizado_em")
+
+  restaurante Restaurante       @relation(fields: [restauranteId], references: [id])
+  usuario     Usuario           @relation(fields: [usuarioId], references: [id])
+  itens       ListaRapidaItem[]
+
+  @@map("listas_rapidas")
+}
+
+model ListaRapidaItem {
+  id            Int       @id @default(autoincrement())
+  listaRapidaId Int       @map("lista_rapida_id")
+  nome          String
+  quantidade    Float?
+  unidade       String?
+  itemId        Int?      @map("item_id")
+  descartado    Boolean   @default(false)
+  criadoEm      DateTime  @default(now()) @map("criado_em")
+
+  listaRapida ListaRapida @relation(fields: [listaRapidaId], references: [id])
+  item        Item?       @relation(fields: [itemId], references: [id])
+
+  @@map("lista_rapida_itens")
+}
+
+model SugestaoItem {
+  id            Int            @id @default(autoincrement())
+  restauranteId Int            @map("restaurante_id")
+  usuarioId     Int            @map("usuario_id")
+  nome          String
+  unidadeMedida String         @map("unidade_medida")
+  status        StatusSugestao @default(PENDENTE)
+  itemCriadoId  Int?           @map("item_criado_id")
+  criadoEm      DateTime       @default(now()) @map("criado_em")
+  atualizadoEm  DateTime       @updatedAt @map("atualizado_em")
+
+  restaurante Restaurante @relation(fields: [restauranteId], references: [id])
+  usuario     Usuario     @relation(fields: [usuarioId], references: [id])
+  itemCriado  Item?       @relation(fields: [itemCriadoId], references: [id])
+
+  @@map("sugestoes_itens")
+}
+
+model POPTemplate {
+  id            Int      @id @default(autoincrement())
+  restauranteId Int      @map("restaurante_id")
+  nome          String
+  tipo          TipoPOP
+  descricao     String?
+  ativo         Boolean  @default(true)
+  criadoEm      DateTime @default(now()) @map("criado_em")
+  atualizadoEm  DateTime @updatedAt @map("atualizado_em")
+
+  restaurante Restaurante   @relation(fields: [restauranteId], references: [id])
+  passos      POPPasso[]
+  execucoes   POPExecucao[]
+
+  @@map("pop_templates")
+}
+
+model POPPasso {
+  id         Int    @id @default(autoincrement())
+  templateId Int    @map("template_id")
+  descricao  String
+  ordem      Int
+
+  template      POPTemplate      @relation(fields: [templateId], references: [id])
+  execucaoItens POPExecucaoItem[]
+
+  @@map("pop_passos")
+}
+
+model POPExecucao {
+  id            Int               @id @default(autoincrement())
+  templateId    Int               @map("template_id")
+  usuarioId     Int               @map("usuario_id")
+  restauranteId Int               @map("restaurante_id")
+  status        StatusPOPExecucao @default(EM_ANDAMENTO)
+  criadoEm      DateTime          @default(now()) @map("criado_em")
+  atualizadoEm  DateTime          @updatedAt @map("atualizado_em")
+
+  template    POPTemplate      @relation(fields: [templateId], references: [id])
+  usuario     Usuario          @relation(fields: [usuarioId], references: [id])
+  restaurante Restaurante      @relation(fields: [restauranteId], references: [id])
+  itens       POPExecucaoItem[]
+
+  @@map("pop_execucoes")
+}
+
+model POPExecucaoItem {
+  id         Int      @id @default(autoincrement())
+  execucaoId Int      @map("execucao_id")
+  passoId    Int      @map("passo_id")
+  marcado    Boolean  @default(false)
+  observacao String?
+  criadoEm   DateTime @default(now()) @map("criado_em")
+
+  execucao POPExecucao @relation(fields: [execucaoId], references: [id])
+  passo    POPPasso    @relation(fields: [passoId], references: [id])
+
+  @@unique([execucaoId, passoId])
+  @@map("pop_execucao_itens")
+}
+
+// ============================================================
+// FASE 5 — Notificações, Convites, Auditoria
+// ============================================================
+
+enum TipoNotificacao {
+  SUBMISSAO_PENDENTE
+  SUBMISSAO_APROVADA
+  SUBMISSAO_REJEITADA
+  LISTA_RAPIDA_PENDENTE
+  LISTA_RAPIDA_APROVADA
+  LISTA_RAPIDA_REJEITADA
+  SUGESTAO_APROVADA
+  SUGESTAO_REJEITADA
+}
+
+model Notificacao {
+  id            Int              @id @default(autoincrement())
+  usuarioId     Int              @map("usuario_id")
+  restauranteId Int              @map("restaurante_id")
+  tipo          TipoNotificacao
+  mensagem      String
+  lida          Boolean          @default(false)
+  criadoEm      DateTime         @default(now()) @map("criado_em")
+
+  usuario     Usuario     @relation(fields: [usuarioId], references: [id])
+  restaurante Restaurante @relation(fields: [restauranteId], references: [id])
+
+  @@map("notificacoes")
+}
+
+model ConviteToken {
+  id            Int      @id @default(autoincrement())
+  token         String   @unique
+  email         String?
+  restauranteId Int?     @map("restaurante_id")
+  role          UserRole @default(COLLABORATOR)
+  usado         Boolean  @default(false)
+  expiresAt     DateTime @map("expires_at")
+  criadoEm      DateTime @default(now()) @map("criado_em")
+
+  restaurante Restaurante? @relation(fields: [restauranteId], references: [id])
+
+  @@map("convite_tokens")
+}
+
+model AppLog {
+  id            Int      @id @default(autoincrement())
+  restauranteId Int?     @map("restaurante_id")
+  usuarioId     Int?     @map("usuario_id")
+  acao          String
+  entidade      String?
+  entidadeId    Int?     @map("entidade_id")
+  detalhes      Json?
+  criadoEm      DateTime @default(now()) @map("criado_em")
+
+  @@map("app_logs")
 }
