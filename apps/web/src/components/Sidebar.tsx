@@ -251,7 +251,7 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
           label: 'Estatísticas',
           href: '/admin/estatisticas',
           icon: <FaChartBar />,
-          status: 'soon' as const,
+          status: 'available',
         },
       ],
     },
@@ -328,7 +328,7 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
           label: 'Catálogo Global',
           href: '/admin/catalogo-global',
           icon: <FaBook />,
-          status: 'soon' as const,
+          status: 'available',
         },
         {
           label: 'Itens Regionais',

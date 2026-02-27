@@ -60,6 +60,55 @@ export class ItemsService {
     });
   }
 
+  async getEstatisticas(restauranteId: number) {
+    const [listaItens, submissoesPorStatus] = await Promise.all([
+      this.prisma.listaItemRef.findMany({
+        where: { lista: { restauranteId, deletado: false } },
+        include: {
+          item: { select: { id: true, nome: true, unidadeMedida: true } },
+          lista: { select: { id: true, nome: true } },
+        },
+      }),
+      this.prisma.submissao.groupBy({
+        by: ['status'],
+        where: { restauranteId },
+        _count: { id: true },
+      }),
+    ]);
+
+    const totalItens = listaItens.length;
+    const itensOk = listaItens.filter(
+      (i) => i.quantidadeAtual !== null && i.quantidadeMinima !== null && i.quantidadeAtual >= i.quantidadeMinima,
+    ).length;
+    const itensFaltantes = totalItens - itensOk;
+
+    const submissoesPorStatusMap: Record<string, number> = {};
+    for (const s of submissoesPorStatus) {
+      submissoesPorStatusMap[s.status] = s._count.id;
+    }
+
+    const totalListas = await this.prisma.lista.count({ where: { restauranteId, deletado: false } });
+
+    return {
+      resumo: {
+        totalListas,
+        totalItens,
+        itensOk,
+        itensFaltantes,
+      },
+      submissoesPorStatus: submissoesPorStatusMap,
+      itens: listaItens.map((i) => ({
+        itemId: i.itemId,
+        itemNome: i.item.nome,
+        unidade: i.item.unidadeMedida,
+        listaId: i.listaId,
+        listaNome: i.lista.nome,
+        quantidadeAtual: i.quantidadeAtual ?? 0,
+        quantidadeMinima: i.quantidadeMinima ?? 0,
+      })),
+    };
+  }
+
   async exportarCsv(restauranteId: number): Promise<string> {
     const itens = await this.prisma.item.findMany({
       where: { restauranteId },
