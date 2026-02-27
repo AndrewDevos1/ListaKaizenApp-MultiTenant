@@ -33,19 +33,19 @@ export class CollaboratorSugestoesController {
   @ApiOperation({ summary: 'Criar sugestão de item' })
   create(
     @TenantId() restauranteId: number,
-    @CurrentUser() user: any,
+    @CurrentUser('id') userId: number,
     @Body() dto: CreateSugestaoDto,
   ) {
-    return this.service.create(restauranteId, user.sub, dto);
+    return this.service.create(restauranteId, userId, dto);
   }
 
   @Get()
   @ApiOperation({ summary: 'Listar minhas sugestões' })
   findAll(
     @TenantId() restauranteId: number,
-    @CurrentUser() user: any,
+    @CurrentUser('id') userId: number,
   ) {
-    return this.service.findAllByColaborador(user.sub, restauranteId);
+    return this.service.findAllByColaborador(userId, restauranteId);
   }
 
   @Get(':id')

@@ -6,7 +6,6 @@ import { usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   FaTachometerAlt,
-  FaList,
   FaBoxes,
   FaMapMarkerAlt,
   FaClipboardList,
@@ -26,17 +25,19 @@ import {
   FaChevronLeft,
   FaUsersCog,
   FaClipboardCheck,
-  FaListAlt,
   FaTasks,
   FaGlobeAmericas,
   FaLightbulb,
   FaBolt,
   FaTruck,
-  FaTruckLoading,
   FaFileInvoiceDollar,
-  FaClipboard,
   FaEnvelope,
   FaHistory,
+  FaShoppingCart,
+  FaBook,
+  FaChartBar,
+  FaStore,
+  FaGlobe,
 } from 'react-icons/fa';
 import styles from './Sidebar.module.css';
 import Breadcrumbs from './Breadcrumbs';
@@ -57,7 +58,7 @@ interface MenuGroup {
 }
 
 export default function Sidebar({ children }: { children: React.ReactNode }) {
-  const { user, logout, isAdmin } = useAuth();
+  const { user, logout, isAdmin, isSuperAdmin } = useAuth();
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isToggled, setIsToggled] = useState(false);
@@ -99,10 +100,10 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
     const defaultGroups: Record<string, boolean> = isAdmin
       ? {
           'visao-geral': true,
+          'listas-estoque': true,
           pop: true,
           itens: true,
-          'listas-compras': true,
-          fornecedores: true,
+          gestao: true,
           configuracoes: true,
           perfil: true,
         }
@@ -230,6 +231,52 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
           icon: <FaTachometerAlt />,
           status: 'available',
         },
+        ...(isSuperAdmin
+          ? [
+              {
+                label: 'Dashboard Global',
+                href: '/admin/global',
+                icon: <FaGlobe />,
+                status: 'available' as const,
+              },
+            ]
+          : []),
+        {
+          label: 'Gerenciar Usuários',
+          href: '/admin/usuarios',
+          icon: <FaUsersCog />,
+          status: 'available',
+        },
+        {
+          label: 'Estatísticas',
+          href: '/admin/estatisticas',
+          icon: <FaChartBar />,
+          status: 'soon' as const,
+        },
+      ],
+    },
+    {
+      id: 'listas-estoque',
+      label: 'LISTAS & ESTOQUE',
+      items: [
+        {
+          label: 'Listas Rápidas',
+          href: '/admin/listas-rapidas',
+          icon: <FaBolt />,
+          status: 'available',
+        },
+        {
+          label: 'Listas de Compras',
+          href: '/admin/listas',
+          icon: <FaShoppingCart />,
+          status: 'available',
+        },
+        {
+          label: 'Checklists de Compras',
+          href: '/admin/checklists',
+          icon: <FaClipboardList />,
+          status: 'available',
+        },
         {
           label: 'Submissões',
           href: '/admin/submissoes',
@@ -237,9 +284,9 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
           status: 'available',
         },
         {
-          label: 'Gerenciar Usuários',
-          href: '/admin/usuarios',
-          icon: <FaUsersCog />,
+          label: 'Sugestões de Itens',
+          href: '/admin/sugestoes',
+          icon: <FaLightbulb />,
           status: 'available',
         },
       ],
@@ -249,20 +296,20 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
       label: 'POP',
       items: [
         {
-          label: 'Templates POP',
-          href: '/admin/pop/templates',
-          icon: <FaClipboard />,
-          status: 'available',
-        },
-        {
-          label: 'Execucoes POP',
-          href: '/admin/pop/execucoes',
-          icon: <FaListAlt />,
-          status: 'available',
-        },
-        {
           label: 'POP Atividades',
-          status: 'soon',
+          href: '/admin/pop/templates',
+          icon: <FaClipboardList />,
+          status: 'available',
+        },
+        {
+          label: 'POP Listas',
+          href: '/admin/pop/execucoes',
+          icon: <FaClipboardCheck />,
+          status: 'available',
+        },
+        {
+          label: 'POP Auditoria',
+          status: 'soon' as const,
           icon: <FaTasks />,
         },
       ],
@@ -272,57 +319,28 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
       label: 'ITENS',
       items: [
         {
-          label: 'Itens Regionais',
-          status: 'soon',
-          icon: <FaGlobeAmericas />,
-        },
-        {
           label: 'Itens Cadastrados',
           href: '/admin/items',
           icon: <FaBoxes />,
           status: 'available',
         },
         {
-          label: 'Sugestoes de Itens',
-          href: '/admin/sugestoes',
-          icon: <FaLightbulb />,
-          status: 'available',
+          label: 'Catálogo Global',
+          href: '/admin/catalogo-global',
+          icon: <FaBook />,
+          status: 'soon' as const,
+        },
+        {
+          label: 'Itens Regionais',
+          href: '/admin/itens-regionais',
+          icon: <FaGlobeAmericas />,
+          status: 'soon' as const,
         },
       ],
     },
     {
-      id: 'listas-compras',
-      label: 'LISTAS & COMPRAS',
-      items: [
-        {
-          label: 'Listas Rapidas',
-          href: '/admin/listas-rapidas',
-          icon: <FaBolt />,
-          status: 'available',
-        },
-        {
-          label: 'Listas de Compras',
-          href: '/admin/listas',
-          icon: <FaList />,
-          status: 'available',
-        },
-        {
-          label: 'Cotações',
-          href: '/admin/cotacoes',
-          icon: <FaFileInvoiceDollar />,
-          status: 'available',
-        },
-        {
-          label: 'Checklists de Compras',
-          href: '/admin/checklists',
-          icon: <FaClipboardList />,
-          status: 'available',
-        },
-      ],
-    },
-    {
-      id: 'fornecedores',
-      label: 'FORNECEDORES & ÁREAS',
+      id: 'gestao',
+      label: 'GESTÃO',
       items: [
         {
           label: 'Áreas',
@@ -337,10 +355,33 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
           status: 'available',
         },
         {
-          label: 'Fornecedores da Região',
-          status: 'soon',
-          icon: <FaTruckLoading />,
+          label: 'Cotações',
+          href: '/admin/cotacoes',
+          icon: <FaFileInvoiceDollar />,
+          status: 'available',
         },
+        {
+          label: 'Gerar Cotação',
+          href: '/admin/gerar-cotacao',
+          icon: <FaFileInvoiceDollar />,
+          status: 'soon' as const,
+        },
+        {
+          label: 'Fornecedores da Região',
+          href: '/fornecedores-regiao',
+          icon: <FaStore />,
+          status: 'soon' as const,
+        },
+        ...(isSuperAdmin
+          ? [
+              {
+                label: 'Restaurantes',
+                href: '/admin/restaurantes',
+                icon: <FaStore />,
+                status: 'soon' as const,
+              },
+            ]
+          : []),
       ],
     },
     {
@@ -380,31 +421,43 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
       label: 'ATIVIDADES',
       items: [
         {
-          label: 'Minhas Listas',
-          href: '/collaborator/listas',
-          icon: <FaClipboardList />,
-        },
-        {
-          label: 'Minhas Submissoes',
-          href: '/collaborator/submissoes',
-          icon: <FaClipboardCheck />,
-        },
-        {
-          label: 'Listas Rapidas',
+          label: 'Lista Rápida',
           href: '/collaborator/listas-rapidas',
           icon: <FaBolt />,
           status: 'available',
         },
         {
-          label: 'Sugestoes de Itens',
-          href: '/collaborator/sugestoes',
-          icon: <FaLightbulb />,
+          label: 'Minhas Listas',
+          href: '/collaborator/listas',
+          icon: <FaShoppingCart />,
+        },
+        {
+          label: 'Minhas Submissões',
+          href: '/collaborator/submissoes',
+          icon: <FaClipboardCheck />,
+        },
+        {
+          label: 'POPs Diários',
+          href: '/collaborator/pop',
+          icon: <FaClipboardList />,
           status: 'available',
         },
         {
-          label: 'POPs',
-          href: '/collaborator/pop',
-          icon: <FaClipboard />,
+          label: 'Histórico POP',
+          href: '/collaborator/pop/execucoes',
+          icon: <FaHistory />,
+          status: 'available',
+        },
+        {
+          label: 'Catálogo Global',
+          href: '/collaborator/catalogo',
+          icon: <FaBook />,
+          status: 'soon' as const,
+        },
+        {
+          label: 'Sugestões de Itens',
+          href: '/collaborator/sugestoes',
+          icon: <FaLightbulb />,
           status: 'available',
         },
       ],
@@ -417,15 +470,15 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
     items: [
       {
         label: 'Editar Perfil',
-        href: isAdmin ? undefined : '/collaborator/perfil',
+        href: isAdmin ? '/admin/editar-perfil' : '/collaborator/perfil',
         icon: <FaUserEdit />,
-        status: isAdmin ? 'soon' : 'available',
+        status: isAdmin ? 'soon' as const : 'available',
       },
       {
         label: 'Mudar Senha',
-        href: isAdmin ? undefined : '/collaborator/mudar-senha',
+        href: isAdmin ? '/admin/mudar-senha' : '/collaborator/mudar-senha',
         icon: <FaKey />,
-        status: isAdmin ? 'soon' : 'available',
+        status: isAdmin ? 'soon' as const : 'available',
       },
       {
         label: 'Sair',

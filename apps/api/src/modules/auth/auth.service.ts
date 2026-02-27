@@ -7,6 +7,7 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../../prisma/prisma.service';
+import { ConvitesService } from '../convites/convites.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
@@ -16,9 +17,16 @@ export class AuthService {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
+    private convitesService: ConvitesService,
   ) {}
 
   async register(dto: RegisterDto) {
+    // Se há token de convite, valida antes de criar o usuário
+    let convite: Awaited<ReturnType<ConvitesService['validar']>> | null = null;
+    if (dto.conviteToken) {
+      convite = await this.convitesService.validar(dto.conviteToken);
+    }
+
     const existing = await this.prisma.usuario.findUnique({
       where: { email: dto.email },
     });
@@ -37,15 +45,25 @@ export class AuthService {
 
     const hashedPassword = await bcrypt.hash(dto.senha, 10);
 
+    // Se tem convite, pega restauranteId e role do convite
+    const restauranteId = convite?.restauranteId ?? dto.restauranteId ?? null;
+    const role = convite?.role ?? undefined;
+
     const user = await this.prisma.usuario.create({
       data: {
         nome: dto.nome,
         email: dto.email,
         username: dto.username,
         senha: hashedPassword,
-        restauranteId: dto.restauranteId,
+        restauranteId,
+        ...(role ? { role } : {}),
       },
     });
+
+    // Marca o convite como usado
+    if (convite && dto.conviteToken) {
+      await this.convitesService.usar(dto.conviteToken, user.id);
+    }
 
     return {
       message: 'Registro realizado com sucesso. Aguarde aprovação do administrador.',

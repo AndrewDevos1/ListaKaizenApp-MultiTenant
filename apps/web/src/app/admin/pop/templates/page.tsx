@@ -8,16 +8,16 @@ import api from '@/lib/api';
 import styles from './POPTemplates.module.css';
 import { FaClipboard, FaPlus, FaEye } from 'react-icons/fa';
 
-type TipoPOP = 'ABERTURA' | 'FECHAMENTO' | 'LIMPEZA' | 'PREPARACAO' | 'SEGURANCA';
+type TipoPOP = 'ABERTURA' | 'FECHAMENTO' | 'LIMPEZA' | 'OPERACIONAL' | 'PERSONALIZADO';
 
-const TIPOS: TipoPOP[] = ['ABERTURA', 'FECHAMENTO', 'LIMPEZA', 'PREPARACAO', 'SEGURANCA'];
+const TIPOS: TipoPOP[] = ['ABERTURA', 'FECHAMENTO', 'LIMPEZA', 'OPERACIONAL', 'PERSONALIZADO'];
 
 const TIPO_VARIANT: Record<TipoPOP, string> = {
   ABERTURA: 'primary',
   FECHAMENTO: 'secondary',
   LIMPEZA: 'info',
-  PREPARACAO: 'warning',
-  SEGURANCA: 'danger',
+  OPERACIONAL: 'warning',
+  PERSONALIZADO: 'danger',
 };
 
 interface POPTemplate {
@@ -26,7 +26,7 @@ interface POPTemplate {
   tipo: TipoPOP;
   descricao: string | null;
   ativo: boolean;
-  _count: { passos: number };
+  _count: { execucoes: number };
 }
 
 interface TemplateForm {
@@ -160,7 +160,7 @@ export default function AdminPOPTemplatesPage() {
                     <td className={styles.tableCell}>
                       <Badge bg={TIPO_VARIANT[t.tipo]}>{t.tipo}</Badge>
                     </td>
-                    <td className={styles.tableCell}>{t._count.passos}</td>
+                    <td className={styles.tableCell}>{t._count.execucoes}</td>
                     <td className={styles.tableCell}>
                       <Badge bg={t.ativo ? 'success' : 'secondary'}>
                         {t.ativo ? 'Ativo' : 'Inativo'}

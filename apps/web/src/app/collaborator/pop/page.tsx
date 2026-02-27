@@ -8,14 +8,14 @@ import api from '@/lib/api';
 import styles from './POPColaborador.module.css';
 import { FaClipboard, FaPlay, FaHistory } from 'react-icons/fa';
 
-type TipoPOP = 'ABERTURA' | 'FECHAMENTO' | 'LIMPEZA' | 'PREPARACAO' | 'SEGURANCA';
+type TipoPOP = 'ABERTURA' | 'FECHAMENTO' | 'LIMPEZA' | 'OPERACIONAL' | 'PERSONALIZADO';
 
 const TIPO_VARIANT: Record<TipoPOP, string> = {
   ABERTURA: 'primary',
   FECHAMENTO: 'secondary',
   LIMPEZA: 'info',
-  PREPARACAO: 'warning',
-  SEGURANCA: 'danger',
+  OPERACIONAL: 'warning',
+  PERSONALIZADO: 'danger',
 };
 
 interface POPTemplate {
@@ -23,7 +23,7 @@ interface POPTemplate {
   nome: string;
   tipo: TipoPOP;
   descricao: string | null;
-  _count?: { passos: number };
+  _count?: { execucoes: number };
 }
 
 export default function CollaboratorPOPPage() {
@@ -104,7 +104,7 @@ export default function CollaboratorPOPPage() {
                   <Badge bg={TIPO_VARIANT[t.tipo]}>{t.tipo}</Badge>
                   {t._count && (
                     <span className={styles.cardText}>
-                      {t._count.passos} passo{t._count.passos !== 1 ? 's' : ''}
+                      {t._count.execucoes} execuc{t._count.execucoes !== 1 ? 'oes' : 'ao'}
                     </span>
                   )}
                 </div>
