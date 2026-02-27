@@ -162,7 +162,7 @@ export default function ConfiguracoesColaborador() {
           {pushState === 'denied' && (
             <Alert variant="danger" className="mb-0">Permissão negada. Habilite nas configurações do navegador.</Alert>
           )}
-          {(pushState === 'idle' || pushState === 'loading') && pushState !== 'unsupported' && pushState !== 'denied' && (
+          {(pushState === 'idle' || pushState === 'loading') && (
             <Button variant="primary" size="sm" onClick={subscribe} disabled={pushState === 'loading'}>
               <FaBell className="me-1" /> {pushState === 'loading' ? 'Ativando...' : 'Ativar notificações'}
             </Button>
