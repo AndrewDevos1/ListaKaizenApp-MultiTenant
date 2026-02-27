@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Put, Body, UseGuards } from '@nestjs/common';
+import { Controller, Post, Get, Put, Delete, Body, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
@@ -42,6 +42,25 @@ export class AuthController {
     @Body() dto: UpdateProfileDto,
   ) {
     return this.authService.updateProfile(userId, dto);
+  }
+
+  @Put('avatar')
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Atualizar avatar do usuário' })
+  updateAvatar(
+    @CurrentUser('id') usuarioId: number,
+    @Body() body: { avatarBase64: string },
+  ) {
+    return this.authService.updateAvatar(usuarioId, body.avatarBase64);
+  }
+
+  @Delete('avatar')
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Remover avatar do usuário' })
+  removeAvatar(@CurrentUser('id') usuarioId: number) {
+    return this.authService.removeAvatar(usuarioId);
   }
 
   @Post('change-password')

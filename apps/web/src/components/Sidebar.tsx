@@ -531,9 +531,19 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
         <div className={styles.userInfo}>
           <div className={styles.userAvatar}>
             {isCollapsed ? (
-              <div className={styles.userAvatarIcon}>{isAdmin ? <FaUserShield /> : <FaUser />}</div>
+              <div className={styles.userAvatarIcon}>
+                {user.avatarUrl ? (
+                  <img src={user.avatarUrl} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+                ) : (
+                  isAdmin ? <FaUserShield /> : <FaUser />
+                )}
+              </div>
             ) : (
-              user.nome.charAt(0).toUpperCase()
+              user.avatarUrl ? (
+                <img src={user.avatarUrl} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+              ) : (
+                user.nome.charAt(0).toUpperCase()
+              )
             )}
           </div>
           <div className={styles.userDetails}>

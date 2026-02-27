@@ -11,6 +11,7 @@ interface AuthContextType {
   logout: () => void;
   isAdmin: boolean;
   isSuperAdmin: boolean;
+  updateAvatarUrl: (url: string | null) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -64,11 +65,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     window.location.href = '/login';
   }, []);
 
+  const updateAvatarUrl = useCallback((url: string | null) => {
+    setUser((prev) => {
+      if (!prev) return prev;
+      const updated = { ...prev, avatarUrl: url };
+      // Update in whichever storage was used
+      if (localStorage.getItem('user')) {
+        localStorage.setItem('user', JSON.stringify(updated));
+      } else if (sessionStorage.getItem('user')) {
+        sessionStorage.setItem('user', JSON.stringify(updated));
+      }
+      return updated;
+    });
+  }, []);
+
   const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
   const isSuperAdmin = user?.role === 'SUPER_ADMIN';
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, isAdmin, isSuperAdmin }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, isAdmin, isSuperAdmin, updateAvatarUrl }}>
       {children}
     </AuthContext.Provider>
   );

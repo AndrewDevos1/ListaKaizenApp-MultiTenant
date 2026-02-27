@@ -113,6 +113,7 @@ export class AuthService {
         email: user.email,
         role: user.role,
         restauranteId: user.restauranteId,
+        avatarUrl: user.avatarUrl ?? null,
       },
     };
   }
@@ -134,6 +135,7 @@ export class AuthService {
       username: user.username,
       role: user.role,
       aprovado: user.aprovado,
+      avatarUrl: user.avatarUrl ?? null,
       restaurante: user.restaurante
         ? { id: user.restaurante.id, nome: user.restaurante.nome }
         : null,
@@ -165,6 +167,24 @@ export class AuthService {
       message: 'Perfil atualizado com sucesso',
       user: { id: updated.id, nome: updated.nome, email: updated.email, username: updated.username },
     };
+  }
+
+  async updateAvatar(usuarioId: number, avatarBase64: string): Promise<void> {
+    // Limit size: base64 of 200x200 JPEG ~= 15-30KB, reject if > 200KB
+    if (avatarBase64.length > 200000) {
+      throw new BadRequestException('Imagem muito grande. Máximo 200KB após compressão.');
+    }
+    await this.prisma.usuario.update({
+      where: { id: usuarioId },
+      data: { avatarUrl: avatarBase64 },
+    });
+  }
+
+  async removeAvatar(usuarioId: number): Promise<void> {
+    await this.prisma.usuario.update({
+      where: { id: usuarioId },
+      data: { avatarUrl: null },
+    });
   }
 
   async changePassword(userId: number, dto: ChangePasswordDto) {

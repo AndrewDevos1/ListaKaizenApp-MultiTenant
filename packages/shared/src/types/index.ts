@@ -6,6 +6,7 @@ export interface AuthUser {
   email: string;
   role: UserRole;
   restauranteId: number | null;
+  avatarUrl?: string | null;
 }
 
 export interface LoginResponse {
