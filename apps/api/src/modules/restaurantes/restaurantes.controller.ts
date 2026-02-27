@@ -38,6 +38,13 @@ export class RestaurantesController {
     return this.restaurantesService.findAll();
   }
 
+  @Get('stats/global')
+  @Roles('SUPER_ADMIN' as any)
+  @ApiOperation({ summary: 'Stats globais (SUPER_ADMIN)' })
+  async getGlobalStats() {
+    return this.restaurantesService.getGlobalStats();
+  }
+
   @Get(':id')
   @Roles('SUPER_ADMIN' as any)
   @ApiOperation({ summary: 'Detalhes de restaurante (SUPER_ADMIN)' })

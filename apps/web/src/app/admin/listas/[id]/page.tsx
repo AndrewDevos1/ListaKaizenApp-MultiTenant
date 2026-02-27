@@ -108,7 +108,7 @@ export default function ListaDetailPage() {
   ) => {
     setFieldLoading(itemRefId, field, true);
     try {
-      await api.put(`/v1/admin/listas/${listaId}/itens/${itemRefId}`, body);
+      await api.put(`/v1/listas/${listaId}/itens/${itemRefId}`, body);
       // Atualizar estado local da lista sem re-fetch completo
       setLista((prev) => {
         if (!prev) return prev;

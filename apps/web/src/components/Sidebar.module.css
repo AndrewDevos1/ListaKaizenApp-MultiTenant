@@ -368,12 +368,12 @@
 
 /* Sidebar Footer */
 .sidebarFooter {
-  padding: var(--spacing-lg) var(--spacing-md);
+  padding: 0.6rem var(--spacing-md);
   border-top: 1px solid rgba(255, 255, 255, 0.1);
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-sm);
+  gap: 0.35rem;
 }
 
 .footerControls {
@@ -387,15 +387,15 @@
   background: rgba(255, 255, 255, 0.15);
   border: none;
   color: var(--sidebar-text);
-  width: 40px;
-  height: 40px;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all var(--transition-fast);
-  font-size: 1.2rem;
+  font-size: 0.9rem;
 }
 
 .themeToggleBtn:hover {
@@ -404,7 +404,7 @@
 }
 
 .themeToggleLabel {
-  font-size: 0.9rem;
+  font-size: 0.78rem;
   color: var(--sidebar-text-muted);
   display: flex;
   align-items: center;
@@ -424,12 +424,18 @@
 .footerLink {
   display: flex;
   align-items: center;
-  gap: var(--spacing-sm);
+  gap: 0.35rem;
   color: var(--sidebar-text);
   text-decoration: none;
-  padding: 0.35rem 0.5rem;
-  border-radius: 8px;
+  font-size: 0.78rem;
+  padding: 0.25rem 0.4rem;
+  border-radius: 6px;
   transition: background var(--transition-fast);
+}
+
+.footerLinkDisabled {
+  opacity: 0.45;
+  pointer-events: none;
 }
 
 .footerLink:hover {
@@ -446,9 +452,9 @@
 
 .footerIconLink {
   background: rgba(255, 255, 255, 0.12);
-  border-radius: 10px;
-  width: 36px;
-  height: 36px;
+  border-radius: 8px;
+  width: 28px;
+  height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;

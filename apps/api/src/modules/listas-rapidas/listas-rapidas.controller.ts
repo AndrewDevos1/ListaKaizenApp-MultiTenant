@@ -34,19 +34,19 @@ export class CollaboratorListasRapidasController {
   @ApiOperation({ summary: 'Criar lista rápida' })
   create(
     @TenantId() restauranteId: number,
-    @CurrentUser() user: any,
+    @CurrentUser('id') userId: number,
     @Body() dto: CreateListaRapidaDto,
   ) {
-    return this.service.create(restauranteId, user.sub, dto);
+    return this.service.create(restauranteId, userId, dto);
   }
 
   @Get()
   @ApiOperation({ summary: 'Listar minhas listas rápidas' })
   findAll(
     @TenantId() restauranteId: number,
-    @CurrentUser() user: any,
+    @CurrentUser('id') userId: number,
   ) {
-    return this.service.findAllByColaborador(user.sub, restauranteId);
+    return this.service.findAllByColaborador(userId, restauranteId);
   }
 
   @Get(':id')
@@ -63,9 +63,9 @@ export class CollaboratorListasRapidasController {
   submeter(
     @Param('id', ParseIntPipe) id: number,
     @TenantId() restauranteId: number,
-    @CurrentUser() user: any,
+    @CurrentUser('id') userId: number,
   ) {
-    return this.service.submeter(id, user.sub, restauranteId);
+    return this.service.submeter(id, userId, restauranteId);
   }
 
   @Post(':id/itens')
