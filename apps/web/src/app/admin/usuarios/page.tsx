@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, Suspense } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
   Alert,
@@ -18,6 +18,8 @@ import {
   FaTimes,
   FaEdit,
   FaEnvelope,
+  FaCopy,
+  FaWhatsapp,
 } from 'react-icons/fa';
 import api from '@/lib/api';
 import styles from './Usuarios.module.css';
@@ -30,6 +32,7 @@ interface Usuario {
   id: number;
   nome: string;
   email: string;
+  username: string;
   role: Role;
   aprovado: boolean;
   ativo: boolean;
@@ -51,11 +54,23 @@ function normalizeStr(s: string) {
   return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 }
 
+function credenciaisTexto(u: Usuario): string {
+  const linhas = [
+    `Olá, ${u.nome}!`,
+    `Seu acesso ao sistema foi criado. Aqui estão suas credenciais:`,
+    ``,
+    `Nome de usuário: ${u.username || u.email}`,
+    `E-mail: ${u.email}`,
+    ``,
+    `Acesse o sistema e altere sua senha no primeiro login.`,
+  ];
+  return linhas.join('\n');
+}
+
 // ─── Inner component (usa useSearchParams) ────────────────────────────────────
 
 function UsuariosInner() {
   const searchParams = useSearchParams();
-  const router = useRouter();
 
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [loading, setLoading] = useState(true);
@@ -73,6 +88,9 @@ function UsuariosInner() {
   // Modal Editar
   const [showEditar, setShowEditar] = useState(false);
   const [editando, setEditando] = useState<Usuario | null>(null);
+  const [editNome, setEditNome] = useState('');
+  const [editEmail, setEditEmail] = useState('');
+  const [editUsername, setEditUsername] = useState('');
   const [editRole, setEditRole] = useState<Role>('COLLABORATOR');
   const [savingEditar, setSavingEditar] = useState(false);
 
@@ -132,10 +150,30 @@ function UsuariosInner() {
     );
   };
 
+  // ─── Copiar / WhatsApp ───────────────────────────────────────────────────────
+
+  const handleCopiar = async (u: Usuario) => {
+    const texto = credenciaisTexto(u);
+    try {
+      await navigator.clipboard.writeText(texto);
+      setSuccess(`Credenciais de ${u.nome} copiadas!`);
+    } catch {
+      setError('Não foi possível copiar. Use o botão WhatsApp.');
+    }
+  };
+
+  const handleWhatsApp = (u: Usuario) => {
+    const texto = encodeURIComponent(credenciaisTexto(u));
+    window.open(`https://wa.me/?text=${texto}`, '_blank', 'noopener,noreferrer');
+  };
+
   // ─── Modal Editar ────────────────────────────────────────────────────────────
 
   const abrirEditar = (u: Usuario) => {
     setEditando(u);
+    setEditNome(u.nome);
+    setEditEmail(u.email);
+    setEditUsername(u.username || '');
     setEditRole(u.role);
     setShowEditar(true);
   };
@@ -145,8 +183,14 @@ function UsuariosInner() {
     setSavingEditar(true);
     setError('');
     try {
-      if (editRole !== editando.role) {
-        await api.put(`/v1/admin/usuarios/${editando.id}/role`, { role: editRole });
+      const body: Record<string, string> = {};
+      if (editNome !== editando.nome) body.nome = editNome;
+      if (editEmail !== editando.email) body.email = editEmail;
+      if (editUsername !== (editando.username || '')) body.username = editUsername;
+      if (editRole !== editando.role) body.role = editRole;
+
+      if (Object.keys(body).length > 0) {
+        await api.put(`/v1/admin/usuarios/${editando.id}`, body);
       }
       setShowEditar(false);
       setSuccess('Usuário atualizado com sucesso');
@@ -268,7 +312,7 @@ function UsuariosInner() {
                   <th className={styles.th} style={{ width: 120 }}>Perfil</th>
                   <th className={styles.th} style={{ width: 110 }}>Aprovação</th>
                   <th className={styles.th} style={{ width: 90 }}>Status</th>
-                  <th className={styles.th} style={{ width: 200 }}>Ações</th>
+                  <th className={styles.th} style={{ width: 240 }}>Ações</th>
                 </tr>
               </thead>
               <tbody>
@@ -336,6 +380,22 @@ function UsuariosInner() {
                               </Button>
                               <Button
                                 size="sm"
+                                variant="outline-success"
+                                onClick={() => handleWhatsApp(u)}
+                                title="Compartilhar via WhatsApp"
+                              >
+                                <FaWhatsapp />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline-secondary"
+                                onClick={() => handleCopiar(u)}
+                                title="Copiar credenciais"
+                              >
+                                <FaCopy />
+                              </Button>
+                              <Button
+                                size="sm"
                                 variant={u.ativo ? 'outline-danger' : 'outline-success'}
                                 onClick={() => handleToggleAtivo(u)}
                                 disabled={!!actionLoading}
@@ -373,10 +433,34 @@ function UsuariosInner() {
         <Modal.Body>
           {editando && (
             <>
-              <p className="mb-1">
-                <strong>{editando.nome}</strong>
-              </p>
-              <p className="text-muted small mb-3">{editando.email}</p>
+              <Form.Group className="mb-3">
+                <Form.Label>Nome</Form.Label>
+                <Form.Control
+                  value={editNome}
+                  onChange={(e) => setEditNome(e.target.value)}
+                  disabled={savingEditar}
+                  placeholder="Nome completo"
+                />
+              </Form.Group>
+              <Form.Group className="mb-3">
+                <Form.Label>E-mail</Form.Label>
+                <Form.Control
+                  type="email"
+                  value={editEmail}
+                  onChange={(e) => setEditEmail(e.target.value)}
+                  disabled={savingEditar}
+                  placeholder="email@exemplo.com"
+                />
+              </Form.Group>
+              <Form.Group className="mb-3">
+                <Form.Label>Username</Form.Label>
+                <Form.Control
+                  value={editUsername}
+                  onChange={(e) => setEditUsername(e.target.value)}
+                  disabled={savingEditar}
+                  placeholder="nome_usuario"
+                />
+              </Form.Group>
               <Form.Group>
                 <Form.Label>Perfil</Form.Label>
                 <Form.Select

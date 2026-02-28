@@ -13,6 +13,7 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { UsuariosService } from './usuarios.service';
 import { FilterUsuariosDto } from './dto/filter-usuarios.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
+import { UpdateUsuarioDto } from './dto/update-usuario.dto';
 import { Roles, TenantId } from '../../common/decorators';
 import { RolesGuard, TenantGuard } from '../../common/guards';
 
@@ -62,5 +63,16 @@ export class UsuariosController {
     @Body() dto: UpdateRoleDto,
   ) {
     return this.usuariosService.updateRole(id, restauranteId, dto);
+  }
+
+  @Put(':id')
+  @Roles('ADMIN' as any, 'SUPER_ADMIN' as any)
+  @ApiOperation({ summary: 'Editar dados do usuário' })
+  update(
+    @Param('id', ParseIntPipe) id: number,
+    @TenantId() restauranteId: number,
+    @Body() dto: UpdateUsuarioDto,
+  ) {
+    return this.usuariosService.update(id, restauranteId, dto);
   }
 }

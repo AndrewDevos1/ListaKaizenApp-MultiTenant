@@ -3,6 +3,7 @@ import { UserRole } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { FilterUsuariosDto } from './dto/filter-usuarios.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
+import { UpdateUsuarioDto } from './dto/update-usuario.dto';
 
 @Injectable()
 export class UsuariosService {
@@ -71,6 +72,30 @@ export class UsuariosService {
         id: true,
         nome: true,
         email: true,
+        role: true,
+        aprovado: true,
+        ativo: true,
+      },
+    });
+  }
+
+  async update(id: number, restauranteId: number, dto: UpdateUsuarioDto) {
+    await this.findUsuarioOrFail(id, restauranteId);
+
+    const data: any = {};
+    if (dto.nome !== undefined) data.nome = dto.nome;
+    if (dto.email !== undefined) data.email = dto.email;
+    if (dto.username !== undefined) data.username = dto.username;
+    if (dto.role !== undefined) data.role = dto.role;
+
+    return this.prisma.usuario.update({
+      where: { id },
+      data,
+      select: {
+        id: true,
+        nome: true,
+        email: true,
+        username: true,
         role: true,
         aprovado: true,
         ativo: true,
