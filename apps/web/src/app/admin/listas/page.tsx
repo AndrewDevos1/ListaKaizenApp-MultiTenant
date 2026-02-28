@@ -119,9 +119,6 @@ export default function ListasPage() {
               <div className={styles.listActions}>
                 <button
                   className={styles.actionBtn}
-                  onClick={(e) => {
-                    e.preventDefault();
-                  }}
                 >
                   Gerenciar
                 </button>
