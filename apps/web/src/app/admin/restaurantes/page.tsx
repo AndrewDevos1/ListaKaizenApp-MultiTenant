@@ -34,6 +34,57 @@ interface ResumoRestore {
   listaItemRefs: { criados: number; ignorados: number };
 }
 
+// Progresso assintótico: rápido no início, desacelera perto de 95%
+function calcProgress(elapsedSec: number): number {
+  return 95 * (1 - Math.exp(-elapsedSec / 25));
+}
+
+function CircularProgress({ elapsed }: { elapsed: number }) {
+  const r = 32;
+  const circumference = 2 * Math.PI * r;
+  const pct = calcProgress(elapsed);
+  const offset = circumference - (pct / 100) * circumference;
+
+  return (
+    <div className="d-flex flex-column align-items-center gap-2 py-2">
+      <svg width="90" height="90" viewBox="0 0 90 90">
+        {/* Trilha */}
+        <circle cx="45" cy="45" r={r} fill="none" stroke="#dee2e6" strokeWidth="8" />
+        {/* Progresso */}
+        <circle
+          cx="45"
+          cy="45"
+          r={r}
+          fill="none"
+          stroke="#ffc107"
+          strokeWidth="8"
+          strokeLinecap="round"
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+          transform="rotate(-90 45 45)"
+          style={{ transition: 'stroke-dashoffset 0.8s ease' }}
+        />
+        <text x="45" y="49" textAnchor="middle" fontSize="13" fontWeight="600" fill="#495057">
+          {Math.round(pct)}%
+        </text>
+      </svg>
+      <div className="text-center">
+        <div className="fw-semibold text-warning">Restaurando...</div>
+        <small className="text-muted">
+          {elapsed < 5
+            ? 'Enviando arquivo...'
+            : elapsed < 15
+            ? 'Importando dados...'
+            : elapsed < 30
+            ? 'Processando listas...'
+            : 'Finalizando... quase lá'}
+        </small>
+        <div className="text-muted small mt-1">{elapsed}s decorridos</div>
+      </div>
+    </div>
+  );
+}
+
 export default function AdminRestaurantes() {
   const { isSuperAdmin } = useAuth();
   const router = useRouter();
@@ -47,12 +98,28 @@ export default function AdminRestaurantes() {
   const [restoreTarget, setRestoreTarget] = useState<Restaurante | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const [restoring, setRestoring] = useState(false);
+  const [elapsed, setElapsed] = useState(0);
   const [restoreError, setRestoreError] = useState('');
   const [restoreResult, setRestoreResult] = useState<ResumoRestore | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Backup state
   const [backupLoading, setBackupLoading] = useState<number | null>(null);
+
+  const startTimer = () => {
+    setElapsed(0);
+    timerRef.current = setInterval(() => setElapsed((s) => s + 1), 1000);
+  };
+
+  const stopTimer = () => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+  };
+
+  useEffect(() => () => stopTimer(), []);
 
   const loadRestaurantes = () => {
     setLoading(true);
@@ -126,12 +193,15 @@ export default function AdminRestaurantes() {
     setRestoring(true);
     setRestoreError('');
     setRestoreResult(null);
+    startTimer();
     try {
       const form = new FormData();
       form.append('arquivo', file);
       if (restoreTarget) form.append('restauranteId', String(restoreTarget.id));
+      // Content-Type: null remove o padrão 'application/json' do axios instance,
+      // deixando o browser definir 'multipart/form-data; boundary=...' automaticamente
       const res = await api.post('/restaurantes/restore', form, {
-        headers: { 'Content-Type': 'multipart/form-data' },
+        headers: { 'Content-Type': null },
       });
       setRestoreResult(res.data as ResumoRestore);
       loadRestaurantes();
@@ -139,6 +209,7 @@ export default function AdminRestaurantes() {
       const msg = err?.response?.data?.message ?? 'Erro ao restaurar backup';
       setRestoreError(Array.isArray(msg) ? msg.join(', ') : String(msg));
     } finally {
+      stopTimer();
       setRestoring(false);
     }
   };
@@ -244,8 +315,8 @@ export default function AdminRestaurantes() {
       )}
 
       {/* Modal de Restore */}
-      <Modal show={showModal} onHide={() => setShowModal(false)} centered>
-        <Modal.Header closeButton>
+      <Modal show={showModal} onHide={() => !restoring && setShowModal(false)} centered>
+        <Modal.Header closeButton={!restoring}>
           <Modal.Title>
             <FaUpload className="me-2" />
             {restoreTarget
@@ -254,33 +325,9 @@ export default function AdminRestaurantes() {
           </Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          {!restoreResult ? (
-            <>
-              <p className="text-muted small">
-                {restoreTarget
-                  ? `Os dados do arquivo serão importados para o restaurante "${restoreTarget.nome}". Registros duplicados serão ignorados.`
-                  : 'O restaurante será criado ou encontrado pelo nome no arquivo de backup.'}
-              </p>
-              <Form.Group className="mb-3">
-                <Form.Label>Arquivo .kaizen</Form.Label>
-                <Form.Control
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".kaizen"
-                  onChange={(e) => {
-                    const f = (e.target as HTMLInputElement).files?.[0] ?? null;
-                    setFile(f);
-                    setRestoreError('');
-                  }}
-                />
-              </Form.Group>
-              {restoreError && (
-                <Alert variant="danger" className="mb-0">
-                  {restoreError}
-                </Alert>
-              )}
-            </>
-          ) : (
+          {restoring ? (
+            <CircularProgress elapsed={elapsed} />
+          ) : restoreResult ? (
             <Alert variant="success">
               <Alert.Heading>Restauração concluída!</Alert.Heading>
               <p className="mb-1">
@@ -310,29 +357,50 @@ export default function AdminRestaurantes() {
                 </div>
               </div>
             </Alert>
+          ) : (
+            <>
+              <p className="text-muted small">
+                {restoreTarget
+                  ? `Os dados do arquivo serão importados para o restaurante "${restoreTarget.nome}". Registros duplicados serão ignorados.`
+                  : 'O restaurante será criado ou encontrado pelo nome no arquivo de backup.'}
+              </p>
+              <Form.Group className="mb-3">
+                <Form.Label>Arquivo .kaizen</Form.Label>
+                <Form.Control
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".kaizen"
+                  onChange={(e) => {
+                    const f = (e.target as HTMLInputElement).files?.[0] ?? null;
+                    setFile(f);
+                    setRestoreError('');
+                  }}
+                />
+              </Form.Group>
+              {restoreError && (
+                <Alert variant="danger" className="mb-0">
+                  {restoreError}
+                </Alert>
+              )}
+            </>
           )}
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowModal(false)}>
+          <Button
+            variant="secondary"
+            onClick={() => setShowModal(false)}
+            disabled={restoring}
+          >
             Fechar
           </Button>
-          {!restoreResult && (
+          {!restoreResult && !restoring && (
             <Button
               variant="warning"
               onClick={handleRestore}
-              disabled={restoring || !file}
+              disabled={!file}
             >
-              {restoring ? (
-                <>
-                  <Spinner animation="border" size="sm" className="me-1" />
-                  Restaurando...
-                </>
-              ) : (
-                <>
-                  <FaUpload className="me-1" />
-                  Restaurar
-                </>
-              )}
+              <FaUpload className="me-1" />
+              Restaurar
             </Button>
           )}
         </Modal.Footer>
