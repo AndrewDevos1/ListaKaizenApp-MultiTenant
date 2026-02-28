@@ -176,6 +176,21 @@
   border-top: 1px solid #dee2e6;
 }
 
+/* ─── Senha Gerada ───────────────────────────────────────── */
+
+.senhaGerada {
+  font-family: monospace;
+  font-size: 1.6rem;
+  font-weight: 700;
+  letter-spacing: 0.15rem;
+  background: #f8f9fa;
+  border: 2px dashed #dee2e6;
+  border-radius: 8px;
+  padding: 0.75rem 1.5rem;
+  display: inline-block;
+  color: #212529;
+}
+
 /* ─── Responsive ─────────────────────────────────────────── */
 
 @media (max-width: 768px) {
