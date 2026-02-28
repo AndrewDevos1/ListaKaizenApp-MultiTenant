@@ -45,6 +45,7 @@ function WidgetsPanel() {
   const [areas, setAreas] = useState<Area[]>([]);
   const [listas, setListas] = useState<Lista[]>([]);
   const [usuarios, setUsuarios] = useState<number>(0);
+  const [submissoes, setSubmissoes] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -52,16 +53,18 @@ function WidgetsPanel() {
     const load = async () => {
       try {
         setLoading(true);
-        const [itemsRes, areasRes, listasRes, usuariosRes] = await Promise.all([
+        const [itemsRes, areasRes, listasRes, usuariosRes, submissoesRes] = await Promise.all([
           api.get<Item[]>('/v1/items'),
           api.get<Area[]>('/v1/areas'),
           api.get<Lista[]>('/v1/listas'),
           api.get<any[]>('/v1/admin/usuarios'),
+          api.get<any[]>('/v1/admin/submissoes'),
         ]);
         setItems(itemsRes.data);
         setAreas(areasRes.data);
         setListas(listasRes.data);
         setUsuarios(usuariosRes.data.length);
+        setSubmissoes(submissoesRes.data.length);
       } catch (err: any) {
         setError(err?.response?.data?.message || 'Erro ao carregar dados do dashboard');
       } finally {
@@ -98,6 +101,14 @@ function WidgetsPanel() {
         link: '/admin/listas',
       },
       {
+        id: 'submissoes',
+        title: 'Submissões',
+        value: submissoes,
+        icon: FaClipboardCheck,
+        color: 'widgetOrange',
+        link: '/admin/submissoes',
+      },
+      {
         id: 'usuarios',
         title: 'Usuários',
         value: usuarios,
@@ -106,7 +117,7 @@ function WidgetsPanel() {
         link: '/admin/gerenciar-usuarios',
       },
     ],
-    [items.length, areas.length, listas.length, usuarios],
+    [items.length, areas.length, listas.length, submissoes, usuarios],
   );
 
   if (loading) {
