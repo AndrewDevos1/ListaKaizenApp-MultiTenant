@@ -427,6 +427,12 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
           status: 'available',
         },
         {
+          label: 'Minhas Áreas',
+          href: '/collaborator/areas',
+          icon: <FaMapMarkerAlt />,
+          status: 'available',
+        },
+        {
           label: 'Minhas Listas',
           href: '/collaborator/listas',
           icon: <FaShoppingCart />,

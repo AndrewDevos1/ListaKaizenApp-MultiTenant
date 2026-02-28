@@ -108,6 +108,7 @@ model Usuario {
   restaurante       Restaurante?       @relation(fields: [restauranteId], references: [id])
   listas            ListaColaborador[]
   submissoes        Submissao[]
+  areas             AreaColaborador[]
   listaRapidas      ListaRapida[]
   sugestoes         SugestaoItem[]
   popExecucoes      POPExecucao[]
@@ -144,9 +145,23 @@ model Area {
   restauranteId Int      @map("restaurante_id")
   criadoEm      DateTime @default(now()) @map("criado_em")
 
-  restaurante Restaurante @relation(fields: [restauranteId], references: [id])
+  restaurante   Restaurante       @relation(fields: [restauranteId], references: [id])
+  colaboradores AreaColaborador[]
+  listas        Lista[]
 
   @@map("areas")
+}
+
+model AreaColaborador {
+  id        Int @id @default(autoincrement())
+  areaId    Int @map("area_id")
+  usuarioId Int @map("usuario_id")
+
+  area    Area    @relation(fields: [areaId], references: [id], onDelete: Cascade)
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@unique([areaId, usuarioId])
+  @@map("area_colaborador")
 }
 
 model Lista {
@@ -154,10 +169,12 @@ model Lista {
   nome          String
   descricao     String?
   restauranteId Int      @map("restaurante_id")
+  areaId        Int?     @map("area_id")
   deletado      Boolean  @default(false)
   criadoEm      DateTime @default(now()) @map("criado_em")
 
   restaurante   Restaurante        @relation(fields: [restauranteId], references: [id])
+  area          Area?              @relation(fields: [areaId], references: [id], onDelete: SetNull)
   colaboradores ListaColaborador[]
   itensRef      ListaItemRef[]
   submissoes    Submissao[]
