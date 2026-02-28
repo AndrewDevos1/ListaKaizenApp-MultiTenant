@@ -309,8 +309,9 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
         },
         {
           label: 'POP Auditoria',
-          status: 'soon' as const,
+          href: '/admin/pop-auditoria',
           icon: <FaTasks />,
+          status: 'available',
         },
       ],
     },
@@ -334,7 +335,7 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
           label: 'Itens Regionais',
           href: '/admin/itens-regionais',
           icon: <FaGlobeAmericas />,
-          status: 'soon' as const,
+          status: 'available',
         },
       ],
     },
@@ -364,13 +365,13 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
           label: 'Gerar Cotação',
           href: '/admin/gerar-cotacao',
           icon: <FaFileInvoiceDollar />,
-          status: 'soon' as const,
+          status: 'available',
         },
         {
           label: 'Fornecedores da Região',
-          href: '/fornecedores-regiao',
+          href: '/admin/fornecedores-regiao',
           icon: <FaStore />,
-          status: 'soon' as const,
+          status: 'available',
         },
         ...(isSuperAdmin
           ? [
@@ -426,6 +427,12 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
           status: 'available',
         },
         {
+          label: 'Minhas Áreas',
+          href: '/collaborator/areas',
+          icon: <FaMapMarkerAlt />,
+          status: 'available',
+        },
+        {
           label: 'Minhas Listas',
           href: '/collaborator/listas',
           icon: <FaShoppingCart />,
@@ -451,7 +458,7 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
           label: 'Catálogo Global',
           href: '/collaborator/catalogo',
           icon: <FaBook />,
-          status: 'soon' as const,
+          status: 'available',
         },
         {
           label: 'Sugestões de Itens',
