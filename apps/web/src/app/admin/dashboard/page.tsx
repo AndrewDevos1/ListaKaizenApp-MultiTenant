@@ -20,6 +20,7 @@ interface DashboardData {
   items: number;
   areas: number;
   listas: Lista[];
+  listasRapidas: number;
   usuarios: number;
   submissoes: number;
 }
@@ -37,10 +38,11 @@ export default function AdminDashboard() {
     const load = async () => {
       try {
         setLoading(true);
-        const [itemsRes, areasRes, listasRes, usuariosRes, submissoesRes] = await Promise.all([
+        const [itemsRes, areasRes, listasRes, listasRapidasRes, usuariosRes, submissoesRes] = await Promise.all([
           api.get<Item[]>('/v1/items'),
           api.get<Area[]>('/v1/areas'),
           api.get<Lista[]>('/v1/listas'),
+          api.get<any[]>('/v1/admin/listas-rapidas'),
           api.get<any[]>('/v1/admin/usuarios'),
           api.get<any[]>('/v1/admin/submissoes'),
         ]);
@@ -48,6 +50,7 @@ export default function AdminDashboard() {
           items: itemsRes.data.length,
           areas: areasRes.data.length,
           listas: listasRes.data,
+          listasRapidas: listasRapidasRes.data.length,
           usuarios: usuariosRes.data.length,
           submissoes: submissoesRes.data.length,
         });
@@ -98,11 +101,12 @@ export default function AdminDashboard() {
 function WidgetsPanel({ data }: { data: DashboardData }) {
   const widgets = useMemo(
     () => [
-      { id: 'itens',      title: 'Itens',       value: data.items,      icon: FaBoxes,         color: 'widgetBlue',   link: '/admin/items' },
-      { id: 'areas',      title: 'Áreas',        value: data.areas,      icon: FaMapMarkerAlt,  color: 'widgetGreen',  link: '/admin/areas' },
-      { id: 'listas',     title: 'Listas',       value: data.listas.length, icon: FaList,       color: 'widgetYellow', link: '/admin/listas' },
-      { id: 'submissoes', title: 'Submissões',   value: data.submissoes, icon: FaClipboardCheck, color: 'widgetOrange', link: '/admin/submissoes' },
-      { id: 'usuarios',   title: 'Usuários',     value: data.usuarios,   icon: FaUsers,         color: 'widgetRed',    link: '/admin/gerenciar-usuarios' },
+      { id: 'itens',         title: 'Itens',          value: data.items,            icon: FaBoxes,          color: 'widgetBlue',   link: '/admin/items' },
+      { id: 'areas',         title: 'Áreas',           value: data.areas,            icon: FaMapMarkerAlt,   color: 'widgetGreen',  link: '/admin/areas' },
+      { id: 'listas',        title: 'Listas',          value: data.listas.length,    icon: FaList,           color: 'widgetYellow', link: '/admin/listas' },
+      { id: 'listas-rapidas', title: 'Listas Rápidas', value: data.listasRapidas,    icon: FaBolt,           color: 'widgetPurple', link: '/admin/listas-rapidas' },
+      { id: 'submissoes',    title: 'Submissões',      value: data.submissoes,       icon: FaClipboardCheck, color: 'widgetOrange', link: '/admin/submissoes' },
+      { id: 'usuarios',      title: 'Usuários',        value: data.usuarios,         icon: FaUsers,          color: 'widgetRed',    link: '/admin/gerenciar-usuarios' },
     ],
     [data],
   );
