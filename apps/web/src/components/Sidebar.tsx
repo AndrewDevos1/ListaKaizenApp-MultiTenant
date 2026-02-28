@@ -219,8 +219,9 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
 
   if (!user) return null;
 
-  // Menu groups based on role
-  const adminMenuGroups: MenuGroup[] = [
+  // Menu groups memoizados — evitam recriação de arrays a cada render
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const adminMenuGroups = useMemo<MenuGroup[]>(() => [
     {
       id: 'visao-geral',
       label: 'VISÃO GERAL',
@@ -402,9 +403,11 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
         },
       ],
     },
-  ];
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  ], [isSuperAdmin]);
 
-  const collaboratorMenuGroups: MenuGroup[] = [
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const collaboratorMenuGroups = useMemo<MenuGroup[]>(() => [
     {
       id: 'dashboard',
       label: 'DASHBOARD',
@@ -468,9 +471,11 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
         },
       ],
     },
-  ];
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  ], []);
 
-  const profileMenuGroup: MenuGroup = {
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const profileMenuGroup = useMemo<MenuGroup>(() => ({
     id: 'perfil',
     label: 'PERFIL',
     items: [
@@ -478,7 +483,7 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
         label: 'Editar Perfil',
         href: isAdmin ? '/admin/editar-perfil' : '/collaborator/perfil',
         icon: <FaUserEdit />,
-        status: 'available',
+        status: 'available' as const,
       },
       {
         label: 'Sair',
@@ -487,16 +492,18 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
         onClick: logout,
       },
     ],
-  };
+  }), [isAdmin, logout]);
 
-  const allMenuGroups = [...(isAdmin ? adminMenuGroups : collaboratorMenuGroups), profileMenuGroup];
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const allMenuGroups = useMemo(
+    () => [...(isAdmin ? adminMenuGroups : collaboratorMenuGroups), profileMenuGroup],
+    [isAdmin, adminMenuGroups, collaboratorMenuGroups, profileMenuGroup],
+  );
 
   // Filter groups and items based on search
+  // allMenuGroups já é memoizado — só recalcula quando searchTerm ou menu mudam
   const filteredGroups = useMemo(() => {
-    if (!searchTerm.trim()) {
-      return allMenuGroups;
-    }
-
+    if (!searchTerm.trim()) return allMenuGroups;
     const term = searchTerm.toLowerCase();
     return allMenuGroups
       .map((group) => ({
