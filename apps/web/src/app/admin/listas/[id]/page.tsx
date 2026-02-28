@@ -206,6 +206,14 @@ export default function ListaDetailPage() {
               </div>
             </div>
           </div>
+          <div className={styles.headerActions}>
+            <Link
+              href={`/collaborator/listas/${listaId}`}
+              className={styles.actionButton}
+            >
+              🛒 Preencher Estoque
+            </Link>
+          </div>
         </div>
 
         {error && <Alert variant="danger" dismissible onClose={() => setError('')}>{error}</Alert>}

@@ -17,6 +17,7 @@ import {
   FaDownload,
   FaUpload,
   FaLink,
+  FaShoppingCart,
 } from 'react-icons/fa';
 
 interface ItemPreview {
@@ -545,6 +546,11 @@ export default function ListasPage() {
                     Ações
                   </Dropdown.Toggle>
                   <Dropdown.Menu>
+                    <Dropdown.Item onClick={() => router.push(`/collaborator/listas/${lista.id}`)}>
+                      <FaShoppingCart className="me-2" />
+                      Preencher Estoque
+                    </Dropdown.Item>
+                    <Dropdown.Divider />
                     <Dropdown.Item onClick={() => abrirColabs(lista)}>
                       <FaUsers className="me-2" />
                       Colaboradores
