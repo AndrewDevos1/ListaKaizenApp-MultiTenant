@@ -6,7 +6,10 @@ import { useEffect, useMemo, useState } from 'react';
 import api from '@/lib/api';
 import { Area, Item, Lista } from 'shared';
 import styles from './Dashboard.module.css';
-import { FaBoxes, FaMapMarkerAlt, FaList, FaChartBar, FaUsers, FaCog } from 'react-icons/fa';
+import {
+  FaBoxes, FaMapMarkerAlt, FaList, FaChartBar, FaUsers,
+  FaClipboardCheck, FaShoppingCart, FaUsersCog, FaBolt, FaLightbulb,
+} from 'react-icons/fa';
 import { Spinner } from 'react-bootstrap';
 import InstallAppButton from '@/components/InstallAppButton';
 import PushNotificationButton from '@/components/PushNotificationButton';
@@ -41,6 +44,7 @@ function WidgetsPanel() {
   const [items, setItems] = useState<Item[]>([]);
   const [areas, setAreas] = useState<Area[]>([]);
   const [listas, setListas] = useState<Lista[]>([]);
+  const [usuarios, setUsuarios] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -48,14 +52,16 @@ function WidgetsPanel() {
     const load = async () => {
       try {
         setLoading(true);
-        const [itemsRes, areasRes, listasRes] = await Promise.all([
+        const [itemsRes, areasRes, listasRes, usuariosRes] = await Promise.all([
           api.get<Item[]>('/v1/items'),
           api.get<Area[]>('/v1/areas'),
           api.get<Lista[]>('/v1/listas'),
+          api.get<any[]>('/v1/admin/usuarios'),
         ]);
         setItems(itemsRes.data);
         setAreas(areasRes.data);
         setListas(listasRes.data);
+        setUsuarios(usuariosRes.data.length);
       } catch (err: any) {
         setError(err?.response?.data?.message || 'Erro ao carregar dados do dashboard');
       } finally {
@@ -68,7 +74,7 @@ function WidgetsPanel() {
   const widgets = useMemo(
     () => [
       {
-        id: 'items',
+        id: 'itens',
         title: 'Itens',
         value: items.length,
         icon: FaBoxes,
@@ -94,13 +100,13 @@ function WidgetsPanel() {
       {
         id: 'usuarios',
         title: 'Usuários',
-        value: '—',
+        value: usuarios,
         icon: FaUsers,
         color: 'widgetRed',
-        link: '#',
+        link: '/admin/gerenciar-usuarios',
       },
     ],
-    [items.length, areas.length, listas.length],
+    [items.length, areas.length, listas.length, usuarios],
   );
 
   if (loading) {
@@ -143,18 +149,27 @@ function WidgetsPanel() {
       <div className={styles.quickActionsSection}>
         <h2 className={styles.sectionTitle}>Ações rápidas</h2>
         <div className={styles.actionsGrid}>
-          <Link href="/admin/items" className={styles.actionButton}>
-            Gerenciar Itens
+          <Link href="/admin/listas" className={styles.actionButton}>
+            <FaShoppingCart className={styles.actionIcon} /> Listas de Compras
+          </Link>
+          <Link href="/admin/listas-rapidas" className={styles.actionButton}>
+            <FaBolt className={styles.actionIcon} /> Listas Rápidas
+          </Link>
+          <Link href="/admin/submissoes" className={styles.actionButton}>
+            <FaClipboardCheck className={styles.actionIcon} /> Submissões
           </Link>
           <Link href="/admin/areas" className={styles.actionButton}>
-            Gerenciar Áreas
+            <FaMapMarkerAlt className={styles.actionIcon} /> Áreas
           </Link>
-          <Link href="/admin/listas" className={styles.actionButton}>
-            Ver Listas
+          <Link href="/admin/items" className={styles.actionButton}>
+            <FaBoxes className={styles.actionIcon} /> Itens
           </Link>
-          <button className={styles.actionButton} type="button" disabled>
-            Configurações (em breve)
-          </button>
+          <Link href="/admin/gerenciar-usuarios" className={styles.actionButton}>
+            <FaUsersCog className={styles.actionIcon} /> Usuários
+          </Link>
+          <Link href="/admin/sugestoes" className={styles.actionButton}>
+            <FaLightbulb className={styles.actionIcon} /> Sugestões
+          </Link>
         </div>
       </div>
     </>
@@ -215,7 +230,11 @@ function ListsPanel() {
           <tbody>
             {listas.map((lista) => (
               <tr key={lista.id}>
-                <td>{lista.nome}</td>
+                <td>
+                  <Link href={`/admin/listas/${lista.id}`} className={styles.tableLink}>
+                    {lista.nome}
+                  </Link>
+                </td>
                 <td>#{lista.id}</td>
               </tr>
             ))}
