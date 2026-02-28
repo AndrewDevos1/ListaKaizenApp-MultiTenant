@@ -42,6 +42,33 @@ export class ListasController {
     return this.listasService.findAll(restauranteId);
   }
 
+  @Get('deletadas')
+  @Roles('ADMIN' as any, 'SUPER_ADMIN' as any)
+  @ApiOperation({ summary: 'Listar listas deletadas (lixeira)' })
+  findAllDeleted(@TenantId() restauranteId: number) {
+    return this.listasService.findAllDeleted(restauranteId);
+  }
+
+  @Post(':id/restaurar')
+  @Roles('ADMIN' as any, 'SUPER_ADMIN' as any)
+  @ApiOperation({ summary: 'Restaurar lista da lixeira' })
+  restore(
+    @Param('id', ParseIntPipe) id: number,
+    @TenantId() restauranteId: number,
+  ) {
+    return this.listasService.restore(id, restauranteId);
+  }
+
+  @Delete(':id/permanente')
+  @Roles('ADMIN' as any, 'SUPER_ADMIN' as any)
+  @ApiOperation({ summary: 'Deletar lista permanentemente' })
+  permanentDelete(
+    @Param('id', ParseIntPipe) id: number,
+    @TenantId() restauranteId: number,
+  ) {
+    return this.listasService.permanentDelete(id, restauranteId);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Detalhes da lista' })
   findOne(

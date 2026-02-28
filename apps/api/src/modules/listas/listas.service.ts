@@ -26,9 +26,37 @@ export class ListasService {
       where: { restauranteId, deletado: false },
       include: {
         _count: { select: { colaboradores: true, itensRef: true } },
+        itensRef: {
+          orderBy: { id: 'asc' },
+          include: { item: { select: { nome: true, unidadeMedida: true } } },
+        },
       },
       orderBy: { criadoEm: 'desc' },
     });
+  }
+
+  async findAllDeleted(restauranteId: number) {
+    return this.prisma.lista.findMany({
+      where: { restauranteId, deletado: true },
+      include: { _count: { select: { itensRef: true } } },
+      orderBy: { criadoEm: 'desc' },
+    });
+  }
+
+  async restore(id: number, restauranteId: number) {
+    const lista = await this.prisma.lista.findFirst({
+      where: { id, restauranteId, deletado: true },
+    });
+    if (!lista) throw new NotFoundException('Lista não encontrada na lixeira');
+    return this.prisma.lista.update({ where: { id }, data: { deletado: false } });
+  }
+
+  async permanentDelete(id: number, restauranteId: number) {
+    const lista = await this.prisma.lista.findFirst({
+      where: { id, restauranteId, deletado: true },
+    });
+    if (!lista) throw new NotFoundException('Lista não encontrada na lixeira');
+    return this.prisma.lista.delete({ where: { id } });
   }
 
   async findOne(id: number, restauranteId: number) {

@@ -20,6 +20,45 @@
   gap: 1rem;
 }
 
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+/* Search */
+.searchWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 0.75rem;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  pointer-events: none;
+}
+
+.searchInput {
+  padding: 0.5rem 0.75rem 0.5rem 2.25rem;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  width: 220px;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+}
+
 .pageTitle {
   font-size: 2rem;
   font-weight: 700;
@@ -139,7 +178,87 @@
 /* List Item Card */
 .cardLista {
   border-left: 5px solid #f9b115;
-  cursor: pointer;
+  cursor: default;
+}
+
+/* Item Preview */
+.itemPreviewList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  border-top: 1px solid var(--border-color);
+  padding-top: 0.75rem;
+}
+
+.itemPreviewItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  gap: 0.5rem;
+}
+
+.itemPreviewNome {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+
+.itemPreviewQtd {
+  font-weight: 600;
+  flex-shrink: 0;
+  font-size: 0.78rem;
+}
+
+.itemBaixo .itemPreviewQtd {
+  color: #e55353;
+}
+
+.itemBaixo .itemPreviewNome {
+  color: var(--text-primary);
+}
+
+/* Ações dropdown toggle */
+.acoesToggle {
+  font-size: 0.85rem;
+  padding: 0.4rem 0.9rem;
+  border-radius: 6px;
+  font-weight: 600;
+}
+
+/* Colaborador item no modal */
+.colaboradorItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.colaboradorItem:last-child {
+  border-bottom: none;
+}
+
+.colaboradorInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.colaboradorNome {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.colaboradorEmail {
+  font-size: 0.78rem;
+  color: var(--text-muted);
 }
 
 .listIcon {
@@ -214,12 +333,6 @@
   display: flex;
   gap: 0.5rem;
   margin-top: auto;
-  opacity: 0;
-  transition: opacity var(--transition-fast);
-}
-
-.listCard:hover .listActions {
-  opacity: 1;
 }
 
 .actionBtn {
@@ -313,6 +426,102 @@
   background: var(--color-primary);
   color: white;
   border-color: var(--color-primary);
+}
+
+/* Search clear button */
+.searchClear {
+  position: absolute;
+  right: 0.6rem;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0;
+  font-size: 0.85rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+}
+
+.searchClear:hover {
+  color: var(--text-primary);
+}
+
+/* Descrição no card */
+.descricaoCard {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+/* Lixeira modal items */
+.lixeiraItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.65rem 0;
+  border-bottom: 1px solid var(--border-color);
+  gap: 1rem;
+}
+
+.lixeiraItem:last-child {
+  border-bottom: none;
+}
+
+.lixeiraItemInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.lixeiraItemNome {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lixeiraItemMeta {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.lixeiraActions {
+  display: flex;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}
+
+/* Botão lixeira no header */
+.lixeiraBtn {
+  position: relative;
+}
+
+.lixeiraCount {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background: #e55353;
+  color: white;
+  font-size: 0.65rem;
+  font-weight: 700;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  line-height: 1;
 }
 
 /* Dark mode adjustments */
