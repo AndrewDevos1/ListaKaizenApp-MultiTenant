@@ -22,6 +22,11 @@ import { AssignColaboradoresDto } from './dto/assign-colaboradores.dto';
 import { ImportCsvDto } from './dto/import-csv.dto';
 import { CurrentUser, Roles, TenantId } from '../../common/decorators';
 import { RolesGuard, TenantGuard } from '../../common/guards';
+import { AddItemByNomeDto } from './dto/add-item-by-nome.dto';
+import { UpdateMaeItemDto } from './dto/update-mae-item.dto';
+import { BulkImportNamesDto } from './dto/bulk-import-names.dto';
+import { CopyMoveItemsDto } from './dto/copy-move-items.dto';
+import { AtribuirFornecedorDto } from './dto/atribuir-fornecedor.dto';
 
 @ApiTags('Listas')
 @Controller('v1/listas')
@@ -222,6 +227,110 @@ export class ListasController {
     @TenantId() restauranteId: number,
   ) {
     return this.listasService.importFromCsv(listaId, dto.texto, restauranteId);
+  }
+
+  // ── Lista Mãe ──────────────────────────────────────────────
+
+  @Get(':id/lista-mae')
+  @Roles('ADMIN' as any, 'SUPER_ADMIN' as any)
+  @ApiOperation({ summary: 'Dados completos da lista mãe (catálogo de itens)' })
+  getListaMae(
+    @Param('id', ParseIntPipe) listaId: number,
+    @TenantId() restauranteId: number,
+  ) {
+    return this.listasService.getListaMae(listaId, restauranteId);
+  }
+
+  @Post(':id/mae-itens')
+  @Roles('ADMIN' as any, 'SUPER_ADMIN' as any)
+  @ApiOperation({ summary: 'Adicionar item à lista mãe pelo nome' })
+  addItemByNome(
+    @Param('id', ParseIntPipe) listaId: number,
+    @Body() dto: AddItemByNomeDto,
+    @TenantId() restauranteId: number,
+  ) {
+    return this.listasService.addItemByNome(
+      listaId,
+      dto.nome,
+      dto.unidadeMedida,
+      dto.quantidadeAtual ?? 0,
+      dto.quantidadeMinima ?? 0,
+      restauranteId,
+    );
+  }
+
+  @Put(':id/mae-itens/:itemRefId')
+  @Roles('ADMIN' as any, 'SUPER_ADMIN' as any)
+  @ApiOperation({ summary: 'Atualizar item da lista mãe (nome, unidade, qtds, fardo)' })
+  updateMaeItem(
+    @Param('id', ParseIntPipe) listaId: number,
+    @Param('itemRefId', ParseIntPipe) itemRefId: number,
+    @Body() dto: UpdateMaeItemDto,
+    @TenantId() restauranteId: number,
+  ) {
+    return this.listasService.updateMaeItem(listaId, itemRefId, dto, restauranteId);
+  }
+
+  @Delete(':id/mae-itens/:itemRefId')
+  @Roles('ADMIN' as any, 'SUPER_ADMIN' as any)
+  @ApiOperation({ summary: 'Remover item da lista mãe pelo itemRefId' })
+  deleteMaeItem(
+    @Param('id', ParseIntPipe) listaId: number,
+    @Param('itemRefId', ParseIntPipe) itemRefId: number,
+    @TenantId() restauranteId: number,
+  ) {
+    return this.listasService.deleteMaeItem(listaId, itemRefId, restauranteId);
+  }
+
+  @Post(':id/items-import')
+  @Roles('ADMIN' as any, 'SUPER_ADMIN' as any)
+  @ApiOperation({ summary: 'Importar itens em lote pelo nome (um por linha)' })
+  bulkImportByName(
+    @Param('id', ParseIntPipe) listaId: number,
+    @Body() dto: BulkImportNamesDto,
+    @TenantId() restauranteId: number,
+  ) {
+    return this.listasService.bulkImportByName(listaId, dto.nomes, restauranteId);
+  }
+
+  @Post(':id/itens/copiar')
+  @Roles('ADMIN' as any, 'SUPER_ADMIN' as any)
+  @ApiOperation({ summary: 'Copiar itens para outra lista' })
+  copyItems(
+    @Param('id', ParseIntPipe) listaId: number,
+    @Body() dto: CopyMoveItemsDto,
+    @TenantId() restauranteId: number,
+  ) {
+    return this.listasService.copyItems(listaId, dto, restauranteId);
+  }
+
+  @Post(':id/itens/mover')
+  @Roles('ADMIN' as any, 'SUPER_ADMIN' as any)
+  @ApiOperation({ summary: 'Mover itens para outra lista' })
+  moveItems(
+    @Param('id', ParseIntPipe) listaId: number,
+    @Body() dto: CopyMoveItemsDto,
+    @TenantId() restauranteId: number,
+  ) {
+    return this.listasService.moveItems(listaId, dto, restauranteId);
+  }
+
+  @Post(':id/atribuir-fornecedor')
+  @Roles('ADMIN' as any, 'SUPER_ADMIN' as any)
+  @ApiOperation({ summary: 'Atribuir fornecedor e gerar submissão de pedido' })
+  atribuirFornecedor(
+    @Param('id', ParseIntPipe) listaId: number,
+    @Body() dto: AtribuirFornecedorDto,
+    @TenantId() restauranteId: number,
+    @CurrentUser('id') usuarioId: number,
+  ) {
+    return this.listasService.atribuirFornecedor(
+      listaId,
+      dto.itemRefIds,
+      dto.fornecedorId,
+      restauranteId,
+      usuarioId,
+    );
   }
 }
 

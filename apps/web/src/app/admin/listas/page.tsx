@@ -531,7 +531,7 @@ export default function ListasPage() {
                   variant="primary"
                   size="sm"
                   className={styles.gerenciarBtn}
-                  onClick={() => router.push(`/admin/listas/${lista.id}`)}
+                  onClick={() => router.push(`/admin/listas/${lista.id}/lista-mae`)}
                 >
                   Gerenciar
                 </Button>

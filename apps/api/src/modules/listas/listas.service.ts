@@ -3,6 +3,7 @@ import {
   NotFoundException,
   ConflictException,
   UnprocessableEntityException,
+  BadRequestException,
 } from '@nestjs/common';
 import { StatusSubmissao } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -10,6 +11,8 @@ import { CreateListaDto } from './dto/create-lista.dto';
 import { UpdateListaDto } from './dto/update-lista.dto';
 import { AtualizarEstoqueDto } from './dto/atualizar-estoque.dto';
 import { UpdateItemRefDto } from './dto/update-item-ref.dto';
+import { UpdateMaeItemDto } from './dto/update-mae-item.dto';
+import { CopyMoveItemsDto } from './dto/copy-move-items.dto';
 
 @Injectable()
 export class ListasService {
@@ -325,6 +328,294 @@ export class ListasService {
       adicionados++;
     }
     return { adicionados, ignorados };
+  }
+
+  // ── Lista Mãe ──────────────────────────────────────────────
+
+  async getListaMae(listaId: number, restauranteId: number) {
+    const lista = await this.prisma.lista.findFirst({
+      where: { id: listaId, restauranteId, deletado: false },
+      include: {
+        area: { select: { id: true, nome: true } },
+        itensRef: {
+          include: {
+            item: {
+              include: { fornecedor: { select: { id: true, nome: true, telefone: true, email: true } } },
+            },
+          },
+          orderBy: { item: { nome: 'asc' } },
+        },
+      },
+    });
+    if (!lista) throw new NotFoundException('Lista não encontrada');
+
+    // Deriva fornecedores únicos
+    const fornecedoresMap = new Map<number, { id: number; nome: string; telefone: string | null; email: string | null }>();
+    for (const ref of lista.itensRef) {
+      const f = ref.item.fornecedor;
+      if (f && !fornecedoresMap.has(f.id)) {
+        fornecedoresMap.set(f.id, f);
+      }
+    }
+
+    return { ...lista, fornecedores: Array.from(fornecedoresMap.values()) };
+  }
+
+  async addItemByNome(
+    listaId: number,
+    nome: string,
+    unidadeMedida: string,
+    quantidadeAtual: number,
+    quantidadeMinima: number,
+    restauranteId: number,
+  ) {
+    await this.findOne(listaId, restauranteId);
+
+    // Busca item existente (case-insensitive, mesmo restaurante)
+    let item = await this.prisma.item.findFirst({
+      where: { nome: { equals: nome, mode: 'insensitive' }, restauranteId },
+    });
+
+    // Cria item se não existir
+    if (!item) {
+      item = await this.prisma.item.create({
+        data: { nome, unidadeMedida, restauranteId },
+      });
+    }
+
+    // Verifica duplicata
+    const existing = await this.prisma.listaItemRef.findUnique({
+      where: { listaId_itemId: { listaId, itemId: item.id } },
+    });
+    if (existing) {
+      throw new ConflictException('Item já está nesta lista');
+    }
+
+    return this.prisma.listaItemRef.create({
+      data: { listaId, itemId: item.id, quantidadeAtual, quantidadeMinima },
+      include: {
+        item: {
+          include: { fornecedor: { select: { id: true, nome: true, telefone: true, email: true } } },
+        },
+      },
+    });
+  }
+
+  async updateMaeItem(
+    listaId: number,
+    itemRefId: number,
+    dto: UpdateMaeItemDto,
+    restauranteId: number,
+  ) {
+    await this.findOne(listaId, restauranteId);
+
+    const itemRef = await this.prisma.listaItemRef.findFirst({
+      where: { id: itemRefId, listaId },
+      include: { item: true },
+    });
+    if (!itemRef) throw new NotFoundException('Item não encontrado nesta lista');
+
+    let itemId = itemRef.itemId;
+
+    // Se o nome mudou, encontra ou cria o item de destino
+    if (dto.nome && dto.nome !== itemRef.item.nome) {
+      const unidade = dto.unidadeMedida ?? itemRef.item.unidadeMedida;
+      let targetItem = await this.prisma.item.findFirst({
+        where: { nome: { equals: dto.nome, mode: 'insensitive' }, restauranteId },
+      });
+      if (!targetItem) {
+        targetItem = await this.prisma.item.create({
+          data: { nome: dto.nome, unidadeMedida: unidade, restauranteId },
+        });
+      }
+      // Checa duplicata no destino (se trocar item)
+      if (targetItem.id !== itemRef.itemId) {
+        const dup = await this.prisma.listaItemRef.findUnique({
+          where: { listaId_itemId: { listaId, itemId: targetItem.id } },
+        });
+        if (dup) throw new ConflictException('Já existe um item com este nome nesta lista');
+        itemId = targetItem.id;
+      }
+    }
+
+    const data: Record<string, unknown> = { itemId };
+    if (dto.quantidadeMinima !== undefined) data.quantidadeMinima = dto.quantidadeMinima;
+    if (dto.quantidadeAtual !== undefined) data.quantidadeAtual = dto.quantidadeAtual;
+    if (dto.qtdFardo !== undefined) data.qtdFardo = dto.qtdFardo;
+
+    return this.prisma.listaItemRef.update({
+      where: { id: itemRefId },
+      data,
+      include: {
+        item: {
+          include: { fornecedor: { select: { id: true, nome: true, telefone: true, email: true } } },
+        },
+      },
+    });
+  }
+
+  async deleteMaeItem(listaId: number, itemRefId: number, restauranteId: number) {
+    await this.findOne(listaId, restauranteId);
+
+    const record = await this.prisma.listaItemRef.findFirst({
+      where: { id: itemRefId, listaId },
+    });
+    if (!record) throw new NotFoundException('Item não encontrado nesta lista');
+
+    return this.prisma.listaItemRef.delete({ where: { id: itemRefId } });
+  }
+
+  async bulkImportByName(listaId: number, nomes: string[], restauranteId: number) {
+    await this.findOne(listaId, restauranteId);
+
+    const cleanNome = (raw: string): string => {
+      let s = raw.trim();
+      // Remove padrões tipo "6x5kg", "12x1L"
+      s = s.replace(/\d+x\d+\w*/gi, '').trim();
+      // Remove conteúdo entre parênteses
+      s = s.replace(/\([^)]*\)/g, '').trim();
+      // Remove emojis comuns
+      s = s.replace(/[\u{1F300}-\u{1FAFF}]/gu, '').trim();
+      // Remove barras e caracteres especiais no início/fim
+      s = s.replace(/^[/\\*•–—\-]+|[/\\*•–—\-]+$/g, '').trim();
+      return s;
+    };
+
+    let items_criados = 0;
+    let items_duplicados = 0;
+
+    for (const raw of nomes) {
+      const nome = cleanNome(raw);
+      if (!nome) continue;
+
+      try {
+        await this.addItemByNome(listaId, nome, 'Un', 0, 0, restauranteId);
+        items_criados++;
+      } catch (err: any) {
+        if (err instanceof ConflictException) {
+          items_duplicados++;
+        }
+        // Ignora outros erros silenciosamente
+      }
+    }
+
+    return { items_criados, items_duplicados };
+  }
+
+  async copyItems(listaId: number, dto: CopyMoveItemsDto, restauranteId: number) {
+    await this.findOne(listaId, restauranteId);
+
+    if (!dto.listaDestinoId && !dto.nomeNovaLista) {
+      throw new BadRequestException('Informe listaDestinoId ou nomeNovaLista');
+    }
+
+    let listaDestinoId = dto.listaDestinoId;
+
+    // Cria lista de destino se necessário
+    if (dto.nomeNovaLista) {
+      const novaLista = await this.prisma.lista.create({
+        data: {
+          nome: dto.nomeNovaLista,
+          restauranteId,
+          areaId: dto.areaId ?? null,
+        },
+      });
+      listaDestinoId = novaLista.id;
+    }
+
+    // Busca refs da origem
+    const refs = await this.prisma.listaItemRef.findMany({
+      where: { id: { in: dto.itemRefIds }, listaId },
+    });
+
+    let itens_ignorados = 0;
+    const itens_ignorados_lista: string[] = [];
+
+    for (const ref of refs) {
+      const existing = await this.prisma.listaItemRef.findUnique({
+        where: { listaId_itemId: { listaId: listaDestinoId!, itemId: ref.itemId } },
+      });
+      if (existing) {
+        // Pega o nome do item para reportar
+        const item = await this.prisma.item.findUnique({ where: { id: ref.itemId }, select: { nome: true } });
+        itens_ignorados++;
+        itens_ignorados_lista.push(item?.nome ?? String(ref.itemId));
+        continue;
+      }
+      await this.prisma.listaItemRef.create({
+        data: {
+          listaId: listaDestinoId!,
+          itemId: ref.itemId,
+          quantidadeMinima: ref.quantidadeMinima,
+          quantidadeAtual: 0,
+          qtdFardo: ref.qtdFardo,
+        },
+      });
+    }
+
+    return {
+      message: `${refs.length - itens_ignorados} itens copiados`,
+      listaDestinoId,
+      itens_ignorados,
+      itens_ignorados_lista,
+    };
+  }
+
+  async moveItems(listaId: number, dto: CopyMoveItemsDto, restauranteId: number) {
+    const result = await this.copyItems(listaId, dto, restauranteId);
+
+    // Remove os refs da origem que foram copiados com sucesso
+    const refsCopiados = result.itens_ignorados_lista.length === 0
+      ? dto.itemRefIds
+      : dto.itemRefIds; // Remove todos da origem independente de duplicatas
+
+    await this.prisma.listaItemRef.deleteMany({
+      where: { id: { in: refsCopiados }, listaId },
+    });
+
+    return { ...result, message: `${dto.itemRefIds.length - result.itens_ignorados} itens movidos` };
+  }
+
+  async atribuirFornecedor(
+    listaId: number,
+    itemRefIds: number[],
+    fornecedorId: number,
+    restauranteId: number,
+    usuarioId: number,
+  ) {
+    await this.findOne(listaId, restauranteId);
+
+    // Verifica que todos os itemRefIds pertencem à lista
+    const refs = await this.prisma.listaItemRef.findMany({
+      where: { id: { in: itemRefIds }, listaId },
+    });
+    if (refs.length === 0) throw new NotFoundException('Nenhum item encontrado');
+
+    // Verifica fornecedor
+    const fornecedor = await this.prisma.fornecedor.findFirst({
+      where: { id: fornecedorId, restauranteId },
+    });
+    if (!fornecedor) throw new NotFoundException('Fornecedor não encontrado');
+
+    // Cria Submissao
+    const submissao = await this.prisma.submissao.create({
+      data: {
+        listaId,
+        usuarioId,
+        restauranteId,
+        status: StatusSubmissao.PENDENTE,
+        arquivada: false,
+        pedidos: {
+          create: refs.map((ref) => ({
+            itemId: ref.itemId,
+            qtdSolicitada: ref.qtdFardo ?? ref.quantidadeMinima ?? 1,
+          })),
+        },
+      },
+      include: { pedidos: true },
+    });
+
+    return { total_pedidos: submissao.pedidos.length, submissaoId: submissao.id };
   }
 
   // Tarefa 1.3 — Submeter lista (colaborador)
