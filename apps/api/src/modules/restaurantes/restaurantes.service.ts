@@ -4,7 +4,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { CreateRestauranteDto } from './dto/create-restaurante.dto';
 import { UpdateRestauranteDto } from './dto/update-restaurante.dto';
 
-interface ResumoRestore {
+export interface ResumoRestore {
   sucesso: true;
   restaurante: string;
   usuarios: { criados: number; ignorados: number };
