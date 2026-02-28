@@ -378,7 +378,6 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
                 label: 'Restaurantes',
                 href: '/admin/restaurantes',
                 icon: <FaStore />,
-                status: 'soon' as const,
               },
             ]
           : []),
