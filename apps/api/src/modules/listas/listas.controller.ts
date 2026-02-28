@@ -18,6 +18,8 @@ import { AddColaboradorDto } from './dto/add-colaborador.dto';
 import { AddItemRefDto } from './dto/add-item-ref.dto';
 import { AtualizarEstoqueDto } from './dto/atualizar-estoque.dto';
 import { UpdateItemRefDto } from './dto/update-item-ref.dto';
+import { AssignColaboradoresDto } from './dto/assign-colaboradores.dto';
+import { ImportCsvDto } from './dto/import-csv.dto';
 import { CurrentUser, Roles, TenantId } from '../../common/decorators';
 import { RolesGuard, TenantGuard } from '../../common/guards';
 
@@ -67,6 +69,16 @@ export class ListasController {
     @TenantId() restauranteId: number,
   ) {
     return this.listasService.permanentDelete(id, restauranteId);
+  }
+
+  @Post('batch-permanente')
+  @Roles('ADMIN' as any, 'SUPER_ADMIN' as any)
+  @ApiOperation({ summary: 'Deletar múltiplas listas permanentemente (da lixeira)' })
+  batchPermanentDelete(
+    @Body() body: { ids: number[] },
+    @TenantId() restauranteId: number,
+  ) {
+    return this.listasService.permanentDeleteBatch(body.ids, restauranteId);
   }
 
   @Get(':id')
@@ -178,6 +190,38 @@ export class ListasController {
       dto,
       restauranteId,
     );
+  }
+
+  @Post(':id/assign')
+  @Roles('ADMIN' as any, 'SUPER_ADMIN' as any)
+  @ApiOperation({ summary: 'Substituir todos os colaboradores da lista' })
+  assign(
+    @Param('id', ParseIntPipe) listaId: number,
+    @Body() dto: AssignColaboradoresDto,
+    @TenantId() restauranteId: number,
+  ) {
+    return this.listasService.assign(listaId, dto.colaboradorIds, restauranteId);
+  }
+
+  @Get(':id/export-csv')
+  @Roles('ADMIN' as any, 'SUPER_ADMIN' as any)
+  @ApiOperation({ summary: 'Exportar itens da lista como CSV' })
+  exportCsv(
+    @Param('id', ParseIntPipe) listaId: number,
+    @TenantId() restauranteId: number,
+  ) {
+    return this.listasService.exportCsv(listaId, restauranteId);
+  }
+
+  @Post(':id/import-csv')
+  @Roles('ADMIN' as any, 'SUPER_ADMIN' as any)
+  @ApiOperation({ summary: 'Importar itens para a lista via CSV' })
+  importCsv(
+    @Param('id', ParseIntPipe) listaId: number,
+    @Body() dto: ImportCsvDto,
+    @TenantId() restauranteId: number,
+  ) {
+    return this.listasService.importFromCsv(listaId, dto.texto, restauranteId);
   }
 }
 

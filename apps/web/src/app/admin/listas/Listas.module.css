@@ -459,6 +459,61 @@
   -webkit-box-orient: vertical;
 }
 
+/* Filtros de área */
+.filtrosArea {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+}
+
+.filtroBtn {
+  padding: 0.3rem 0.85rem;
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.filtroBtn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.filtroBtnAtivo {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: white;
+}
+
+.filtroBtnAtivo:hover {
+  color: white;
+  opacity: 0.9;
+}
+
+/* Badge de área no card */
+.areaBadge {
+  font-size: 0.72rem;
+  background: rgba(102, 126, 234, 0.12);
+  border: 1px solid rgba(102, 126, 234, 0.25);
+  color: #667eea;
+  border-radius: 12px;
+  padding: 0.15rem 0.55rem;
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+  margin-left: auto;
+}
+
+/* Botão Gerenciar no card */
+.gerenciarBtn {
+  font-size: 0.82rem;
+  padding: 0.35rem 0.85rem;
+}
+
 /* Lixeira modal items */
 .lixeiraItem {
   display: flex;
@@ -466,7 +521,11 @@
   align-items: center;
   padding: 0.65rem 0;
   border-bottom: 1px solid var(--border-color);
-  gap: 1rem;
+  gap: 0.75rem;
+}
+
+.lixeiraCheck {
+  flex-shrink: 0;
 }
 
 .lixeiraItem:last-child {

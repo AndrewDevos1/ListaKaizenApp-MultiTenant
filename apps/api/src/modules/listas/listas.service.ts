@@ -16,15 +16,24 @@ export class ListasService {
   constructor(private prisma: PrismaService) {}
 
   async create(dto: CreateListaDto, restauranteId: number) {
-    return this.prisma.lista.create({
-      data: { ...dto, restauranteId },
+    const { colaboradorIds, ...rest } = dto;
+    const lista = await this.prisma.lista.create({
+      data: { ...rest, restauranteId },
     });
+    if (colaboradorIds && colaboradorIds.length > 0) {
+      await this.prisma.listaColaborador.createMany({
+        data: colaboradorIds.map((uid) => ({ listaId: lista.id, usuarioId: uid })),
+        skipDuplicates: true,
+      });
+    }
+    return lista;
   }
 
   async findAll(restauranteId: number) {
     return this.prisma.lista.findMany({
       where: { restauranteId, deletado: false },
       include: {
+        area: { select: { id: true, nome: true } },
         _count: { select: { colaboradores: true, itensRef: true } },
         itensRef: {
           orderBy: { id: 'asc' },
@@ -79,7 +88,8 @@ export class ListasService {
 
   async update(id: number, dto: UpdateListaDto, restauranteId: number) {
     await this.findOne(id, restauranteId);
-    return this.prisma.lista.update({ where: { id }, data: dto });
+    const { colaboradorIds, ...data } = dto;
+    return this.prisma.lista.update({ where: { id }, data });
   }
 
   async remove(id: number, restauranteId: number) {
@@ -241,6 +251,80 @@ export class ListasService {
       data: dto,
       include: { item: { select: { id: true, nome: true, unidadeMedida: true } } },
     });
+  }
+
+  // Assign todos os colaboradores de uma vez (substitui os atuais)
+  async assign(listaId: number, colaboradorIds: number[], restauranteId: number) {
+    await this.findOne(listaId, restauranteId);
+    await this.prisma.listaColaborador.deleteMany({ where: { listaId } });
+    if (colaboradorIds.length > 0) {
+      await this.prisma.listaColaborador.createMany({
+        data: colaboradorIds.map((uid) => ({ listaId, usuarioId: uid })),
+        skipDuplicates: true,
+      });
+    }
+    return { ok: true };
+  }
+
+  // Deletar permanentemente em lote (da lixeira)
+  async permanentDeleteBatch(ids: number[], restauranteId: number) {
+    const valid = await this.prisma.lista.findMany({
+      where: { id: { in: ids }, restauranteId, deletado: true },
+      select: { id: true },
+    });
+    const validIds = valid.map((l) => l.id);
+    await this.prisma.lista.deleteMany({ where: { id: { in: validIds } } });
+    return { deletados: validIds.length };
+  }
+
+  // Exportar itens como CSV
+  async exportCsv(listaId: number, restauranteId: number) {
+    await this.findOne(listaId, restauranteId);
+    const itens = await this.prisma.listaItemRef.findMany({
+      where: { listaId },
+      include: { item: { select: { nome: true, unidadeMedida: true } } },
+      orderBy: { item: { nome: 'asc' } },
+    });
+    const header = 'nome,unidade,quantidade_minima';
+    const rows = itens.map(
+      (i) => `"${i.item.nome}","${i.item.unidadeMedida}",${i.quantidadeMinima}`,
+    );
+    return { csv: [header, ...rows].join('\n') };
+  }
+
+  // Importar itens de CSV
+  async importFromCsv(listaId: number, texto: string, restauranteId: number) {
+    await this.findOne(listaId, restauranteId);
+    const lines = texto.split('\n').map((l) => l.trim()).filter(Boolean);
+    const dataLines = lines[0]?.toLowerCase().startsWith('nome') ? lines.slice(1) : lines;
+
+    let adicionados = 0;
+    let ignorados = 0;
+
+    for (const line of dataLines) {
+      const cols = (line.match(/(?:"([^"]*)")|([^,]+)/g) ?? []).map((c) =>
+        c.replace(/^"|"$/g, '').trim(),
+      );
+      const nome = cols[0];
+      if (!nome) continue;
+      const quantidadeMinima = parseFloat(cols[2] || '0') || 0;
+
+      const item = await this.prisma.item.findFirst({
+        where: { nome: { equals: nome, mode: 'insensitive' }, restauranteId },
+      });
+      if (!item) { ignorados++; continue; }
+
+      const existing = await this.prisma.listaItemRef.findUnique({
+        where: { listaId_itemId: { listaId, itemId: item.id } },
+      });
+      if (existing) { ignorados++; continue; }
+
+      await this.prisma.listaItemRef.create({
+        data: { listaId, itemId: item.id, quantidadeMinima },
+      });
+      adicionados++;
+    }
+    return { adicionados, ignorados };
   }
 
   // Tarefa 1.3 — Submeter lista (colaborador)
