@@ -121,6 +121,47 @@
   margin: 0;
 }
 
+/* ─── Modal Criar — Itens ─────────────────────────────────── */
+
+.itensForm {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 320px;
+  overflow-y: auto;
+  padding-right: 0.25rem;
+}
+
+.itemRow {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.itemNome {
+  flex: 1;
+  min-width: 0;
+}
+
+.itemQtd {
+  width: 80px;
+  flex-shrink: 0;
+}
+
+.itemUnidade {
+  width: 90px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 576px) {
+  .itemRow {
+    flex-wrap: wrap;
+  }
+  .itemNome { flex: 1 1 100%; }
+  .itemQtd  { flex: 1; }
+  .itemUnidade { flex: 1; }
+}
+
 /* Animations */
 @keyframes slideUp {
   from {
