@@ -16,4 +16,12 @@ export class AddItemListaRapidaDto {
   @IsOptional()
   @IsInt()
   itemId?: number;
+
+  @IsOptional()
+  @IsString()
+  prioridade?: string;
+
+  @IsOptional()
+  @IsString()
+  observacao?: string;
 }

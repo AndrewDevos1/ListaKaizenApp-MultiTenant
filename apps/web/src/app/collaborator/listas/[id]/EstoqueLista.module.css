@@ -1,0 +1,325 @@
+/* EstoqueLista — Preenchimento de Lista de Compras */
+
+.pageWrapper {
+  min-height: calc(100vh - 60px);
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  padding: 2rem 1rem;
+}
+
+.pageContainer {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+/* ─── Header ─────────────────────────────────────────────────────────────── */
+
+.header {
+  background: var(--bg-secondary, #ffffff);
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  padding: 1.5rem 2rem;
+  margin-bottom: 1.5rem;
+}
+
+.headerTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.backLink {
+  color: var(--text-secondary, #6c757d);
+  text-decoration: none;
+  font-size: 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-bottom: 0.75rem;
+  transition: color 0.15s;
+}
+
+.backLink:hover {
+  color: var(--text-primary, #212529);
+  text-decoration: underline;
+}
+
+.title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-primary, #2c3e50);
+  margin: 0 0 0.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.subtitle {
+  color: var(--text-muted, #7f8c8d);
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+/* ─── Summary Bar ─────────────────────────────────────────────────────────── */
+
+.summaryBar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.badgeEmFalta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  background-color: #f8d7da;
+  color: #842029;
+  border: 1px solid #f5c2c7;
+}
+
+.badgeAlterados {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  background-color: #fff3cd;
+  color: #664d03;
+  border: 1px solid #ffecb5;
+}
+
+.badgeTotal {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  background-color: #cff4fc;
+  color: #055160;
+  border: 1px solid #b6effb;
+}
+
+/* ─── Search Bar ──────────────────────────────────────────────────────────── */
+
+.searchBar {
+  width: 100%;
+  max-width: 380px;
+  padding: 0.55rem 1rem;
+  border: 2px solid var(--border-color, #dee2e6);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  background-color: var(--input-bg, #ffffff);
+  color: var(--input-text, #212529);
+  transition: border-color 0.2s, box-shadow 0.2s;
+  margin-bottom: 1rem;
+}
+
+.searchBar:focus {
+  outline: none;
+  border-color: #3498db;
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.15);
+}
+
+/* ─── Table ───────────────────────────────────────────────────────────────── */
+
+.tableWrapper {
+  background: var(--bg-secondary, #ffffff);
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  margin-bottom: 1.5rem;
+}
+
+.th {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  font-weight: 600;
+  padding: 0.9rem 1rem;
+  vertical-align: middle;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+  border-color: #667eea !important;
+}
+
+.th:hover {
+  background: linear-gradient(135deg, #5a6fd8 0%, #6a4395 100%);
+}
+
+.td {
+  padding: 0.6rem 1rem;
+  vertical-align: middle;
+}
+
+/* Row state variants */
+.rowAlterado {
+  border-left: 4px solid #ffc107 !important;
+  background-color: #fff8e5 !important;
+}
+
+.rowAlterado td {
+  background-color: #fff8e5;
+}
+
+.rowBaixo {
+  background-color: #fff3cd !important;
+}
+
+.rowBaixo td {
+  background-color: #fff3cd;
+}
+
+.rowZerado {
+  background-color: #f8d7da !important;
+}
+
+.rowZerado td {
+  background-color: #f8d7da;
+}
+
+/* ─── Quantity Input ──────────────────────────────────────────────────────── */
+
+.qtdInput {
+  text-align: center;
+  border: 2px solid var(--border-color, #dee2e6);
+  border-radius: 6px;
+  padding: 0.4rem 0.5rem;
+  font-weight: 500;
+  width: 100%;
+  min-width: 90px;
+  background-color: var(--input-bg, #ffffff);
+  color: var(--input-text, #212529);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.qtdInput:focus {
+  outline: none;
+  border-color: #3498db;
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+}
+
+.qtdInputBaixo {
+  border-color: #ffc107;
+}
+
+.qtdInputZerado {
+  border-color: #dc3545;
+}
+
+/* ─── Pedido Badge ────────────────────────────────────────────────────────── */
+
+.badgePedido {
+  display: inline-block;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  background-color: #f8d7da;
+  color: #842029;
+}
+
+.badgeOk {
+  display: inline-block;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  background-color: #d1e7dd;
+  color: #0f5132;
+}
+
+/* ─── Footer Actions ──────────────────────────────────────────────────────── */
+
+.footerActions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  margin-top: 0.5rem;
+}
+
+/* ─── Success Icon (modal) ────────────────────────────────────────────────── */
+
+.successIcon {
+  font-size: 4rem;
+  color: #198754;
+  display: inline-block;
+  animation: successPop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+  margin-bottom: 1rem;
+}
+
+@keyframes successPop {
+  0% {
+    transform: scale(0.3);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.15);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* ─── Responsive ──────────────────────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  .pageWrapper {
+    padding: 1rem 0.5rem;
+  }
+
+  .header {
+    padding: 1.25rem;
+  }
+
+  .title {
+    font-size: 1.2rem;
+  }
+
+  .footerActions {
+    flex-direction: column;
+  }
+
+  .footerActions > * {
+    width: 100%;
+  }
+
+  .searchBar {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 576px) {
+  .pageWrapper {
+    padding: 0.5rem;
+  }
+
+  .th {
+    padding: 0.7rem 0.5rem;
+    font-size: 0.82rem;
+  }
+
+  .td {
+    padding: 0.5rem 0.5rem;
+    font-size: 0.85rem;
+  }
+
+  .qtdInput {
+    min-width: 70px;
+    font-size: 0.9rem;
+    padding: 0.3rem 0.4rem;
+  }
+}

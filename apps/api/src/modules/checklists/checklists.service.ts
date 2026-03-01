@@ -80,7 +80,13 @@ export class ChecklistsService {
     return this.prisma.checklist.findMany({
       where: { restauranteId },
       include: {
-        submissao: { select: { id: true } },
+        submissao: {
+          select: {
+            id: true,
+            lista: { select: { nome: true } },
+          },
+        },
+        itens: { select: { marcado: true } },
         _count: { select: { itens: true } },
       },
       orderBy: { criadoEm: 'desc' },
@@ -91,10 +97,17 @@ export class ChecklistsService {
     const checklist = await this.prisma.checklist.findFirst({
       where: { id, restauranteId },
       include: {
+        submissao: {
+          select: {
+            id: true,
+            lista: { select: { nome: true } },
+          },
+        },
         itens: {
           include: {
             item: { select: { id: true, nome: true, unidadeMedida: true } },
           },
+          orderBy: { criadoEm: 'asc' },
         },
       },
     });
@@ -140,6 +153,23 @@ export class ChecklistsService {
     return this.prisma.checklist.update({
       where: { id },
       data: { status: StatusChecklist.FINALIZADO },
+    });
+  }
+
+  async reabrir(id: number, restauranteId: number) {
+    const checklist = await this.prisma.checklist.findFirst({
+      where: { id, restauranteId },
+    });
+    if (!checklist) {
+      throw new NotFoundException('Checklist não encontrado');
+    }
+    if (checklist.status === StatusChecklist.ABERTO) {
+      throw new BadRequestException('Checklist já está aberto');
+    }
+
+    return this.prisma.checklist.update({
+      where: { id },
+      data: { status: StatusChecklist.ABERTO },
     });
   }
 }
