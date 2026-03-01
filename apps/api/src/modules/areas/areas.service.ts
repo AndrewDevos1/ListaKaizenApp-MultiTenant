@@ -67,13 +67,20 @@ export class AreasService {
     restauranteId: number,
   ) {
     await this.findOne(areaId, restauranteId);
-    await this.prisma.areaColaborador.deleteMany({ where: { areaId } });
-    if (dto.colaboradorIds.length > 0) {
-      await this.prisma.areaColaborador.createMany({
-        data: dto.colaboradorIds.map((usuarioId) => ({ areaId, usuarioId })),
-        skipDuplicates: true,
-      });
-    }
+    await this.prisma.$transaction([
+      this.prisma.areaColaborador.deleteMany({ where: { areaId } }),
+      ...(dto.colaboradorIds.length > 0
+        ? [
+            this.prisma.areaColaborador.createMany({
+              data: dto.colaboradorIds.map((usuarioId) => ({
+                areaId,
+                usuarioId,
+              })),
+              skipDuplicates: true,
+            }),
+          ]
+        : []),
+    ]);
     return this.getColaboradores(areaId, restauranteId);
   }
 
@@ -94,18 +101,20 @@ export class AreasService {
     restauranteId: number,
   ) {
     await this.findOne(areaId, restauranteId);
-    // Desvincula todas as listas atuais
-    await this.prisma.lista.updateMany({
-      where: { areaId, restauranteId },
-      data: { areaId: null },
-    });
-    // Vincula as novas
-    if (dto.listaIds.length > 0) {
-      await this.prisma.lista.updateMany({
-        where: { id: { in: dto.listaIds }, restauranteId },
-        data: { areaId },
-      });
-    }
+    await this.prisma.$transaction([
+      this.prisma.lista.updateMany({
+        where: { areaId, restauranteId },
+        data: { areaId: null },
+      }),
+      ...(dto.listaIds.length > 0
+        ? [
+            this.prisma.lista.updateMany({
+              where: { id: { in: dto.listaIds }, restauranteId },
+              data: { areaId },
+            }),
+          ]
+        : []),
+    ]);
     return this.getListas(areaId, restauranteId);
   }
 

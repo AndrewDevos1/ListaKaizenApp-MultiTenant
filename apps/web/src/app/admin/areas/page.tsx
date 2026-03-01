@@ -41,6 +41,7 @@ export default function AreasPage() {
   const [membrosIds, setMembrosIds] = useState<Set<number>>(new Set());
   const [loadingMembros, setLoadingMembros] = useState(false);
   const [savingMembros, setSavingMembros] = useState(false);
+  const [errorMembros, setErrorMembros] = useState('');
 
   // Modal listas
   const [showModalListas, setShowModalListas] = useState(false);
@@ -48,6 +49,7 @@ export default function AreasPage() {
   const [listasIds, setListasIds] = useState<Set<number>>(new Set());
   const [loadingListas, setLoadingListas] = useState(false);
   const [savingListas, setSavingListas] = useState(false);
+  const [errorListas, setErrorListas] = useState('');
 
   const fetchAreas = async () => {
     try {
@@ -105,6 +107,7 @@ export default function AreasPage() {
     setAreaAtiva(area);
     setShowModalMembros(true);
     setLoadingMembros(true);
+    setErrorMembros('');
     try {
       const [colabData, usuariosData] = await Promise.all([
         api.get(`/v1/areas/${area.id}/colaboradores`),
@@ -113,7 +116,7 @@ export default function AreasPage() {
       setMembrosIds(new Set(colabData.data.map((c: any) => c.usuario.id)));
       setTodosUsuarios(usuariosData.data);
     } catch {
-      setError('Erro ao carregar membros');
+      setErrorMembros('Erro ao carregar membros');
     } finally {
       setLoadingMembros(false);
     }
@@ -130,14 +133,15 @@ export default function AreasPage() {
   const salvarMembros = async () => {
     if (!areaAtiva) return;
     setSavingMembros(true);
+    setErrorMembros('');
     try {
       await api.post(`/v1/areas/${areaAtiva.id}/colaboradores`, {
         colaboradorIds: [...membrosIds],
       });
       setShowModalMembros(false);
       fetchAreas();
-    } catch {
-      setError('Erro ao salvar membros');
+    } catch (err: any) {
+      setErrorMembros(err.response?.data?.message || 'Erro ao salvar membros');
     } finally {
       setSavingMembros(false);
     }
@@ -149,6 +153,7 @@ export default function AreasPage() {
     setAreaAtiva(area);
     setShowModalListas(true);
     setLoadingListas(true);
+    setErrorListas('');
     try {
       const [listasAreaData, todasData] = await Promise.all([
         api.get(`/v1/areas/${area.id}/listas`),
@@ -157,7 +162,7 @@ export default function AreasPage() {
       setListasIds(new Set(listasAreaData.data.map((l: any) => l.id)));
       setTodasListas(todasData.data.map((l: any) => ({ id: l.id, nome: l.nome })));
     } catch {
-      setError('Erro ao carregar listas');
+      setErrorListas('Erro ao carregar listas');
     } finally {
       setLoadingListas(false);
     }
@@ -174,14 +179,15 @@ export default function AreasPage() {
   const salvarListas = async () => {
     if (!areaAtiva) return;
     setSavingListas(true);
+    setErrorListas('');
     try {
       await api.post(`/v1/areas/${areaAtiva.id}/listas`, {
         listaIds: [...listasIds],
       });
       setShowModalListas(false);
       fetchAreas();
-    } catch {
-      setError('Erro ao salvar listas');
+    } catch (err: any) {
+      setErrorListas(err.response?.data?.message || 'Erro ao salvar listas');
     } finally {
       setSavingListas(false);
     }
@@ -294,6 +300,11 @@ export default function AreasPage() {
             <Modal.Title>Membros — {areaAtiva?.nome}</Modal.Title>
           </Modal.Header>
           <Modal.Body>
+            {errorMembros && (
+              <Alert variant="danger" dismissible onClose={() => setErrorMembros('')}>
+                {errorMembros}
+              </Alert>
+            )}
             {loadingMembros ? (
               <div className="text-center py-3"><Spinner animation="border" size="sm" /></div>
             ) : todosUsuarios.length === 0 ? (
@@ -331,6 +342,11 @@ export default function AreasPage() {
             <Modal.Title>Listas — {areaAtiva?.nome}</Modal.Title>
           </Modal.Header>
           <Modal.Body>
+            {errorListas && (
+              <Alert variant="danger" dismissible onClose={() => setErrorListas('')}>
+                {errorListas}
+              </Alert>
+            )}
             {loadingListas ? (
               <div className="text-center py-3"><Spinner animation="border" size="sm" /></div>
             ) : todasListas.length === 0 ? (
