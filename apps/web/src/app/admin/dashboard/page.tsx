@@ -109,7 +109,7 @@ function WidgetsPanel({ data }: { data: DashboardData }) {
       { id: 'listas',        title: 'Listas',            value: data.listas.length,    icon: FaList,           color: 'widgetYellow', link: '/admin/listas' },
       { id: 'listas-rapidas', title: 'Listas Rápidas',  value: data.listasRapidas,    icon: FaBolt,           color: 'widgetPurple', link: '/admin/listas-rapidas' },
       { id: 'submissoes',    title: 'Submissões',        value: data.submissoes,       icon: FaClipboardCheck, color: 'widgetOrange', link: '/admin/submissoes' },
-      { id: 'checklists',    title: 'Checklists',        value: data.checklists,       icon: FaTasks,          color: 'widgetTeal',   link: '/admin/checklists' },
+      { id: 'checklists',    title: 'Checklist de Compras', value: data.checklists,    icon: FaTasks,          color: 'widgetTeal',   link: '/admin/checklists' },
       { id: 'usuarios',      title: 'Usuários',          value: data.usuarios,         icon: FaUsers,          color: 'widgetRed',    link: '/admin/gerenciar-usuarios' },
     ],
     [data],
