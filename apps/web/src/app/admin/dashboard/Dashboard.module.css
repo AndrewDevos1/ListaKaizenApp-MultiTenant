@@ -121,6 +121,10 @@
   --widget-color: linear-gradient(135deg, #ff7a5c 0%, #d64d4d 100%);
 }
 
+.widgetTeal {
+  --widget-color: linear-gradient(135deg, #20c997 0%, #17a281 100%);
+}
+
 /* Widget Icon */
 .widgetIcon {
   width: 60px;

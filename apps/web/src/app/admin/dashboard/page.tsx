@@ -8,7 +8,7 @@ import { Area, Item, Lista } from 'shared';
 import styles from './Dashboard.module.css';
 import {
   FaBoxes, FaMapMarkerAlt, FaList, FaChartBar, FaUsers,
-  FaClipboardCheck, FaShoppingCart, FaUsersCog, FaBolt, FaLightbulb,
+  FaClipboardCheck, FaShoppingCart, FaUsersCog, FaBolt, FaLightbulb, FaTasks,
 } from 'react-icons/fa';
 import { Spinner } from 'react-bootstrap';
 import InstallAppButton from '@/components/InstallAppButton';
@@ -23,6 +23,7 @@ interface DashboardData {
   listasRapidas: number;
   usuarios: number;
   submissoes: number;
+  checklists: number;
 }
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
@@ -38,13 +39,14 @@ export default function AdminDashboard() {
     const load = async () => {
       try {
         setLoading(true);
-        const [itemsRes, areasRes, listasRes, listasRapidasRes, usuariosRes, submissoesRes] = await Promise.all([
+        const [itemsRes, areasRes, listasRes, listasRapidasRes, usuariosRes, submissoesRes, checklistsRes] = await Promise.all([
           api.get<Item[]>('/v1/items'),
           api.get<Area[]>('/v1/areas'),
           api.get<Lista[]>('/v1/listas'),
           api.get<any[]>('/v1/admin/listas-rapidas'),
           api.get<any[]>('/v1/admin/usuarios'),
           api.get<any[]>('/v1/admin/submissoes'),
+          api.get<any[]>('/v1/admin/checklists'),
         ]);
         setData({
           items: itemsRes.data.length,
@@ -53,6 +55,7 @@ export default function AdminDashboard() {
           listasRapidas: listasRapidasRes.data.length,
           usuarios: usuariosRes.data.length,
           submissoes: submissoesRes.data.length,
+          checklists: checklistsRes.data.length,
         });
       } catch (err: any) {
         setError(err?.response?.data?.message || 'Erro ao carregar dados do dashboard');
@@ -101,12 +104,13 @@ export default function AdminDashboard() {
 function WidgetsPanel({ data }: { data: DashboardData }) {
   const widgets = useMemo(
     () => [
-      { id: 'itens',         title: 'Itens',          value: data.items,            icon: FaBoxes,          color: 'widgetBlue',   link: '/admin/items' },
-      { id: 'areas',         title: 'Áreas',           value: data.areas,            icon: FaMapMarkerAlt,   color: 'widgetGreen',  link: '/admin/areas' },
-      { id: 'listas',        title: 'Listas',          value: data.listas.length,    icon: FaList,           color: 'widgetYellow', link: '/admin/listas' },
-      { id: 'listas-rapidas', title: 'Listas Rápidas', value: data.listasRapidas,    icon: FaBolt,           color: 'widgetPurple', link: '/admin/listas-rapidas' },
-      { id: 'submissoes',    title: 'Submissões',      value: data.submissoes,       icon: FaClipboardCheck, color: 'widgetOrange', link: '/admin/submissoes' },
-      { id: 'usuarios',      title: 'Usuários',        value: data.usuarios,         icon: FaUsers,          color: 'widgetRed',    link: '/admin/gerenciar-usuarios' },
+      { id: 'itens',         title: 'Itens',            value: data.items,            icon: FaBoxes,          color: 'widgetBlue',   link: '/admin/items' },
+      { id: 'areas',         title: 'Áreas',             value: data.areas,            icon: FaMapMarkerAlt,   color: 'widgetGreen',  link: '/admin/areas' },
+      { id: 'listas',        title: 'Listas',            value: data.listas.length,    icon: FaList,           color: 'widgetYellow', link: '/admin/listas' },
+      { id: 'listas-rapidas', title: 'Listas Rápidas',  value: data.listasRapidas,    icon: FaBolt,           color: 'widgetPurple', link: '/admin/listas-rapidas' },
+      { id: 'submissoes',    title: 'Submissões',        value: data.submissoes,       icon: FaClipboardCheck, color: 'widgetOrange', link: '/admin/submissoes' },
+      { id: 'checklists',    title: 'Checklists',        value: data.checklists,       icon: FaTasks,          color: 'widgetTeal',   link: '/admin/checklists' },
+      { id: 'usuarios',      title: 'Usuários',          value: data.usuarios,         icon: FaUsers,          color: 'widgetRed',    link: '/admin/gerenciar-usuarios' },
     ],
     [data],
   );
@@ -163,6 +167,9 @@ function QuickActions() {
         </Link>
         <Link href="/admin/gerenciar-usuarios" className={styles.actionButton}>
           <FaUsersCog className={styles.actionIcon} /> Usuários
+        </Link>
+        <Link href="/admin/checklists" className={styles.actionButton}>
+          <FaTasks className={styles.actionIcon} /> Checklists
         </Link>
         <Link href="/admin/sugestoes" className={styles.actionButton}>
           <FaLightbulb className={styles.actionIcon} /> Sugestões
