@@ -59,6 +59,8 @@ export class ListasRapidasService {
                 quantidade: item.quantidade,
                 unidade: item.unidade,
                 itemId: item.itemId,
+                prioridade: item.prioridade ?? 'prevencao',
+                observacao: item.observacao,
               })),
             }
           : undefined,
@@ -139,6 +141,8 @@ export class ListasRapidasService {
         quantidade: dto.quantidade,
         unidade: dto.unidade,
         itemId: dto.itemId,
+        prioridade: dto.prioridade ?? 'prevencao',
+        observacao: dto.observacao,
       },
     });
   }

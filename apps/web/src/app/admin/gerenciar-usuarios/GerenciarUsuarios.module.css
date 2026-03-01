@@ -1,0 +1,123 @@
+.pageWrapper {
+  padding: 2rem 1.5rem;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.pageHeader {
+  margin-bottom: 2.5rem;
+}
+
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--text-secondary, #6c757d);
+  text-decoration: none;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+  transition: color 0.15s;
+}
+
+.backLink:hover {
+  color: var(--text-primary, #212529);
+  text-decoration: underline;
+}
+
+.pageTitle {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--text-primary, #2c3e50);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0 0 0.4rem;
+}
+
+.titleIcon {
+  color: #667eea;
+}
+
+.pageSubtitle {
+  color: var(--text-muted, #7f8c8d);
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+/* ─── Grid ───────────────────────────────────────────────── */
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.5rem;
+}
+
+/* ─── Card ───────────────────────────────────────────────── */
+
+.card {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  padding: 1.5rem;
+  border-radius: 14px;
+  text-decoration: none;
+  color: white;
+  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.12);
+}
+
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.2);
+  color: white;
+  text-decoration: none;
+}
+
+.cardBlue  { background: linear-gradient(135deg, #667eea, #764ba2); }
+.cardYellow { background: linear-gradient(135deg, #f6d365, #fda085); }
+.cardGreen  { background: linear-gradient(135deg, #43e97b, #38f9d7); color: #1a3a2a; }
+.cardGreen:hover { color: #1a3a2a; }
+
+.cardIcon {
+  font-size: 2.2rem;
+  flex-shrink: 0;
+  opacity: 0.9;
+}
+
+.cardBody {
+  flex: 1;
+}
+
+.cardTitulo {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin: 0 0 0.3rem;
+}
+
+.cardDescricao {
+  font-size: 0.85rem;
+  margin: 0;
+  opacity: 0.85;
+}
+
+.cardArrow {
+  font-size: 1.4rem;
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+/* ─── Responsive ─────────────────────────────────────────── */
+
+@media (max-width: 576px) {
+  .pageWrapper {
+    padding: 1.25rem 1rem;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .card {
+    padding: 1.25rem;
+  }
+}

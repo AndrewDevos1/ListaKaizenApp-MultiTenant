@@ -1,62 +1,82 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Table, Alert, Spinner, Badge, Button } from 'react-bootstrap';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { Table, Alert, Spinner, Badge, Button, Tabs, Tab } from 'react-bootstrap';
 import Link from 'next/link';
 import api from '@/lib/api';
-import styles from '@/app/admin/listas/[id]/ListaDetail.module.css';
-import { FaClipboardList, FaEye } from 'react-icons/fa';
+import styles from './Checklists.module.css';
+import { FaTasks, FaEye } from 'react-icons/fa';
+
+type StatusChecklist = 'ABERTO' | 'FINALIZADO';
+type TabKey = 'TODOS' | StatusChecklist;
 
 interface ChecklistSummary {
   id: number;
-  status: 'ABERTO' | 'FINALIZADO';
+  status: StatusChecklist;
   criadoEm: string;
-  submissao: { id: number };
+  submissao: {
+    id: number;
+    lista: { nome: string } | null;
+  } | null;
+  itens: { marcado: boolean }[];
   _count: { itens: number };
 }
 
+const STATUS_VARIANT: Record<StatusChecklist, string> = {
+  ABERTO: 'primary',
+  FINALIZADO: 'success',
+};
+
 function formatDate(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString('pt-BR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  return new Date(dateStr).toLocaleDateString('pt-BR');
 }
 
-export default function ChecklistsPage() {
+function checklistNome(c: ChecklistSummary) {
+  return c.submissao?.lista?.nome ?? `Checklist #${c.id}`;
+}
+
+export default function AdminChecklistsPage() {
   const [checklists, setChecklists] = useState<ChecklistSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [activeTab, setActiveTab] = useState<TabKey>('TODOS');
 
-  const fetchChecklists = async () => {
+  const fetchChecklists = useCallback(async () => {
     setLoading(true);
     setError('');
     try {
-      const { data } = await api.get('/v1/admin/checklists');
+      const { data } = await api.get<ChecklistSummary[]>('/v1/admin/checklists');
       setChecklists(data);
     } catch {
       setError('Erro ao carregar checklists');
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchChecklists();
-  }, []);
+  }, [fetchChecklists]);
+
+  const filtered = useMemo(
+    () =>
+      activeTab === 'TODOS'
+        ? checklists
+        : checklists.filter((c) => c.status === activeTab),
+    [checklists, activeTab],
+  );
+
+  const cntAberto = checklists.filter((c) => c.status === 'ABERTO').length;
+  const cntFinalizado = checklists.filter((c) => c.status === 'FINALIZADO').length;
 
   return (
     <div className={styles.pageWrapper}>
       <div className={styles.pageContainer}>
-        <div style={{ marginBottom: '2rem' }}>
-          <h1 className={styles.listTitle} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <FaClipboardList /> Checklists de Compras
-          </h1>
-          <p style={{ color: 'var(--text-secondary)', margin: 0 }}>
-            Acompanhe e execute os checklists gerados a partir das submissões
-          </p>
+        <div className={styles.pageHeader}>
+          <h2 className={styles.pageTitle}>
+            <FaTasks className="me-2" />
+            Checklists de Compras
+          </h2>
         </div>
 
         {error && (
@@ -65,60 +85,87 @@ export default function ChecklistsPage() {
           </Alert>
         )}
 
-        <div className={styles.tableSection}>
-          {loading ? (
-            <div className="text-center py-5">
-              <Spinner animation="border" />
-            </div>
-          ) : (
-            <div className={styles.tableWrapper}>
-              <Table striped bordered hover responsive className={styles.table}>
-                <thead>
-                  <tr className={styles.tableHeader}>
-                    <th className={styles.tableHeaderCell}>ID Submissão</th>
-                    <th className={styles.tableHeaderCell}>Data</th>
-                    <th className={styles.tableHeaderCell}>Nº Itens</th>
-                    <th className={styles.tableHeaderCell}>Status</th>
-                    <th className={styles.tableHeaderCell}>Ações</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {checklists.map((cl) => (
-                    <tr key={cl.id} className={styles.tableRow}>
-                      <td className={`${styles.tableCell} ${styles.cellBold}`}>
-                        <Link href={`/admin/submissoes/${cl.submissao.id}`} style={{ color: 'var(--color-primary)' }}>
-                          #{cl.submissao.id}
-                        </Link>
+        <div className={styles.tabsWrapper}>
+          <Tabs
+            activeKey={activeTab}
+            onSelect={(k) => setActiveTab(k as TabKey)}
+            className="mb-3"
+          >
+            <Tab eventKey="TODOS" title={`Todos (${checklists.length})`} />
+            <Tab eventKey="ABERTO" title={`Em aberto (${cntAberto})`} />
+            <Tab eventKey="FINALIZADO" title={`Finalizados (${cntFinalizado})`} />
+          </Tabs>
+        </div>
+
+        {loading ? (
+          <div className="text-center py-5">
+            <Spinner animation="border" />
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className={styles.emptyState}>
+            <FaTasks className={styles.emptyIcon} />
+            <h3 className={styles.emptyTitle}>Nenhum checklist encontrado</h3>
+            <p className={styles.emptyText}>
+              {activeTab === 'TODOS'
+                ? 'Converta uma submissão aprovada em checklist para começar.'
+                : `Nenhum checklist com status "${activeTab}".`}
+            </p>
+          </div>
+        ) : (
+          <div className={styles.tableWrapper}>
+            <Table striped bordered hover responsive className={styles.table}>
+              <thead>
+                <tr className={styles.tableHeader}>
+                  <th className={styles.tableHeaderCell}>#</th>
+                  <th className={styles.tableHeaderCell}>Lista de Origem</th>
+                  <th className={styles.tableHeaderCell}>Progresso</th>
+                  <th className={styles.tableHeaderCell}>Status</th>
+                  <th className={styles.tableHeaderCell}>Data</th>
+                  <th className={styles.tableHeaderCell}>Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((c) => {
+                  const total = c._count.itens;
+                  const marcados = c.itens.filter((i) => i.marcado).length;
+                  const pct = total > 0 ? Math.round((marcados / total) * 100) : 0;
+                  return (
+                    <tr key={c.id} className={styles.tableRow}>
+                      <td className={styles.tableCell}>{c.id}</td>
+                      <td className={`${styles.tableCell} fw-semibold`}>
+                        {checklistNome(c)}
                       </td>
-                      <td className={styles.tableCell}>{formatDate(cl.criadoEm)}</td>
-                      <td className={styles.tableCell}>{cl._count.itens}</td>
                       <td className={styles.tableCell}>
-                        <Badge bg={cl.status === 'ABERTO' ? 'primary' : 'success'}>
-                          {cl.status}
-                        </Badge>
+                        <div className={styles.progressWrapper}>
+                          <div className={styles.progressBar}>
+                            <div
+                              className={styles.progressFill}
+                              style={{ width: `${pct}%` }}
+                            />
+                          </div>
+                          <span className={styles.progressLabel}>
+                            {marcados}/{total} ({pct}%)
+                          </span>
+                        </div>
                       </td>
                       <td className={styles.tableCell}>
-                        <Link href={`/admin/checklists/${cl.id}`}>
-                          <Button size="sm" variant="outline-primary">
-                            <FaEye style={{ marginRight: '0.3rem' }} />
-                            Ver
+                        <Badge bg={STATUS_VARIANT[c.status]}>{c.status}</Badge>
+                      </td>
+                      <td className={styles.tableCell}>{formatDate(c.criadoEm)}</td>
+                      <td className={styles.tableCell}>
+                        <Link href={`/admin/checklists/${c.id}`} passHref>
+                          <Button size="sm" variant="outline-secondary" title="Ver detalhes">
+                            <FaEye className="me-1" /> Ver
                           </Button>
                         </Link>
                       </td>
                     </tr>
-                  ))}
-                  {checklists.length === 0 && (
-                    <tr>
-                      <td colSpan={5} className="text-center text-muted py-4">
-                        Nenhum checklist encontrado
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </Table>
-            </div>
-          )}
-        </div>
+                  );
+                })}
+              </tbody>
+            </Table>
+          </div>
+        )}
       </div>
     </div>
   );
