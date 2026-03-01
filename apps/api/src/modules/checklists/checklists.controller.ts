@@ -68,4 +68,14 @@ export class ChecklistsController {
   ) {
     return this.checklistsService.finalizar(id, restauranteId);
   }
+
+  @Put('checklists/:id/reabrir')
+  @Roles('ADMIN' as any, 'SUPER_ADMIN' as any)
+  @ApiOperation({ summary: 'Reabrir checklist finalizado' })
+  reabrir(
+    @Param('id', ParseIntPipe) id: number,
+    @TenantId() restauranteId: number,
+  ) {
+    return this.checklistsService.reabrir(id, restauranteId);
+  }
 }
