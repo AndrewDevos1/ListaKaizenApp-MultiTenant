@@ -263,14 +263,10 @@
 /* Menu Group */
 .menuGroup {
   margin-bottom: var(--spacing-md);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  padding-bottom: var(--spacing-md);
 }
 
 .menuGroup:last-child {
-  border-bottom: none;
   margin-bottom: 0;
-  padding-bottom: 0;
 }
 
 /* Group Label / Accordion Button */
