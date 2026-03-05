@@ -20,6 +20,7 @@ describe('Fluxo E2E — colaborador -> submissao -> admin', () => {
   let submissaoId: number;
   let adminEmail: string;
   let collabEmail: string;
+  let collabOutroRestauranteId: number;
   const senha = 'admin123';
   const schema = process.env.E2E_DB_SCHEMA || createSchemaName('e2e_fluxo_submissao');
 
@@ -36,6 +37,10 @@ describe('Fluxo E2E — colaborador -> submissao -> admin', () => {
 
     const restaurante = await prisma.restaurante.create({
       data: { nome: 'Restaurante E2E' },
+    });
+
+    const outroRestaurante = await prisma.restaurante.create({
+      data: { nome: 'Restaurante E2E 2' },
     });
 
     const senhaHash = await bcrypt.hash(senha, 10);
@@ -65,6 +70,19 @@ describe('Fluxo E2E — colaborador -> submissao -> admin', () => {
         restauranteId: restaurante.id,
       },
     });
+
+    const colaboradorOutroRestaurante = await prisma.usuario.create({
+      data: {
+        nome: 'Colaborador Outro Restaurante',
+        email: `collab.outro.${Date.now()}@kaizen.test`,
+        senha: senhaHash,
+        role: UserRole.COLLABORATOR,
+        aprovado: true,
+        ativo: true,
+        restauranteId: outroRestaurante.id,
+      },
+    });
+    collabOutroRestauranteId = colaboradorOutroRestaurante.id;
 
     const lista = await prisma.lista.create({
       data: {
@@ -124,6 +142,21 @@ describe('Fluxo E2E — colaborador -> submissao -> admin', () => {
       await truncateAllTables(prisma);
       await prisma.$disconnect();
     }
+  });
+
+  it('deve bloquear vinculo de colaborador de outro restaurante na lista', async () => {
+    const adminLogin = await request(app.getHttpServer())
+      .post('/api/v1/auth/login')
+      .send({ email: adminEmail, senha })
+      .expect(201);
+
+    const adminToken = adminLogin.body.accessToken as string;
+
+    await request(app.getHttpServer())
+      .post(`/api/v1/listas/${listaId}/colaboradores`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ usuarioId: collabOutroRestauranteId })
+      .expect(404);
   });
 
   it('deve executar o fluxo completo de submissao e aprovacao', async () => {

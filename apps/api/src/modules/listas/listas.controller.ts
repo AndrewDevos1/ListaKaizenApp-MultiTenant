@@ -343,8 +343,11 @@ export class CollaboratorListasController {
 
   @Get('minhas-listas')
   @ApiOperation({ summary: 'Listas atribuídas ao colaborador logado' })
-  getMinhasListas(@CurrentUser('id') userId: number) {
-    return this.listasService.getMinhasListas(userId);
+  getMinhasListas(
+    @CurrentUser('id') userId: number,
+    @TenantId() restauranteId: number,
+  ) {
+    return this.listasService.getMinhasListas(userId, restauranteId);
   }
 
   @Put('listas/:id/estoque')

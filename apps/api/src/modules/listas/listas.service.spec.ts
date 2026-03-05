@@ -5,6 +5,18 @@ import { ListasService } from './listas.service';
 describe('ListasService', () => {
   const makeService = () => {
     const prisma = {
+      usuario: {
+        findMany: jest.fn(),
+      },
+      lista: {
+        findMany: jest.fn(),
+      },
+      listaColaborador: {
+        findUnique: jest.fn(),
+        create: jest.fn(),
+        deleteMany: jest.fn(),
+        createMany: jest.fn(),
+      },
       listaItemRef: {
         findMany: jest.fn(),
         update: jest.fn(),
@@ -51,6 +63,51 @@ describe('ListasService', () => {
 
     expect(prisma.listaItemRef.update).toHaveBeenCalledTimes(2);
     expect(result).toHaveLength(2);
+  });
+
+  it('deve filtrar minhas listas pelo restaurante do token', async () => {
+    const { prisma, service } = makeService();
+    prisma.lista.findMany.mockResolvedValue([]);
+
+    await service.getMinhasListas(7, 99);
+
+    expect(prisma.lista.findMany).toHaveBeenCalledWith({
+      where: {
+        restauranteId: 99,
+        deletado: false,
+        colaboradores: { some: { usuarioId: 7 } },
+      },
+      include: {
+        _count: { select: { itensRef: true } },
+      },
+      orderBy: { nome: 'asc' },
+    });
+  });
+
+  it('deve bloquear vinculo de colaborador de outro restaurante', async () => {
+    const { prisma, service } = makeService();
+    jest.spyOn(service, 'findOne').mockResolvedValue({ id: 1 } as any);
+    prisma.usuario.findMany.mockResolvedValue([]);
+
+    await expect(service.addColaborador(1, 22, 99)).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
+
+    expect(prisma.listaColaborador.findUnique).not.toHaveBeenCalled();
+    expect(prisma.listaColaborador.create).not.toHaveBeenCalled();
+  });
+
+  it('deve validar colaboradores antes de substituir atribuicoes da lista', async () => {
+    const { prisma, service } = makeService();
+    jest.spyOn(service, 'findOne').mockResolvedValue({ id: 1 } as any);
+    prisma.usuario.findMany.mockResolvedValue([{ id: 10 }]);
+
+    await expect(service.assign(1, [10, 11], 99)).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
+
+    expect(prisma.listaColaborador.deleteMany).not.toHaveBeenCalled();
+    expect(prisma.listaColaborador.createMany).not.toHaveBeenCalled();
   });
 
   it('nao deve gerar submissao para item com threshold desativado', async () => {

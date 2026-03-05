@@ -18,14 +18,42 @@ import { CopyMoveItemsDto } from './dto/copy-move-items.dto';
 export class ListasService {
   constructor(private prisma: PrismaService) {}
 
+  private async validarUsuariosDoRestaurante(
+    usuarioIds: number[],
+    restauranteId: number,
+  ) {
+    const idsUnicos = Array.from(new Set(usuarioIds));
+    if (idsUnicos.length === 0) {
+      return idsUnicos;
+    }
+
+    const usuarios = await this.prisma.usuario.findMany({
+      where: { id: { in: idsUnicos }, restauranteId },
+      select: { id: true },
+    });
+
+    if (usuarios.length !== idsUnicos.length) {
+      throw new NotFoundException(
+        'Um ou mais colaboradores não pertencem ao restaurante informado',
+      );
+    }
+
+    return idsUnicos;
+  }
+
   async create(dto: CreateListaDto, restauranteId: number) {
     const { colaboradorIds, ...rest } = dto;
+    const idsValidos = await this.validarUsuariosDoRestaurante(
+      colaboradorIds ?? [],
+      restauranteId,
+    );
+
     const lista = await this.prisma.lista.create({
       data: { ...rest, restauranteId },
     });
-    if (colaboradorIds && colaboradorIds.length > 0) {
+    if (idsValidos.length > 0) {
       await this.prisma.listaColaborador.createMany({
-        data: colaboradorIds.map((uid) => ({ listaId: lista.id, usuarioId: uid })),
+        data: idsValidos.map((uid) => ({ listaId: lista.id, usuarioId: uid })),
         skipDuplicates: true,
       });
     }
@@ -107,6 +135,8 @@ export class ListasService {
   async addColaborador(listaId: number, usuarioId: number, restauranteId: number) {
     await this.findOne(listaId, restauranteId);
 
+    await this.validarUsuariosDoRestaurante([usuarioId], restauranteId);
+
     const existing = await this.prisma.listaColaborador.findUnique({
       where: { listaId_usuarioId: { listaId, usuarioId } },
     });
@@ -183,9 +213,10 @@ export class ListasService {
   }
 
   // Collaborator: minhas listas
-  async getMinhasListas(userId: number) {
+  async getMinhasListas(userId: number, restauranteId: number) {
     return this.prisma.lista.findMany({
       where: {
+        restauranteId,
         deletado: false,
         colaboradores: { some: { usuarioId: userId } },
       },
@@ -259,10 +290,16 @@ export class ListasService {
   // Assign todos os colaboradores de uma vez (substitui os atuais)
   async assign(listaId: number, colaboradorIds: number[], restauranteId: number) {
     await this.findOne(listaId, restauranteId);
+
+    const idsValidos = await this.validarUsuariosDoRestaurante(
+      colaboradorIds,
+      restauranteId,
+    );
+
     await this.prisma.listaColaborador.deleteMany({ where: { listaId } });
-    if (colaboradorIds.length > 0) {
+    if (idsValidos.length > 0) {
       await this.prisma.listaColaborador.createMany({
-        data: colaboradorIds.map((uid) => ({ listaId, usuarioId: uid })),
+        data: idsValidos.map((uid) => ({ listaId, usuarioId: uid })),
         skipDuplicates: true,
       });
     }
