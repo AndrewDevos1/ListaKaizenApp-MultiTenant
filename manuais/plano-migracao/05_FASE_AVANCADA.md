@@ -53,7 +53,7 @@ npx prisma migrate dev --name add-notificacoes
 
 ```
 GET  /v1/notificacoes         → lista (não lidas primeiro; paginação)
-PUT  /v1/notificacoes/:id/ler
+PUT  /v1/notificacoes/:id/lida
 PUT  /v1/notificacoes/marcar-todas
 GET  /v1/notificacoes/count   → { total: number, naoLidas: number }
 ```
@@ -127,32 +127,32 @@ GET    /v1/convites/validar?token=...  → validar token e metadados do convite
 ### Backend
 
 ```
-# Export
-GET /v1/admin/export/fornecedores    → CSV de fornecedores
-GET /v1/admin/export/itens           → CSV de itens do catálogo
-GET /v1/admin/export/listas/:id/itens → CSV de itens de uma lista
+# Export (estado atual)
+GET  /v1/admin/fornecedores/exportar-csv  → CSV de fornecedores
+GET  /v1/items/exportar-csv               → CSV de itens do catálogo
+GET  /v1/listas/:id/export-csv            → CSV de itens de uma lista
 
-# Import
-POST /v1/admin/import/fornecedores/preview → { csv: string } → retorna preview (sem salvar)
-POST /v1/admin/import/fornecedores         → executa importação
-POST /v1/admin/import/itens/preview
-POST /v1/admin/import/itens
+# Import de legado (estado atual)
+GET  /v1/admin/import/listas              → listas disponiveis para fase 2
+POST /v1/admin/import/backup-zip          → importa ZIP legado (fase 1)
+POST /v1/admin/import/lista-csv/:listaId  → importa CSV de itens na lista (fase 2)
+POST /v1/listas/:id/import-csv            → importa itens de lista via texto CSV
 ```
 
 ### Lógica de Import
 
-1. Parsear CSV (papaparse ou lib similar)
-2. Validar cada linha (campos obrigatórios, tipos)
-3. `/preview` retorna `{ validos: [], invalidos: [{ linha, erro }] }`
-4. Import real executa apenas os válidos
+1. Fase 1: importar backup ZIP (fornecedores, areas, itens, listas)
+2. Fase 2: importar CSV por lista para criar `ListaItemRef`
+3. Operacao idempotente para registros ja existentes
+4. Retornar resumo de criados/ignorados/avisos ao final
 
 ### Frontend
 
-- Botão "Exportar CSV" nas telas `/admin/fornecedores` e `/admin/itens`
-- Botão "Importar CSV" abre modal:
-  - Upload do arquivo
-  - Preview da tabela (verdes = OK, vermelhos = erros)
-  - Botão "Confirmar Importação"
+- Botao "Exportar CSV" nas telas `/admin/fornecedores`, `/admin/items` e listas
+- Tela de importacao do legado em configuracoes:
+  - Upload do ZIP de backup (fase 1)
+  - Upload do CSV por lista (fase 2)
+  - Retorno com resumo de criados/ignorados/avisos
 
 ### Referência Legado
 
@@ -160,7 +160,25 @@ POST /v1/admin/import/itens
 
 ---
 
-## Tarefa 5.4 — Auditoria / Logs
+## Tarefa 5.4 — Push Web (PWA)
+
+### Backend
+
+```
+GET    /v1/push/vapid-public-key   → chave publica VAPID (publico)
+POST   /v1/push/subscribe          → registrar assinatura push (JWT)
+DELETE /v1/push/subscribe          → remover assinatura push (JWT)
+```
+
+### Frontend
+
+- Solicitar permissao de notificacao no navegador
+- Registrar/remover assinatura por usuario autenticado
+- Receber notificacoes push via Service Worker
+
+---
+
+## Tarefa 5.5 — Auditoria / Logs
 
 ### Schema Prisma
 
@@ -203,7 +221,7 @@ GET /v1/admin/logs    → listar (somente SUPER_ADMIN; filtros por restaurante e
 
 ---
 
-## Tarefa 5.5 — Offline / PWA (Opcional)
+## Tarefa 5.6 — Offline / PWA (Opcional)
 
 > Implementar somente se houver demanda real de uso em locais sem internet confiável.
 

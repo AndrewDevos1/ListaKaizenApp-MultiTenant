@@ -55,20 +55,20 @@ npx prisma migrate dev --name add-listas-rapidas
 
 ```
 # Colaborador
-POST   /v1/collaborator/listas-rapidas           → criar rascunho
-GET    /v1/collaborator/listas-rapidas           → minhas listas
-GET    /v1/collaborator/listas-rapidas/:id       → detalhe
-PUT    /v1/collaborator/listas-rapidas/:id       → atualizar rascunho
-POST   /v1/collaborator/listas-rapidas/:id/submeter → status = PENDENTE
-DELETE /v1/collaborator/listas-rapidas/:id       → deletar rascunho
+POST   /v1/collaborator/listas-rapidas             → criar lista rapida
+GET    /v1/collaborator/listas-rapidas             → minhas listas
+GET    /v1/collaborator/listas-rapidas/:id         → detalhe da lista
+POST   /v1/collaborator/listas-rapidas/:id/submeter → submeter para aprovacao
+POST   /v1/collaborator/listas-rapidas/:id/itens   → adicionar item
 
 # Admin
-GET    /v1/admin/listas-rapidas                  → todas (filtro por status)
-GET    /v1/admin/listas-rapidas/:id              → detalhe
-POST   /v1/admin/listas-rapidas/:id/aprovar
-POST   /v1/admin/listas-rapidas/:id/rejeitar
+GET    /v1/admin/listas-rapidas                    → todas (filtro por status)
+GET    /v1/admin/listas-rapidas/:id                → detalhe
+PUT    /v1/admin/listas-rapidas/:id/aprovar
+PUT    /v1/admin/listas-rapidas/:id/rejeitar
 PUT    /v1/admin/listas-rapidas/:id/arquivar
-PUT    /v1/admin/lista-rapida-itens/:id/marcar   → toggle marcado
+PUT    /v1/admin/listas-rapidas/itens/:itemId      → atualizar item
+PUT    /v1/admin/listas-rapidas/itens/:itemId/descartar → toggle descartado
 ```
 
 ### Frontend (Colaborador)
