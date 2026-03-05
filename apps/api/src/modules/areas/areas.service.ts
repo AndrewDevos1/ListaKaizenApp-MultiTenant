@@ -222,6 +222,8 @@ export class AreasService {
         where: { listaId: lista.id },
       });
       const itensSolicitados = itensRef
+        // Itens com threshold desativado não devem gerar pedido automático
+        .filter((ref) => ref.usaThreshold !== false)
         .map((ref) => ({
           itemId: ref.itemId,
           qtdSolicitada: Math.max(0, ref.quantidadeMinima - ref.quantidadeAtual),
