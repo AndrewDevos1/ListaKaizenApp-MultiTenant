@@ -1,4 +1,4 @@
-# 05 — Fase 5: Notificações, Convites, Import/Export, Auditoria
+# 05 — Fase 5: Notificacoes, Convites, Import/Export, Auditoria (Historico concluido)
 
 ## Objetivo
 
@@ -24,17 +24,15 @@ enum TipoNotificacao {
 }
 
 model Notificacao {
-  id            String          @id @default(cuid())
+  id            Int          @id @default(autoincrement())
   tipo          TipoNotificacao
-  titulo        String
   mensagem      String
-  lida          Boolean         @default(false)
-  usuario       Usuario         @relation(fields: [usuarioId], references: [id])
-  usuarioId     String
-  restaurante   Restaurante     @relation(fields: [restauranteId], references: [id])
-  restauranteId String
-  referenciaId  String?         // ID da entidade relacionada
-  criadoEm     DateTime        @default(now())
+  lida          Boolean      @default(false)
+  usuario       Usuario      @relation(fields: [usuarioId], references: [id])
+  usuarioId     Int
+  restaurante   Restaurante  @relation(fields: [restauranteId], references: [id])
+  restauranteId Int
+  criadoEm      DateTime     @default(now())
 }
 ```
 
@@ -56,7 +54,7 @@ npx prisma migrate dev --name add-notificacoes
 ```
 GET  /v1/notificacoes         → lista (não lidas primeiro; paginação)
 PUT  /v1/notificacoes/:id/ler
-PUT  /v1/notificacoes/ler-todas
+PUT  /v1/notificacoes/marcar-todas
 GET  /v1/notificacoes/count   → { total: number, naoLidas: number }
 ```
 
@@ -80,19 +78,16 @@ GET  /v1/notificacoes/count   → { total: number, naoLidas: number }
 
 ```prisma
 model ConviteToken {
-  id            String      @id @default(cuid())
-  token         String      @unique @default(cuid())
+  id            Int      @id @default(autoincrement())
+  token         String   @unique
   email         String?
-  role          Role        @default(COLLABORATOR)
-  usado         Boolean     @default(false)
-  limiteUsos    Int         @default(1)
-  quantidadeUsos Int        @default(0)
-  expiresAt     DateTime?
-  restaurante   Restaurante @relation(fields: [restauranteId], references: [id])
-  restauranteId String
-  criadoPor     Usuario     @relation(fields: [criadoPorId], references: [id])
-  criadoPorId   String
-  criadoEm     DateTime    @default(now())
+  restauranteId Int?
+  role          UserRole @default(COLLABORATOR)
+  usado         Boolean  @default(false)
+  expiresAt     DateTime @map("expires_at")
+  criadoEm      DateTime @default(now())
+
+  restaurante Restaurante? @relation(fields: [restauranteId], references: [id])
 }
 ```
 
@@ -108,11 +103,10 @@ npx prisma migrate dev --name add-convites
 # Admin — gerar e gerenciar convites
 GET    /v1/admin/convites              → listar convites do restaurante
 POST   /v1/admin/convites              → gerar novo token
-DELETE /v1/admin/convites/:id          → revogar
+PUT    /v1/admin/convites/:id/revogar  → revogar
 
 # Público — usar convite
-GET    /v1/auth/convite/:token         → validar e retornar dados (email pré-preenchido, role)
-POST   /v1/auth/register-convite       → registrar via convite
+GET    /v1/convites/validar?token=...  → validar token e metadados do convite
 ```
 
 ### Frontend
@@ -172,17 +166,14 @@ POST /v1/admin/import/itens
 
 ```prisma
 model AppLog {
-  id            String      @id @default(cuid())
+  id            Int      @id @default(autoincrement())
   acao          String      // ex: "submissao.aprovar", "usuario.desativar"
   entidade      String?     // ex: "Submissao"
-  entidadeId    String?
+  entidadeId    Int?
   detalhes      Json?
-  usuario       Usuario?    @relation(fields: [usuarioId], references: [id])
-  usuarioId     String?
-  restaurante   Restaurante? @relation(fields: [restauranteId], references: [id])
-  restauranteId String?
-  ip            String?
-  criadoEm     DateTime    @default(now())
+  usuarioId     Int?
+  restauranteId Int?
+  criadoEm      DateTime @default(now())
 }
 ```
 
@@ -201,7 +192,7 @@ npx prisma migrate dev --name add-app-logs
 - Alternativa: interceptor `AuditoriaInterceptor` com decorator `@Audit('acao')`
 
 ```
-GET /v1/super-admin/logs    → listar (filtros: usuarioId, restauranteId, acao, data)
+GET /v1/admin/logs    → listar (somente SUPER_ADMIN; filtros por restaurante e paginação)
 ```
 
 ### Frontend
@@ -246,12 +237,8 @@ git commit -m "feat: notificacoes, convites, import-export e auditoria"
 ```
 
 Após o commit:
-1. Anotar o hash: `git log --oneline -1`
-2. Atualizar `PONTEIRO.md`:
-   - Status: `MIGRAÇÃO CONCLUÍDA`
-   - Última tarefa concluída: `5.4 — Auditoria / Logs`
-   - Próximo passo: `(nenhum — migração completa)`
-   - Última branch/commit: `<hash>`
+1. Registro historico desta fase: `9680bfd`
+2. Entregas principais: notificacoes, convites, import/export e auditoria.
 
 ---
 

@@ -1,7 +1,7 @@
 # Relatório Final — Migração Legacy → Multi-Tenant
 
 **Data de conclusão:** 2026-02-27
-**Última atualização:** 2026-02-27
+**Última atualização:** 2026-03-05
 **Branch:** `restaurando-design`
 **Commits de checkpoint:**
 
@@ -33,6 +33,8 @@
 | Config | `305054f` | Páginas de configurações admin e colaborador |
 | Fix | `d43bf0a` | Corrigir rota de exportação CSV de itens |
 | Import | `9556759` | Importação de dados do legado em 2 fases |
+| Docs | `6c028c0` | Regra de uso da pasta legacy documentada |
+| Docs | `0179d8f` | Checklist e progresso da atualização documental |
 
 ---
 
