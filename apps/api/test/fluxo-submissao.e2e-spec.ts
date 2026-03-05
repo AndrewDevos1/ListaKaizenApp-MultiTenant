@@ -21,6 +21,7 @@ describe('Fluxo E2E — colaborador -> submissao -> admin', () => {
   let adminEmail: string;
   let collabEmail: string;
   let collabOutroRestauranteId: number;
+  let submissaoOutroRestauranteId: number;
   const senha = 'admin123';
   const schema = process.env.E2E_DB_SCHEMA || createSchemaName('e2e_fluxo_submissao');
 
@@ -117,6 +118,40 @@ describe('Fluxo E2E — colaborador -> submissao -> admin', () => {
       },
     });
 
+    const listaOutroRestaurante = await prisma.lista.create({
+      data: {
+        nome: 'Lista Outro Restaurante',
+        restauranteId: outroRestaurante.id,
+      },
+    });
+
+    const itemOutroRestaurante = await prisma.item.create({
+      data: {
+        nome: 'Cebola E2E',
+        unidadeMedida: 'kg',
+        restauranteId: outroRestaurante.id,
+      },
+    });
+
+    const submissaoOutroRestaurante = await prisma.submissao.create({
+      data: {
+        listaId: listaOutroRestaurante.id,
+        usuarioId: colaboradorOutroRestaurante.id,
+        restauranteId: outroRestaurante.id,
+        status: StatusSubmissao.APROVADO,
+        pedidos: {
+          create: [
+            {
+              itemId: itemOutroRestaurante.id,
+              qtdSolicitada: 5,
+              status: StatusPedido.APROVADO,
+            },
+          ],
+        },
+      },
+    });
+    submissaoOutroRestauranteId = submissaoOutroRestaurante.id;
+
     // Garante que o setup realmente criou o cenário mínimo esperado.
     const sanity = await prisma.lista.findUnique({
       where: { id: lista.id },
@@ -156,6 +191,36 @@ describe('Fluxo E2E — colaborador -> submissao -> admin', () => {
       .post(`/api/v1/listas/${listaId}/colaboradores`)
       .set('Authorization', `Bearer ${adminToken}`)
       .send({ usuarioId: collabOutroRestauranteId })
+      .expect(404);
+  });
+
+  it('deve bloquear criacao de checklist com submissao de outro restaurante', async () => {
+    const adminLogin = await request(app.getHttpServer())
+      .post('/api/v1/auth/login')
+      .send({ email: adminEmail, senha })
+      .expect(201);
+
+    const adminToken = adminLogin.body.accessToken as string;
+
+    await request(app.getHttpServer())
+      .post('/api/v1/admin/checklists')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ submissaoId: submissaoOutroRestauranteId })
+      .expect(404);
+  });
+
+  it('deve bloquear criacao de cotacao com submissao de outro restaurante', async () => {
+    const adminLogin = await request(app.getHttpServer())
+      .post('/api/v1/auth/login')
+      .send({ email: adminEmail, senha })
+      .expect(201);
+
+    const adminToken = adminLogin.body.accessToken as string;
+
+    await request(app.getHttpServer())
+      .post('/api/v1/admin/cotacoes')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ titulo: 'Cotacao invalida', submissaoIds: [submissaoOutroRestauranteId] })
       .expect(404);
   });
 

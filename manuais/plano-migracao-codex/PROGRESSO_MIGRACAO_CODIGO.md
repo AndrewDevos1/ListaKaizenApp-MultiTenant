@@ -2,8 +2,8 @@
 
 ## Status Atual
 - Estado: EM ANDAMENTO
-- Ultimo checkpoint: CP-C006 (concluido)
-- Proximo passo: CP-C007 — Expandir cobertura de isolamento multi-tenant para outros modulos criticos
+- Ultimo checkpoint: CP-C007 (concluido)
+- Proximo passo: CP-C008 — Expandir cobertura de isolamento/roles para outros fluxos administrativos
 - Pasta de trabalho: `manuais/plano-migracao-codex`
 
 ## Checklist Executivo
@@ -13,7 +13,8 @@
 - [x] CP-C004 — Adicionar/expandir testes E2E do fluxo colaborador -> submissao -> admin com banco isolado por schema
 - [x] CP-C005 — Validacao final, checkpoint e push
 - [x] CP-C006 — Fechar lacunas de isolamento multi-tenant em `ListasService` (create/add/assign/getMinhasListas) + cobertura unitaria/E2E
-- [ ] CP-C007 — Cobrir isolamento multi-tenant em mais fluxos priorizados do plano (cotacoes/checklists)
+- [x] CP-C007 — Fechar lacuna de tenant em `CotacoesService.create` e ampliar E2E de isolamento em `checklists`/`cotacoes`
+- [ ] CP-C008 — Cobrir isolamento/roles em fluxos administrativos restantes
 
 ## Historico de Checkpoints
 | Checkpoint | Data/Hora (BRT) | Acao | Resultado | Proximo passo |
@@ -24,6 +25,7 @@
 | CP-C004 | 2026-03-05 18:57 | Estrutura E2E com schema isolado (`helpers/e2e-db.ts`) e novo teste de fluxo completo colaborador -> submissao -> admin -> aprovacao | Concluido (`2/2` suites, `5/5` testes E2E) | CP-C005 |
 | CP-C005 | 2026-03-05 18:57 | Validacao final executada com `npm run test:e2e -- --runInBand test/fluxo-submissao.e2e-spec.ts test/auth.e2e-spec.ts` e preparacao de commit/push do checkpoint | Concluido | CP-C006 |
 | CP-C006 | 2026-03-05 19:08 | Corrigido isolamento multi-tenant em `ListasService` (validacao de colaboradores por restaurante e filtro por tenant em `minhas-listas`), com novos testes unitarios e E2E de bloqueio de vinculo cruzado | Concluido (`7/7` unitarios + `2/2` suites E2E, `6/6` testes) | CP-C007 |
+| CP-C007 | 2026-03-05 19:21 | `CotacoesService.create` passou a rejeitar submissao de outro tenant; E2E ampliado para bloquear cross-tenant em `checklists` e `cotacoes`; adicionados unitarios de `CotacoesService` | Concluido (`9/9` unitarios + `2/2` suites E2E, `8/8` testes) | CP-C008 |
 
 ## Como Retomar
 1. Ler este arquivo.
