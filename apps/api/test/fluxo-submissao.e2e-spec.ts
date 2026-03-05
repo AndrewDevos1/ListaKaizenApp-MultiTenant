@@ -17,6 +17,7 @@ describe('Fluxo E2E — colaborador -> submissao -> admin', () => {
   let prisma: PrismaClient;
 
   let listaId: number;
+  let areaId: number;
   let submissaoId: number;
   let adminEmail: string;
   let collabEmail: string;
@@ -92,6 +93,14 @@ describe('Fluxo E2E — colaborador -> submissao -> admin', () => {
       },
     });
     listaId = lista.id;
+
+    const area = await prisma.area.create({
+      data: {
+        nome: 'Area E2E',
+        restauranteId: restaurante.id,
+      },
+    });
+    areaId = area.id;
 
     await prisma.listaColaborador.create({
       data: {
@@ -191,6 +200,21 @@ describe('Fluxo E2E — colaborador -> submissao -> admin', () => {
       .post(`/api/v1/listas/${listaId}/colaboradores`)
       .set('Authorization', `Bearer ${adminToken}`)
       .send({ usuarioId: collabOutroRestauranteId })
+      .expect(404);
+  });
+
+  it('deve bloquear setColaboradores da area com colaborador de outro restaurante', async () => {
+    const adminLogin = await request(app.getHttpServer())
+      .post('/api/v1/auth/login')
+      .send({ email: adminEmail, senha })
+      .expect(201);
+
+    const adminToken = adminLogin.body.accessToken as string;
+
+    await request(app.getHttpServer())
+      .post(`/api/v1/areas/${areaId}/colaboradores`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ colaboradorIds: [collabOutroRestauranteId] })
       .expect(404);
   });
 

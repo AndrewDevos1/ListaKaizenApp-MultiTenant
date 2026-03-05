@@ -1,10 +1,19 @@
-import { UnprocessableEntityException } from '@nestjs/common';
+import { NotFoundException, UnprocessableEntityException } from '@nestjs/common';
 import { StatusSubmissao } from '@prisma/client';
 import { AreasService } from './areas.service';
 
 describe('AreasService', () => {
   const makeService = () => {
     const prisma = {
+      usuario: {
+        findMany: jest.fn(),
+      },
+      areaColaborador: {
+        findMany: jest.fn(),
+        deleteMany: jest.fn(),
+        createMany: jest.fn(),
+      },
+      $transaction: jest.fn(),
       lista: {
         findMany: jest.fn(),
       },
@@ -18,6 +27,57 @@ describe('AreasService', () => {
 
     return { prisma, service: new AreasService(prisma) };
   };
+
+  it('deve bloquear setColaboradores com usuario de outro restaurante', async () => {
+    const { prisma, service } = makeService();
+    jest.spyOn(service, 'findOne').mockResolvedValue({ id: 1 } as any);
+
+    prisma.usuario.findMany.mockResolvedValue([{ id: 10 }]);
+
+    await expect(
+      service.setColaboradores(
+        1,
+        {
+          colaboradorIds: [10, 11],
+        },
+        99,
+      ),
+    ).rejects.toBeInstanceOf(NotFoundException);
+
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it('deve deduplicar colaboradores validos no setColaboradores', async () => {
+    const { prisma, service } = makeService();
+    jest.spyOn(service, 'findOne').mockResolvedValue({ id: 1 } as any);
+    jest.spyOn(service, 'getColaboradores').mockResolvedValue([{ id: 500 }] as any);
+
+    prisma.usuario.findMany.mockResolvedValue([{ id: 10 }, { id: 11 }]);
+    prisma.areaColaborador.deleteMany.mockReturnValue('delete-op');
+    prisma.areaColaborador.createMany.mockReturnValue('create-op');
+    prisma.$transaction.mockResolvedValue(undefined);
+
+    const result = await service.setColaboradores(
+      1,
+      {
+        colaboradorIds: [10, 10, 11],
+      },
+      99,
+    );
+
+    expect(prisma.usuario.findMany).toHaveBeenCalledWith({
+      where: { id: { in: [10, 11] }, restauranteId: 99 },
+      select: { id: true },
+    });
+    expect(prisma.areaColaborador.createMany).toHaveBeenCalledWith({
+      data: [
+        { areaId: 1, usuarioId: 10 },
+        { areaId: 1, usuarioId: 11 },
+      ],
+      skipDuplicates: true,
+    });
+    expect(result).toEqual([{ id: 500 }]);
+  });
 
   it('deve ignorar itens com threshold desativado ao submeter area', async () => {
     const { prisma, service } = makeService();
@@ -81,4 +141,3 @@ describe('AreasService', () => {
     expect(result).toHaveLength(1);
   });
 });
-
