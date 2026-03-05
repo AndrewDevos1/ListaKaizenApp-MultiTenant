@@ -1,9 +1,9 @@
 # Progresso — Atualização de Documentação (Codex)
 
 ## Status Atual
-- Estado: EM ANDAMENTO
-- Último checkpoint: CP-009 (validação automatica final)
-- Próximo passo: CP-010 — Consolidar commit final dos checkpoints restantes (CP-005 a CP-009)
+- Estado: CICLO DE DOCUMENTACAO CONCLUIDO
+- Último checkpoint: CP-010 (commits incrementais consolidados)
+- Próximo passo: Retomar plano de migracao funcional a partir do ponto de codigo atual
 - Pasta de trabalho: `manuais/plano-migracao-codex`
 
 ## Checklist Executivo
@@ -16,7 +16,7 @@
 - [x] CP-007 — Sincronizar índice e referência de `04.2_Organizar_Listas.md`
 - [x] CP-008 — Tratar ruído documental (`Chat2.md`, `chat-checklistdecompras.md`, `chatbackup.md`)
 - [x] CP-009 — Validação automática final (termos obsoletos e divergências)
-- [ ] CP-010 — Commit único de documentação
+- [x] CP-010 — Commits incrementais de documentação concluídos
 
 ## Histórico de Checkpoints
 | Checkpoint | Data/Hora (BRT) | Ação | Resultado | Próximo passo |
@@ -31,6 +31,7 @@
 | CP-007 | 2026-03-05 18:26 | Sincronizar referência de `legacy/.../04.2_Organizar_Listas.md` no índice | Concluído | CP-008 |
 | CP-008 | 2026-03-05 18:26 | Tratar ruído documental com `ANOTACOES_NAO_OFICIAIS.md` + exclusão do fluxo oficial | Concluído | CP-009 |
 | CP-009 | 2026-03-05 18:26 | Validar termos obsoletos e rotas críticas por busca automatizada | Concluído | CP-010 |
+| CP-010 | 2026-03-05 18:26 | Consolidacao em commits incrementais (`87331c4` e `85da522`) | Concluído | Encerrado |
 
 ## Como Retomar
 1. Ler este arquivo.
