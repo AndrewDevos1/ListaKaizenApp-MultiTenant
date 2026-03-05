@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import * as request from 'supertest';
+import type { Response as SupertestResponse } from 'supertest';
 import { AppModule } from '../src/app.module';
 
 describe('AuthController (e2e)', () => {
@@ -32,7 +33,7 @@ describe('AuthController (e2e)', () => {
       .post('/api/auth/register')
       .send(testUser)
       .expect(201)
-      .expect((res) => {
+      .expect((res: SupertestResponse) => {
         expect(res.body.message).toContain('Registro realizado');
         expect(res.body.user.email).toBe(testUser.email);
       });

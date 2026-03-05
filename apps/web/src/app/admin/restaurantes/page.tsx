@@ -11,7 +11,7 @@ import {
   Modal,
   Form,
 } from 'react-bootstrap';
-import { FaStore, FaDownload, FaUpload, FaSync } from 'react-icons/fa';
+import { FaStore, FaDownload, FaUpload, FaSync, FaPlus, FaEdit, FaPowerOff } from 'react-icons/fa';
 import api from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
@@ -32,6 +32,11 @@ interface ResumoRestore {
   itens: { criados: number; ignorados: number };
   listas: { criadas: number; ignoradas: number };
   listaItemRefs: { criados: number; ignorados: number };
+}
+
+interface RestauranteForm {
+  nome: string;
+  cnpj: string;
 }
 
 // Progresso assintótico: rápido no início, desacelera perto de 95%
@@ -106,6 +111,14 @@ export default function AdminRestaurantes() {
 
   // Backup state
   const [backupLoading, setBackupLoading] = useState<number | null>(null);
+  const [savingForm, setSavingForm] = useState(false);
+  const [togglingAtivoId, setTogglingAtivoId] = useState<number | null>(null);
+
+  // Create/Edit modal state
+  const [showFormModal, setShowFormModal] = useState(false);
+  const [editingRestaurante, setEditingRestaurante] = useState<Restaurante | null>(null);
+  const [formData, setFormData] = useState<RestauranteForm>({ nome: '', cnpj: '' });
+  const [formError, setFormError] = useState('');
 
   const startTimer = () => {
     setElapsed(0);
@@ -214,6 +227,70 @@ export default function AdminRestaurantes() {
     }
   };
 
+  const openCreateModal = () => {
+    setEditingRestaurante(null);
+    setFormData({ nome: '', cnpj: '' });
+    setFormError('');
+    setShowFormModal(true);
+  };
+
+  const openEditModal = (restaurante: Restaurante) => {
+    setEditingRestaurante(restaurante);
+    setFormData({
+      nome: restaurante.nome,
+      cnpj: restaurante.cnpj ?? '',
+    });
+    setFormError('');
+    setShowFormModal(true);
+  };
+
+  const handleSaveRestaurante = async () => {
+    if (!formData.nome.trim()) {
+      setFormError('Informe o nome do restaurante');
+      return;
+    }
+
+    setSavingForm(true);
+    setFormError('');
+    try {
+      const payload = {
+        nome: formData.nome.trim(),
+        cnpj: formData.cnpj.trim() || undefined,
+      };
+
+      if (editingRestaurante) {
+        await api.put(`/restaurantes/${editingRestaurante.id}`, payload);
+      } else {
+        await api.post('/restaurantes', payload);
+      }
+
+      setShowFormModal(false);
+      loadRestaurantes();
+    } catch (err: any) {
+      const msg = err?.response?.data?.message ?? 'Erro ao salvar restaurante';
+      setFormError(Array.isArray(msg) ? msg.join(', ') : String(msg));
+    } finally {
+      setSavingForm(false);
+    }
+  };
+
+  const handleToggleAtivo = async (restaurante: Restaurante) => {
+    setTogglingAtivoId(restaurante.id);
+    setError('');
+    try {
+      if (restaurante.ativo) {
+        await api.delete(`/restaurantes/${restaurante.id}`);
+      } else {
+        await api.put(`/restaurantes/${restaurante.id}`, { ativo: true });
+      }
+      loadRestaurantes();
+    } catch {
+      setError(`Erro ao ${restaurante.ativo ? 'desativar' : 'ativar'} "${restaurante.nome}"`);
+    } finally {
+      setTogglingAtivoId(null);
+    }
+  };
+
   return (
     <Container fluid className="py-4">
       <div className="d-flex justify-content-between align-items-center mb-4">
@@ -222,6 +299,13 @@ export default function AdminRestaurantes() {
           Gerenciar Restaurantes
         </h2>
         <div className="d-flex gap-2">
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={openCreateModal}
+          >
+            <FaPlus className="me-1" /> Novo Restaurante
+          </Button>
           <Button
             variant="outline-primary"
             size="sm"
@@ -285,6 +369,14 @@ export default function AdminRestaurantes() {
                   <td className="text-center">
                     <div className="d-flex gap-2 justify-content-center">
                       <Button
+                        variant="outline-secondary"
+                        size="sm"
+                        onClick={() => openEditModal(r)}
+                        title="Editar restaurante"
+                      >
+                        <FaEdit />
+                      </Button>
+                      <Button
                         variant="outline-primary"
                         size="sm"
                         onClick={() => handleBackup(r)}
@@ -305,6 +397,19 @@ export default function AdminRestaurantes() {
                       >
                         <FaUpload />
                       </Button>
+                      <Button
+                        variant={r.ativo ? 'outline-danger' : 'outline-success'}
+                        size="sm"
+                        onClick={() => handleToggleAtivo(r)}
+                        disabled={togglingAtivoId === r.id}
+                        title={r.ativo ? 'Desativar restaurante' : 'Ativar restaurante'}
+                      >
+                        {togglingAtivoId === r.id ? (
+                          <Spinner animation="border" size="sm" />
+                        ) : (
+                          <FaPowerOff />
+                        )}
+                      </Button>
                     </div>
                   </td>
                 </tr>
@@ -313,6 +418,77 @@ export default function AdminRestaurantes() {
           </tbody>
         </Table>
       )}
+
+      {/* Modal de Criar/Editar */}
+      <Modal show={showFormModal} onHide={() => !savingForm && setShowFormModal(false)} centered>
+        <Modal.Header closeButton={!savingForm}>
+          <Modal.Title>
+            {editingRestaurante ? (
+              <>
+                <FaEdit className="me-2" />
+                Editar Restaurante
+              </>
+            ) : (
+              <>
+                <FaPlus className="me-2" />
+                Novo Restaurante
+              </>
+            )}
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Form>
+            <Form.Group className="mb-3">
+              <Form.Label>Nome</Form.Label>
+              <Form.Control
+                type="text"
+                value={formData.nome}
+                onChange={(e) => setFormData((p) => ({ ...p, nome: e.target.value }))}
+                placeholder="Ex.: Restaurante Centro"
+                disabled={savingForm}
+              />
+            </Form.Group>
+
+            <Form.Group>
+              <Form.Label>CNPJ (opcional)</Form.Label>
+              <Form.Control
+                type="text"
+                value={formData.cnpj}
+                onChange={(e) => setFormData((p) => ({ ...p, cnpj: e.target.value }))}
+                placeholder="00.000.000/0001-00"
+                disabled={savingForm}
+              />
+            </Form.Group>
+          </Form>
+
+          {formError && (
+            <Alert variant="danger" className="mt-3 mb-0">
+              {formError}
+            </Alert>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button
+            variant="secondary"
+            onClick={() => setShowFormModal(false)}
+            disabled={savingForm}
+          >
+            Cancelar
+          </Button>
+          <Button variant="primary" onClick={handleSaveRestaurante} disabled={savingForm}>
+            {savingForm ? (
+              <>
+                <Spinner animation="border" size="sm" className="me-2" />
+                Salvando...
+              </>
+            ) : editingRestaurante ? (
+              'Salvar Alteracoes'
+            ) : (
+              'Criar Restaurante'
+            )}
+          </Button>
+        </Modal.Footer>
+      </Modal>
 
       {/* Modal de Restore */}
       <Modal show={showModal} onHide={() => !restoring && setShowModal(false)} centered>
