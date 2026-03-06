@@ -39,6 +39,24 @@ export class ListasRapidasService {
     return item;
   }
 
+  private async validarItensDoRestaurante(itemIds: number[], restauranteId: number) {
+    const idsUnicos = Array.from(new Set(itemIds));
+    if (idsUnicos.length === 0) {
+      return;
+    }
+
+    const itens = await this.prisma.item.findMany({
+      where: { id: { in: idsUnicos }, restauranteId },
+      select: { id: true },
+    });
+
+    if (itens.length !== idsUnicos.length) {
+      throw new NotFoundException(
+        'Um ou mais itens não pertencem ao restaurante informado',
+      );
+    }
+  }
+
   // ─── Colaborador ──────────────────────────────────────────────────────────
 
   async create(
@@ -46,6 +64,12 @@ export class ListasRapidasService {
     usuarioId: number,
     dto: CreateListaRapidaDto,
   ) {
+    const itemIds = (dto.itens ?? [])
+      .map((item) => item.itemId)
+      .filter((itemId): itemId is number => itemId !== undefined);
+
+    await this.validarItensDoRestaurante(itemIds, restauranteId);
+
     return this.prisma.listaRapida.create({
       data: {
         restauranteId,
@@ -134,6 +158,10 @@ export class ListasRapidasService {
       );
     }
 
+    if (dto.itemId !== undefined) {
+      await this.validarItensDoRestaurante([dto.itemId], restauranteId);
+    }
+
     return this.prisma.listaRapidaItem.create({
       data: {
         listaRapidaId,
@@ -211,6 +239,10 @@ export class ListasRapidasService {
     dto: UpdateListaRapidaItemDto,
   ) {
     await this.findItemOrFail(itemId, restauranteId);
+
+    if (dto.itemId !== undefined) {
+      await this.validarItensDoRestaurante([dto.itemId], restauranteId);
+    }
 
     return this.prisma.listaRapidaItem.update({
       where: { id: itemId },

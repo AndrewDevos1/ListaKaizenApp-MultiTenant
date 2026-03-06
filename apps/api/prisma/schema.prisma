@@ -81,6 +81,7 @@ model Restaurante {
   fornecedores   Fornecedor[]
   cotacoes       Cotacao[]
   checklists     Checklist[]
+  recebimentos   Recebimento[]
   listaRapidas   ListaRapida[]
   sugestoes      SugestaoItem[]
   popTemplates   POPTemplate[]
@@ -114,6 +115,8 @@ model Usuario {
   popExecucoes      POPExecucao[]
   notificacoes      Notificacao[]
   pushSubscriptions PushSubscription[]
+  recebimentosConfirmados      Recebimento[] @relation("RecebimentoConfirmadoPor")
+  recebimentosAdministrativos  Recebimento[] @relation("RecebimentoConfirmadoAdmin")
 
   @@map("usuarios")
 }
@@ -243,6 +246,7 @@ model Submissao {
   restaurante Restaurante @relation(fields: [restauranteId], references: [id])
   pedidos     Pedido[]
   checklist   Checklist?
+  recebimento Recebimento?
 
   @@map("submissoes")
 }
@@ -258,8 +262,44 @@ model Pedido {
 
   submissao Submissao @relation(fields: [submissaoId], references: [id])
   item      Item      @relation(fields: [itemId], references: [id])
+  recebimentoItem RecebimentoItem?
 
   @@map("pedidos")
+}
+
+model Recebimento {
+  id               Int       @id @default(autoincrement())
+  submissaoId      Int       @unique @map("submissao_id")
+  restauranteId    Int       @map("restaurante_id")
+  confirmadoPorId  Int?      @map("confirmado_por_id")
+  confirmadoEm     DateTime? @map("confirmado_em")
+  confirmadoAdminId Int?     @map("confirmado_admin_id")
+  confirmadoAdminEm DateTime? @map("confirmado_admin_em")
+  observacoes      String?
+  criadoEm         DateTime  @default(now()) @map("criado_em")
+  atualizadoEm     DateTime  @updatedAt @map("atualizado_em")
+
+  submissao        Submissao   @relation(fields: [submissaoId], references: [id])
+  restaurante      Restaurante @relation(fields: [restauranteId], references: [id])
+  confirmadoPor    Usuario?    @relation("RecebimentoConfirmadoPor", fields: [confirmadoPorId], references: [id])
+  confirmadoAdmin  Usuario?    @relation("RecebimentoConfirmadoAdmin", fields: [confirmadoAdminId], references: [id])
+  itens            RecebimentoItem[]
+
+  @@map("recebimentos")
+}
+
+model RecebimentoItem {
+  id            Int      @id @default(autoincrement())
+  recebimentoId Int      @map("recebimento_id")
+  pedidoId      Int      @unique @map("pedido_id")
+  confirmado    Boolean  @default(false)
+  criadoEm      DateTime @default(now()) @map("criado_em")
+
+  recebimento   Recebimento @relation(fields: [recebimentoId], references: [id], onDelete: Cascade)
+  pedido        Pedido      @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+
+  @@unique([recebimentoId, pedidoId])
+  @@map("recebimento_itens")
 }
 
 model Cotacao {
@@ -447,6 +487,7 @@ enum TipoNotificacao {
   SUBMISSAO_PENDENTE
   SUBMISSAO_APROVADA
   SUBMISSAO_REJEITADA
+  RECEBIMENTO_CONFIRMADO
   LISTA_RAPIDA_PENDENTE
   LISTA_RAPIDA_APROVADA
   LISTA_RAPIDA_REJEITADA

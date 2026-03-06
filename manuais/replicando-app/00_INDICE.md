@@ -1,135 +1,134 @@
-# 📚 Documentação para Replicação — Kaizen Lists App
+# Documentacao para Replicacao — Kaizen Lists App
 
-> Esta documentação foi gerada para permitir que outra IA (ou desenvolvedor) replique o sistema Kaizen Lists do zero, com todos os detalhes necessários de banco de dados, endpoints, fluxos, telas e permissões.
+## Fonte de verdade
+
+1. Implementacao atual: codigo em `apps/api` (NestJS + Prisma) e `apps/web` (Next.js).
+2. Documentacao funcional atual: arquivos deste diretorio `manuais/replicando-app/`.
+3. Referencia historica: `legacy/` (somente leitura; nao editar).
 
 ---
 
-## 🗂️ Índice dos Documentos
+## Indice dos Documentos
 
-### Fundação e Arquitetura
+### Fundacao e Arquitetura
 
-| Arquivo | Conteúdo |
+| Arquivo | Conteudo |
 |---------|----------|
-| `01_ARQUITETURA.md` | Stack tecnológico, estrutura de pastas, padrões |
+| `01_ARQUITETURA.md` | Stack tecnologico, estrutura de pastas, padroes |
 | `02_BANCO_DE_DADOS.md` | Schema completo: modelos, campos, tipos, relacionamentos, enums |
 | `03_AUTENTICACAO_PERMISSOES.md` | Roles, JWT, decorators, guards frontend |
-| `08_FLUXO_COMPLETO.md` | Fluxo de dados ponta a ponta com diagramas |
-| `09_ENDPOINTS_REFERENCIA.md` | Referência completa de todos os endpoints da API |
+| `08_FLUXO_COMPLETO.md` | Fluxo de dados ponta a ponta |
+| `09_ENDPOINTS_REFERENCIA.md` | Referencia de endpoints (estado atual NestJS) |
 
-### Módulos Core
+### Modulos Core
 
-| Arquivo | Conteúdo |
+| Arquivo | Conteudo |
 |---------|----------|
-| `04_MODULO_LISTAS.md` | Módulo principal de listas de compras (CRUD, itens, colaboradores) |
-| `05_MODULO_SUBMISSOES_APROVACAO.md` | Fluxo de submissão pelo colaborador e aprovação pelo admin |
-| `06_MODULO_MERGE.md` | Merge de múltiplas submissões aprovadas → WhatsApp |
-| `12_MODULO_CHECKLIST.md` | Converter submissão aprovada em checklist marcável, compartilhar via WhatsApp |
-| `20_COTACOES.md` | Geração de cotações por fornecedor com preenchimento de preços |
+| `04_MODULO_LISTAS.md` | Modulo principal de listas de compras (CRUD, itens, colaboradores) |
+| `05_MODULO_SUBMISSOES_APROVACAO.md` | Fluxo de submissao pelo colaborador e aprovacao pelo admin |
+| `06_MODULO_MERGE.md` | Merge de multiplas submissoes aprovadas para WhatsApp |
+| `12_MODULO_CHECKLIST.md` | Converter submissao aprovada em checklist marcavel |
+| `20_COTACOES.md` | Geracao de cotacoes por fornecedor |
 
-### Módulos Adicionais
+### Modulos Adicionais
 
-| Arquivo | Conteúdo |
+| Arquivo | Conteudo |
 |---------|----------|
-| `14_MODULO_POP.md` | POPs: templates, listas, execuções, medições, fotos, desvios, auditoria |
-| `15_PORTAL_FORNECEDOR.md` | Portal SUPPLIER: cadastro, itens, preços, convites, aprovação |
-| `16_LISTAS_RAPIDAS.md` | Listas ad-hoc criadas por colaboradores, workflow de aprovação |
-| `17_SUGESTOES_ITENS.md` | Sugestão de novos itens pelo colaborador, aprovação cria item no catálogo |
-| `18_CONVITES.md` | Tokens de convite: usuários, restaurantes, fornecedores |
-| `19_NOTIFICACOES.md` | Sistema de notificações persistentes + toasts, polling de pendentes |
-| `21_IMPORT_EXPORT.md` | Import/Export CSV: fornecedores, itens de fornecedor, itens de lista |
-| `22_AUDITORIA_LOGS.md` | AppLog: trilha imutável de auditoria com filtros para SUPER_ADMIN |
+| `14_MODULO_POP.md` | POPs: templates, passos, execucoes e auditoria |
+| `15_PORTAL_FORNECEDOR.md` | Portal SUPPLIER |
+| `16_LISTAS_RAPIDAS.md` | Workflow de listas rapidas |
+| `17_SUGESTOES_ITENS.md` | Sugestao e aprovacao de itens |
+| `18_CONVITES.md` | Tokens de convite |
+| `19_NOTIFICACOES.md` | Notificacoes persistentes |
+| `21_IMPORT_EXPORT.md` | Import/Export de dados |
+| `22_AUDITORIA_LOGS.md` | Trilha de auditoria |
 
 ### Multi-tenant e Responsividade
 
-| Arquivo | Conteúdo |
+| Arquivo | Conteudo |
 |---------|----------|
-| `13_SUPER_ADMIN_RESTAURANTES.md` | Cadastro e controle de restaurantes, solicitações, impersonação, dashboard global |
-| `10_RESPONSIVIDADE.md` | Sistema responsivo: breakpoints, sidebar adaptativa, swipe, mobile-cards |
-| `11_FUNCIONALIDADE_OFFLINE.md` | Service Worker (Workbox), IndexedDB drafts, BackgroundSync, detecção de rede |
+| `13_SUPER_ADMIN_RESTAURANTES.md` | Gestao de restaurantes e visao global |
+| `10_RESPONSIVIDADE.md` | Regras de responsividade |
+| `11_FUNCIONALIDADE_OFFLINE.md` | Offline/PWA, drafts e sync |
 
-### Telas Detalhadas e Padrões Frontend
+### Telas e Padroes Frontend
 
-| Arquivo | Conteúdo |
+| Arquivo | Conteudo |
 |---------|----------|
-| `07_FRONTEND_ROTAS_TELAS.md` | Todas as rotas, telas e modais do frontend (visão geral) |
-| `23_TELAS_COLABORADOR.md` | Telas do colaborador: layout, estados, validações, cálculos, API |
-| `24_TELAS_ADMIN.md` | Telas do admin: layout, ações em lote, filtros, modais, API |
-| `25_CONTEXTOS_HOOKS.md` | Contextos React, hooks customizados, guards de rota, estrutura de rotas completa |
+| `07_FRONTEND_ROTAS_TELAS.md` | Rotas, telas e modais do frontend |
+| `23_TELAS_COLABORADOR.md` | Telas do colaborador |
+| `24_TELAS_ADMIN.md` | Telas do admin |
+| `25_CONTEXTOS_HOOKS.md` | Contextos React, hooks e guards de rota |
 
 ---
 
-## 🎯 Funcionalidade Principal
+## Arquitetura em uma linha (estado atual)
 
-O **Kaizen Lists** é um app de **gestão de compras para restaurantes**. O fluxo central é:
-
-```
-Admin cria lista → Atribui colaboradores → Colaborador atualiza estoque
-→ Colaborador submete → Admin aprova/rejeita pedidos
-→ Admin funde múltiplas submissões → Envia pedido ao fornecedor via WhatsApp
-```
-
-### Fluxos Secundários
-
-```
-Colaborador cria Lista Rápida → Admin aprova → Vira Checklist de compras
-
-Colaborador sugere item → Admin aprova → Item entra no catálogo global
-
-Fornecedor cadastra com convite → Gerencia seus itens e preços
-
-Admin gera Cotação → Preenche preços → Referência para compras
-
-Admin cria POP (checklist operacional) → Colaborador executa → Admin audita
-```
+- Backend: NestJS + Prisma + PostgreSQL
+- Frontend: Next.js 15 + React 19 + React Bootstrap
+- Auth: JWT Bearer com roles e guards
+- Multi-tenant: isolamento por `restauranteId`
+- Offline/PWA: Service Worker + drafts locais + push web
 
 ---
 
-## 🏗️ Arquitetura em uma linha
-
-- **Backend**: Flask (Python) + SQLAlchemy + JWT + PostgreSQL (SQLite em dev)
-- **Frontend**: React 19 + TypeScript + React Bootstrap + React Router v7
-- **Multi-tenant**: Cada restaurante tem seus usuários, listas e dados isolados
-- **Auth**: JWT armazenado em localStorage, roles SUPER_ADMIN / ADMIN / COLLABORATOR / SUPPLIER
-- **Offline**: Service Worker Workbox + IndexedDB (drafts) + BackgroundSync
-
----
-
-## ⚡ Quick Start para replicar
+## Quick Start de leitura
 
 ### Fase 1 — Base
 
-1. Leia `01_ARQUITETURA.md` para entender a estrutura
-2. Leia `02_BANCO_DE_DADOS.md` para criar o schema
-3. Leia `03_AUTENTICACAO_PERMISSOES.md` para implementar auth
-4. Leia `25_CONTEXTOS_HOOKS.md` para entender os guards e providers do frontend
+1. `01_ARQUITETURA.md`
+2. `02_BANCO_DE_DADOS.md`
+3. `03_AUTENTICACAO_PERMISSOES.md`
+4. `25_CONTEXTOS_HOOKS.md`
 
-### Fase 2 — Core do Negócio
+### Fase 2 — Core de negocio
 
-5. Leia `04_MODULO_LISTAS.md` + `05_MODULO_SUBMISSOES_APROVACAO.md` para o core
-6. Leia `06_MODULO_MERGE.md` para fusão de submissões
-7. Leia `12_MODULO_CHECKLIST.md` para o checklist de compras
-8. Use `09_ENDPOINTS_REFERENCIA.md` como guia de API
+5. `04_MODULO_LISTAS.md`
+6. `05_MODULO_SUBMISSOES_APROVACAO.md`
+7. `06_MODULO_MERGE.md`
+8. `12_MODULO_CHECKLIST.md`
+9. `09_ENDPOINTS_REFERENCIA.md`
 
 ### Fase 3 — Telas
 
-9. Leia `23_TELAS_COLABORADOR.md` para telas detalhadas do colaborador
-10. Leia `24_TELAS_ADMIN.md` para telas detalhadas do admin
-11. Leia `07_FRONTEND_ROTAS_TELAS.md` para visão geral do roteamento
-12. Leia `08_FLUXO_COMPLETO.md` para validar a lógica ponta a ponta
+10. `23_TELAS_COLABORADOR.md`
+11. `24_TELAS_ADMIN.md`
+12. `07_FRONTEND_ROTAS_TELAS.md`
+13. `08_FLUXO_COMPLETO.md`
 
-### Fase 4 — Módulos Adicionais
+### Fase 4 — Modulos adicionais
 
-13. Leia `14_MODULO_POP.md` para o sistema de POPs
-14. Leia `15_PORTAL_FORNECEDOR.md` para o portal do fornecedor
-15. Leia `16_LISTAS_RAPIDAS.md` + `17_SUGESTOES_ITENS.md` para módulos colaborativos
-16. Leia `18_CONVITES.md` para o sistema de convites
-17. Leia `19_NOTIFICACOES.md` para notificações
-18. Leia `20_COTACOES.md` para o módulo de cotações
-19. Leia `21_IMPORT_EXPORT.md` para importação/exportação CSV
-20. Leia `22_AUDITORIA_LOGS.md` para a trilha de auditoria
+14. `14_MODULO_POP.md`
+15. `15_PORTAL_FORNECEDOR.md`
+16. `16_LISTAS_RAPIDAS.md`
+17. `17_SUGESTOES_ITENS.md`
+18. `18_CONVITES.md`
+19. `19_NOTIFICACOES.md`
+20. `20_COTACOES.md`
+21. `21_IMPORT_EXPORT.md`
+22. `22_AUDITORIA_LOGS.md`
 
-### Fase 5 — Infraestrutura
+### Fase 5 — Infra
 
-21. Leia `10_RESPONSIVIDADE.md` para o sistema responsivo (breakpoints, swipe, mobile-cards)
-22. Leia `11_FUNCIONALIDADE_OFFLINE.md` para offline (Service Worker, IndexedDB, BackgroundSync)
-23. Leia `13_SUPER_ADMIN_RESTAURANTES.md` para gestão multi-tenant pelo SUPER_ADMIN
+23. `10_RESPONSIVIDADE.md`
+24. `11_FUNCIONALIDADE_OFFLINE.md`
+25. `13_SUPER_ADMIN_RESTAURANTES.md`
+
+---
+
+## Referencias historicas complementares (read-only)
+
+- `legacy/manuais/replicando-app/04.2_Organizar_Listas.md` (material adicional da fase de organizacao de listas)
+- `legacy/manuais/replicando-app/09_ENDPOINTS_REFERENCIA.md` (snapshot legado Flask)
+
+---
+
+## Fora do fluxo oficial
+
+Os arquivos abaixo sao anotacoes de conversa e nao fazem parte da trilha oficial de replicacao:
+
+- `manuais/replicando-app/ANOTACOES_NAO_OFICIAIS.md` (indice das anotacoes)
+- `manuais/replicando-app/CHAT.md`
+- `manuais/replicando-app/Chat2.md`
+- `manuais/replicando-app/chat-checklistdecompras.md`
+- `manuais/chatbackup.md`

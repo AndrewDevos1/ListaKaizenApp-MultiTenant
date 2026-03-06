@@ -16,6 +16,7 @@ interface MinhaSubmissao {
   criadoEm: string;
   lista: { id: number; nome: string };
   _count: { pedidos: number };
+  recebimento?: { id: number; confirmadoEm?: string | null; confirmadoAdminEm?: string | null } | null;
 }
 
 const STATUS_VARIANT: Record<StatusSubmissao, string> = {
@@ -25,6 +26,10 @@ const STATUS_VARIANT: Record<StatusSubmissao, string> = {
   PARCIAL: 'info',
   ARQUIVADO: 'secondary',
 };
+
+function podeConfirmarRecebimento(status: StatusSubmissao) {
+  return status === 'APROVADO' || status === 'PARCIAL';
+}
 
 function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString('pt-BR', {
@@ -124,7 +129,7 @@ export default function CollaboratorSubmissoesPage() {
                     <th className={styles.tableHeaderCell}>Data</th>
                     <th className={styles.tableHeaderCell}>Nº Pedidos</th>
                     <th className={styles.tableHeaderCell}>Status</th>
-                    <th className={styles.tableHeaderCell}>Detalhe</th>
+                    <th className={styles.tableHeaderCell}>Ações</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -140,9 +145,22 @@ export default function CollaboratorSubmissoesPage() {
                         </Badge>
                       </td>
                       <td className={styles.tableCell}>
-                        <Link href={`/collaborator/submissoes/${s.id}`} className="btn btn-sm btn-outline-primary">
-                          Ver Detalhes
-                        </Link>
+                        <div className={styles.actionButtons}>
+                          <Link href={`/collaborator/submissoes/${s.id}`} className="btn btn-sm btn-outline-primary">
+                            Ver Detalhes
+                          </Link>
+                          {podeConfirmarRecebimento(s.status) && !s.recebimento && (
+                            <Link
+                              href={`/collaborator/submissoes/${s.id}/recebimento`}
+                              className="btn btn-sm btn-success"
+                            >
+                              Confirmar Recebimento
+                            </Link>
+                          )}
+                          {s.recebimento && (
+                            <Badge bg="success">Recebido</Badge>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}

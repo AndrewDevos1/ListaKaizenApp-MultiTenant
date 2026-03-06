@@ -1,6 +1,12 @@
 'use client';
 
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useEffect,
+} from 'react';
 import api, { invalidateTokenCache } from '@/lib/api';
 import { AuthUser, LoginResponse } from 'shared';
 
@@ -34,15 +40,16 @@ function readStoredToken(): string | null {
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  // Inicialização síncrona — lê localStorage imediatamente, sem useEffect waterfall
-  const [user, setUser] = useState<AuthUser | null>(() => {
+  // Estado inicial estável entre server/client para evitar hydration mismatch.
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
     const token = readStoredToken();
     const storedUser = readStoredUser();
-    return token && storedUser ? storedUser : null;
-  });
-
-  // loading = false desde o início — o user já está disponível sincronamente
-  const loading = false;
+    setUser(token && storedUser ? storedUser : null);
+    setLoading(false);
+  }, []);
 
   const login = useCallback(async (email: string, senha: string, manterConectado = false) => {
     const { data } = await api.post<LoginResponse>('/v1/auth/login', { email, senha });

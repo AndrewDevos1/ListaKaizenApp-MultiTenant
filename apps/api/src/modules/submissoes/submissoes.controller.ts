@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Put,
+  Delete,
   Body,
   Param,
   Query,
@@ -15,6 +16,7 @@ import { SubmissoesService } from './submissoes.service';
 import { FilterSubmissoesDto } from './dto/filter-submissoes.dto';
 import { UpdatePedidoStatusDto } from './dto/update-pedido-status.dto';
 import { MergePreviewDto } from './dto/merge-preview.dto';
+import { ConfirmarRecebimentoDto } from './dto/confirmar-recebimento.dto';
 import { CurrentUser, Roles, TenantId } from '../../common/decorators';
 import { RolesGuard, TenantGuard } from '../../common/guards';
 
@@ -125,6 +127,43 @@ export class AdminSubmissoesController {
   ) {
     return this.submissoesService.arquivarSubmissao(id, restauranteId);
   }
+
+  @Get('submissoes/:id/recebimento')
+  @Roles('ADMIN' as any, 'SUPER_ADMIN' as any)
+  @ApiOperation({ summary: 'Buscar recebimento da submissão' })
+  getRecebimento(
+    @Param('id', ParseIntPipe) id: number,
+    @TenantId() restauranteId: number,
+  ) {
+    return this.submissoesService.getRecebimentoAdmin(id, restauranteId);
+  }
+
+  @Post('submissoes/:id/recebimento')
+  @Roles('ADMIN' as any, 'SUPER_ADMIN' as any)
+  @ApiOperation({ summary: 'Confirmar recebimento administrativamente' })
+  confirmarRecebimento(
+    @Param('id', ParseIntPipe) id: number,
+    @TenantId() restauranteId: number,
+    @CurrentUser('id') adminId: number,
+    @Body() dto: ConfirmarRecebimentoDto,
+  ) {
+    return this.submissoesService.confirmarRecebimentoAdmin(
+      id,
+      restauranteId,
+      adminId,
+      dto,
+    );
+  }
+
+  @Delete('submissoes/:id/recebimento')
+  @Roles('ADMIN' as any, 'SUPER_ADMIN' as any)
+  @ApiOperation({ summary: 'Desfazer recebimento da submissão' })
+  desfazerRecebimento(
+    @Param('id', ParseIntPipe) id: number,
+    @TenantId() restauranteId: number,
+  ) {
+    return this.submissoesService.desfazerRecebimentoAdmin(id, restauranteId);
+  }
 }
 
 // ─── Colaborador Controller ──────────────────────────────────────────────────
@@ -153,5 +192,35 @@ export class CollaboratorSubmissoesController {
     @TenantId() restauranteId: number,
   ) {
     return this.submissoesService.findOneColaborador(id, userId, restauranteId);
+  }
+
+  @Get(':id/recebimento')
+  @ApiOperation({ summary: 'Buscar recebimento da minha submissão' })
+  getRecebimento(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser('id') userId: number,
+    @TenantId() restauranteId: number,
+  ) {
+    return this.submissoesService.getRecebimentoColaborador(
+      id,
+      userId,
+      restauranteId,
+    );
+  }
+
+  @Post(':id/recebimento')
+  @ApiOperation({ summary: 'Confirmar recebimento da minha submissão' })
+  confirmarRecebimento(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser('id') userId: number,
+    @TenantId() restauranteId: number,
+    @Body() dto: ConfirmarRecebimentoDto,
+  ) {
+    return this.submissoesService.confirmarRecebimentoColaborador(
+      id,
+      userId,
+      restauranteId,
+      dto,
+    );
   }
 }

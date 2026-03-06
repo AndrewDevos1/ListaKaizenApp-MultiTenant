@@ -91,7 +91,12 @@ export class ListasController {
   findOne(
     @Param('id', ParseIntPipe) id: number,
     @TenantId() restauranteId: number,
+    @CurrentUser('id') userId: number,
+    @CurrentUser('role') role: string,
   ) {
+    if (role === 'COLLABORATOR') {
+      return this.listasService.findOneForColaborador(id, restauranteId, userId);
+    }
     return this.listasService.findOne(id, restauranteId);
   }
 
@@ -343,8 +348,11 @@ export class CollaboratorListasController {
 
   @Get('minhas-listas')
   @ApiOperation({ summary: 'Listas atribuídas ao colaborador logado' })
-  getMinhasListas(@CurrentUser('id') userId: number) {
-    return this.listasService.getMinhasListas(userId);
+  getMinhasListas(
+    @CurrentUser('id') userId: number,
+    @TenantId() restauranteId: number,
+  ) {
+    return this.listasService.getMinhasListas(userId, restauranteId);
   }
 
   @Put('listas/:id/estoque')
@@ -353,8 +361,14 @@ export class CollaboratorListasController {
     @Param('id', ParseIntPipe) listaId: number,
     @TenantId() restauranteId: number,
     @Body() dto: AtualizarEstoqueDto,
+    @CurrentUser('id') userId: number,
   ) {
-    return this.listasService.atualizarEstoque(listaId, restauranteId, dto);
+    return this.listasService.atualizarEstoque(
+      listaId,
+      restauranteId,
+      dto,
+      userId,
+    );
   }
 
   @Post('listas/:id/submeter')

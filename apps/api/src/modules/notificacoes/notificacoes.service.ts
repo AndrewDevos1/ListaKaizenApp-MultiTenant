@@ -7,6 +7,7 @@ const TITULOS_NOTIFICACAO: Record<string, string> = {
   SUBMISSAO_PENDENTE: 'Nova submissão',
   SUBMISSAO_APROVADA: 'Submissão aprovada',
   SUBMISSAO_REJEITADA: 'Submissão rejeitada',
+  RECEBIMENTO_CONFIRMADO: 'Recebimento confirmado',
   LISTA_RAPIDA_PENDENTE: 'Lista rápida pendente',
   LISTA_RAPIDA_APROVADA: 'Lista rápida aprovada',
   LISTA_RAPIDA_REJEITADA: 'Lista rápida rejeitada',

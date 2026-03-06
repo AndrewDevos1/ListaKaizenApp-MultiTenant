@@ -1,4 +1,4 @@
-const CACHE_NAME = 'kaizen-lists-v1';
+const CACHE_NAME = 'kaizen-lists-v3';
 const STATIC_ASSETS = ['/icons/icon-192.png', '/icons/icon-512.png'];
 
 // Install: pré-cache de assets estáticos
@@ -56,9 +56,15 @@ self.addEventListener('notificationclick', (event) => {
 // Fetch: network-first (API nunca vai para cache)
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
+  const isStaticAsset =
+    url.pathname.startsWith('/icons/') || url.pathname.startsWith('/_next/static/');
 
   // Nunca cachear chamadas de API ou requests não-GET
-  if (event.request.method !== 'GET' || url.pathname.startsWith('/v1/')) {
+  if (
+    event.request.method !== 'GET' ||
+    url.pathname.startsWith('/v1/') ||
+    !isStaticAsset
+  ) {
     return;
   }
 
@@ -66,11 +72,7 @@ self.addEventListener('fetch', (event) => {
     fetch(event.request)
       .then((response) => {
         // Cachear apenas respostas bem-sucedidas de assets estáticos
-        if (
-          response.ok &&
-          (url.pathname.startsWith('/icons/') ||
-            url.pathname.startsWith('/_next/static/'))
-        ) {
+        if (response.ok) {
           const clone = response.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
         }
@@ -78,7 +80,7 @@ self.addEventListener('fetch', (event) => {
       })
       .catch(() => {
         // Fallback: tentar servir do cache
-        return caches.match(event.request);
+        return caches.match(event.request, { ignoreSearch: true });
       })
   );
 });

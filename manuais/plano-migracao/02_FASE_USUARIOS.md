@@ -1,4 +1,4 @@
-# 02 — Fase 2: Fornecedores e Catálogo
+# 02 — Fase 2: Fornecedores e Catalogo (Historico concluido)
 
 ## Objetivo
 
@@ -13,14 +13,14 @@ campos avançados de lista (threshold e quantidade por fardo).
 
 ```prisma
 model Fornecedor {
-  id            String      @id @default(cuid())
+  id            Int      @id @default(autoincrement())
   nome          String
   cnpj          String?
   telefone      String?
   email         String?
   ativo         Boolean     @default(true)
   restaurante   Restaurante @relation(fields: [restauranteId], references: [id])
-  restauranteId String
+  restauranteId Int
   itens         Item[]
   criadoEm     DateTime    @default(now())
   atualizadoEm DateTime    @updatedAt
@@ -33,7 +33,7 @@ Atualizar `Item` para incluir relação opcional com fornecedor:
 model Item {
   // campos existentes...
   fornecedor   Fornecedor? @relation(fields: [fornecedorId], references: [id])
-  fornecedorId String?
+  fornecedorId Int?
 }
 ```
 
@@ -155,9 +155,5 @@ git commit -m "feat: fornecedores e configuracao de threshold em listas"
 ```
 
 Após o commit:
-1. Anotar o hash: `git log --oneline -1`
-2. Atualizar `PONTEIRO.md`:
-   - Status: `FASE 3 — não iniciada`
-   - Última tarefa concluída: `2.4 — Configurações de Lista`
-   - Próximo passo: `Iniciar Fase 3 — Tarefa 3.1`
-   - Última branch/commit: `<hash>`
+1. Registro historico desta fase: `776dfe0`
+2. Entregas principais: fornecedores e configuracoes de threshold/fardo.

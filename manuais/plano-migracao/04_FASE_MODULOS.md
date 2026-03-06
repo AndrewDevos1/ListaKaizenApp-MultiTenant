@@ -1,4 +1,4 @@
-# 04 — Fase 4: Listas Rápidas, Sugestões e POPs
+# 04 — Fase 4: Listas Rapidas, Sugestoes e POPs (Historico concluido)
 
 ## Objetivo
 
@@ -21,22 +21,22 @@ enum StatusListaRapida {
 }
 
 model ListaRapida {
-  id            String            @id @default(cuid())
+  id            Int            @id @default(autoincrement())
   titulo        String
   status        StatusListaRapida @default(RASCUNHO)
   usuario       Usuario           @relation(fields: [usuarioId], references: [id])
-  usuarioId     String
+  usuarioId     Int
   restaurante   Restaurante       @relation(fields: [restauranteId], references: [id])
-  restauranteId String
+  restauranteId Int
   itens         ListaRapidaItem[]
   criadoEm     DateTime          @default(now())
   atualizadoEm DateTime          @updatedAt
 }
 
 model ListaRapidaItem {
-  id            String      @id @default(cuid())
+  id            Int      @id @default(autoincrement())
   listaRapida   ListaRapida @relation(fields: [listaRapidaId], references: [id])
-  listaRapidaId String
+  listaRapidaId Int
   nomeItem      String
   quantidade    Float
   unidade       String?
@@ -55,20 +55,20 @@ npx prisma migrate dev --name add-listas-rapidas
 
 ```
 # Colaborador
-POST   /v1/collaborator/listas-rapidas           → criar rascunho
-GET    /v1/collaborator/listas-rapidas           → minhas listas
-GET    /v1/collaborator/listas-rapidas/:id       → detalhe
-PUT    /v1/collaborator/listas-rapidas/:id       → atualizar rascunho
-POST   /v1/collaborator/listas-rapidas/:id/submeter → status = PENDENTE
-DELETE /v1/collaborator/listas-rapidas/:id       → deletar rascunho
+POST   /v1/collaborator/listas-rapidas             → criar lista rapida
+GET    /v1/collaborator/listas-rapidas             → minhas listas
+GET    /v1/collaborator/listas-rapidas/:id         → detalhe da lista
+POST   /v1/collaborator/listas-rapidas/:id/submeter → submeter para aprovacao
+POST   /v1/collaborator/listas-rapidas/:id/itens   → adicionar item
 
 # Admin
-GET    /v1/admin/listas-rapidas                  → todas (filtro por status)
-GET    /v1/admin/listas-rapidas/:id              → detalhe
-POST   /v1/admin/listas-rapidas/:id/aprovar
-POST   /v1/admin/listas-rapidas/:id/rejeitar
+GET    /v1/admin/listas-rapidas                    → todas (filtro por status)
+GET    /v1/admin/listas-rapidas/:id                → detalhe
+PUT    /v1/admin/listas-rapidas/:id/aprovar
+PUT    /v1/admin/listas-rapidas/:id/rejeitar
 PUT    /v1/admin/listas-rapidas/:id/arquivar
-PUT    /v1/admin/lista-rapida-itens/:id/marcar   → toggle marcado
+PUT    /v1/admin/listas-rapidas/itens/:itemId      → atualizar item
+PUT    /v1/admin/listas-rapidas/itens/:itemId/descartar → toggle descartado
 ```
 
 ### Frontend (Colaborador)
@@ -110,18 +110,18 @@ enum StatusSugestao {
 }
 
 model SugestaoItem {
-  id            String        @id @default(cuid())
+  id            Int        @id @default(autoincrement())
   nomeItem      String
   descricao     String?
   unidade       String?
   motivacao     String?
   status        StatusSugestao @default(PENDENTE)
   usuario       Usuario       @relation(fields: [usuarioId], references: [id])
-  usuarioId     String
+  usuarioId     Int
   restaurante   Restaurante   @relation(fields: [restauranteId], references: [id])
-  restauranteId String
+  restauranteId Int
   itemCriado    Item?         @relation(fields: [itemCriadoId], references: [id])
-  itemCriadoId  String?
+  itemCriadoId  Int?
   criadoEm     DateTime      @default(now())
   atualizadoEm DateTime      @updatedAt
 }
@@ -143,7 +143,7 @@ GET  /v1/collaborator/sugestoes           → minhas sugestões
 # Admin
 GET  /v1/admin/sugestoes                  → todas (filtro por status)
 POST /v1/admin/sugestoes/:id/aprovar
-  Body: { areaId?: string, fornecedorId?: string }
+  Body: { areaId?: number, fornecedorId?: number }
   Lógica: cria Item a partir da sugestão; vincula itemCriadoId; status = APROVADO
 POST /v1/admin/sugestoes/:id/rejeitar
   Body: { motivo?: string }
@@ -195,21 +195,21 @@ enum StatusPOPExecucao {
 }
 
 model POPTemplate {
-  id            String      @id @default(cuid())
+  id            Int      @id @default(autoincrement())
   nome          String
   tipo          TipoPOP
   descricao     String?
   restaurante   Restaurante @relation(fields: [restauranteId], references: [id])
-  restauranteId String
+  restauranteId Int
   listas        POPLista[]
   criadoEm     DateTime    @default(now())
   atualizadoEm DateTime    @updatedAt
 }
 
 model POPLista {
-  id          String          @id @default(cuid())
+  id          Int          @id @default(autoincrement())
   template    POPTemplate     @relation(fields: [templateId], references: [id])
-  templateId  String
+  templateId  Int
   titulo      String
   ordem       Int             @default(0)
   itens       POPListaItem[]
@@ -219,19 +219,19 @@ model POPLista {
 }
 
 model POPListaItem {
-  id        String   @id @default(cuid())
+  id        Int   @id @default(autoincrement())
   lista     POPLista @relation(fields: [listaId], references: [id])
-  listaId   String
+  listaId   Int
   descricao String
   ordem     Int      @default(0)
 }
 
 model POPExecucao {
-  id        String            @id @default(cuid())
+  id        Int            @id @default(autoincrement())
   lista     POPLista          @relation(fields: [listaId], references: [id])
-  listaId   String
+  listaId   Int
   usuario   Usuario           @relation(fields: [usuarioId], references: [id])
-  usuarioId String
+  usuarioId Int
   status    StatusPOPExecucao @default(EM_ANDAMENTO)
   itens     POPExecucaoItem[]
   criadoEm DateTime           @default(now())
@@ -239,11 +239,11 @@ model POPExecucao {
 }
 
 model POPExecucaoItem {
-  id          String      @id @default(cuid())
+  id          Int      @id @default(autoincrement())
   execucao    POPExecucao @relation(fields: [execucaoId], references: [id])
-  execucaoId  String
+  execucaoId  Int
   itemRef     POPListaItem @relation(fields: [itemRefId], references: [id])
-  itemRefId   String
+  itemRefId   Int
   marcado     Boolean     @default(false)
   marcadoEm  DateTime?
 }
@@ -276,7 +276,7 @@ GET    /v1/admin/pop-execucoes           → histórico de execuções
 # Colaborador — Execução
 GET    /v1/collaborator/pop-listas       → listas disponíveis para executar
 POST   /v1/collaborator/pop-execucoes
-  Body: { listaId: string }
+  Body: { listaId: number }
   Lógica: cria execução com POPExecucaoItem para cada item da lista
 GET    /v1/collaborator/pop-execucoes/:id     → detalhe
 PUT    /v1/collaborator/pop-execucao-itens/:id/marcar → toggle marcado
@@ -312,9 +312,5 @@ git commit -m "feat: listas rapidas, sugestoes e POPs"
 ```
 
 Após o commit:
-1. Anotar o hash: `git log --oneline -1`
-2. Atualizar `PONTEIRO.md`:
-   - Status: `FASE 5 — não iniciada`
-   - Última tarefa concluída: `4.3 — POPs`
-   - Próximo passo: `Iniciar Fase 5 — Tarefa 5.1`
-   - Última branch/commit: `<hash>`
+1. Registro historico desta fase: `1068990`
+2. Entregas principais: listas rapidas, sugestoes e POPs.

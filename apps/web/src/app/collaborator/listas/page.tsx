@@ -63,11 +63,7 @@ export default function MinhasListasPage() {
         ) : (
           <div className={styles.listsGrid}>
             {listas.map((lista) => (
-              <Link
-                key={lista.id}
-                href={`/collaborator/listas/${lista.id}`}
-                className={styles.listCard}
-              >
+              <article key={lista.id} className={styles.listCard}>
                 <div className={styles.listHeader}>
                   <div className={styles.listIcon}>
                     <FaClipboardList />
@@ -88,11 +84,14 @@ export default function MinhasListasPage() {
                 </div>
 
                 <div className={styles.listActions}>
-                  <button className={styles.actionButton} onClick={(e) => e.preventDefault()}>
+                  <Link
+                    href={`/collaborator/listas/${lista.id}`}
+                    className={styles.actionButton}
+                  >
                     Abrir
-                  </button>
+                  </Link>
                 </div>
-              </Link>
+              </article>
             ))}
           </div>
         )}
