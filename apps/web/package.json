@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev --port 3000",
-    "build": "next build",
-    "start": "next start",
+    "build": "NEXT_DIST_DIR=.next-prod next build",
+    "start": "NEXT_DIST_DIR=.next-prod next start",
     "lint": "next lint"
   },
   "dependencies": {
