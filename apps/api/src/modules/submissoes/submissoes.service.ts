@@ -2,18 +2,31 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ConflictException,
 } from '@nestjs/common';
 import {
   StatusSubmissao,
   StatusPedido,
+  StatusLoteConsolidado,
   TipoNotificacao,
   UserRole,
 } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
-import { FilterSubmissoesDto } from './dto/filter-submissoes.dto';
+import {
+  FilterSubmissoesDto,
+  TipoFiltroSubmissoes,
+} from './dto/filter-submissoes.dto';
 import { UpdatePedidoStatusDto } from './dto/update-pedido-status.dto';
 import { ConfirmarRecebimentoDto } from './dto/confirmar-recebimento.dto';
 import { NotificacoesService } from '../notificacoes/notificacoes.service';
+import { recalcularLotesPorSubmissao } from './lote-consolidado.helper';
+
+type StatusConsolidado =
+  | 'AGUARDANDO_SUBLISTAS'
+  | 'PRONTO_PARA_APROVAR'
+  | 'APROVADO_PARCIAL'
+  | 'APROVADO_COMPLETO'
+  | 'EXPIRADO';
 
 @Injectable()
 export class SubmissoesService {
@@ -181,9 +194,180 @@ export class SubmissoesService {
     });
   }
 
+  private serializarStatusConsolidado(
+    status: StatusLoteConsolidado,
+    janelaFim: Date,
+  ): StatusConsolidado {
+    if (
+      status === StatusLoteConsolidado.AGUARDANDO_SUBLISTAS &&
+      janelaFim.getTime() < Date.now()
+    ) {
+      return 'EXPIRADO';
+    }
+
+    return status;
+  }
+
+  private getMensagemConsolidado(
+    status: StatusConsolidado,
+    totalParticipantes: number,
+    faltantesNomes: string[],
+    janelaFim: Date,
+  ): string {
+    if (status === 'AGUARDANDO_SUBLISTAS') {
+      if (faltantesNomes.length === 0) {
+        return 'Aguardando fechamento do lote.';
+      }
+      return `Aguardando ${faltantesNomes.length}/${totalParticipantes} sublista(s): ${faltantesNomes.join(', ')}.`;
+    }
+    if (status === 'PRONTO_PARA_APROVAR') {
+      return 'Todas as sublistas enviaram. Lote pronto para aprovação.';
+    }
+    if (status === 'APROVADO_COMPLETO') {
+      return 'Lote aprovado com todas as sublistas presentes.';
+    }
+    if (status === 'APROVADO_PARCIAL') {
+      return faltantesNomes.length > 0
+        ? `Lote aprovado parcialmente. Faltantes: ${faltantesNomes.join(', ')}.`
+        : 'Lote aprovado parcialmente.';
+    }
+    if (status === 'EXPIRADO') {
+      return `Janela expirada em ${janelaFim.toLocaleString('pt-BR')}.`;
+    }
+    return 'Lote consolidado.';
+  }
+
+  private async findAllConsolidadasAdmin(
+    restauranteId: number,
+    filter: FilterSubmissoesDto,
+  ) {
+    const lotes = await this.prisma.submissaoConsolidadaLote.findMany({
+      where: { restauranteId },
+      include: {
+        grupo: { select: { id: true, nome: true } },
+        listaPai: { select: { id: true, nome: true } },
+        participantes: {
+          include: {
+            lista: { select: { id: true, nome: true } },
+            submissaoAtual: {
+              include: {
+                usuario: { select: { id: true, nome: true, email: true } },
+                _count: { select: { pedidos: true } },
+                recebimento: {
+                  select: {
+                    id: true,
+                    confirmadoEm: true,
+                    confirmadoAdminEm: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      orderBy: { janelaInicio: 'desc' },
+    });
+
+    const linhas = lotes
+      .map((lote) => {
+        const submissoesAtuais = lote.participantes
+          .map((p) => p.submissaoAtual)
+          .filter((submissao): submissao is NonNullable<typeof submissao> =>
+            Boolean(submissao),
+          );
+
+        let submissoesFiltradas = submissoesAtuais;
+        if (filter.arquivada !== undefined) {
+          submissoesFiltradas = submissoesFiltradas.filter(
+            (submissao) => submissao.arquivada === filter.arquivada,
+          );
+        }
+        if (filter.status !== undefined) {
+          submissoesFiltradas = submissoesFiltradas.filter(
+            (submissao) => submissao.status === filter.status,
+          );
+        }
+
+        if (submissoesFiltradas.length === 0) {
+          return null;
+        }
+
+        const faltantes = lote.participantes.filter((p) => !p.recebida);
+        const faltantesNomes = faltantes.map((p) => p.lista.nome);
+        const status = this.serializarStatusConsolidado(lote.status, lote.janelaFim);
+        const listaConsolidada = lote.grupo
+          ? { id: lote.grupo.id, nome: lote.grupo.nome }
+          : lote.listaPai
+            ? { id: lote.listaPai.id, nome: lote.listaPai.nome }
+            : { id: lote.id, nome: `Lote ${lote.id}` };
+
+        const submissoesOrdenadas = submissoesFiltradas
+          .map((submissao) => ({
+            id: submissao.id,
+            status: submissao.status,
+            arquivada: submissao.arquivada,
+            criadoEm: submissao.criadoEm,
+            usuario: submissao.usuario,
+            totalPedidos: submissao._count.pedidos,
+            hasRecebimento: Boolean(submissao.recebimento?.id),
+          }))
+          .sort((a, b) => b.criadoEm.getTime() - a.criadoEm.getTime());
+
+        const totalPedidos = submissoesOrdenadas.reduce(
+          (acc, submissao) => acc + submissao.totalPedidos,
+          0,
+        );
+        const recebidas = submissoesOrdenadas.filter(
+          (submissao) => submissao.hasRecebimento,
+        ).length;
+
+        return {
+          id: String(lote.id),
+          lista: listaConsolidada,
+          dataReferencia: lote.janelaInicio,
+          status,
+          mensagem: this.getMensagemConsolidado(
+            status,
+            lote.participantes.length,
+            faltantesNomes,
+            lote.janelaFim,
+          ),
+          totalSubmissoes: lote.participantes.length,
+          totalPedidos,
+          recebidas,
+          submissoesParaRecebimento: submissoesOrdenadas
+            .filter(
+              (submissao) =>
+                !submissao.hasRecebimento &&
+                (submissao.status === StatusSubmissao.APROVADO ||
+                  submissao.status === StatusSubmissao.PARCIAL),
+            )
+            .map((submissao) => submissao.id),
+          submissoesArquivaveis: submissoesOrdenadas
+            .filter((submissao) => !submissao.arquivada)
+            .map((submissao) => submissao.id),
+          submissoesDesarquivaveis: submissoesOrdenadas
+            .filter((submissao) => submissao.arquivada)
+            .map((submissao) => submissao.id),
+          submissoes: submissoesOrdenadas,
+          sublistasFaltantes: faltantesNomes,
+        };
+      })
+      .filter((linha): linha is NonNullable<typeof linha> => Boolean(linha));
+
+    return linhas.sort(
+      (a, b) =>
+        new Date(b.dataReferencia).getTime() - new Date(a.dataReferencia).getTime(),
+    );
+  }
+
   // ─── Admin endpoints ───────────────────────────────────────────────────────
 
   async findAllAdmin(restauranteId: number, filter: FilterSubmissoesDto) {
+    if (filter.tipo === TipoFiltroSubmissoes.CONSOLIDADAS) {
+      return this.findAllConsolidadasAdmin(restauranteId, filter);
+    }
+
     const where: any = { restauranteId };
 
     if (filter.status !== undefined) {
@@ -246,6 +430,139 @@ export class SubmissoesService {
     return submissao;
   }
 
+  private async findLoteConsolidadoOrFail(id: number, restauranteId: number) {
+    const lote = await this.prisma.submissaoConsolidadaLote.findFirst({
+      where: { id, restauranteId },
+      include: {
+        participantes: {
+          include: {
+            lista: { select: { id: true, nome: true } },
+          },
+          orderBy: { id: 'asc' },
+        },
+      },
+    });
+
+    if (!lote) {
+      throw new NotFoundException('Lote consolidado não encontrado');
+    }
+
+    return lote;
+  }
+
+  async aprovarLoteConsolidado(
+    id: number,
+    restauranteId: number,
+    adminId: number,
+    confirmarParcial = false,
+  ) {
+    const admin = await this.prisma.usuario.findFirst({
+      where: {
+        id: adminId,
+        restauranteId,
+        role: { in: [UserRole.ADMIN, UserRole.SUPER_ADMIN] },
+      },
+      select: { id: true },
+    });
+    if (!admin) {
+      throw new NotFoundException('Administrador não encontrado');
+    }
+
+    const lote = await this.findLoteConsolidadoOrFail(id, restauranteId);
+    const faltantes = lote.participantes.filter((p) => !p.recebida);
+
+    if (faltantes.length > 0 && !confirmarParcial) {
+      throw new ConflictException({
+        message: 'Ainda há sublistas faltantes para este lote',
+        confirmacaoNecessaria: true,
+        faltantes: faltantes.map((p) => p.lista.nome),
+      });
+    }
+
+    const submissaoIds = lote.participantes
+      .map((p) => p.submissaoAtualId)
+      .filter((submissaoId): submissaoId is number => Boolean(submissaoId));
+
+    if (submissaoIds.length === 0) {
+      throw new BadRequestException('Não há submissões para aprovar neste lote');
+    }
+
+    await this.prisma.pedido.updateMany({
+      where: {
+        submissaoId: { in: submissaoIds },
+        status: StatusPedido.PENDENTE,
+      },
+      data: { status: StatusPedido.APROVADO },
+    });
+
+    await Promise.all(
+      submissaoIds.map((submissaoId) => this.recalcularStatusSubmissao(submissaoId)),
+    );
+
+    const novoStatus =
+      faltantes.length > 0
+        ? StatusLoteConsolidado.APROVADO_PARCIAL
+        : StatusLoteConsolidado.APROVADO_COMPLETO;
+
+    const atualizado = await this.prisma.submissaoConsolidadaLote.update({
+      where: { id },
+      data: {
+        status: novoStatus,
+        aprovadoEm: new Date(),
+        aprovadoPorId: admin.id,
+      },
+      include: {
+        participantes: {
+          include: {
+            lista: { select: { id: true, nome: true } },
+            submissaoAtual: { select: { id: true, status: true } },
+          },
+        },
+      },
+    });
+
+    return atualizado;
+  }
+
+  async reverterLoteConsolidado(id: number, restauranteId: number) {
+    const lote = await this.findLoteConsolidadoOrFail(id, restauranteId);
+    const submissaoIds = lote.participantes
+      .map((p) => p.submissaoAtualId)
+      .filter((submissaoId): submissaoId is number => Boolean(submissaoId));
+
+    if (submissaoIds.length === 0) {
+      throw new BadRequestException('Não há submissões para reverter neste lote');
+    }
+
+    await this.prisma.pedido.updateMany({
+      where: { submissaoId: { in: submissaoIds } },
+      data: { status: StatusPedido.PENDENTE },
+    });
+
+    await Promise.all(
+      submissaoIds.map((submissaoId) =>
+        this.prisma.submissao.update({
+          where: { id: submissaoId },
+          data: { status: StatusSubmissao.PENDENTE },
+        }),
+      ),
+    );
+
+    const possuiFaltantes = lote.participantes.some((p) => !p.recebida);
+    await this.prisma.submissaoConsolidadaLote.update({
+      where: { id },
+      data: {
+        status: possuiFaltantes
+          ? StatusLoteConsolidado.AGUARDANDO_SUBLISTAS
+          : StatusLoteConsolidado.PRONTO_PARA_APROVAR,
+        aprovadoEm: null,
+        aprovadoPorId: null,
+      },
+    });
+
+    return { message: 'Lote consolidado revertido para pendente' };
+  }
+
   async aprovarSubmissao(id: number, restauranteId: number) {
     await this.findSubmissaoOrFail(id, restauranteId);
 
@@ -255,6 +572,7 @@ export class SubmissoesService {
     });
 
     await this.recalcularStatusSubmissao(id);
+    await recalcularLotesPorSubmissao(this.prisma, id);
 
     return this.findOneAdmin(id, restauranteId);
   }
@@ -268,6 +586,7 @@ export class SubmissoesService {
     });
 
     await this.recalcularStatusSubmissao(id);
+    await recalcularLotesPorSubmissao(this.prisma, id);
 
     return this.findOneAdmin(id, restauranteId);
   }
@@ -308,6 +627,7 @@ export class SubmissoesService {
     });
 
     await this.recalcularStatusSubmissao(pedido.submissaoId);
+    await recalcularLotesPorSubmissao(this.prisma, pedido.submissaoId);
 
     return pedidoAtualizado;
   }
@@ -324,6 +644,7 @@ export class SubmissoesService {
       where: { id },
       data: { status: StatusSubmissao.PENDENTE },
     });
+    await recalcularLotesPorSubmissao(this.prisma, id);
 
     return this.findOneAdmin(id, restauranteId);
   }
@@ -335,6 +656,20 @@ export class SubmissoesService {
       where: { id },
       data: { arquivada: true, status: StatusSubmissao.ARQUIVADO },
     });
+
+    return this.findOneAdmin(id, restauranteId);
+  }
+
+  async desarquivarSubmissao(id: number, restauranteId: number) {
+    await this.findSubmissaoOrFail(id, restauranteId);
+
+    await this.prisma.submissao.update({
+      where: { id },
+      data: { arquivada: false },
+    });
+
+    await this.recalcularStatusSubmissao(id);
+    await recalcularLotesPorSubmissao(this.prisma, id);
 
     return this.findOneAdmin(id, restauranteId);
   }

@@ -10,6 +10,7 @@ import { UpdateAreaDto } from './dto/update-area.dto';
 import { SetColaboradoresDto } from './dto/set-colaboradores.dto';
 import { SetListasDto } from './dto/set-listas.dto';
 import { AtualizarEstoqueAreaDto } from './dto/atualizar-estoque-area.dto';
+import { registrarSubmissaoEmLoteConsolidado } from '../submissoes/lote-consolidado.helper';
 
 @Injectable()
 export class AreasService {
@@ -282,6 +283,13 @@ export class AreasService {
         },
         include: { pedidos: { include: { item: true } } },
       });
+
+      await registrarSubmissaoEmLoteConsolidado(this.prisma, {
+        submissaoId: submissao.id,
+        listaId: lista.id,
+        restauranteId,
+      });
+
       resultados.push(submissao);
     }
 

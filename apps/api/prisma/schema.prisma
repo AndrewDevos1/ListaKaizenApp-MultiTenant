@@ -60,6 +60,13 @@ enum StatusSubmissao {
   ARQUIVADO
 }
 
+enum StatusLoteConsolidado {
+  AGUARDANDO_SUBLISTAS
+  PRONTO_PARA_APROVAR
+  APROVADO_PARCIAL
+  APROVADO_COMPLETO
+}
+
 enum StatusPedido {
   PENDENTE
   APROVADO
@@ -77,7 +84,9 @@ model Restaurante {
   items          Item[]
   areas          Area[]
   listas         Lista[]
+  listaGrupos    ListaGrupo[]
   submissoes     Submissao[]
+  lotesConsolidados SubmissaoConsolidadaLote[]
   fornecedores   Fornecedor[]
   cotacoes       Cotacao[]
   checklists     Checklist[]
@@ -117,6 +126,7 @@ model Usuario {
   pushSubscriptions PushSubscription[]
   recebimentosConfirmados      Recebimento[] @relation("RecebimentoConfirmadoPor")
   recebimentosAdministrativos  Recebimento[] @relation("RecebimentoConfirmadoAdmin")
+  lotesConsolidadosAprovados   SubmissaoConsolidadaLote[] @relation("LoteConsolidadoAprovadoPor")
 
   @@map("usuarios")
 }
@@ -173,16 +183,38 @@ model Lista {
   descricao     String?
   restauranteId Int      @map("restaurante_id")
   areaId        Int?     @map("area_id")
+  nomeGrupo     String?  @map("nome_grupo")
+  grupoId       Int?     @map("grupo_id")
+  listaPaiId    Int?     @map("lista_pai_id")
   deletado      Boolean  @default(false)
   criadoEm      DateTime @default(now()) @map("criado_em")
 
   restaurante   Restaurante        @relation(fields: [restauranteId], references: [id])
   area          Area?              @relation(fields: [areaId], references: [id], onDelete: SetNull)
+  grupo         ListaGrupo?        @relation(fields: [grupoId], references: [id], onDelete: SetNull)
+  listaPai      Lista?             @relation("ListaPaiSublistas", fields: [listaPaiId], references: [id], onDelete: SetNull)
+  sublistas     Lista[]            @relation("ListaPaiSublistas")
   colaboradores ListaColaborador[]
   itensRef      ListaItemRef[]
   submissoes    Submissao[]
+  participacoesConsolidadas SubmissaoConsolidadaParticipante[]
+  lotesComoPai  SubmissaoConsolidadaLote[] @relation("LoteListaPai")
 
   @@map("listas")
+}
+
+model ListaGrupo {
+  id            Int      @id @default(autoincrement())
+  restauranteId Int      @map("restaurante_id")
+  nome          String
+  criadoEm      DateTime @default(now()) @map("criado_em")
+  atualizadoEm  DateTime @updatedAt @map("atualizado_em")
+
+  restaurante Restaurante @relation(fields: [restauranteId], references: [id])
+  listas      Lista[]
+  lotesConsolidados SubmissaoConsolidadaLote[]
+
+  @@map("listas_grupos")
 }
 
 model ListaColaborador {
@@ -247,8 +279,50 @@ model Submissao {
   pedidos     Pedido[]
   checklist   Checklist?
   recebimento Recebimento?
+  participacaoConsolidadaAtual SubmissaoConsolidadaParticipante? @relation("ParticipanteSubmissaoAtual")
 
   @@map("submissoes")
+}
+
+model SubmissaoConsolidadaLote {
+  id            Int                   @id @default(autoincrement())
+  restauranteId Int                   @map("restaurante_id")
+  grupoId       Int?                  @map("grupo_id")
+  listaPaiId    Int?                  @map("lista_pai_id")
+  janelaInicio  DateTime              @map("janela_inicio")
+  janelaFim     DateTime              @map("janela_fim")
+  status        StatusLoteConsolidado @default(AGUARDANDO_SUBLISTAS)
+  aprovadoEm    DateTime?             @map("aprovado_em")
+  aprovadoPorId Int?                  @map("aprovado_por_id")
+  criadoEm      DateTime              @default(now()) @map("criado_em")
+  atualizadoEm  DateTime              @updatedAt @map("atualizado_em")
+
+  restaurante Restaurante @relation(fields: [restauranteId], references: [id])
+  grupo       ListaGrupo? @relation(fields: [grupoId], references: [id], onDelete: SetNull)
+  listaPai    Lista?      @relation("LoteListaPai", fields: [listaPaiId], references: [id], onDelete: SetNull)
+  aprovadoPor Usuario?    @relation("LoteConsolidadoAprovadoPor", fields: [aprovadoPorId], references: [id], onDelete: SetNull)
+  participantes SubmissaoConsolidadaParticipante[]
+
+  @@index([restauranteId, status])
+  @@map("submissoes_consolidadas_lotes")
+}
+
+model SubmissaoConsolidadaParticipante {
+  id              Int      @id @default(autoincrement())
+  loteId          Int      @map("lote_id")
+  listaId         Int      @map("lista_id")
+  submissaoAtualId Int?    @unique @map("submissao_atual_id")
+  recebida        Boolean  @default(false)
+  criadoEm        DateTime @default(now()) @map("criado_em")
+  atualizadoEm    DateTime @updatedAt @map("atualizado_em")
+
+  lote          SubmissaoConsolidadaLote @relation(fields: [loteId], references: [id], onDelete: Cascade)
+  lista         Lista                    @relation(fields: [listaId], references: [id], onDelete: Cascade)
+  submissaoAtual Submissao?              @relation("ParticipanteSubmissaoAtual", fields: [submissaoAtualId], references: [id], onDelete: SetNull)
+
+  @@unique([loteId, listaId])
+  @@index([listaId])
+  @@map("submissoes_consolidadas_participantes")
 }
 
 model Pedido {
