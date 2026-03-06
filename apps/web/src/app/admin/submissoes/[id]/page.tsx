@@ -107,11 +107,17 @@ export default function AdminSubmissaoDetailPage() {
     }
   };
 
-  const handlePedidoStatus = (pedidoId: number, status: 'APROVADO' | 'REJEITADO') => {
+  const handlePedidoStatus = (pedidoId: number, status: 'PENDENTE' | 'APROVADO' | 'REJEITADO') => {
+    const actionLabel =
+      status === 'PENDENTE'
+        ? 'desfeito para pendente'
+        : status === 'APROVADO'
+        ? 'aprovado'
+        : 'rejeitado';
     execAction(
       `pedido-${pedidoId}-${status}`,
       () => api.put(`/v1/admin/pedidos/${pedidoId}/status`, { status }),
-      `Pedido ${status.toLowerCase()} com sucesso`,
+      `Pedido ${actionLabel} com sucesso`,
     );
   };
 
@@ -371,22 +377,35 @@ export default function AdminSubmissaoDetailPage() {
                     </td>
                     <td className={styles.tableCell}>
                       <div className={styles.actionButtons}>
-                        <Button
-                          size="sm"
-                          variant="outline-success"
-                          disabled={!!actionLoading || pedido.status !== 'PENDENTE' || submissao.arquivada}
-                          onClick={() => handlePedidoStatus(pedido.id, 'APROVADO')}
-                        >
-                          {isLoading(`pedido-${pedido.id}-APROVADO`) ? <Spinner animation="border" size="sm" /> : 'Aprovar'}
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline-danger"
-                          disabled={!!actionLoading || pedido.status !== 'PENDENTE' || submissao.arquivada}
-                          onClick={() => handlePedidoStatus(pedido.id, 'REJEITADO')}
-                        >
-                          {isLoading(`pedido-${pedido.id}-REJEITADO`) ? <Spinner animation="border" size="sm" /> : 'Rejeitar'}
-                        </Button>
+                        {pedido.status === 'PENDENTE' ? (
+                          <>
+                            <Button
+                              size="sm"
+                              variant="outline-success"
+                              disabled={!!actionLoading || submissao.arquivada}
+                              onClick={() => handlePedidoStatus(pedido.id, 'APROVADO')}
+                            >
+                              {isLoading(`pedido-${pedido.id}-APROVADO`) ? <Spinner animation="border" size="sm" /> : 'Aprovar'}
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline-danger"
+                              disabled={!!actionLoading || submissao.arquivada}
+                              onClick={() => handlePedidoStatus(pedido.id, 'REJEITADO')}
+                            >
+                              {isLoading(`pedido-${pedido.id}-REJEITADO`) ? <Spinner animation="border" size="sm" /> : 'Rejeitar'}
+                            </Button>
+                          </>
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="outline-secondary"
+                            disabled={!!actionLoading || submissao.arquivada}
+                            onClick={() => handlePedidoStatus(pedido.id, 'PENDENTE')}
+                          >
+                            {isLoading(`pedido-${pedido.id}-PENDENTE`) ? <Spinner animation="border" size="sm" /> : 'Desfazer'}
+                          </Button>
+                        )}
                       </div>
                     </td>
                   </tr>

@@ -68,5 +68,33 @@ describe('SubmissoesService', () => {
       data: { status: StatusSubmissao.APROVADO },
     });
   });
-});
 
+  it('deve permitir desfazer pedido aprovado para pendente', async () => {
+    const { prisma, service } = makeService();
+    prisma.pedido.findFirst.mockResolvedValue({
+      id: 100,
+      submissaoId: 1,
+      status: StatusPedido.APROVADO,
+    });
+    prisma.pedido.update.mockResolvedValue({
+      id: 100,
+      status: StatusPedido.PENDENTE,
+    });
+    prisma.pedido.findMany.mockResolvedValue([
+      { status: StatusPedido.PENDENTE },
+      { status: StatusPedido.REJEITADO },
+    ]);
+
+    await service.updatePedidoStatus(100, 10, { status: StatusPedido.PENDENTE });
+
+    expect(prisma.pedido.update).toHaveBeenCalledWith({
+      where: { id: 100 },
+      data: { status: StatusPedido.PENDENTE },
+      include: { item: true },
+    });
+    expect(prisma.submissao.update).toHaveBeenCalledWith({
+      where: { id: 1 },
+      data: { status: StatusSubmissao.PENDENTE },
+    });
+  });
+});

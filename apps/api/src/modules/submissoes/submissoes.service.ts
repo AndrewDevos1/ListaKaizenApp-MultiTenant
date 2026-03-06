@@ -139,10 +139,16 @@ export class SubmissoesService {
       throw new NotFoundException('Pedido não encontrado');
     }
 
-    // Apenas pedidos PENDENTE podem ter o status alterado individualmente
-    if (pedido.status !== StatusPedido.PENDENTE) {
+    // Regras de transição:
+    // - PENDENTE -> APROVADO | REJEITADO
+    // - APROVADO | REJEITADO -> PENDENTE (desfazer)
+    if (dto.status === StatusPedido.PENDENTE) {
+      if (pedido.status === StatusPedido.PENDENTE) {
+        throw new BadRequestException('Pedido já está em PENDENTE');
+      }
+    } else if (pedido.status !== StatusPedido.PENDENTE) {
       throw new BadRequestException(
-        `Apenas pedidos PENDENTE podem ser alterados. Status atual: ${pedido.status}`,
+        `Apenas pedidos PENDENTE podem ser aprovados/rejeitados. Status atual: ${pedido.status}`,
       );
     }
 
