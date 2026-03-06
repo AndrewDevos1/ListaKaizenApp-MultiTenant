@@ -537,6 +537,15 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
             >
               <FaChevronRight style={{ transform: isCollapsed ? 'rotate(180deg)' : 'rotate(0deg)' }} />
             </button>
+            <button
+              className={styles.mobileCloseBtn}
+              onClick={closeMobileMenu}
+              aria-label="Fechar menu"
+              title="Fechar menu"
+              type="button"
+            >
+              <FaTimes />
+            </button>
           </div>
         </div>
 
@@ -690,7 +699,11 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
                 <FaQuestionCircle />
                 Ajuda & Suporte
               </Link>
-              <Link href={isAdmin ? '/admin/configuracoes' : '/collaborator/configuracoes'} className={styles.footerLink}>
+              <Link
+                href={isAdmin ? '/admin/configuracoes' : '/collaborator/configuracoes'}
+                className={styles.footerLink}
+                onClick={closeMobileMenu}
+              >
                 <FaCog />
                 Configurações
               </Link>
@@ -700,7 +713,12 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
               <Link href="#" className={`${styles.footerIconLink} ${styles.footerLinkDisabled}`} title="Ajuda & Suporte (em breve)">
                 <FaQuestionCircle />
               </Link>
-              <Link href={isAdmin ? '/admin/configuracoes' : '/collaborator/configuracoes'} className={styles.footerIconLink} title="Configurações">
+              <Link
+                href={isAdmin ? '/admin/configuracoes' : '/collaborator/configuracoes'}
+                className={styles.footerIconLink}
+                title="Configurações"
+                onClick={closeMobileMenu}
+              >
                 <FaCog />
               </Link>
             </div>
