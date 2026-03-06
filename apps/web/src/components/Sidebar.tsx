@@ -42,6 +42,13 @@ import {
 import styles from './Sidebar.module.css';
 import Breadcrumbs from './Breadcrumbs';
 import NotificationBell from './NotificationBell';
+import {
+  type NavbarStyle,
+  getNavbarStyle,
+  NAVBAR_STYLE_CHANGE_EVENT,
+  NAVBAR_STYLE_STORAGE_KEY,
+  normalizeNavbarStyle,
+} from '@/lib/navbarStyle';
 
 interface MenuItem {
   label: string;
@@ -62,7 +69,10 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isToggled, setIsToggled] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [isMobileCollapsed, setIsMobileCollapsed] = useState(true);
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [navbarStyle, setNavbarStyle] = useState<NavbarStyle>('current');
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
   const searchRef = useRef<HTMLInputElement>(null);
@@ -70,15 +80,22 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
   const touchStartY = useRef<number | null>(null);
   const touchEndX = useRef<number | null>(null);
   const touchEndY = useRef<number | null>(null);
+  const isLegacyStyle = navbarStyle === 'next';
+  const isMenuCollapsed = isLegacyStyle ? (isMobile ? isMobileCollapsed : isCollapsed) : isCollapsed;
 
   const expandSidebarForSearch = useCallback(() => {
+    if (isLegacyStyle && isMobile) {
+      setIsMobileCollapsed(false);
+      return;
+    }
+
     setIsCollapsed((prev) => {
       if (prev) {
         localStorage.setItem('sidebarCollapsed', 'false');
       }
       return false;
     });
-  }, []);
+  }, [isLegacyStyle, isMobile]);
 
   // Initialize dark mode from localStorage
   useEffect(() => {
@@ -89,14 +106,41 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  // Initialize collapsed state from localStorage (desktop only)
+  // Initialize navbar style from localStorage and keep it in sync
   useEffect(() => {
-    const isMobile = window.innerWidth <= 768;
-    if (!isMobile) {
+    setNavbarStyle(getNavbarStyle());
+
+    const handleStorageChange = (event: StorageEvent) => {
+      if (event.key !== NAVBAR_STYLE_STORAGE_KEY) return;
+      setNavbarStyle(normalizeNavbarStyle(event.newValue));
+    };
+
+    const handleNavbarStyleChange = (event: Event) => {
+      const customEvent = event as CustomEvent<NavbarStyle>;
+      setNavbarStyle(normalizeNavbarStyle(customEvent.detail));
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener(NAVBAR_STYLE_CHANGE_EVENT, handleNavbarStyleChange);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener(NAVBAR_STYLE_CHANGE_EVENT, handleNavbarStyleChange);
+    };
+  }, []);
+
+  // Initialize collapsed state from localStorage
+  useEffect(() => {
+    const mobile = window.innerWidth < 768;
+    setIsMobile(mobile);
+
+    if (!mobile) {
       const savedCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
       setIsCollapsed(savedCollapsed);
+    } else if (isLegacyStyle) {
+      setIsMobileCollapsed(true);
     }
-  }, []);
+  }, [isLegacyStyle]);
 
   // Initialize expanded groups from localStorage
   useEffect(() => {
@@ -129,22 +173,52 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
 
   // Persist collapsed state
   const handleToggleCollapse = useCallback(() => {
+    if (isLegacyStyle && isMobile) {
+      setIsMobileCollapsed((prev) => !prev);
+      return;
+    }
+
     setIsCollapsed((prev) => {
       const newState = !prev;
       localStorage.setItem('sidebarCollapsed', newState.toString());
       return newState;
     });
-  }, []);
+  }, [isLegacyStyle, isMobile]);
 
   // Toggle mobile sidebar
   const handleToggleMobile = useCallback(() => {
-    setIsToggled((prev) => !prev);
-  }, []);
+    if (!isLegacyStyle) {
+      setIsToggled((prev) => !prev);
+      return;
+    }
+
+    if (!isMobile) {
+      setIsToggled((prev) => !prev);
+      return;
+    }
+
+    if (!isToggled) {
+      setIsMobileCollapsed(true);
+      setIsToggled(true);
+      return;
+    }
+
+    if (isMobileCollapsed) {
+      setIsMobileCollapsed(false);
+      return;
+    }
+
+    setIsToggled(false);
+    setIsMobileCollapsed(true);
+  }, [isLegacyStyle, isMobile, isToggled, isMobileCollapsed]);
 
   // Close mobile sidebar on link click
   const closeMobileMenu = useCallback(() => {
     setIsToggled(false);
-  }, []);
+    if (isLegacyStyle) {
+      setIsMobileCollapsed(true);
+    }
+  }, [isLegacyStyle]);
 
   // Toggle group expansion
   const toggleGroup = useCallback((groupId: string) => {
@@ -173,12 +247,17 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
   // Keyboard shortcuts: Escape to close, "/" to focus search
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && searchTerm) {
+        setSearchTerm('');
+      }
+
       if (e.key === 'Escape' && isToggled) {
         setIsToggled(false);
       }
-      if (e.key === '/' && !isToggled) {
+
+      if (e.key === '/' && !['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement).tagName)) {
         e.preventDefault();
-        if (isCollapsed) {
+        if (isMenuCollapsed) {
           expandSidebarForSearch();
           setTimeout(() => searchRef.current?.focus(), 0);
         } else {
@@ -188,8 +267,12 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
     };
 
     const handleResize = () => {
-      if (window.innerWidth > 768) {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+
+      if (!mobile) {
         setIsToggled(false);
+        setIsMobileCollapsed(true);
         const savedCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
         setIsCollapsed(savedCollapsed);
       }
@@ -201,7 +284,7 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('resize', handleResize);
     };
-  }, [isToggled, isCollapsed, expandSidebarForSearch]);
+  }, [isToggled, isMenuCollapsed, searchTerm, expandSidebarForSearch]);
 
   // Swipe gesture for mobile (sidebar direita):
   // - Swipe para esquerda na borda direita abre
@@ -242,8 +325,14 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
 
     if (isLeftSwipe && !isToggled && touchStartX.current > window.innerWidth - 60) {
       setIsToggled(true);
+      if (isLegacyStyle) {
+        setIsMobileCollapsed(true);
+      }
     } else if (isRightSwipe && isToggled) {
       setIsToggled(false);
+      if (isLegacyStyle) {
+        setIsMobileCollapsed(true);
+      }
     }
   };
 
@@ -543,13 +632,34 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
       .filter((group) => group.items.length > 0);
   }, [searchTerm, allMenuGroups]);
 
+  useEffect(() => {
+    if (!searchTerm.trim() || filteredGroups.length === 0) return;
+
+    setExpandedGroups((prev) => {
+      const next = { ...prev };
+      let changed = false;
+
+      filteredGroups.forEach((group) => {
+        if (!next[group.id]) {
+          next[group.id] = true;
+          changed = true;
+        }
+      });
+
+      if (!changed) return prev;
+      localStorage.setItem('expandedGroups', JSON.stringify(next));
+      return next;
+    });
+  }, [searchTerm, filteredGroups]);
+
   const isMenuItemActive = (href: string): boolean => {
     return pathname === href || pathname.startsWith(`${href}/`);
   };
 
   return (
     <div
-      className={`${styles.wrapper} ${isCollapsed ? styles.collapsed : ''} ${isToggled ? styles.toggled : ''}`}
+      className={`${styles.wrapper} ${isMenuCollapsed ? styles.collapsed : ''} ${isToggled ? styles.toggled : ''}`}
+      data-navbar-style={navbarStyle}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
@@ -567,27 +677,29 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
             <button
               className={styles.collapseBtn}
               onClick={handleToggleCollapse}
-              aria-label={isCollapsed ? 'Expandir menu' : 'Recolher menu'}
-              title={isCollapsed ? 'Expandir menu' : 'Recolher menu'}
+              aria-label={isMenuCollapsed ? 'Expandir menu' : 'Recolher menu'}
+              title={isMenuCollapsed ? 'Expandir menu' : 'Recolher menu'}
             >
-              <FaChevronRight style={{ transform: isCollapsed ? 'rotate(180deg)' : 'rotate(0deg)' }} />
+              <FaChevronRight style={{ transform: isMenuCollapsed ? 'rotate(180deg)' : 'rotate(0deg)' }} />
             </button>
-            <button
-              className={styles.mobileCloseBtn}
-              onClick={closeMobileMenu}
-              aria-label="Fechar menu"
-              title="Fechar menu"
-              type="button"
-            >
-              <FaTimes />
-            </button>
+            {!isLegacyStyle && (
+              <button
+                className={styles.mobileCloseBtn}
+                onClick={closeMobileMenu}
+                aria-label="Fechar menu"
+                title="Fechar menu"
+                type="button"
+              >
+                <FaTimes />
+              </button>
+            )}
           </div>
         </div>
 
         {/* User Info */}
         <div className={styles.userInfo}>
           <div className={styles.userAvatar}>
-            {isCollapsed ? (
+            {isMenuCollapsed ? (
               <div className={styles.userAvatarIcon}>
                 {user.avatarUrl ? (
                   <img src={user.avatarUrl} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
@@ -610,7 +722,7 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
         </div>
 
         {/* Search */}
-        {!isCollapsed && (
+        {!isMenuCollapsed && (
           <div className={styles.searchContainer}>
             <FaSearch className={styles.searchIcon} />
             <input
@@ -638,21 +750,25 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
 
         {/* Menu Container */}
         <div className={styles.menuContainer}>
-          {filteredGroups.map((group) => (
+          {filteredGroups.map((group, groupIndex) => (
             <div key={group.id} className={styles.menuGroup}>
-              <button
-                className={styles.groupLabel}
-                onClick={() => toggleGroup(group.id)}
-                aria-label={`${expandedGroups[group.id] ? 'Recolher' : 'Expandir'} ${group.label}`}
-              >
-                <span>{group.label}</span>
-                <FaChevronRight className={expandedGroups[group.id] ? styles.rotated : ''} />
-              </button>
-              {expandedGroups[group.id] && (
+              {isLegacyStyle && isMenuCollapsed && groupIndex > 0 ? (
+                <div className={styles.menuDivider} aria-hidden="true" />
+              ) : (
+                <button
+                  className={styles.groupLabel}
+                  onClick={() => toggleGroup(group.id)}
+                  aria-label={`${expandedGroups[group.id] ? 'Recolher' : 'Expandir'} ${group.label}`}
+                >
+                  <span>{group.label}</span>
+                  <FaChevronRight className={expandedGroups[group.id] ? styles.rotated : ''} />
+                </button>
+              )}
+              {(isMenuCollapsed || expandedGroups[group.id]) && (
                 <div className={styles.menuItems}>
                   {group.items.map((item, itemIndex) => {
                     const isDisabled = item.status === 'soon' || !item.href;
-                    const title = isCollapsed
+                    const title = isMenuCollapsed
                       ? item.status === 'soon'
                         ? `${item.label} (em breve)`
                         : item.label
@@ -714,7 +830,7 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
         </div>
 
         {/* Sidebar Footer */}
-        <div className={styles.sidebarFooter}>
+        {(!isLegacyStyle || !isMenuCollapsed) && <div className={styles.sidebarFooter}>
           <div className={styles.footerControls}>
             <button
               className={styles.themeToggleBtn}
@@ -725,10 +841,10 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
             >
               {isDarkMode ? <FaSun /> : <FaMoon />}
             </button>
-            {!isCollapsed && <label className={styles.themeToggleLabel}>{isDarkMode ? 'Claro' : 'Escuro'}</label>}
+            {!isMenuCollapsed && <label className={styles.themeToggleLabel}>{isDarkMode ? 'Claro' : 'Escuro'}</label>}
           </div>
 
-          {!isCollapsed ? (
+          {!isMenuCollapsed ? (
             <div className={styles.footerLinks}>
               <Link href="#" className={`${styles.footerLink} ${styles.footerLinkDisabled}`} title="Em breve">
                 <FaQuestionCircle />
@@ -759,7 +875,7 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
             </div>
           )}
           <div className={styles.footerVersion}>v3.0.29</div>
-        </div>
+        </div>}
       </nav>
 
       {/* Page Content Wrapper */}
@@ -776,8 +892,14 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
         title={isToggled ? 'Fechar menu' : 'Abrir menu'}
         aria-expanded={isToggled}
       >
-        <FaGripLinesVertical />
-        <FaChevronLeft />
+        {isLegacyStyle ? (
+          <FaChevronLeft className={styles.sidebarTabIcon} aria-hidden="true" />
+        ) : (
+          <>
+            <FaGripLinesVertical />
+            <FaChevronLeft />
+          </>
+        )}
       </button>
     </div>
   );
