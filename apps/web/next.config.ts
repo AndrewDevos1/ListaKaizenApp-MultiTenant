@@ -1,13 +1,12 @@
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
+  distDir: process.env.NEXT_DIST_DIR || '.next',
   transpilePackages: ['shared'],
   compress: true,
   productionBrowserSourceMaps: false,
-  experimental: {
-    // Tree-shake automático para pacotes pesados — reduz bundle significativamente
-    optimizePackageImports: ['react-icons', 'react-bootstrap', '@fortawesome/react-fontawesome'],
-  },
+  // Estabilidade em dev: evitar chunks inconsistentes com optimizePackageImports.
+  experimental: {},
 };
 
 export default nextConfig;

@@ -99,7 +99,14 @@
       "Bash(node -e \"\ntry {\n  const axiosPath = '/home/devos/Codigos-vscode/ListaKaizenApp-MultiTenant/node_modules/axios';\n  const {default: axios} = require\\(axiosPath\\);\n  const inst = axios.create\\({baseURL: 'http://localhost:3001/api'}\\);\n  const url1 = inst.getUri\\({url: '/v1/restaurantes/stats/global'}\\);\n  const url2 = inst.getUri\\({url: 'v1/restaurantes/stats/global'}\\);\n  console.log\\('with leading slash:', url1\\);\n  console.log\\('without leading slash:', url2\\);\n} catch\\(e\\) {\n  console.log\\('error:', e.message\\);\n}\")",
       "Bash(node -e \"const p = require\\('/home/devos/Codigos-vscode/ListaKaizenApp-MultiTenant/node_modules/axios/package.json'\\); console.log\\(p.version\\)\")",
       "Bash(cd /home/devos/Codigos-vscode/ListaKaizenApp-MultiTenant/apps/api && npx prisma migrate dev --name add-descricao-lista 2>&1)",
-      "Bash(cd /home/devos/Codigos-vscode/ListaKaizenApp-MultiTenant/apps/web && npx tsc --noEmit 2>&1 | head -40)"
+      "Bash(cd /home/devos/Codigos-vscode/ListaKaizenApp-MultiTenant/apps/web && npx tsc --noEmit 2>&1 | head -40)",
+      "Bash(git checkout restaurando-design && git stash pop 2>&1)",
+      "Bash(git stash drop 2>&1)",
+      "Bash(lsof -ti :3000)",
+      "Bash(ss -tlnp | grep :3000)",
+      "Bash(kill 16358)",
+      "Bash(ss -tlnp)",
+      "Bash(kill -9 18164 2>&1; sleep 1; ss -tlnp | grep :3000)"
     ],
     "deny": [],
     "ask": []

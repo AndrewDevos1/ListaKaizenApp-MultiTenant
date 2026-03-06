@@ -14,7 +14,7 @@ type StatusPedido = 'PENDENTE' | 'APROVADO' | 'REJEITADO';
 interface Pedido {
   id: number;
   status: StatusPedido;
-  quantidadeSolicitada: number;
+  qtdSolicitada: number;
   item: { id: number; nome: string; unidadeMedida: string };
 }
 
@@ -24,6 +24,13 @@ interface SubmissaoDetail {
   criadoEm: string;
   lista: { id: number; nome: string };
   pedidos: Pedido[];
+  recebimento?: {
+    id: number;
+    confirmadoEm?: string | null;
+    confirmadoAdminEm?: string | null;
+    confirmadoPor?: { nome: string } | null;
+    confirmadoAdmin?: { nome: string } | null;
+  } | null;
 }
 
 const STATUS_SUB_VARIANT: Record<StatusSubmissao, string> = {
@@ -39,6 +46,10 @@ const STATUS_PED_VARIANT: Record<StatusPedido, string> = {
   APROVADO: 'success',
   REJEITADO: 'danger',
 };
+
+function podeConfirmarRecebimento(status: StatusSubmissao) {
+  return status === 'APROVADO' || status === 'PARCIAL';
+}
 
 function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString('pt-BR', {
@@ -123,6 +134,39 @@ export default function CollaboratorSubmissaoDetailPage() {
 
         {error && <Alert variant="danger" dismissible onClose={() => setError('')}>{error}</Alert>}
 
+        {podeConfirmarRecebimento(submissao.status) && !submissao.recebimento && (
+          <div className={styles.tableSection} style={{ padding: '1rem 2rem' }}>
+            <div className={styles.actionButtons}>
+              <Link
+                href={`/collaborator/submissoes/${submissao.id}/recebimento`}
+                className="btn btn-sm btn-success"
+              >
+                Confirmar Recebimento
+              </Link>
+            </div>
+          </div>
+        )}
+
+        {submissao.recebimento && (
+          <div className={styles.tableSection} style={{ padding: '1rem 2rem' }}>
+            <div className={styles.actionButtons} style={{ alignItems: 'center' }}>
+              <Badge bg="success">Recebimento confirmado</Badge>
+              {submissao.recebimento.confirmadoEm && (
+                <span className={styles.cellMuted}>
+                  por {submissao.recebimento.confirmadoPor?.nome ?? 'colaborador'} em{' '}
+                  {formatDate(submissao.recebimento.confirmadoEm)}
+                </span>
+              )}
+              {submissao.recebimento.confirmadoAdminEm && (
+                <span className={styles.cellMuted}>
+                  · validado por {submissao.recebimento.confirmadoAdmin?.nome ?? 'admin'} em{' '}
+                  {formatDate(submissao.recebimento.confirmadoAdminEm)}
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Tabela de pedidos — somente leitura */}
         <div className={styles.tableSection}>
           <h2 className={styles.sectionTitle}>Itens Solicitados</h2>
@@ -143,7 +187,7 @@ export default function CollaboratorSubmissaoDetailPage() {
                       {pedido.item.nome}
                     </td>
                     <td className={styles.tableCell}>{pedido.item.unidadeMedida}</td>
-                    <td className={styles.tableCell}>{pedido.quantidadeSolicitada}</td>
+                    <td className={styles.tableCell}>{pedido.qtdSolicitada}</td>
                     <td className={styles.tableCell}>
                       <Badge bg={STATUS_PED_VARIANT[pedido.status] ?? 'secondary'}>
                         {pedido.status}

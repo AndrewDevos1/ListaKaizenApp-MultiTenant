@@ -1,4 +1,4 @@
-# 03 — Fase 3: Cotações, Merge e Checklists
+# 03 — Fase 3: Cotacoes, Merge e Checklists (Historico concluido)
 
 ## Objetivo
 
@@ -14,11 +14,11 @@ aprovadas em checklists de recebimento.
 
 ```
 POST /v1/admin/submissoes/merge-preview
-  Body: { submissaoIds: string[] }
+  Body: { submissaoIds: number[] }
   Retorna: lista de itens agrupados por itemId com soma de quantidades e breakdown por submissão
 
 POST /v1/admin/submissoes/merge-whatsapp
-  Body: { submissaoIds: string[], titulo?: string }
+  Body: { submissaoIds: number[], titulo?: string }
   Retorna: { texto: string } — texto formatado pronto para colar no WhatsApp
 ```
 
@@ -62,24 +62,24 @@ enum StatusCotacao {
 }
 
 model Cotacao {
-  id            String       @id @default(cuid())
+  id            Int       @id @default(autoincrement())
   titulo        String?
   status        StatusCotacao @default(ABERTA)
   restaurante   Restaurante  @relation(fields: [restauranteId], references: [id])
-  restauranteId String
+  restauranteId Int
   itens         CotacaoItem[]
   criadoEm     DateTime     @default(now())
   atualizadoEm DateTime     @updatedAt
 }
 
 model CotacaoItem {
-  id             String    @id @default(cuid())
+  id             Int    @id @default(autoincrement())
   cotacao        Cotacao   @relation(fields: [cotacaoId], references: [id])
-  cotacaoId      String
+  cotacaoId      Int
   item           Item      @relation(fields: [itemId], references: [id])
-  itemId         String
+  itemId         Int
   fornecedor     Fornecedor? @relation(fields: [fornecedorId], references: [id])
-  fornecedorId   String?
+  fornecedorId   Int?
   qtdSolicitada  Float
   precoUnitario  Float?
   criadoEm      DateTime  @default(now())
@@ -101,7 +101,7 @@ npx prisma migrate dev --name add-cotacoes
 
 ```
 POST /v1/admin/cotacoes
-  Body: { titulo?: string, submissaoIds?: string[] }
+  Body: { titulo?: string, submissaoIds?: number[] }
   Lógica: agrupa pedidos aprovados por fornecedor; cria CotacaoItem por item
 
 GET  /v1/admin/cotacoes          → listar com filtro de status
@@ -131,23 +131,23 @@ enum StatusChecklist {
 }
 
 model Checklist {
-  id            String          @id @default(cuid())
+  id            Int          @id @default(autoincrement())
   submissao     Submissao       @relation(fields: [submissaoId], references: [id])
-  submissaoId   String          @unique
+  submissaoId   Int          @unique
   status        StatusChecklist @default(ABERTO)
   restaurante   Restaurante     @relation(fields: [restauranteId], references: [id])
-  restauranteId String
+  restauranteId Int
   itens         ChecklistItem[]
   criadoEm     DateTime        @default(now())
   atualizadoEm DateTime        @updatedAt
 }
 
 model ChecklistItem {
-  id          String    @id @default(cuid())
+  id          Int    @id @default(autoincrement())
   checklist   Checklist @relation(fields: [checklistId], references: [id])
-  checklistId String
+  checklistId Int
   item        Item      @relation(fields: [itemId], references: [id])
-  itemId      String
+  itemId      Int
   qtdPedida   Float
   marcado     Boolean   @default(false)
   criadoEm   DateTime  @default(now())
@@ -168,7 +168,7 @@ npx prisma migrate dev --name add-checklists
 
 ```
 POST /v1/admin/checklists
-  Body: { submissaoId: string }
+  Body: { submissaoId: number }
   Lógica: copia pedidos APROVADOS da submissão para ChecklistItems
 
 GET  /v1/admin/checklists           → listar
@@ -198,9 +198,5 @@ git commit -m "feat: merge whatsapp, cotacoes e checklists"
 ```
 
 Após o commit:
-1. Anotar o hash: `git log --oneline -1`
-2. Atualizar `PONTEIRO.md`:
-   - Status: `FASE 4 — não iniciada`
-   - Última tarefa concluída: `3.5 — CRUD de Checklists`
-   - Próximo passo: `Iniciar Fase 4 — Tarefa 4.1`
-   - Última branch/commit: `<hash>`
+1. Registro historico desta fase: `3fee2c8`
+2. Entregas principais: merge WhatsApp, cotacoes e checklists.

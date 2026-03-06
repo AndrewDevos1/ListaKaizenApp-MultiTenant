@@ -1,4 +1,4 @@
-# 01 — Fase 1: Fluxo Core de Compras
+# 01 — Fase 1: Fluxo Core de Compras (Historico concluido)
 
 ## Objetivo
 
@@ -13,7 +13,7 @@ colaborador atualiza estoque → submete lista → admin aprova pedidos → admi
 
 - O campo `quantidadeAtual` já existe em `ListaItemRef`
 - Adicionar endpoint: `PUT /v1/collaborator/listas/:id/estoque`
-- Body: `{ itens: [{ itemRefId: string, quantidadeAtual: number }] }`
+- Body: `{ itens: [{ itemRefId: number, quantidadeAtual: number }] }`
 - Lógica: atualizar `quantidadeAtual` de cada item; calcular `pedido = max(0, qtdMin - qtdAtual)`
 - Guard: `COLLABORATOR` ou `ADMIN`, isolamento por `restauranteId`
 
@@ -52,13 +52,13 @@ enum StatusPedido {
 }
 
 model Submissao {
-  id            String          @id @default(cuid())
+  id            Int          @id @default(autoincrement())
   lista         Lista           @relation(fields: [listaId], references: [id])
-  listaId       String
+  listaId       Int
   usuario       Usuario         @relation(fields: [usuarioId], references: [id])
-  usuarioId     String
+  usuarioId     Int
   restaurante   Restaurante     @relation(fields: [restauranteId], references: [id])
-  restauranteId String
+  restauranteId Int
   status        StatusSubmissao @default(PENDENTE)
   arquivada     Boolean         @default(false)
   pedidos       Pedido[]
@@ -67,11 +67,11 @@ model Submissao {
 }
 
 model Pedido {
-  id            String       @id @default(cuid())
+  id            Int       @id @default(autoincrement())
   submissao     Submissao    @relation(fields: [submissaoId], references: [id])
-  submissaoId   String
+  submissaoId   Int
   item          Item         @relation(fields: [itemId], references: [id])
-  itemId        String
+  itemId        Int
   qtdSolicitada Float
   status        StatusPedido @default(PENDENTE)
   criadoEm     DateTime     @default(now())
@@ -205,9 +205,5 @@ git commit -m "feat: fluxo core de submissoes e aprovacoes"
 ```
 
 Após o commit:
-1. Anotar o hash: `git log --oneline -1`
-2. Atualizar `PONTEIRO.md`:
-   - Status: `FASE 2 — não iniciada`
-   - Última tarefa concluída: `1.7 — Gerenciar Usuários`
-   - Próximo passo: `Iniciar Fase 2 — Tarefa 2.1`
-   - Última branch/commit: `<hash>`
+1. Registro historico desta fase: `1e0917d`
+2. Entregas principais: submissoes, pedidos e gestao de usuarios.

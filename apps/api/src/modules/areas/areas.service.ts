@@ -15,6 +15,29 @@ import { AtualizarEstoqueAreaDto } from './dto/atualizar-estoque-area.dto';
 export class AreasService {
   constructor(private prisma: PrismaService) {}
 
+  private async validarUsuariosDoRestaurante(
+    usuarioIds: number[],
+    restauranteId: number,
+  ) {
+    const idsUnicos = Array.from(new Set(usuarioIds));
+    if (idsUnicos.length === 0) {
+      return idsUnicos;
+    }
+
+    const usuarios = await this.prisma.usuario.findMany({
+      where: { id: { in: idsUnicos }, restauranteId },
+      select: { id: true },
+    });
+
+    if (usuarios.length !== idsUnicos.length) {
+      throw new NotFoundException(
+        'Um ou mais colaboradores não pertencem ao restaurante informado',
+      );
+    }
+
+    return idsUnicos;
+  }
+
   async create(dto: CreateAreaDto, restauranteId: number) {
     return this.prisma.area.create({
       data: { ...dto, restauranteId },
@@ -56,7 +79,7 @@ export class AreasService {
   async getColaboradores(areaId: number, restauranteId: number) {
     await this.findOne(areaId, restauranteId);
     return this.prisma.areaColaborador.findMany({
-      where: { areaId },
+      where: { areaId, usuario: { restauranteId } },
       include: { usuario: { select: { id: true, nome: true, email: true } } },
     });
   }
@@ -67,12 +90,18 @@ export class AreasService {
     restauranteId: number,
   ) {
     await this.findOne(areaId, restauranteId);
+
+    const idsValidos = await this.validarUsuariosDoRestaurante(
+      dto.colaboradorIds,
+      restauranteId,
+    );
+
     await this.prisma.$transaction([
       this.prisma.areaColaborador.deleteMany({ where: { areaId } }),
-      ...(dto.colaboradorIds.length > 0
+      ...(idsValidos.length > 0
         ? [
             this.prisma.areaColaborador.createMany({
-              data: dto.colaboradorIds.map((usuarioId) => ({
+              data: idsValidos.map((usuarioId) => ({
                 areaId,
                 usuarioId,
               })),
@@ -222,10 +251,18 @@ export class AreasService {
         where: { listaId: lista.id },
       });
       const itensSolicitados = itensRef
-        .map((ref) => ({
-          itemId: ref.itemId,
-          qtdSolicitada: Math.max(0, ref.quantidadeMinima - ref.quantidadeAtual),
-        }))
+        .map((ref) => {
+          if (ref.quantidadeAtual >= ref.quantidadeMinima) {
+            return { itemId: ref.itemId, qtdSolicitada: 0 };
+          }
+          return {
+            itemId: ref.itemId,
+            qtdSolicitada:
+              ref.usaThreshold === true && ref.qtdFardo && ref.qtdFardo > 0
+                ? ref.qtdFardo
+                : Math.max(0, ref.quantidadeMinima - ref.quantidadeAtual),
+          };
+        })
         .filter((i) => i.qtdSolicitada > 0);
 
       if (itensSolicitados.length === 0) continue;

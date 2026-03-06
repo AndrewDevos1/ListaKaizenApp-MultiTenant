@@ -23,9 +23,25 @@ export class CotacoesService {
     }[] = [];
 
     if (submissaoIds && submissaoIds.length > 0) {
+      const submissaoIdsUnicos = Array.from(new Set(submissaoIds));
+
+      const submissoesDoRestaurante = await this.prisma.submissao.findMany({
+        where: {
+          id: { in: submissaoIdsUnicos },
+          restauranteId,
+        },
+        select: { id: true },
+      });
+
+      if (submissoesDoRestaurante.length !== submissaoIdsUnicos.length) {
+        throw new NotFoundException(
+          'Uma ou mais submissões não pertencem ao restaurante informado',
+        );
+      }
+
       const pedidos = await this.prisma.pedido.findMany({
         where: {
-          submissao: { id: { in: submissaoIds }, restauranteId },
+          submissao: { id: { in: submissaoIdsUnicos }, restauranteId },
           status: StatusPedido.APROVADO,
         },
         include: {
