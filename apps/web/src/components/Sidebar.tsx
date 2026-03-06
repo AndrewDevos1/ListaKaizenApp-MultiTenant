@@ -66,7 +66,10 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
   const searchRef = useRef<HTMLInputElement>(null);
-  const touchStartX = useRef(0);
+  const touchStartX = useRef<number | null>(null);
+  const touchStartY = useRef<number | null>(null);
+  const touchEndX = useRef<number | null>(null);
+  const touchEndY = useRef<number | null>(null);
 
   const expandSidebarForSearch = useCallback(() => {
     setIsCollapsed((prev) => {
@@ -200,20 +203,47 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
     };
   }, [isToggled, isCollapsed, expandSidebarForSearch]);
 
-  // Swipe gesture for mobile
+  // Swipe gesture for mobile (sidebar direita):
+  // - Swipe para esquerda na borda direita abre
+  // - Swipe para direita com menu aberto fecha
+  // Ignora gestos predominantemente verticais para não conflitar com rolagem.
   const handleTouchStart = (e: React.TouchEvent) => {
+    touchEndX.current = null;
+    touchEndY.current = null;
     touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
   };
 
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    const diff = touchStartX.current - e.changedTouches[0].clientX;
-    if (diff > 50) {
-      // Swipe left → close
-      setIsToggled(false);
+  const handleTouchMove = (e: React.TouchEvent) => {
+    touchEndX.current = e.touches[0].clientX;
+    touchEndY.current = e.touches[0].clientY;
+  };
+
+  const handleTouchEnd = () => {
+    if (
+      touchStartX.current === null ||
+      touchStartY.current === null ||
+      touchEndX.current === null ||
+      touchEndY.current === null
+    ) {
+      return;
     }
-    if (diff < -50) {
-      // Swipe right → open
+
+    const deltaX = touchStartX.current - touchEndX.current;
+    const deltaY = touchStartY.current - touchEndY.current;
+    const minSwipeDistance = 50;
+
+    if (Math.abs(deltaX) < minSwipeDistance || Math.abs(deltaX) <= Math.abs(deltaY)) {
+      return;
+    }
+
+    const isLeftSwipe = deltaX > 0;
+    const isRightSwipe = deltaX < 0;
+
+    if (isLeftSwipe && !isToggled && touchStartX.current > window.innerWidth - 60) {
       setIsToggled(true);
+    } else if (isRightSwipe && isToggled) {
+      setIsToggled(false);
     }
   };
 
@@ -518,7 +548,12 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <div className={`${styles.wrapper} ${isCollapsed ? styles.collapsed : ''} ${isToggled ? styles.toggled : ''}`}>
+    <div
+      className={`${styles.wrapper} ${isCollapsed ? styles.collapsed : ''} ${isToggled ? styles.toggled : ''}`}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
       {/* Overlay for mobile */}
       <div className={styles.overlay} onClick={closeMobileMenu} />
 
