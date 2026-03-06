@@ -62,6 +62,7 @@ export default function AdminSubmissaoDetailPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [selectedPedidoIds, setSelectedPedidoIds] = useState<number[]>([]);
 
   const fetchSubmissao = useCallback(async () => {
     try {
@@ -77,6 +78,19 @@ export default function AdminSubmissaoDetailPage() {
   useEffect(() => {
     fetchSubmissao();
   }, [fetchSubmissao]);
+
+  useEffect(() => {
+    if (!submissao) {
+      setSelectedPedidoIds([]);
+      return;
+    }
+    const pendentes = new Set(
+      submissao.pedidos
+        .filter((pedido) => pedido.status === 'PENDENTE')
+        .map((pedido) => pedido.id),
+    );
+    setSelectedPedidoIds((prev) => prev.filter((id) => pendentes.has(id)));
+  }, [submissao]);
 
   const execAction = async (key: string, fn: () => Promise<void>, msg: string) => {
     setError('');
@@ -101,21 +115,53 @@ export default function AdminSubmissaoDetailPage() {
     );
   };
 
-  const handleAprovarTodos = () => {
-    if (!submissao) return;
-    execAction(
-      'aprovar-todos',
-      () => api.post(`/v1/admin/submissoes/${submissaoId}/aprovar`),
-      'Todos os pedidos aprovados',
+  const handleTogglePedido = (pedidoId: number) => {
+    setSelectedPedidoIds((prev) =>
+      prev.includes(pedidoId)
+        ? prev.filter((id) => id !== pedidoId)
+        : [...prev, pedidoId],
     );
   };
 
-  const handleRejeitarTodos = () => {
+  const handleToggleTodosPendentes = () => {
     if (!submissao) return;
+    const pendentesIds = submissao.pedidos
+      .filter((pedido) => pedido.status === 'PENDENTE')
+      .map((pedido) => pedido.id);
+    const todosSelecionados =
+      pendentesIds.length > 0 && selectedPedidoIds.length === pendentesIds.length;
+    setSelectedPedidoIds(todosSelecionados ? [] : pendentesIds);
+  };
+
+  const handleAprovarSelecionados = () => {
+    if (!submissao || selectedPedidoIds.length === 0) return;
+    const totalSelecionados = selectedPedidoIds.length;
+    if (!confirm(`Aprovar ${totalSelecionados} item(ns) selecionado(s)?`)) return;
     execAction(
-      'rejeitar-todos',
-      () => api.post(`/v1/admin/submissoes/${submissaoId}/rejeitar`),
-      'Todos os pedidos rejeitados',
+      'aprovar-selecionados',
+      async () => {
+        for (const pedidoId of selectedPedidoIds) {
+          await api.put(`/v1/admin/pedidos/${pedidoId}/status`, { status: 'APROVADO' });
+        }
+        setSelectedPedidoIds([]);
+      },
+      `${totalSelecionados} pedido(s) aprovado(s)`,
+    );
+  };
+
+  const handleRejeitarSelecionados = () => {
+    if (!submissao || selectedPedidoIds.length === 0) return;
+    const totalSelecionados = selectedPedidoIds.length;
+    if (!confirm(`Rejeitar ${totalSelecionados} item(ns) selecionado(s)?`)) return;
+    execAction(
+      'rejeitar-selecionados',
+      async () => {
+        for (const pedidoId of selectedPedidoIds) {
+          await api.put(`/v1/admin/pedidos/${pedidoId}/status`, { status: 'REJEITADO' });
+        }
+        setSelectedPedidoIds([]);
+      },
+      `${totalSelecionados} pedido(s) rejeitado(s)`,
     );
   };
 
@@ -163,6 +209,9 @@ export default function AdminSubmissaoDetailPage() {
   }
 
   const isLoading = (key: string) => actionLoading === key;
+  const pedidosPendentes = submissao.pedidos.filter((pedido) => pedido.status === 'PENDENTE');
+  const allPendentesSelecionados =
+    pedidosPendentes.length > 0 && selectedPedidoIds.length === pedidosPendentes.length;
 
   return (
     <div className={styles.pageWrapper}>
@@ -208,23 +257,23 @@ export default function AdminSubmissaoDetailPage() {
         <div className={styles.tableSection} style={{ padding: '1.25rem 2rem' }}>
           <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
             <span style={{ fontWeight: 600, color: 'var(--text-secondary)', fontSize: '0.9rem', marginRight: '0.5rem' }}>
-              Ações em lote:
+              Selecionados: {selectedPedidoIds.length}
             </span>
             <Button
               variant="success"
               size="sm"
-              onClick={handleAprovarTodos}
-              disabled={!!actionLoading || submissao.status === 'ARQUIVADO'}
+              onClick={handleAprovarSelecionados}
+              disabled={!!actionLoading || submissao.status === 'ARQUIVADO' || selectedPedidoIds.length === 0}
             >
-              {isLoading('aprovar-todos') ? <Spinner animation="border" size="sm" /> : 'Aprovar Todos'}
+              {isLoading('aprovar-selecionados') ? <Spinner animation="border" size="sm" /> : 'Aprovar Selecionados'}
             </Button>
             <Button
               variant="danger"
               size="sm"
-              onClick={handleRejeitarTodos}
-              disabled={!!actionLoading || submissao.status === 'ARQUIVADO'}
+              onClick={handleRejeitarSelecionados}
+              disabled={!!actionLoading || submissao.status === 'ARQUIVADO' || selectedPedidoIds.length === 0}
             >
-              {isLoading('rejeitar-todos') ? <Spinner animation="border" size="sm" /> : 'Rejeitar Todos'}
+              {isLoading('rejeitar-selecionados') ? <Spinner animation="border" size="sm" /> : 'Rejeitar Selecionados'}
             </Button>
             <Button
               variant="outline-warning"
@@ -241,6 +290,14 @@ export default function AdminSubmissaoDetailPage() {
               disabled={!!actionLoading || submissao.arquivada}
             >
               {isLoading('arquivar') ? <Spinner animation="border" size="sm" /> : 'Arquivar Submissão'}
+            </Button>
+            <Button
+              variant="outline-primary"
+              size="sm"
+              onClick={handleToggleTodosPendentes}
+              disabled={!!actionLoading || submissao.arquivada || pedidosPendentes.length === 0}
+            >
+              {allPendentesSelecionados ? 'Limpar Seleção' : 'Selecionar Pendentes'}
             </Button>
             {(submissao.status === 'APROVADO' || submissao.status === 'PARCIAL') && !submissao.arquivada && (
               <Button
@@ -266,6 +323,16 @@ export default function AdminSubmissaoDetailPage() {
             <Table striped bordered hover responsive className={styles.table}>
               <thead>
                 <tr className={styles.tableHeader}>
+                  <th className={styles.tableHeaderCell} style={{ width: 56, textAlign: 'center' }}>
+                    <input
+                      type="checkbox"
+                      className="form-check-input m-0"
+                      checked={allPendentesSelecionados}
+                      onChange={handleToggleTodosPendentes}
+                      disabled={!!actionLoading || submissao.arquivada || pedidosPendentes.length === 0}
+                      aria-label="Selecionar todos os pedidos pendentes"
+                    />
+                  </th>
                   <th className={styles.tableHeaderCell}>#</th>
                   <th className={styles.tableHeaderCell}>Item</th>
                   <th className={styles.tableHeaderCell}>Unidade</th>
@@ -277,6 +344,20 @@ export default function AdminSubmissaoDetailPage() {
               <tbody>
                 {submissao.pedidos.map((pedido) => (
                   <tr key={pedido.id} className={styles.tableRow}>
+                    <td className={styles.tableCell} style={{ textAlign: 'center' }}>
+                      {pedido.status === 'PENDENTE' && !submissao.arquivada ? (
+                        <input
+                          type="checkbox"
+                          className="form-check-input m-0"
+                          checked={selectedPedidoIds.includes(pedido.id)}
+                          onChange={() => handleTogglePedido(pedido.id)}
+                          disabled={!!actionLoading}
+                          aria-label={`Selecionar pedido ${pedido.id}`}
+                        />
+                      ) : (
+                        <span className="text-muted">-</span>
+                      )}
+                    </td>
                     <td className={styles.tableCell}>{pedido.id}</td>
                     <td className={`${styles.tableCell} ${styles.cellBold}`}>
                       {pedido.item.nome}
@@ -293,7 +374,7 @@ export default function AdminSubmissaoDetailPage() {
                         <Button
                           size="sm"
                           variant="outline-success"
-                          disabled={!!actionLoading || pedido.status === 'APROVADO' || submissao.arquivada}
+                          disabled={!!actionLoading || pedido.status !== 'PENDENTE' || submissao.arquivada}
                           onClick={() => handlePedidoStatus(pedido.id, 'APROVADO')}
                         >
                           {isLoading(`pedido-${pedido.id}-APROVADO`) ? <Spinner animation="border" size="sm" /> : 'Aprovar'}
@@ -301,7 +382,7 @@ export default function AdminSubmissaoDetailPage() {
                         <Button
                           size="sm"
                           variant="outline-danger"
-                          disabled={!!actionLoading || pedido.status === 'REJEITADO' || submissao.arquivada}
+                          disabled={!!actionLoading || pedido.status !== 'PENDENTE' || submissao.arquivada}
                           onClick={() => handlePedidoStatus(pedido.id, 'REJEITADO')}
                         >
                           {isLoading(`pedido-${pedido.id}-REJEITADO`) ? <Spinner animation="border" size="sm" /> : 'Rejeitar'}
@@ -312,7 +393,7 @@ export default function AdminSubmissaoDetailPage() {
                 ))}
                 {submissao.pedidos.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="text-center text-muted py-4">
+                    <td colSpan={7} className="text-center text-muted py-4">
                       Nenhum pedido nesta submissão
                     </td>
                   </tr>
