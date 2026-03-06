@@ -4,10 +4,8 @@ const nextConfig: NextConfig = {
   transpilePackages: ['shared'],
   compress: true,
   productionBrowserSourceMaps: false,
-  experimental: {
-    // Tree-shake automático para pacotes pesados — reduz bundle significativamente
-    optimizePackageImports: ['react-icons', 'react-bootstrap', '@fortawesome/react-fontawesome'],
-  },
+  // Estabilidade em dev: evitar chunks inconsistentes com optimizePackageImports.
+  experimental: {},
 };
 
 export default nextConfig;

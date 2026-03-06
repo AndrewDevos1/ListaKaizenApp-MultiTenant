@@ -57,7 +57,7 @@ export default function AdminSubmissoesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState<string>('PENDENTE');
-  const [arquivando, setArquivando] = useState<number | null>(null);
+  const [rowActionLoading, setRowActionLoading] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
   // Merge state
@@ -94,17 +94,56 @@ export default function AdminSubmissoesPage() {
     setSelectedIds(new Set());
   }, [activeTab]);
 
+  const execSubmissaoAction = async (
+    key: string,
+    fn: () => Promise<void>,
+    fallbackError: string,
+  ) => {
+    setError('');
+    setRowActionLoading(key);
+    try {
+      await fn();
+      await fetchSubmissoes(activeTab);
+    } catch (err: any) {
+      setError(err?.response?.data?.message || fallbackError);
+    } finally {
+      setRowActionLoading(null);
+    }
+  };
+
+  const handleAprovarSubmissao = async (id: number) => {
+    await execSubmissaoAction(
+      `aprovar-${id}`,
+      () => api.post(`/v1/admin/submissoes/${id}/aprovar`),
+      'Erro ao aprovar submissão',
+    );
+  };
+
+  const handleRejeitarSubmissao = async (id: number) => {
+    if (!confirm('Rejeitar todos os pedidos pendentes desta submissão?')) return;
+    await execSubmissaoAction(
+      `rejeitar-${id}`,
+      () => api.post(`/v1/admin/submissoes/${id}/rejeitar`),
+      'Erro ao rejeitar submissão',
+    );
+  };
+
+  const handleReverterSubmissao = async (id: number) => {
+    if (!confirm('Reverter esta submissão para PENDENTE?')) return;
+    await execSubmissaoAction(
+      `reverter-${id}`,
+      () => api.put(`/v1/admin/submissoes/${id}/reverter`),
+      'Erro ao reverter submissão',
+    );
+  };
+
   const handleArquivar = async (id: number) => {
     if (!confirm('Arquivar esta submissão?')) return;
-    setArquivando(id);
-    try {
-      await api.put(`/v1/admin/submissoes/${id}/arquivar`);
-      fetchSubmissoes(activeTab);
-    } catch {
-      setError('Erro ao arquivar submissão');
-    } finally {
-      setArquivando(null);
-    }
+    await execSubmissaoAction(
+      `arquivar-${id}`,
+      () => api.put(`/v1/admin/submissoes/${id}/arquivar`),
+      'Erro ao arquivar submissão',
+    );
   };
 
   const toggleSelect = (id: number) => {
@@ -312,14 +351,47 @@ export default function AdminSubmissoesPage() {
                               Ver
                             </Button>
                           </Link>
+
+                          {!s.arquivada && s.status === 'PENDENTE' && (
+                            <>
+                              <Button
+                                size="sm"
+                                variant="outline-success"
+                                onClick={() => handleAprovarSubmissao(s.id)}
+                                disabled={rowActionLoading !== null}
+                              >
+                                {rowActionLoading === `aprovar-${s.id}` ? <Spinner animation="border" size="sm" /> : 'Aprovar'}
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline-danger"
+                                onClick={() => handleRejeitarSubmissao(s.id)}
+                                disabled={rowActionLoading !== null}
+                              >
+                                {rowActionLoading === `rejeitar-${s.id}` ? <Spinner animation="border" size="sm" /> : 'Rejeitar'}
+                              </Button>
+                            </>
+                          )}
+
+                          {!s.arquivada && s.status !== 'PENDENTE' && (
+                            <Button
+                              size="sm"
+                              variant="outline-warning"
+                              onClick={() => handleReverterSubmissao(s.id)}
+                              disabled={rowActionLoading !== null}
+                            >
+                              {rowActionLoading === `reverter-${s.id}` ? <Spinner animation="border" size="sm" /> : 'Reverter'}
+                            </Button>
+                          )}
+
                           {!s.arquivada && (
                             <Button
                               size="sm"
                               variant="outline-secondary"
                               onClick={() => handleArquivar(s.id)}
-                              disabled={arquivando === s.id}
+                              disabled={rowActionLoading !== null}
                             >
-                              {arquivando === s.id ? <Spinner animation="border" size="sm" /> : 'Arquivar'}
+                              {rowActionLoading === `arquivar-${s.id}` ? <Spinner animation="border" size="sm" /> : 'Arquivar'}
                             </Button>
                           )}
                         </div>

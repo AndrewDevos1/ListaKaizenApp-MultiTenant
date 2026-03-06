@@ -3,10 +3,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Table, Alert, Spinner, Badge, Button } from 'react-bootstrap';
+import { Table, Alert, Spinner, Badge, Button, Modal, Form } from 'react-bootstrap';
 import api from '@/lib/api';
 import styles from '@/app/admin/listas/[id]/ListaDetail.module.css';
-import { FaClipboardCheck, FaClipboardList } from 'react-icons/fa';
+import { FaClipboardCheck, FaClipboardList, FaWhatsapp, FaCopy } from 'react-icons/fa';
 
 type StatusSubmissao = 'PENDENTE' | 'APROVADO' | 'REJEITADO' | 'PARCIAL' | 'ARQUIVADO';
 type StatusPedido = 'PENDENTE' | 'APROVADO' | 'REJEITADO';
@@ -52,6 +52,42 @@ function formatDate(dateStr: string) {
   });
 }
 
+function gerarTextoCompartilhamento(submissao: SubmissaoDetail): string {
+  const aprovados = submissao.pedidos.filter((p) => p.status === 'APROVADO');
+  const rejeitados = submissao.pedidos.filter((p) => p.status === 'REJEITADO');
+
+  const linhas: string[] = [
+    '*PEDIDO DE COMPRA*',
+    `*${submissao.lista.nome}*`,
+    `Submissão #${submissao.id}`,
+    `Colaborador: ${submissao.usuario.nome}`,
+    `Data: ${formatDate(submissao.criadoEm)}`,
+    '',
+  ];
+
+  if (aprovados.length > 0) {
+    linhas.push('*ITENS APROVADOS*');
+    aprovados.forEach((pedido) => {
+      linhas.push(
+        `- ${pedido.item.nome}: ${pedido.qtdSolicitada} ${pedido.item.unidadeMedida}`,
+      );
+    });
+  } else {
+    linhas.push('Nenhum item aprovado.');
+  }
+
+  if (rejeitados.length > 0) {
+    linhas.push('', '*ITENS REJEITADOS*');
+    rejeitados.forEach((pedido) => {
+      linhas.push(
+        `- ${pedido.item.nome}: ${pedido.qtdSolicitada} ${pedido.item.unidadeMedida}`,
+      );
+    });
+  }
+
+  return linhas.join('\n');
+}
+
 export default function AdminSubmissaoDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -63,6 +99,8 @@ export default function AdminSubmissaoDetailPage() {
   const [success, setSuccess] = useState('');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [selectedPedidoIds, setSelectedPedidoIds] = useState<number[]>([]);
+  const [showClipboard, setShowClipboard] = useState(false);
+  const [clipboardText, setClipboardText] = useState('');
 
   const fetchSubmissao = useCallback(async () => {
     try {
@@ -202,6 +240,24 @@ export default function AdminSubmissaoDetailPage() {
     }
   };
 
+  const handleCopiarCompartilhamento = async () => {
+    if (!submissao) return;
+    const texto = gerarTextoCompartilhamento(submissao);
+    try {
+      await navigator.clipboard.writeText(texto);
+      setSuccess('Texto copiado para a área de transferência');
+    } catch {
+      setClipboardText(texto);
+      setShowClipboard(true);
+    }
+  };
+
+  const handleWhatsAppCompartilhamento = () => {
+    if (!submissao) return;
+    const texto = gerarTextoCompartilhamento(submissao);
+    window.open(`https://wa.me/?text=${encodeURIComponent(texto)}`, '_blank');
+  };
+
   if (loading) {
     return (
       <div className="text-center py-5">
@@ -216,6 +272,8 @@ export default function AdminSubmissaoDetailPage() {
 
   const isLoading = (key: string) => actionLoading === key;
   const pedidosPendentes = submissao.pedidos.filter((pedido) => pedido.status === 'PENDENTE');
+  const pedidosAprovados = submissao.pedidos.filter((pedido) => pedido.status === 'APROVADO');
+  const pedidosRejeitados = submissao.pedidos.filter((pedido) => pedido.status === 'REJEITADO');
   const allPendentesSelecionados =
     pedidosPendentes.length > 0 && selectedPedidoIds.length === pedidosPendentes.length;
 
@@ -261,33 +319,56 @@ export default function AdminSubmissaoDetailPage() {
 
         {/* Ações em lote */}
         <div className={styles.tableSection} style={{ padding: '1.25rem 2rem' }}>
+          <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap', marginBottom: '0.9rem' }}>
+            <Badge bg="warning" text="dark">Pendentes: {pedidosPendentes.length}</Badge>
+            <Badge bg="success">Aprovados: {pedidosAprovados.length}</Badge>
+            <Badge bg="danger">Rejeitados: {pedidosRejeitados.length}</Badge>
+          </div>
           <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
             <span style={{ fontWeight: 600, color: 'var(--text-secondary)', fontSize: '0.9rem', marginRight: '0.5rem' }}>
               Selecionados: {selectedPedidoIds.length}
             </span>
-            <Button
-              variant="success"
-              size="sm"
-              onClick={handleAprovarSelecionados}
-              disabled={!!actionLoading || submissao.status === 'ARQUIVADO' || selectedPedidoIds.length === 0}
-            >
-              {isLoading('aprovar-selecionados') ? <Spinner animation="border" size="sm" /> : 'Aprovar Selecionados'}
-            </Button>
-            <Button
-              variant="danger"
-              size="sm"
-              onClick={handleRejeitarSelecionados}
-              disabled={!!actionLoading || submissao.status === 'ARQUIVADO' || selectedPedidoIds.length === 0}
-            >
-              {isLoading('rejeitar-selecionados') ? <Spinner animation="border" size="sm" /> : 'Rejeitar Selecionados'}
-            </Button>
+
+            {pedidosPendentes.length > 0 ? (
+              <>
+                <Button
+                  variant="outline-primary"
+                  size="sm"
+                  onClick={handleToggleTodosPendentes}
+                  disabled={!!actionLoading || submissao.arquivada}
+                >
+                  {allPendentesSelecionados ? 'Limpar Seleção' : 'Selecionar Todos Pendentes'}
+                </Button>
+                <Button
+                  variant="success"
+                  size="sm"
+                  onClick={handleAprovarSelecionados}
+                  disabled={!!actionLoading || submissao.status === 'ARQUIVADO' || selectedPedidoIds.length === 0}
+                >
+                  {isLoading('aprovar-selecionados') ? <Spinner animation="border" size="sm" /> : 'Aprovar Marcados'}
+                </Button>
+                <Button
+                  variant="danger"
+                  size="sm"
+                  onClick={handleRejeitarSelecionados}
+                  disabled={!!actionLoading || submissao.status === 'ARQUIVADO' || selectedPedidoIds.length === 0}
+                >
+                  {isLoading('rejeitar-selecionados') ? <Spinner animation="border" size="sm" /> : 'Rejeitar Marcados'}
+                </Button>
+              </>
+            ) : (
+              <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                Não há itens pendentes. Use os botões "Desfazer" por item para reabrir.
+              </span>
+            )}
+
             <Button
               variant="outline-warning"
               size="sm"
               onClick={handleReverter}
               disabled={!!actionLoading || submissao.status === 'PENDENTE'}
             >
-              {isLoading('reverter') ? <Spinner animation="border" size="sm" /> : 'Reverter'}
+              {isLoading('reverter') ? <Spinner animation="border" size="sm" /> : 'Reverter Submissão'}
             </Button>
             <Button
               variant="outline-secondary"
@@ -297,14 +378,28 @@ export default function AdminSubmissaoDetailPage() {
             >
               {isLoading('arquivar') ? <Spinner animation="border" size="sm" /> : 'Arquivar Submissão'}
             </Button>
-            <Button
-              variant="outline-primary"
-              size="sm"
-              onClick={handleToggleTodosPendentes}
-              disabled={!!actionLoading || submissao.arquivada || pedidosPendentes.length === 0}
-            >
-              {allPendentesSelecionados ? 'Limpar Seleção' : 'Selecionar Pendentes'}
-            </Button>
+            {pedidosAprovados.length > 0 && (
+              <>
+                <Button
+                  variant="outline-success"
+                  size="sm"
+                  onClick={handleWhatsAppCompartilhamento}
+                  disabled={!!actionLoading}
+                >
+                  <FaWhatsapp style={{ marginRight: '0.35rem' }} />
+                  WhatsApp
+                </Button>
+                <Button
+                  variant="outline-secondary"
+                  size="sm"
+                  onClick={handleCopiarCompartilhamento}
+                  disabled={!!actionLoading}
+                >
+                  <FaCopy style={{ marginRight: '0.35rem' }} />
+                  Copiar
+                </Button>
+              </>
+            )}
             {(submissao.status === 'APROVADO' || submissao.status === 'PARCIAL') && !submissao.arquivada && (
               <Button
                 variant="outline-info"
@@ -422,6 +517,23 @@ export default function AdminSubmissaoDetailPage() {
           </div>
         </div>
       </div>
+
+      <Modal show={showClipboard} onHide={() => setShowClipboard(false)}>
+        <Modal.Header closeButton>
+          <Modal.Title>Copiar texto</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <p className="text-muted small mb-2">
+            Não foi possível copiar automaticamente. Copie manualmente abaixo.
+          </p>
+          <Form.Control as="textarea" rows={12} readOnly value={clipboardText} />
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowClipboard(false)}>
+            Fechar
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </div>
   );
 }
