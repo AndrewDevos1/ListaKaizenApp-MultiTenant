@@ -8,19 +8,27 @@ export default function SwRegister() {
       return;
     }
 
-    // Em desenvolvimento, evita cache de chunks do Next que causa 404/hydration.
-    if (process.env.NODE_ENV !== 'production') {
+    const isLocalhost =
+      window.location.hostname === 'localhost' ||
+      window.location.hostname === '127.0.0.1';
+
+    // Em desenvolvimento/local, evita qualquer SW ativo para não quebrar assets do Next.
+    if (process.env.NODE_ENV !== 'production' || isLocalhost) {
       navigator.serviceWorker.getRegistrations().then((regs) => {
         regs.forEach((reg) => reg.unregister());
+      });
+      caches.keys().then((keys) => {
+        keys.forEach((key) => caches.delete(key));
       });
       return;
     }
 
     const onLoad = () => {
       navigator.serviceWorker
-        .register('/sw.js')
+        .register('/sw.js', { updateViaCache: 'none' })
         .then((reg) => {
           console.log('[SW] Service Worker registrado:', reg.scope);
+          reg.update().catch(() => undefined);
 
           reg.addEventListener('updatefound', () => {
             const newWorker = reg.installing;
