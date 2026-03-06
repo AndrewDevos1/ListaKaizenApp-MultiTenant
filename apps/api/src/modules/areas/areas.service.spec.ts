@@ -16,6 +16,7 @@ describe('AreasService', () => {
       $transaction: jest.fn(),
       lista: {
         findMany: jest.fn(),
+        findFirst: jest.fn().mockResolvedValue(null),
       },
       listaItemRef: {
         findMany: jest.fn(),

@@ -19,6 +19,20 @@ import { FaClipboardCheck, FaWhatsapp, FaCopy, FaCheck } from 'react-icons/fa';
 
 type StatusSubmissao = 'PENDENTE' | 'APROVADO' | 'REJEITADO' | 'PARCIAL' | 'ARQUIVADO';
 type StatusFiltro = 'TODOS' | 'PENDENTE' | 'APROVADO' | 'REJEITADO';
+type TipoFiltro = 'TRADICIONAIS' | 'CONSOLIDADAS';
+type StatusConsolidado =
+  | 'AGUARDANDO_SUBLISTAS'
+  | 'PRONTO_PARA_APROVAR'
+  | 'APROVADO_PARCIAL'
+  | 'APROVADO_COMPLETO'
+  | 'EXPIRADO';
+type StatusConsolidadoFiltro = 'TODAS' | 'AGUARDANDO' | 'APROVADAS' | 'REJEITADAS';
+
+const TIPO_FILTRO_STORAGE_KEY = 'admin:submissoes:tipoFiltro';
+const STATUS_FILTER_STORAGE_KEY = 'admin:submissoes:statusFilter';
+const STATUS_CONSOLIDADO_FILTER_STORAGE_KEY =
+  'admin:submissoes:statusConsolidadoFilter';
+const SHOW_ARCHIVED_STORAGE_KEY = 'admin:submissoes:showArchived';
 
 interface SubmissaoSummary {
   id: number;
@@ -42,12 +56,51 @@ interface MergePreviewItem {
   breakdown: { submissaoId: number; colaboradorNome: string; qtd: number }[];
 }
 
+interface ConsolidadoSummary {
+  id: string;
+  lista: { id: number; nome: string };
+  dataReferencia: string;
+  status: StatusConsolidado;
+  mensagem: string;
+  totalSubmissoes: number;
+  totalPedidos: number;
+  recebidas: number;
+  submissoesParaRecebimento: number[];
+  submissoesArquivaveis: number[];
+  submissoesDesarquivaveis: number[];
+  submissoes: {
+    id: number;
+    status: StatusSubmissao;
+    arquivada: boolean;
+    criadoEm: string;
+    usuario: { id: number; nome: string; email: string };
+    totalPedidos: number;
+    hasRecebimento: boolean;
+  }[];
+}
+
 const STATUS_VARIANT: Record<StatusSubmissao, string> = {
   PENDENTE: 'warning',
   APROVADO: 'success',
   REJEITADO: 'danger',
   PARCIAL: 'info',
   ARQUIVADO: 'secondary',
+};
+
+const STATUS_CONSOLIDADO_VARIANT: Record<StatusConsolidado, string> = {
+  AGUARDANDO_SUBLISTAS: 'warning',
+  PRONTO_PARA_APROVAR: 'primary',
+  APROVADO_PARCIAL: 'info',
+  APROVADO_COMPLETO: 'success',
+  EXPIRADO: 'dark',
+};
+
+const STATUS_CONSOLIDADO_LABEL: Record<StatusConsolidado, string> = {
+  AGUARDANDO_SUBLISTAS: 'Aguardando',
+  PRONTO_PARA_APROVAR: 'Pronto',
+  APROVADO_PARCIAL: 'Aprovado Parcial',
+  APROVADO_COMPLETO: 'Aprovado Completo',
+  EXPIRADO: 'Expirado',
 };
 
 function formatDate(dateStr: string) {
@@ -62,9 +115,14 @@ function formatDate(dateStr: string) {
 
 export default function AdminSubmissoesPage() {
   const [submissoes, setSubmissoes] = useState<SubmissaoSummary[]>([]);
+  const [consolidadas, setConsolidadas] = useState<ConsolidadoSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [tipoFiltro, setTipoFiltro] = useState<TipoFiltro>('TRADICIONAIS');
+  const [tipoFiltroHydrated, setTipoFiltroHydrated] = useState(false);
   const [statusFilter, setStatusFilter] = useState<StatusFiltro>('PENDENTE');
+  const [statusConsolidadoFilter, setStatusConsolidadoFilter] =
+    useState<StatusConsolidadoFiltro>('AGUARDANDO');
   const [showArchived, setShowArchived] = useState(false);
   const [rowActionLoading, setRowActionLoading] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -97,10 +155,67 @@ export default function AdminSubmissoesPage() {
     }
   };
 
+  const fetchConsolidadas = async (arquivada: boolean) => {
+    setLoading(true);
+    setError('');
+    try {
+      const { data } = await api.get('/v1/admin/submissoes', {
+        params: { tipo: 'CONSOLIDADAS', arquivada: String(arquivada) },
+      });
+      setConsolidadas(data);
+    } catch {
+      setError('Erro ao carregar submissões consolidadas');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
+    const storedTipoFiltro = window.localStorage.getItem(TIPO_FILTRO_STORAGE_KEY);
+    if (storedTipoFiltro === 'TRADICIONAIS' || storedTipoFiltro === 'CONSOLIDADAS') {
+      setTipoFiltro(storedTipoFiltro);
+    }
+
+    const storedStatusFilter = window.localStorage.getItem(STATUS_FILTER_STORAGE_KEY);
+    if (
+      storedStatusFilter === 'TODOS' ||
+      storedStatusFilter === 'PENDENTE' ||
+      storedStatusFilter === 'APROVADO' ||
+      storedStatusFilter === 'REJEITADO'
+    ) {
+      setStatusFilter(storedStatusFilter);
+    }
+
+    const storedStatusConsolidado = window.localStorage.getItem(
+      STATUS_CONSOLIDADO_FILTER_STORAGE_KEY,
+    );
+    if (
+      storedStatusConsolidado === 'TODAS' ||
+      storedStatusConsolidado === 'AGUARDANDO' ||
+      storedStatusConsolidado === 'APROVADAS' ||
+      storedStatusConsolidado === 'REJEITADAS'
+    ) {
+      setStatusConsolidadoFilter(storedStatusConsolidado);
+    }
+
+    const storedShowArchived = window.localStorage.getItem(SHOW_ARCHIVED_STORAGE_KEY);
+    if (storedShowArchived === 'true' || storedShowArchived === 'false') {
+      setShowArchived(storedShowArchived === 'true');
+    }
+
+    setTipoFiltroHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (!tipoFiltroHydrated) return;
+    if (tipoFiltro === 'CONSOLIDADAS') {
+      fetchConsolidadas(showArchived);
+      setSelectedIds(new Set());
+      return;
+    }
     fetchSubmissoes(statusFilter, showArchived);
     setSelectedIds(new Set());
-  }, [statusFilter, showArchived]);
+  }, [statusFilter, showArchived, tipoFiltro, tipoFiltroHydrated]);
 
   const execSubmissaoAction = async (
     key: string,
@@ -111,7 +226,11 @@ export default function AdminSubmissoesPage() {
     setRowActionLoading(key);
     try {
       await fn();
-      await fetchSubmissoes(statusFilter, showArchived);
+      if (tipoFiltro === 'CONSOLIDADAS') {
+        await fetchConsolidadas(showArchived);
+      } else {
+        await fetchSubmissoes(statusFilter, showArchived);
+      }
     } catch (err: any) {
       setError(err?.response?.data?.message || fallbackError);
     } finally {
@@ -152,6 +271,81 @@ export default function AdminSubmissoesPage() {
       () => api.put(`/v1/admin/submissoes/${id}/arquivar`),
       'Erro ao arquivar submissão',
     );
+  };
+
+  const handleDesarquivar = async (id: number) => {
+    if (!confirm('Desarquivar esta submissão?')) return;
+    await execSubmissaoAction(
+      `desarquivar-${id}`,
+      () => api.put(`/v1/admin/submissoes/${id}/desarquivar`),
+      'Erro ao desarquivar submissão',
+    );
+  };
+
+  const handleArquivarConsolidada = async (lote: ConsolidadoSummary) => {
+    if (!lote.submissoesArquivaveis.length) return;
+    if (
+      !confirm(
+        `Arquivar ${lote.submissoesArquivaveis.length} submissão(ões) deste lote consolidado?`,
+      )
+    ) {
+      return;
+    }
+    setError('');
+    setRowActionLoading(`arquivar-consolidada-${lote.id}`);
+    try {
+      const results = await Promise.allSettled(
+        lote.submissoesArquivaveis.map((id) =>
+          api.put(`/v1/admin/submissoes/${id}/arquivar`),
+        ),
+      );
+      const failures = results.filter(
+        (result) => result.status === 'rejected',
+      ).length;
+      if (failures > 0) {
+        setError(
+          `${failures} submissão(ões) não puderam ser arquivadas neste lote.`,
+        );
+      }
+      await fetchConsolidadas(showArchived);
+    } catch {
+      setError('Erro ao arquivar lote consolidado');
+    } finally {
+      setRowActionLoading(null);
+    }
+  };
+
+  const handleDesarquivarConsolidada = async (lote: ConsolidadoSummary) => {
+    if (!lote.submissoesDesarquivaveis.length) return;
+    if (
+      !confirm(
+        `Desarquivar ${lote.submissoesDesarquivaveis.length} submissão(ões) deste lote consolidado?`,
+      )
+    ) {
+      return;
+    }
+    setError('');
+    setRowActionLoading(`desarquivar-consolidada-${lote.id}`);
+    try {
+      const results = await Promise.allSettled(
+        lote.submissoesDesarquivaveis.map((id) =>
+          api.put(`/v1/admin/submissoes/${id}/desarquivar`),
+        ),
+      );
+      const failures = results.filter(
+        (result) => result.status === 'rejected',
+      ).length;
+      if (failures > 0) {
+        setError(
+          `${failures} submissão(ões) não puderam ser desarquivadas neste lote.`,
+        );
+      }
+      await fetchConsolidadas(showArchived);
+    } catch {
+      setError('Erro ao desarquivar lote consolidado');
+    } finally {
+      setRowActionLoading(null);
+    }
   };
 
   const toggleSelect = (id: number) => {
@@ -250,14 +444,78 @@ export default function AdminSubmissoesPage() {
     );
   }, [submissoes, searchQuery]);
 
+  const filteredConsolidadas = useMemo(() => {
+    const byStatus = consolidadas.filter((lote) => {
+      if (statusConsolidadoFilter === 'TODAS') return true;
+      if (statusConsolidadoFilter === 'AGUARDANDO') {
+        return (
+          lote.status === 'AGUARDANDO_SUBLISTAS' ||
+          lote.status === 'PRONTO_PARA_APROVAR' ||
+          lote.status === 'APROVADO_PARCIAL'
+        );
+      }
+      if (statusConsolidadoFilter === 'APROVADAS') {
+        return lote.status === 'APROVADO_COMPLETO';
+      }
+      return lote.status === 'EXPIRADO';
+    });
+
+    if (!searchQuery.trim()) return byStatus;
+    const q = searchQuery.toLowerCase();
+    return byStatus.filter(
+      (lote) =>
+        lote.lista.nome.toLowerCase().includes(q) ||
+        lote.status.toLowerCase().includes(q) ||
+        STATUS_CONSOLIDADO_LABEL[lote.status].toLowerCase().includes(q) ||
+        lote.mensagem.toLowerCase().includes(q) ||
+        formatDate(lote.dataReferencia).toLowerCase().includes(q) ||
+        lote.id.toLowerCase().includes(q),
+    );
+  }, [consolidadas, searchQuery, statusConsolidadoFilter]);
+
+  const handleStatusFilterChange = (nextStatus: StatusFiltro) => {
+    setStatusFilter(nextStatus);
+    window.localStorage.setItem(STATUS_FILTER_STORAGE_KEY, nextStatus);
+  };
+
+  const handleStatusConsolidadoFilterChange = (
+    nextStatus: StatusConsolidadoFiltro,
+  ) => {
+    setStatusConsolidadoFilter(nextStatus);
+    window.localStorage.setItem(
+      STATUS_CONSOLIDADO_FILTER_STORAGE_KEY,
+      nextStatus,
+    );
+  };
+
   const handleToggleArchived = () => {
     const nextShowArchived = !showArchived;
     setShowArchived(nextShowArchived);
+    window.localStorage.setItem(
+      SHOW_ARCHIVED_STORAGE_KEY,
+      String(nextShowArchived),
+    );
     if (nextShowArchived) {
       setStatusFilter('TODOS');
+      setStatusConsolidadoFilter('TODAS');
+      window.localStorage.setItem(STATUS_FILTER_STORAGE_KEY, 'TODOS');
+      window.localStorage.setItem(
+        STATUS_CONSOLIDADO_FILTER_STORAGE_KEY,
+        'TODAS',
+      );
     }
     setSearchQuery('');
     setSelectedIds(new Set());
+  };
+
+  const handleTipoFiltroChange = (nextTipo: TipoFiltro) => {
+    if (nextTipo === tipoFiltro) return;
+    setTipoFiltro(nextTipo);
+    window.localStorage.setItem(TIPO_FILTRO_STORAGE_KEY, nextTipo);
+    setSearchQuery('');
+    setSelectedIds(new Set());
+    setError('');
+    setShowMergeModal(false);
   };
 
   return (
@@ -272,7 +530,7 @@ export default function AdminSubmissoesPage() {
               Gerencie as submissões de estoque dos colaboradores
             </p>
           </div>
-          {selectedIds.size > 0 && (
+          {tipoFiltro === 'TRADICIONAIS' && !showArchived && selectedIds.size > 0 && (
             <Button variant="success" onClick={openMergeModal}>
               <FaWhatsapp style={{ marginRight: '0.4rem' }} />
               Merge WhatsApp ({selectedIds.size} selecionada{selectedIds.size !== 1 ? 's' : ''})
@@ -287,6 +545,25 @@ export default function AdminSubmissoesPage() {
         )}
 
         <div className={styles.tableSection}>
+          <div style={{ marginBottom: '0.9rem' }}>
+            <ButtonGroup>
+              <Button
+                size="sm"
+                variant={tipoFiltro === 'TRADICIONAIS' ? 'primary' : 'outline-primary'}
+                onClick={() => handleTipoFiltroChange('TRADICIONAIS')}
+              >
+                Submissões
+              </Button>
+              <Button
+                size="sm"
+                variant={tipoFiltro === 'CONSOLIDADAS' ? 'primary' : 'outline-primary'}
+                onClick={() => handleTipoFiltroChange('CONSOLIDADAS')}
+              >
+                Consolidadas
+              </Button>
+            </ButtonGroup>
+          </div>
+
           <div
             style={{
               display: 'flex',
@@ -297,39 +574,95 @@ export default function AdminSubmissoesPage() {
               marginBottom: '0.8rem',
             }}
           >
-            <ButtonGroup>
-              <Button
-                size="sm"
-                variant={statusFilter === 'TODOS' ? 'primary' : 'outline-primary'}
-                onClick={() => setStatusFilter('TODOS')}
-              >
-                Todos
-              </Button>
-              <Button
-                size="sm"
-                variant={statusFilter === 'PENDENTE' ? 'warning' : 'outline-warning'}
-                onClick={() => setStatusFilter('PENDENTE')}
-              >
-                Pendente
-              </Button>
-              <Button
-                size="sm"
-                variant={statusFilter === 'APROVADO' ? 'success' : 'outline-success'}
-                onClick={() => setStatusFilter('APROVADO')}
-              >
-                Aprovados
-              </Button>
-              <Button
-                size="sm"
-                variant={statusFilter === 'REJEITADO' ? 'danger' : 'outline-danger'}
-                onClick={() => setStatusFilter('REJEITADO')}
-              >
-                Rejeitados
-              </Button>
-            </ButtonGroup>
+            {tipoFiltro === 'CONSOLIDADAS' ? (
+              <ButtonGroup>
+                <Button
+                  size="sm"
+                  variant={
+                    statusConsolidadoFilter === 'TODAS'
+                      ? 'primary'
+                      : 'outline-primary'
+                  }
+                  onClick={() => handleStatusConsolidadoFilterChange('TODAS')}
+                >
+                  Todas
+                </Button>
+                <Button
+                  size="sm"
+                  variant={
+                    statusConsolidadoFilter === 'AGUARDANDO'
+                      ? 'warning'
+                      : 'outline-warning'
+                  }
+                  onClick={() => handleStatusConsolidadoFilterChange('AGUARDANDO')}
+                >
+                  Aguardando
+                </Button>
+                <Button
+                  size="sm"
+                  variant={
+                    statusConsolidadoFilter === 'APROVADAS'
+                      ? 'success'
+                      : 'outline-success'
+                  }
+                  onClick={() => handleStatusConsolidadoFilterChange('APROVADAS')}
+                >
+                  Aprovadas
+                </Button>
+                <Button
+                  size="sm"
+                  variant={
+                    statusConsolidadoFilter === 'REJEITADAS'
+                      ? 'dark'
+                      : 'outline-dark'
+                  }
+                  onClick={() => handleStatusConsolidadoFilterChange('REJEITADAS')}
+                >
+                  Rejeitadas
+                </Button>
+              </ButtonGroup>
+            ) : (
+              <ButtonGroup>
+                <Button
+                  size="sm"
+                  variant={statusFilter === 'TODOS' ? 'primary' : 'outline-primary'}
+                  onClick={() => handleStatusFilterChange('TODOS')}
+                >
+                  Todos
+                </Button>
+                <Button
+                  size="sm"
+                  variant={statusFilter === 'PENDENTE' ? 'warning' : 'outline-warning'}
+                  onClick={() => handleStatusFilterChange('PENDENTE')}
+                >
+                  Pendente
+                </Button>
+                <Button
+                  size="sm"
+                  variant={statusFilter === 'APROVADO' ? 'success' : 'outline-success'}
+                  onClick={() => handleStatusFilterChange('APROVADO')}
+                >
+                  Aprovados
+                </Button>
+                <Button
+                  size="sm"
+                  variant={statusFilter === 'REJEITADO' ? 'danger' : 'outline-danger'}
+                  onClick={() => handleStatusFilterChange('REJEITADO')}
+                >
+                  Rejeitados
+                </Button>
+              </ButtonGroup>
+            )}
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
-              <span style={{ fontSize: '0.9rem', color: !showArchived ? 'var(--text-primary)' : 'var(--text-secondary)' }}>
+              <span
+                style={{
+                  fontSize: '0.9rem',
+                  color: !showArchived
+                    ? 'var(--text-primary)'
+                    : 'var(--text-secondary)',
+                }}
+              >
                 Ativas
               </span>
               <Form.Check
@@ -340,7 +673,14 @@ export default function AdminSubmissoesPage() {
                 aria-label="Alternar entre ativas e arquivadas"
                 style={{ marginBottom: 0 }}
               />
-              <span style={{ fontSize: '0.9rem', color: showArchived ? 'var(--text-primary)' : 'var(--text-secondary)' }}>
+              <span
+                style={{
+                  fontSize: '0.9rem',
+                  color: showArchived
+                    ? 'var(--text-primary)'
+                    : 'var(--text-secondary)',
+                }}
+              >
                 Arquivadas
               </span>
             </div>
@@ -350,7 +690,11 @@ export default function AdminSubmissoesPage() {
             <InputGroup size="sm">
               <Form.Control
                 type="text"
-                placeholder="Buscar por lista, colaborador, data/hora, status ou #id..."
+                placeholder={
+                  tipoFiltro === 'CONSOLIDADAS'
+                    ? 'Buscar por lista consolidada, data, status ou chave...'
+                    : 'Buscar por lista, colaborador, data/hora, status ou #id...'
+                }
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
@@ -362,7 +706,13 @@ export default function AdminSubmissoesPage() {
             </InputGroup>
             {searchQuery && (
               <small className="text-muted">
-                {filteredSubmissoes.length} resultado{filteredSubmissoes.length !== 1 ? 's' : ''}
+                {tipoFiltro === 'CONSOLIDADAS'
+                  ? `${filteredConsolidadas.length} resultado${
+                      filteredConsolidadas.length !== 1 ? 's' : ''
+                    }`
+                  : `${filteredSubmissoes.length} resultado${
+                      filteredSubmissoes.length !== 1 ? 's' : ''
+                    }`}
               </small>
             )}
           </div>
@@ -377,6 +727,124 @@ export default function AdminSubmissoesPage() {
             <div className="text-center py-5">
               <Spinner animation="border" />
             </div>
+          ) : tipoFiltro === 'CONSOLIDADAS' ? (
+            <div className={styles.tableWrapper}>
+              <Table striped bordered hover responsive className={styles.table}>
+                <thead>
+                  <tr className={styles.tableHeader}>
+                    <th className={styles.tableHeaderCell}>#</th>
+                    <th className={styles.tableHeaderCell}>Lista Consolidada</th>
+                    <th className={styles.tableHeaderCell}>Submissões</th>
+                    <th className={styles.tableHeaderCell}>Data</th>
+                    <th className={styles.tableHeaderCell}>Status</th>
+                    <th className={styles.tableHeaderCell}>Mensagem</th>
+                    <th className={styles.tableHeaderCell}>Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredConsolidadas.map((lote) => {
+                    const primeiraSubmissao = lote.submissoes[0];
+                    const podeArquivar =
+                      !showArchived && lote.submissoesArquivaveis.length > 0;
+                    const podeDesarquivar =
+                      showArchived && lote.submissoesDesarquivaveis.length > 0;
+                    return (
+                      <tr key={lote.id} className={styles.tableRow}>
+                        <td className={styles.tableCell}>{lote.id}</td>
+                        <td className={`${styles.tableCell} ${styles.cellBold}`}>
+                          {lote.lista.nome}
+                        </td>
+                        <td className={styles.tableCell}>
+                          <div>
+                            <div>{lote.totalSubmissoes} submissão(ões)</div>
+                            <small className="text-muted">
+                              {lote.recebidas}/{lote.totalSubmissoes} com recebimento
+                            </small>
+                          </div>
+                        </td>
+                        <td className={styles.tableCell}>
+                          {formatDate(lote.dataReferencia)}
+                        </td>
+                        <td className={styles.tableCell}>
+                          <Badge
+                            bg={STATUS_CONSOLIDADO_VARIANT[lote.status] ?? 'secondary'}
+                          >
+                            {STATUS_CONSOLIDADO_LABEL[lote.status]}
+                          </Badge>
+                        </td>
+                        <td className={styles.tableCell}>{lote.mensagem}</td>
+                        <td className={styles.tableCell}>
+                          <div className={styles.actionButtons}>
+                            {primeiraSubmissao ? (
+                              <Link href={`/admin/submissoes/${primeiraSubmissao.id}`}>
+                                <Button size="sm" variant="outline-primary">
+                                  Ver
+                                </Button>
+                              </Link>
+                            ) : null}
+
+                            {lote.submissoesParaRecebimento.length > 0 ? (
+                              <Link
+                                href={`/admin/submissoes/${lote.submissoesParaRecebimento[0]}/recebimento`}
+                              >
+                                <Button size="sm" variant="outline-success">
+                                  Recebimento
+                                </Button>
+                              </Link>
+                            ) : lote.recebidas > 0 ? (
+                              <Badge bg="success">Recebidos</Badge>
+                            ) : (
+                              <Badge bg="secondary">Sem recebimento</Badge>
+                            )}
+
+                            {podeArquivar && (
+                              <Button
+                                size="sm"
+                                variant="outline-secondary"
+                                onClick={() => handleArquivarConsolidada(lote)}
+                                disabled={rowActionLoading !== null}
+                              >
+                                {rowActionLoading ===
+                                `arquivar-consolidada-${lote.id}` ? (
+                                  <Spinner animation="border" size="sm" />
+                                ) : (
+                                  'Arquivar lote'
+                                )}
+                              </Button>
+                            )}
+
+                            {podeDesarquivar && (
+                              <Button
+                                size="sm"
+                                variant="outline-warning"
+                                onClick={() => handleDesarquivarConsolidada(lote)}
+                                disabled={rowActionLoading !== null}
+                              >
+                                {rowActionLoading ===
+                                `desarquivar-consolidada-${lote.id}` ? (
+                                  <Spinner animation="border" size="sm" />
+                                ) : (
+                                  'Desarquivar lote'
+                                )}
+                              </Button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  {filteredConsolidadas.length === 0 && (
+                    <tr>
+                      <td colSpan={7} className="text-center text-muted py-4">
+                        {searchQuery
+                          ? 'Nenhum lote consolidado encontrado para essa busca'
+                          : 'Nenhum lote consolidado encontrado'}
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </Table>
+            </div>
           ) : (
             <div className={styles.tableWrapper}>
               <Table striped bordered hover responsive className={styles.table}>
@@ -385,7 +853,10 @@ export default function AdminSubmissoesPage() {
                     <th className={styles.tableHeaderCell} style={{ width: '2.5rem' }}>
                       <Form.Check
                         type="checkbox"
-                        checked={filteredSubmissoes.length > 0 && filteredSubmissoes.every((s) => selectedIds.has(s.id))}
+                        checked={
+                          filteredSubmissoes.length > 0 &&
+                          filteredSubmissoes.every((s) => selectedIds.has(s.id))
+                        }
                         onChange={toggleSelectAll}
                         aria-label="Selecionar todas"
                       />
@@ -411,7 +882,13 @@ export default function AdminSubmissoesPage() {
                         />
                       </td>
                       <td className={styles.tableCell}>
-                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+                        <span
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.35rem',
+                          }}
+                        >
                           {s.id}
                           {s.recebimento?.id ? (
                             <FaCheck
@@ -422,7 +899,9 @@ export default function AdminSubmissoesPage() {
                           ) : null}
                         </span>
                       </td>
-                      <td className={`${styles.tableCell} ${styles.cellBold}`}>{s.lista.nome}</td>
+                      <td className={`${styles.tableCell} ${styles.cellBold}`}>
+                        {s.lista.nome}
+                      </td>
                       <td className={styles.tableCell}>{s.usuario.nome}</td>
                       <td className={styles.tableCell}>{formatDate(s.criadoEm)}</td>
                       <td className={styles.tableCell}>{s._count.pedidos}</td>
@@ -447,7 +926,11 @@ export default function AdminSubmissoesPage() {
                                 onClick={() => handleAprovarSubmissao(s.id)}
                                 disabled={rowActionLoading !== null}
                               >
-                                {rowActionLoading === `aprovar-${s.id}` ? <Spinner animation="border" size="sm" /> : 'Aprovar'}
+                                {rowActionLoading === `aprovar-${s.id}` ? (
+                                  <Spinner animation="border" size="sm" />
+                                ) : (
+                                  'Aprovar'
+                                )}
                               </Button>
                               <Button
                                 size="sm"
@@ -455,7 +938,11 @@ export default function AdminSubmissoesPage() {
                                 onClick={() => handleRejeitarSubmissao(s.id)}
                                 disabled={rowActionLoading !== null}
                               >
-                                {rowActionLoading === `rejeitar-${s.id}` ? <Spinner animation="border" size="sm" /> : 'Rejeitar'}
+                                {rowActionLoading === `rejeitar-${s.id}` ? (
+                                  <Spinner animation="border" size="sm" />
+                                ) : (
+                                  'Rejeitar'
+                                )}
                               </Button>
                             </>
                           )}
@@ -467,7 +954,11 @@ export default function AdminSubmissoesPage() {
                               onClick={() => handleReverterSubmissao(s.id)}
                               disabled={rowActionLoading !== null}
                             >
-                              {rowActionLoading === `reverter-${s.id}` ? <Spinner animation="border" size="sm" /> : 'Reverter'}
+                              {rowActionLoading === `reverter-${s.id}` ? (
+                                <Spinner animation="border" size="sm" />
+                              ) : (
+                                'Reverter'
+                              )}
                             </Button>
                           )}
 
@@ -478,7 +969,26 @@ export default function AdminSubmissoesPage() {
                               onClick={() => handleArquivar(s.id)}
                               disabled={rowActionLoading !== null}
                             >
-                              {rowActionLoading === `arquivar-${s.id}` ? <Spinner animation="border" size="sm" /> : 'Arquivar'}
+                              {rowActionLoading === `arquivar-${s.id}` ? (
+                                <Spinner animation="border" size="sm" />
+                              ) : (
+                                'Arquivar'
+                              )}
+                            </Button>
+                          )}
+
+                          {s.arquivada && (
+                            <Button
+                              size="sm"
+                              variant="outline-warning"
+                              onClick={() => handleDesarquivar(s.id)}
+                              disabled={rowActionLoading !== null}
+                            >
+                              {rowActionLoading === `desarquivar-${s.id}` ? (
+                                <Spinner animation="border" size="sm" />
+                              ) : (
+                                'Desarquivar'
+                              )}
                             </Button>
                           )}
                         </div>
@@ -488,7 +998,9 @@ export default function AdminSubmissoesPage() {
                   {filteredSubmissoes.length === 0 && (
                     <tr>
                       <td colSpan={8} className="text-center text-muted py-4">
-                        {searchQuery ? 'Nenhuma submissão encontrada para essa busca' : 'Nenhuma submissão encontrada'}
+                        {searchQuery
+                          ? 'Nenhuma submissão encontrada para essa busca'
+                          : 'Nenhuma submissão encontrada'}
                       </td>
                     </tr>
                   )}

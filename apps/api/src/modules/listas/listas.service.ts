@@ -13,10 +13,81 @@ import { AtualizarEstoqueDto } from './dto/atualizar-estoque.dto';
 import { UpdateItemRefDto } from './dto/update-item-ref.dto';
 import { UpdateMaeItemDto } from './dto/update-mae-item.dto';
 import { CopyMoveItemsDto } from './dto/copy-move-items.dto';
+import { registrarSubmissaoEmLoteConsolidado } from '../submissoes/lote-consolidado.helper';
 
 @Injectable()
 export class ListasService {
   constructor(private prisma: PrismaService) {}
+
+  private normalizarNomeGrupo(nomeGrupo: string) {
+    const nome = (nomeGrupo || '').trim();
+    if (!nome) {
+      throw new BadRequestException('Nome do grupo é obrigatório');
+    }
+    if (nome.length > 120) {
+      throw new BadRequestException('Nome do grupo deve ter no máximo 120 caracteres');
+    }
+    return nome;
+  }
+
+  private async findGrupoOrFail(grupoId: number, restauranteId: number) {
+    const grupo = await this.prisma.listaGrupo.findFirst({
+      where: { id: grupoId, restauranteId },
+    });
+    if (!grupo) {
+      throw new NotFoundException('Grupo não encontrado');
+    }
+    return grupo;
+  }
+
+  private async validarListasParaVinculoGrupo(
+    listaIds: number[],
+    restauranteId: number,
+    grupoIdDestino?: number,
+  ) {
+    const ids = Array.from(new Set(listaIds));
+    if (ids.length === 0) {
+      return ids;
+    }
+
+    const listas = await this.prisma.lista.findMany({
+      where: {
+        id: { in: ids },
+        restauranteId,
+        deletado: false,
+      },
+      select: {
+        id: true,
+        grupoId: true,
+        listaPaiId: true,
+        _count: { select: { sublistas: true } },
+      },
+    });
+
+    if (listas.length !== ids.length) {
+      throw new NotFoundException('Uma ou mais listas não foram encontradas');
+    }
+
+    for (const lista of listas) {
+      if (lista.listaPaiId) {
+        throw new ConflictException(
+          'Lista vinculada como sublista não pode participar de grupo',
+        );
+      }
+      if (lista._count.sublistas > 0) {
+        throw new ConflictException(
+          'Lista pai com sublistas não pode ser vinculada a grupo',
+        );
+      }
+      if (lista.grupoId && lista.grupoId !== grupoIdDestino) {
+        throw new ConflictException(
+          'Uma ou mais listas já pertencem a outro grupo',
+        );
+      }
+    }
+
+    return ids;
+  }
 
   private async validarUsuariosDoRestaurante(
     usuarioIds: number[],
@@ -65,7 +136,8 @@ export class ListasService {
       where: { restauranteId, deletado: false },
       include: {
         area: { select: { id: true, nome: true } },
-        _count: { select: { colaboradores: true, itensRef: true } },
+        grupo: { select: { id: true, nome: true } },
+        _count: { select: { colaboradores: true, itensRef: true, sublistas: true } },
         itensRef: {
           orderBy: { id: 'asc' },
           include: { item: { select: { nome: true, unidadeMedida: true } } },
@@ -73,6 +145,164 @@ export class ListasService {
       },
       orderBy: { criadoEm: 'desc' },
     });
+  }
+
+  async findAllGrupos(restauranteId: number) {
+    return this.prisma.listaGrupo.findMany({
+      where: { restauranteId },
+      include: {
+        listas: {
+          where: { deletado: false },
+          select: { id: true, nome: true },
+          orderBy: { nome: 'asc' },
+        },
+        _count: { select: { listas: true } },
+      },
+      orderBy: { nome: 'asc' },
+    });
+  }
+
+  async createGrupo(
+    nomeGrupo: string,
+    listaIds: number[],
+    restauranteId: number,
+  ) {
+    const nome = this.normalizarNomeGrupo(nomeGrupo);
+    const idsValidos = await this.validarListasParaVinculoGrupo(
+      listaIds ?? [],
+      restauranteId,
+    );
+
+    const grupo = await this.prisma.$transaction(async (tx) => {
+      const criado = await tx.listaGrupo.create({
+        data: {
+          nome,
+          restauranteId,
+        },
+      });
+
+      if (idsValidos.length > 0) {
+        await tx.lista.updateMany({
+          where: { id: { in: idsValidos }, restauranteId },
+          data: {
+            grupoId: criado.id,
+            listaPaiId: null,
+            nomeGrupo: null,
+          },
+        });
+      }
+
+      return criado;
+    });
+
+    return this.prisma.listaGrupo.findUnique({
+      where: { id: grupo.id },
+      include: {
+        listas: {
+          where: { deletado: false },
+          select: { id: true, nome: true },
+          orderBy: { nome: 'asc' },
+        },
+        _count: { select: { listas: true } },
+      },
+    });
+  }
+
+  async renomearGrupo(grupoId: number, nomeGrupo: string, restauranteId: number) {
+    await this.findGrupoOrFail(grupoId, restauranteId);
+    const nome = this.normalizarNomeGrupo(nomeGrupo);
+    return this.prisma.listaGrupo.update({
+      where: { id: grupoId },
+      data: { nome },
+      include: {
+        listas: {
+          where: { deletado: false },
+          select: { id: true, nome: true },
+          orderBy: { nome: 'asc' },
+        },
+        _count: { select: { listas: true } },
+      },
+    });
+  }
+
+  async deletarGrupo(grupoId: number, restauranteId: number) {
+    await this.findGrupoOrFail(grupoId, restauranteId);
+    await this.prisma.$transaction([
+      this.prisma.lista.updateMany({
+        where: { grupoId, restauranteId },
+        data: { grupoId: null },
+      }),
+      this.prisma.listaGrupo.delete({
+        where: { id: grupoId },
+      }),
+    ]);
+    return { ok: true };
+  }
+
+  async adicionarListaAoGrupo(
+    grupoId: number,
+    listaId: number,
+    restauranteId: number,
+  ) {
+    await this.findGrupoOrFail(grupoId, restauranteId);
+    await this.validarListasParaVinculoGrupo([listaId], restauranteId, grupoId);
+
+    await this.prisma.lista.update({
+      where: { id: listaId },
+      data: {
+        grupoId,
+        listaPaiId: null,
+        nomeGrupo: null,
+      },
+    });
+
+    return this.prisma.listaGrupo.findUnique({
+      where: { id: grupoId },
+      include: {
+        listas: {
+          where: { deletado: false },
+          select: { id: true, nome: true },
+          orderBy: { nome: 'asc' },
+        },
+        _count: { select: { listas: true } },
+      },
+    });
+  }
+
+  async removerListaDoGrupo(
+    grupoId: number,
+    listaId: number,
+    restauranteId: number,
+  ) {
+    await this.findGrupoOrFail(grupoId, restauranteId);
+
+    const lista = await this.prisma.lista.findFirst({
+      where: { id: listaId, restauranteId, grupoId, deletado: false },
+      select: { id: true },
+    });
+    if (!lista) {
+      throw new NotFoundException('Lista não está vinculada a este grupo');
+    }
+
+    const { removerGrupo } = await this.prisma.$transaction(async (tx) => {
+      await tx.lista.update({
+        where: { id: listaId },
+        data: { grupoId: null },
+      });
+
+      const restantes = await tx.lista.count({
+        where: { grupoId, restauranteId, deletado: false },
+      });
+
+      if (restantes === 0) {
+        await tx.listaGrupo.delete({ where: { id: grupoId } });
+        return { removerGrupo: true };
+      }
+
+      return { removerGrupo: false };
+    });
+
+    return { ok: true, grupoRemovido: removerGrupo };
   }
 
   async findAllDeleted(restauranteId: number) {
@@ -703,6 +933,12 @@ export class ListasService {
       include: { pedidos: true },
     });
 
+    await registrarSubmissaoEmLoteConsolidado(this.prisma, {
+      submissaoId: submissao.id,
+      listaId,
+      restauranteId,
+    });
+
     return { total_pedidos: submissao.pedidos.length, submissaoId: submissao.id };
   }
 
@@ -765,6 +1001,12 @@ export class ListasService {
           include: { item: true },
         },
       },
+    });
+
+    await registrarSubmissaoEmLoteConsolidado(this.prisma, {
+      submissaoId: submissao.id,
+      listaId,
+      restauranteId,
     });
 
     return submissao;
