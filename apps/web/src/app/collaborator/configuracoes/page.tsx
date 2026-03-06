@@ -11,6 +11,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import InstallAppButton from '@/components/InstallAppButton';
+import { hardRefreshApp } from '@/lib/hardRefreshApp';
 
 const SESSION_TIMEOUTS = [
   { value: 5, label: '5 minutos — Alta segurança' },
@@ -60,19 +61,7 @@ export default function ConfiguracoesColaborador() {
   const handleHardRefresh = async () => {
     if (refreshing) return;
     setRefreshing(true);
-    try {
-      if ('serviceWorker' in navigator) {
-        const regs = await navigator.serviceWorker.getRegistrations();
-        await Promise.all(regs.map((r) => r.unregister()));
-      }
-      if ('caches' in window) {
-        const names = await caches.keys();
-        await Promise.all(names.map((n) => caches.delete(n)));
-      }
-      window.location.reload();
-    } catch {
-      window.location.reload();
-    }
+    await hardRefreshApp();
   };
 
   return (
