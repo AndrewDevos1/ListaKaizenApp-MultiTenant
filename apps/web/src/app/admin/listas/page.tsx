@@ -178,8 +178,8 @@ export default function ListasPage() {
     if (areaFiltro !== null) {
       if (areaFiltro === 0) {
         if (l.area !== null && l.area !== undefined) return false;
-      } else {
-        if (l.area?.id !== areaFiltro) return false;
+      } else if (l.area?.id !== areaFiltro) {
+        return false;
       }
     }
     if (!search) return true;
@@ -188,6 +188,8 @@ export default function ListasPage() {
     const itemMatch = l.itensRef.some((r) => normalizeText(r.item.nome).includes(termo));
     return nomeMatch || itemMatch;
   });
+
+  const areasFiltro = areas.filter((a) => normalizeText(a.nome) !== 'estoque principal');
 
   const listasElegiveisParaGrupo = listas.filter(
     (lista) =>
@@ -689,7 +691,7 @@ export default function ListasPage() {
             >
               Sem área
             </button>
-            {areas.map((a) => (
+            {areasFiltro.map((a) => (
               <button
                 key={a.id}
                 className={`${styles.filtroBtn} ${areaFiltro === a.id ? styles.filtroBtnAtivo : ''}`}
