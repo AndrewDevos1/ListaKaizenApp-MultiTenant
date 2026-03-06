@@ -721,15 +721,13 @@ export class ListasService {
 
     // Calcula qtdSolicitada para cada item
     const itensSolicitados = itensRef
-      // Itens com threshold desativado não devem gerar pedido automático
-      .filter((ref) => ref.usaThreshold !== false)
       .map((ref) => {
         if (ref.quantidadeAtual >= ref.quantidadeMinima) {
           return null;
         }
 
         const qtdSolicitada =
-          ref.usaThreshold && ref.qtdFardo && ref.qtdFardo > 0
+          ref.usaThreshold === true && ref.qtdFardo && ref.qtdFardo > 0
             ? ref.qtdFardo
             : Math.max(0, ref.quantidadeMinima - ref.quantidadeAtual);
 

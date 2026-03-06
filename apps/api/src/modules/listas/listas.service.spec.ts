@@ -112,7 +112,7 @@ describe('ListasService', () => {
     expect(prisma.listaColaborador.createMany).not.toHaveBeenCalled();
   });
 
-  it('nao deve gerar submissao para item com threshold desativado', async () => {
+  it('deve gerar submissao para item com threshold desativado usando regra padrao', async () => {
     const { prisma, service } = makeService();
     prisma.listaColaborador.findFirst.mockResolvedValue({ id: 1 });
 
@@ -125,14 +125,33 @@ describe('ListasService', () => {
         usaThreshold: false,
       },
     ]);
+    prisma.submissao.create.mockResolvedValue({
+      id: 1,
+      status: StatusSubmissao.PENDENTE,
+      pedidos: [{ itemId: 100, qtdSolicitada: 10 }],
+    });
 
-    await expect(service.submeterLista(1, 99, 7)).rejects.toBeInstanceOf(
-      UnprocessableEntityException,
-    );
-    expect(prisma.submissao.create).not.toHaveBeenCalled();
+    await service.submeterLista(1, 99, 7);
+
+    expect(prisma.submissao.create).toHaveBeenCalledWith({
+      data: {
+        listaId: 1,
+        usuarioId: 7,
+        restauranteId: 99,
+        status: StatusSubmissao.PENDENTE,
+        pedidos: {
+          create: [{ itemId: 100, qtdSolicitada: 10 }],
+        },
+      },
+      include: {
+        pedidos: {
+          include: { item: true },
+        },
+      },
+    });
   });
 
-  it('deve submeter somente itens com threshold ativo', async () => {
+  it('deve submeter itens com e sem threshold', async () => {
     const { prisma, service } = makeService();
     prisma.listaColaborador.findFirst.mockResolvedValue({ id: 1 });
 
@@ -155,7 +174,10 @@ describe('ListasService', () => {
     prisma.submissao.create.mockResolvedValue({
       id: 1,
       status: StatusSubmissao.PENDENTE,
-      pedidos: [{ itemId: 101, qtdSolicitada: 8 }],
+      pedidos: [
+        { itemId: 100, qtdSolicitada: 10 },
+        { itemId: 101, qtdSolicitada: 8 },
+      ],
     });
 
     await service.submeterLista(1, 99, 7);
@@ -167,7 +189,10 @@ describe('ListasService', () => {
         restauranteId: 99,
         status: StatusSubmissao.PENDENTE,
         pedidos: {
-          create: [{ itemId: 101, qtdSolicitada: 8 }],
+          create: [
+            { itemId: 100, qtdSolicitada: 10 },
+            { itemId: 101, qtdSolicitada: 8 },
+          ],
         },
       },
       include: {

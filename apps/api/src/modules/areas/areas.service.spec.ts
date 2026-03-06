@@ -1,4 +1,4 @@
-import { NotFoundException, UnprocessableEntityException } from '@nestjs/common';
+import { NotFoundException } from '@nestjs/common';
 import { StatusSubmissao } from '@prisma/client';
 import { AreasService } from './areas.service';
 
@@ -79,7 +79,7 @@ describe('AreasService', () => {
     expect(result).toEqual([{ id: 500 }]);
   });
 
-  it('deve ignorar itens com threshold desativado ao submeter area', async () => {
+  it('deve submeter item com threshold desativado usando regra padrao', async () => {
     const { prisma, service } = makeService();
     jest.spyOn(service, 'findOne').mockResolvedValue({ id: 1 } as any);
 
@@ -92,14 +92,30 @@ describe('AreasService', () => {
         usaThreshold: false,
       },
     ]);
+    prisma.submissao.create.mockResolvedValue({
+      id: 500,
+      status: StatusSubmissao.PENDENTE,
+      pedidos: [{ itemId: 100, qtdSolicitada: 10 }],
+    });
 
-    await expect(service.submeterArea(1, 99, 7)).rejects.toBeInstanceOf(
-      UnprocessableEntityException,
-    );
-    expect(prisma.submissao.create).not.toHaveBeenCalled();
+    const result = await service.submeterArea(1, 99, 7);
+
+    expect(prisma.submissao.create).toHaveBeenCalledWith({
+      data: {
+        listaId: 10,
+        usuarioId: 7,
+        restauranteId: 99,
+        status: StatusSubmissao.PENDENTE,
+        pedidos: {
+          create: [{ itemId: 100, qtdSolicitada: 10 }],
+        },
+      },
+      include: { pedidos: { include: { item: true } } },
+    });
+    expect(result).toHaveLength(1);
   });
 
-  it('deve criar submissao apenas com itens de threshold ativo', async () => {
+  it('deve criar submissao com itens de threshold ativo e desativado', async () => {
     const { prisma, service } = makeService();
     jest.spyOn(service, 'findOne').mockResolvedValue({ id: 1 } as any);
 
@@ -121,7 +137,10 @@ describe('AreasService', () => {
     prisma.submissao.create.mockResolvedValue({
       id: 500,
       status: StatusSubmissao.PENDENTE,
-      pedidos: [{ itemId: 101, qtdSolicitada: 7 }],
+      pedidos: [
+        { itemId: 100, qtdSolicitada: 10 },
+        { itemId: 101, qtdSolicitada: 7 },
+      ],
     });
 
     const result = await service.submeterArea(1, 99, 7);
@@ -133,7 +152,10 @@ describe('AreasService', () => {
         restauranteId: 99,
         status: StatusSubmissao.PENDENTE,
         pedidos: {
-          create: [{ itemId: 101, qtdSolicitada: 7 }],
+          create: [
+            { itemId: 100, qtdSolicitada: 10 },
+            { itemId: 101, qtdSolicitada: 7 },
+          ],
         },
       },
       include: { pedidos: { include: { item: true } } },

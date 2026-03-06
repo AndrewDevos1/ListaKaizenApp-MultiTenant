@@ -251,12 +251,18 @@ export class AreasService {
         where: { listaId: lista.id },
       });
       const itensSolicitados = itensRef
-        // Itens com threshold desativado não devem gerar pedido automático
-        .filter((ref) => ref.usaThreshold !== false)
-        .map((ref) => ({
-          itemId: ref.itemId,
-          qtdSolicitada: Math.max(0, ref.quantidadeMinima - ref.quantidadeAtual),
-        }))
+        .map((ref) => {
+          if (ref.quantidadeAtual >= ref.quantidadeMinima) {
+            return { itemId: ref.itemId, qtdSolicitada: 0 };
+          }
+          return {
+            itemId: ref.itemId,
+            qtdSolicitada:
+              ref.usaThreshold === true && ref.qtdFardo && ref.qtdFardo > 0
+                ? ref.qtdFardo
+                : Math.max(0, ref.quantidadeMinima - ref.quantidadeAtual),
+          };
+        })
         .filter((i) => i.qtdSolicitada > 0);
 
       if (itensSolicitados.length === 0) continue;
