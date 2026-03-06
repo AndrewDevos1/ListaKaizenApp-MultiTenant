@@ -10,8 +10,10 @@ describe('ListasService', () => {
       },
       lista: {
         findMany: jest.fn(),
+        findFirst: jest.fn(),
       },
       listaColaborador: {
+        findFirst: jest.fn(),
         findUnique: jest.fn(),
         create: jest.fn(),
         deleteMany: jest.fn(),
@@ -31,7 +33,7 @@ describe('ListasService', () => {
 
   it('deve validar se todos os itemRefIds pertencem a lista informada', async () => {
     const { prisma, service } = makeService();
-    jest.spyOn(service, 'findOne').mockResolvedValue({ id: 1 } as any);
+    prisma.listaColaborador.findFirst.mockResolvedValue({ id: 1 });
 
     prisma.listaItemRef.findMany.mockResolvedValue([{ id: 10 }]);
 
@@ -41,13 +43,13 @@ describe('ListasService', () => {
           { itemRefId: 10, quantidadeAtual: 2 },
           { itemRefId: 11, quantidadeAtual: 3 },
         ],
-      }),
+      }, 7),
     ).rejects.toBeInstanceOf(NotFoundException);
   });
 
   it('deve atualizar estoque de todos os itens validos', async () => {
     const { prisma, service } = makeService();
-    jest.spyOn(service, 'findOne').mockResolvedValue({ id: 1 } as any);
+    prisma.listaColaborador.findFirst.mockResolvedValue({ id: 1 });
 
     prisma.listaItemRef.findMany.mockResolvedValue([{ id: 10 }, { id: 11 }]);
     prisma.listaItemRef.update
@@ -59,7 +61,7 @@ describe('ListasService', () => {
         { itemRefId: 10, quantidadeAtual: 2 },
         { itemRefId: 11, quantidadeAtual: 3 },
       ],
-    });
+    }, 7);
 
     expect(prisma.listaItemRef.update).toHaveBeenCalledTimes(2);
     expect(result).toHaveLength(2);
@@ -112,7 +114,7 @@ describe('ListasService', () => {
 
   it('nao deve gerar submissao para item com threshold desativado', async () => {
     const { prisma, service } = makeService();
-    jest.spyOn(service, 'findOne').mockResolvedValue({ id: 1 } as any);
+    prisma.listaColaborador.findFirst.mockResolvedValue({ id: 1 });
 
     prisma.listaItemRef.findMany.mockResolvedValue([
       {
@@ -132,7 +134,7 @@ describe('ListasService', () => {
 
   it('deve submeter somente itens com threshold ativo', async () => {
     const { prisma, service } = makeService();
-    jest.spyOn(service, 'findOne').mockResolvedValue({ id: 1 } as any);
+    prisma.listaColaborador.findFirst.mockResolvedValue({ id: 1 });
 
     prisma.listaItemRef.findMany.mockResolvedValue([
       {
@@ -166,6 +168,72 @@ describe('ListasService', () => {
         status: StatusSubmissao.PENDENTE,
         pedidos: {
           create: [{ itemId: 101, qtdSolicitada: 8 }],
+        },
+      },
+      include: {
+        pedidos: {
+          include: { item: true },
+        },
+      },
+    });
+  });
+
+  it('deve bloquear atualizacao de estoque para colaborador nao atribuido', async () => {
+    const { prisma, service } = makeService();
+    prisma.listaColaborador.findFirst.mockResolvedValue(null);
+
+    await expect(
+      service.atualizarEstoque(1, 99, {
+        itens: [{ itemRefId: 10, quantidadeAtual: 2 }],
+      }, 7),
+    ).rejects.toBeInstanceOf(NotFoundException);
+
+    expect(prisma.listaItemRef.findMany).not.toHaveBeenCalled();
+    expect(prisma.listaItemRef.update).not.toHaveBeenCalled();
+  });
+
+  it('deve bloquear submissao para colaborador nao atribuido', async () => {
+    const { prisma, service } = makeService();
+    prisma.listaColaborador.findFirst.mockResolvedValue(null);
+
+    await expect(service.submeterLista(1, 99, 7)).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
+
+    expect(prisma.listaItemRef.findMany).not.toHaveBeenCalled();
+    expect(prisma.submissao.create).not.toHaveBeenCalled();
+  });
+
+  it('deve usar qtdFardo quando threshold estiver ativo e item abaixo do minimo', async () => {
+    const { prisma, service } = makeService();
+    prisma.listaColaborador.findFirst.mockResolvedValue({ id: 1 });
+
+    prisma.listaItemRef.findMany.mockResolvedValue([
+      {
+        id: 11,
+        itemId: 101,
+        quantidadeMinima: 10,
+        quantidadeAtual: 2,
+        usaThreshold: true,
+        qtdFardo: 20,
+      },
+    ]);
+    prisma.submissao.create.mockResolvedValue({
+      id: 1,
+      status: StatusSubmissao.PENDENTE,
+      pedidos: [{ itemId: 101, qtdSolicitada: 20 }],
+    });
+
+    await service.submeterLista(1, 99, 7);
+
+    expect(prisma.submissao.create).toHaveBeenCalledWith({
+      data: {
+        listaId: 1,
+        usuarioId: 7,
+        restauranteId: 99,
+        status: StatusSubmissao.PENDENTE,
+        pedidos: {
+          create: [{ itemId: 101, qtdSolicitada: 20 }],
         },
       },
       include: {

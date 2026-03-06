@@ -14,7 +14,7 @@ type StatusPedido = 'PENDENTE' | 'APROVADO' | 'REJEITADO';
 interface Pedido {
   id: number;
   status: StatusPedido;
-  quantidadeSolicitada: number;
+  qtdSolicitada: number;
   item: { id: number; nome: string; unidadeMedida: string };
 }
 
@@ -143,7 +143,7 @@ export default function CollaboratorSubmissaoDetailPage() {
                       {pedido.item.nome}
                     </td>
                     <td className={styles.tableCell}>{pedido.item.unidadeMedida}</td>
-                    <td className={styles.tableCell}>{pedido.quantidadeSolicitada}</td>
+                    <td className={styles.tableCell}>{pedido.qtdSolicitada}</td>
                     <td className={styles.tableCell}>
                       <Badge bg={STATUS_PED_VARIANT[pedido.status] ?? 'secondary'}>
                         {pedido.status}

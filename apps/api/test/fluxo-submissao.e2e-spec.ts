@@ -21,6 +21,7 @@ describe('Fluxo E2E — colaborador -> submissao -> admin', () => {
   let submissaoId: number;
   let adminEmail: string;
   let collabEmail: string;
+  let collabSemListaEmail: string;
   let collabOutroRestauranteId: number;
   let itemOutroRestauranteId: number;
   let submissaoOutroRestauranteId: number;
@@ -49,6 +50,7 @@ describe('Fluxo E2E — colaborador -> submissao -> admin', () => {
     const senhaHash = await bcrypt.hash(senha, 10);
     adminEmail = `admin.e2e.${Date.now()}@kaizen.test`;
     collabEmail = `collab.e2e.${Date.now()}@kaizen.test`;
+    collabSemListaEmail = `collab.sem.lista.${Date.now()}@kaizen.test`;
 
     const admin = await prisma.usuario.create({
       data: {
@@ -66,6 +68,18 @@ describe('Fluxo E2E — colaborador -> submissao -> admin', () => {
       data: {
         nome: 'Colaborador E2E',
         email: collabEmail,
+        senha: senhaHash,
+        role: UserRole.COLLABORATOR,
+        aprovado: true,
+        ativo: true,
+        restauranteId: restaurante.id,
+      },
+    });
+
+    await prisma.usuario.create({
+      data: {
+        nome: 'Colaborador Sem Lista',
+        email: collabSemListaEmail,
         senha: senhaHash,
         role: UserRole.COLLABORATOR,
         aprovado: true,
@@ -242,6 +256,20 @@ describe('Fluxo E2E — colaborador -> submissao -> admin', () => {
           },
         ],
       })
+      .expect(404);
+  });
+
+  it('deve bloquear submissao de lista para colaborador nao atribuido', async () => {
+    const collabSemListaLogin = await request(app.getHttpServer())
+      .post('/api/v1/auth/login')
+      .send({ email: collabSemListaEmail, senha })
+      .expect(201);
+
+    const collabSemListaToken = collabSemListaLogin.body.accessToken as string;
+
+    await request(app.getHttpServer())
+      .post(`/api/v1/collaborator/listas/${listaId}/submeter`)
+      .set('Authorization', `Bearer ${collabSemListaToken}`)
       .expect(404);
   });
 

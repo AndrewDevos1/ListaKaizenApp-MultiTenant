@@ -14,12 +14,8 @@ type StatusPedido = 'PENDENTE' | 'APROVADO' | 'REJEITADO';
 interface Pedido {
   id: number;
   status: StatusPedido;
-  quantidadeSolicitada: number;
-  itemRef: {
-    id: number;
-    quantidadeMinima: number;
-    item: { id: number; nome: string; unidadeMedida: string };
-  };
+  qtdSolicitada: number;
+  item: { id: number; nome: string; unidadeMedida: string };
 }
 
 interface SubmissaoDetail {
@@ -283,10 +279,10 @@ export default function AdminSubmissaoDetailPage() {
                   <tr key={pedido.id} className={styles.tableRow}>
                     <td className={styles.tableCell}>{pedido.id}</td>
                     <td className={`${styles.tableCell} ${styles.cellBold}`}>
-                      {pedido.itemRef.item.nome}
+                      {pedido.item.nome}
                     </td>
-                    <td className={styles.tableCell}>{pedido.itemRef.item.unidadeMedida}</td>
-                    <td className={styles.tableCell}>{pedido.quantidadeSolicitada}</td>
+                    <td className={styles.tableCell}>{pedido.item.unidadeMedida}</td>
+                    <td className={styles.tableCell}>{pedido.qtdSolicitada}</td>
                     <td className={styles.tableCell}>
                       <Badge bg={STATUS_PED_VARIANT[pedido.status] ?? 'secondary'}>
                         {pedido.status}

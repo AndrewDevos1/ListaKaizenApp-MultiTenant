@@ -2,8 +2,8 @@
 
 ## Status Atual
 - Estado: EM ANDAMENTO
-- Ultimo checkpoint: CP-C009 (concluido)
-- Proximo passo: CP-C010 — Revisao final dos modulos restantes (POP/Sugestoes/Convites) com foco em isolamento e roles
+- Ultimo checkpoint: CP-C010 (concluido)
+- Proximo passo: CP-C011 — Implementar recebimento (schema + API + web) e fechar paridade do ciclo pos-aprovacao
 - Pasta de trabalho: `manuais/plano-migracao-codex`
 
 ## Checklist Executivo
@@ -16,7 +16,8 @@
 - [x] CP-C007 — Fechar lacuna de tenant em `CotacoesService.create` e ampliar E2E de isolamento em `checklists`/`cotacoes`
 - [x] CP-C008 — Fechar lacuna de tenant em `AreasService.setColaboradores` e ampliar E2E de isolamento para `areas`
 - [x] CP-C009 — Fechar lacuna de tenant em `ListasRapidasService` (itemId cross-tenant) com cobertura unitaria/E2E
-- [ ] CP-C010 — Revisao final de isolamento/permissoes nos modulos restantes
+- [x] CP-C010 — Consolidar matriz `Legado x Atual x Falta` de listas/submissoes/recebimento e fechar P0 (contrato admin, calculo com `qtdFardo`, permissao por atribuicao de lista)
+- [ ] CP-C011 — Implementar recebimento (colaborador/admin) com persistencia, endpoints e telas
 
 ## Historico de Checkpoints
 | Checkpoint | Data/Hora (BRT) | Acao | Resultado | Proximo passo |
@@ -30,6 +31,7 @@
 | CP-C007 | 2026-03-05 19:21 | `CotacoesService.create` passou a rejeitar submissao de outro tenant; E2E ampliado para bloquear cross-tenant em `checklists` e `cotacoes`; adicionados unitarios de `CotacoesService` | Concluido (`9/9` unitarios + `2/2` suites E2E, `8/8` testes) | CP-C008 |
 | CP-C008 | 2026-03-05 20:09 | `AreasService.setColaboradores` passou a validar colaboradores do tenant antes da troca de vinculos; `getColaboradores` filtrado por restaurante; E2E ampliado para bloqueio cross-tenant em `areas` | Concluido (`13/13` unitarios + `2/2` suites E2E, `9/9` testes) | CP-C009 |
 | CP-C009 | 2026-03-05 20:41 | `ListasRapidasService` passou a validar `itemId` por tenant em create/add/update; novos unitarios de isolamento e E2E de bloqueio de item cross-tenant | Concluido (`20/20` unitarios + `2/2` suites E2E, `10/10` testes) | CP-C010 |
+| CP-C010 | 2026-03-05 22:13 | Criada matriz de paridade em `MATRIZ_LISTAS_SUBMISSAO_RECEBIMENTO.md`; corrigido P0 em listas/submissoes (permite apenas colaborador atribuido, calculo com `qtdFardo`, ajuste de contrato nas telas de detalhe) | Concluido (`10/10` unitarios em `listas.service.spec.ts`, build API/Web e E2E `fluxo-submissao` com `7/7` testes OK) | CP-C011 |
 
 ## Como Retomar
 1. Ler este arquivo.

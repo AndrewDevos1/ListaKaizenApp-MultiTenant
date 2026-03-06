@@ -117,6 +117,57 @@ export class ListasService {
     return lista;
   }
 
+  async findOneForColaborador(
+    id: number,
+    restauranteId: number,
+    usuarioId: number,
+  ) {
+    const lista = await this.prisma.lista.findFirst({
+      where: {
+        id,
+        restauranteId,
+        deletado: false,
+        colaboradores: { some: { usuarioId } },
+      },
+      include: {
+        colaboradores: {
+          include: { usuario: { select: { id: true, nome: true, email: true } } },
+        },
+        itensRef: {
+          include: { item: true },
+        },
+      },
+    });
+
+    if (!lista) {
+      throw new NotFoundException('Lista não encontrada para o colaborador');
+    }
+
+    return lista;
+  }
+
+  private async validarAtribuicaoColaborador(
+    listaId: number,
+    usuarioId: number,
+    restauranteId: number,
+  ) {
+    const vinculo = await this.prisma.listaColaborador.findFirst({
+      where: {
+        listaId,
+        usuarioId,
+        lista: {
+          restauranteId,
+          deletado: false,
+        },
+      },
+      select: { id: true },
+    });
+
+    if (!vinculo) {
+      throw new NotFoundException('Lista não encontrada para o colaborador');
+    }
+  }
+
   async update(id: number, dto: UpdateListaDto, restauranteId: number) {
     await this.findOne(id, restauranteId);
     const { colaboradorIds, ...data } = dto;
@@ -232,9 +283,9 @@ export class ListasService {
     listaId: number,
     restauranteId: number,
     dto: AtualizarEstoqueDto,
+    usuarioId: number,
   ) {
-    // Verifica que a lista pertence ao restaurante do usuário
-    await this.findOne(listaId, restauranteId);
+    await this.validarAtribuicaoColaborador(listaId, usuarioId, restauranteId);
 
     // Verifica que cada itemRefId pertence à lista informada (isolamento multi-tenant)
     const itemRefIds = dto.itens.map((i) => i.itemRefId);
@@ -661,8 +712,7 @@ export class ListasService {
     restauranteId: number,
     usuarioId: number,
   ) {
-    // Busca todos os itensRef da lista
-    await this.findOne(listaId, restauranteId);
+    await this.validarAtribuicaoColaborador(listaId, usuarioId, restauranteId);
 
     const itensRef = await this.prisma.listaItemRef.findMany({
       where: { listaId },
@@ -673,10 +723,22 @@ export class ListasService {
     const itensSolicitados = itensRef
       // Itens com threshold desativado não devem gerar pedido automático
       .filter((ref) => ref.usaThreshold !== false)
-      .map((ref) => ({
-        itemId: ref.itemId,
-        qtdSolicitada: Math.max(0, ref.quantidadeMinima - ref.quantidadeAtual),
-      }))
+      .map((ref) => {
+        if (ref.quantidadeAtual >= ref.quantidadeMinima) {
+          return null;
+        }
+
+        const qtdSolicitada =
+          ref.usaThreshold && ref.qtdFardo && ref.qtdFardo > 0
+            ? ref.qtdFardo
+            : Math.max(0, ref.quantidadeMinima - ref.quantidadeAtual);
+
+        return {
+          itemId: ref.itemId,
+          qtdSolicitada,
+        };
+      })
+      .filter((i): i is { itemId: number; qtdSolicitada: number } => i !== null)
       .filter((i) => i.qtdSolicitada > 0);
 
     // Se nenhum item precisar de reposição, retorna 422

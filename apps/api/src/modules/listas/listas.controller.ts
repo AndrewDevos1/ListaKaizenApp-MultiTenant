@@ -91,7 +91,12 @@ export class ListasController {
   findOne(
     @Param('id', ParseIntPipe) id: number,
     @TenantId() restauranteId: number,
+    @CurrentUser('id') userId: number,
+    @CurrentUser('role') role: string,
   ) {
+    if (role === 'COLLABORATOR') {
+      return this.listasService.findOneForColaborador(id, restauranteId, userId);
+    }
     return this.listasService.findOne(id, restauranteId);
   }
 
@@ -356,8 +361,14 @@ export class CollaboratorListasController {
     @Param('id', ParseIntPipe) listaId: number,
     @TenantId() restauranteId: number,
     @Body() dto: AtualizarEstoqueDto,
+    @CurrentUser('id') userId: number,
   ) {
-    return this.listasService.atualizarEstoque(listaId, restauranteId, dto);
+    return this.listasService.atualizarEstoque(
+      listaId,
+      restauranteId,
+      dto,
+      userId,
+    );
   }
 
   @Post('listas/:id/submeter')
