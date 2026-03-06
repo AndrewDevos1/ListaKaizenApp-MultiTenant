@@ -26,6 +26,19 @@ interface SubmissaoDetail {
   lista: { id: number; nome: string };
   usuario: { id: number; nome: string; email: string };
   pedidos: Pedido[];
+  recebimento?: {
+    id: number;
+    observacoes?: string | null;
+    confirmadoEm?: string | null;
+    confirmadoAdminEm?: string | null;
+    confirmadoPor?: { id: number; nome: string; email: string } | null;
+    confirmadoAdmin?: { id: number; nome: string; email: string } | null;
+    itens: Array<{
+      pedidoId: number;
+      confirmado: boolean;
+      pedido: Pedido;
+    }>;
+  } | null;
 }
 
 const STATUS_SUB_VARIANT: Record<StatusSubmissao, string> = {
@@ -227,6 +240,15 @@ export default function AdminSubmissaoDetailPage() {
     );
   };
 
+  const handleDesfazerRecebimento = () => {
+    if (!confirm('Desfazer o recebimento desta submissão?')) return;
+    execAction(
+      'desfazer-recebimento',
+      () => api.delete(`/v1/admin/submissoes/${submissaoId}/recebimento`),
+      'Recebimento desfeito com sucesso',
+    );
+  };
+
   const handleCriarChecklist = async () => {
     setError('');
     setSuccess('');
@@ -378,6 +400,23 @@ export default function AdminSubmissaoDetailPage() {
             >
               {isLoading('arquivar') ? <Spinner animation="border" size="sm" /> : 'Arquivar Submissão'}
             </Button>
+            {(submissao.status === 'APROVADO' || submissao.status === 'PARCIAL') && !submissao.arquivada && (
+              <Link href={`/admin/submissoes/${submissao.id}/recebimento`}>
+                <Button variant="outline-success" size="sm" disabled={!!actionLoading}>
+                  {submissao.recebimento?.confirmadoAdminEm ? 'Ver Recebimento' : 'Confirmar Recebimento'}
+                </Button>
+              </Link>
+            )}
+            {submissao.recebimento && (
+              <Button
+                variant="outline-danger"
+                size="sm"
+                onClick={handleDesfazerRecebimento}
+                disabled={!!actionLoading}
+              >
+                {isLoading('desfazer-recebimento') ? <Spinner animation="border" size="sm" /> : 'Desfazer Recebimento'}
+              </Button>
+            )}
             {pedidosAprovados.length > 0 && (
               <>
                 <Button
@@ -414,6 +453,31 @@ export default function AdminSubmissaoDetailPage() {
             )}
           </div>
         </div>
+
+        {submissao.recebimento && (
+          <div className={styles.tableSection} style={{ padding: '1.25rem 2rem' }}>
+            <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap', marginBottom: '0.75rem' }}>
+              <Badge bg="success">Recebimento registrado</Badge>
+              {submissao.recebimento.confirmadoEm && (
+                <Badge bg="primary">
+                  Colaborador: {submissao.recebimento.confirmadoPor?.nome ?? 'N/A'} em{' '}
+                  {formatDate(submissao.recebimento.confirmadoEm)}
+                </Badge>
+              )}
+              {submissao.recebimento.confirmadoAdminEm && (
+                <Badge bg="dark">
+                  Admin: {submissao.recebimento.confirmadoAdmin?.nome ?? 'N/A'} em{' '}
+                  {formatDate(submissao.recebimento.confirmadoAdminEm)}
+                </Badge>
+              )}
+            </div>
+            {submissao.recebimento.observacoes && (
+              <Alert variant="secondary" style={{ marginBottom: 0 }}>
+                <strong>Observações:</strong> {submissao.recebimento.observacoes}
+              </Alert>
+            )}
+          </div>
+        )}
 
         {/* Tabela de pedidos */}
         <div className={styles.tableSection}>

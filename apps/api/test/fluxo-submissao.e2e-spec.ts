@@ -356,5 +356,45 @@ describe('Fluxo E2E — colaborador -> submissao -> admin', () => {
 
     expect(collabView.body.status).toBe(StatusSubmissao.APROVADO);
     expect(collabView.body.pedidos[0].status).toBe(StatusPedido.APROVADO);
+
+    const confirmacaoColab = await request(app.getHttpServer())
+      .post(`/api/v1/collaborator/submissoes/${submissaoId}/recebimento`)
+      .set('Authorization', `Bearer ${collabToken}`)
+      .send({
+        itensConfirmados: [collabView.body.pedidos[0].id],
+        observacoes: 'Recebido integralmente',
+      })
+      .expect(201);
+
+    expect(confirmacaoColab.body.submissaoId).toBe(submissaoId);
+    expect(confirmacaoColab.body.confirmadoPorId).toBeTruthy();
+    expect(confirmacaoColab.body.itens).toHaveLength(1);
+    expect(confirmacaoColab.body.itens[0].confirmado).toBe(true);
+
+    const recebimentoColab = await request(app.getHttpServer())
+      .get(`/api/v1/collaborator/submissoes/${submissaoId}/recebimento`)
+      .set('Authorization', `Bearer ${collabToken}`)
+      .expect(200);
+
+    expect(recebimentoColab.body.id).toBe(confirmacaoColab.body.id);
+    expect(recebimentoColab.body.confirmadoPor).toBeDefined();
+
+    const confirmacaoAdmin = await request(app.getHttpServer())
+      .post(`/api/v1/admin/submissoes/${submissaoId}/recebimento`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ itensConfirmados: [collabView.body.pedidos[0].id] })
+      .expect(201);
+
+    expect(confirmacaoAdmin.body.confirmadoAdminId).toBeTruthy();
+
+    await request(app.getHttpServer())
+      .delete(`/api/v1/admin/submissoes/${submissaoId}/recebimento`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .expect(200);
+
+    await request(app.getHttpServer())
+      .get(`/api/v1/admin/submissoes/${submissaoId}/recebimento`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .expect(404);
   });
 });

@@ -12,6 +12,8 @@ const TABLES = [
   'checklists',
   'cotacao_itens',
   'cotacoes',
+  'recebimento_itens',
+  'recebimentos',
   'pedidos',
   'submissoes',
   'lista_rapida_itens',
@@ -60,4 +62,3 @@ export async function truncateAllTables(prisma: PrismaClient) {
   const truncateSql = `TRUNCATE TABLE ${TABLES.map((t) => `"${t}"`).join(', ')} RESTART IDENTITY CASCADE;`;
   await prisma.$executeRawUnsafe(truncateSql);
 }
-

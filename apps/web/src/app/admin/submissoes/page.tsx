@@ -5,7 +5,7 @@ import { Table, Alert, Spinner, Badge, Button, Tabs, Tab, Modal, Form } from 're
 import Link from 'next/link';
 import api from '@/lib/api';
 import styles from '@/app/admin/listas/[id]/ListaDetail.module.css';
-import { FaClipboardCheck, FaWhatsapp, FaCopy } from 'react-icons/fa';
+import { FaClipboardCheck, FaWhatsapp, FaCopy, FaCheck } from 'react-icons/fa';
 
 type StatusSubmissao = 'PENDENTE' | 'APROVADO' | 'REJEITADO' | 'PARCIAL' | 'ARQUIVADO';
 
@@ -17,6 +17,11 @@ interface SubmissaoSummary {
   lista: { id: number; nome: string };
   usuario: { id: number; nome: string; email: string };
   _count: { pedidos: number };
+  recebimento?: {
+    id: number;
+    confirmadoEm: string | null;
+    confirmadoAdminEm: string | null;
+  } | null;
 }
 
 interface MergePreviewItem {
@@ -334,7 +339,18 @@ export default function AdminSubmissoesPage() {
                           aria-label={`Selecionar submissão ${s.id}`}
                         />
                       </td>
-                      <td className={styles.tableCell}>{s.id}</td>
+                      <td className={styles.tableCell}>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+                          {s.id}
+                          {s.recebimento?.id ? (
+                            <FaCheck
+                              title="Recebimento confirmado"
+                              aria-label="Recebimento confirmado"
+                              style={{ color: '#28a745', fontSize: '0.85rem' }}
+                            />
+                          ) : null}
+                        </span>
+                      </td>
                       <td className={`${styles.tableCell} ${styles.cellBold}`}>{s.lista.nome}</td>
                       <td className={styles.tableCell}>{s.usuario.nome}</td>
                       <td className={styles.tableCell}>{formatDate(s.criadoEm)}</td>

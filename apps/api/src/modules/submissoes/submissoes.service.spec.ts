@@ -15,7 +15,11 @@ describe('SubmissoesService', () => {
       },
     } as any;
 
-    return { prisma, service: new SubmissoesService(prisma) };
+    const notificacoesService = {
+      criar: jest.fn(),
+    } as any;
+
+    return { prisma, service: new SubmissoesService(prisma, notificacoesService) };
   };
 
   it('deve retornar erro quando pedido nao existe no restaurante', async () => {
