@@ -22,6 +22,7 @@ describe('Fluxo E2E — colaborador -> submissao -> admin', () => {
   let adminEmail: string;
   let collabEmail: string;
   let collabOutroRestauranteId: number;
+  let itemOutroRestauranteId: number;
   let submissaoOutroRestauranteId: number;
   const senha = 'admin123';
   const schema = process.env.E2E_DB_SCHEMA || createSchemaName('e2e_fluxo_submissao');
@@ -141,6 +142,7 @@ describe('Fluxo E2E — colaborador -> submissao -> admin', () => {
         restauranteId: outroRestaurante.id,
       },
     });
+    itemOutroRestauranteId = itemOutroRestaurante.id;
 
     const submissaoOutroRestaurante = await prisma.submissao.create({
       data: {
@@ -215,6 +217,31 @@ describe('Fluxo E2E — colaborador -> submissao -> admin', () => {
       .post(`/api/v1/areas/${areaId}/colaboradores`)
       .set('Authorization', `Bearer ${adminToken}`)
       .send({ colaboradorIds: [collabOutroRestauranteId] })
+      .expect(404);
+  });
+
+  it('deve bloquear criacao de lista rapida com item de outro restaurante', async () => {
+    const collabLogin = await request(app.getHttpServer())
+      .post('/api/v1/auth/login')
+      .send({ email: collabEmail, senha })
+      .expect(201);
+
+    const collabToken = collabLogin.body.accessToken as string;
+
+    await request(app.getHttpServer())
+      .post('/api/v1/collaborator/listas-rapidas')
+      .set('Authorization', `Bearer ${collabToken}`)
+      .send({
+        nome: 'Lista Rapida Invalida',
+        itens: [
+          {
+            nome: 'Item Outro Tenant',
+            itemId: itemOutroRestauranteId,
+            quantidade: 1,
+            unidade: 'kg',
+          },
+        ],
+      })
       .expect(404);
   });
 

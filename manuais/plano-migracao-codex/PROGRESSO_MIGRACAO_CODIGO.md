@@ -2,8 +2,8 @@
 
 ## Status Atual
 - Estado: EM ANDAMENTO
-- Ultimo checkpoint: CP-C008 (concluido)
-- Proximo passo: CP-C009 — Expandir cobertura de isolamento e permissoes para modulos restantes (POP/Listas Rapidas/Sugestoes)
+- Ultimo checkpoint: CP-C009 (concluido)
+- Proximo passo: CP-C010 — Revisao final dos modulos restantes (POP/Sugestoes/Convites) com foco em isolamento e roles
 - Pasta de trabalho: `manuais/plano-migracao-codex`
 
 ## Checklist Executivo
@@ -15,7 +15,8 @@
 - [x] CP-C006 — Fechar lacunas de isolamento multi-tenant em `ListasService` (create/add/assign/getMinhasListas) + cobertura unitaria/E2E
 - [x] CP-C007 — Fechar lacuna de tenant em `CotacoesService.create` e ampliar E2E de isolamento em `checklists`/`cotacoes`
 - [x] CP-C008 — Fechar lacuna de tenant em `AreasService.setColaboradores` e ampliar E2E de isolamento para `areas`
-- [ ] CP-C009 — Cobrir isolamento e permissoes em modulos administrativos restantes
+- [x] CP-C009 — Fechar lacuna de tenant em `ListasRapidasService` (itemId cross-tenant) com cobertura unitaria/E2E
+- [ ] CP-C010 — Revisao final de isolamento/permissoes nos modulos restantes
 
 ## Historico de Checkpoints
 | Checkpoint | Data/Hora (BRT) | Acao | Resultado | Proximo passo |
@@ -28,6 +29,7 @@
 | CP-C006 | 2026-03-05 19:08 | Corrigido isolamento multi-tenant em `ListasService` (validacao de colaboradores por restaurante e filtro por tenant em `minhas-listas`), com novos testes unitarios e E2E de bloqueio de vinculo cruzado | Concluido (`7/7` unitarios + `2/2` suites E2E, `6/6` testes) | CP-C007 |
 | CP-C007 | 2026-03-05 19:21 | `CotacoesService.create` passou a rejeitar submissao de outro tenant; E2E ampliado para bloquear cross-tenant em `checklists` e `cotacoes`; adicionados unitarios de `CotacoesService` | Concluido (`9/9` unitarios + `2/2` suites E2E, `8/8` testes) | CP-C008 |
 | CP-C008 | 2026-03-05 20:09 | `AreasService.setColaboradores` passou a validar colaboradores do tenant antes da troca de vinculos; `getColaboradores` filtrado por restaurante; E2E ampliado para bloqueio cross-tenant em `areas` | Concluido (`13/13` unitarios + `2/2` suites E2E, `9/9` testes) | CP-C009 |
+| CP-C009 | 2026-03-05 20:41 | `ListasRapidasService` passou a validar `itemId` por tenant em create/add/update; novos unitarios de isolamento e E2E de bloqueio de item cross-tenant | Concluido (`20/20` unitarios + `2/2` suites E2E, `10/10` testes) | CP-C010 |
 
 ## Como Retomar
 1. Ler este arquivo.
