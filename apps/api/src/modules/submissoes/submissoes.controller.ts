@@ -128,6 +128,16 @@ export class AdminSubmissoesController {
     return this.submissoesService.arquivarSubmissao(id, restauranteId);
   }
 
+  @Put('submissoes/:id/desarquivar')
+  @Roles('ADMIN' as any, 'SUPER_ADMIN' as any)
+  @ApiOperation({ summary: 'Desarquivar submissão' })
+  desarquivar(
+    @Param('id', ParseIntPipe) id: number,
+    @TenantId() restauranteId: number,
+  ) {
+    return this.submissoesService.desarquivarSubmissao(id, restauranteId);
+  }
+
   @Get('submissoes/:id/recebimento')
   @Roles('ADMIN' as any, 'SUPER_ADMIN' as any)
   @ApiOperation({ summary: 'Buscar recebimento da submissão' })

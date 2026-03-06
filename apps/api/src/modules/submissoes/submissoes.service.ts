@@ -10,10 +10,20 @@ import {
   UserRole,
 } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
-import { FilterSubmissoesDto } from './dto/filter-submissoes.dto';
+import {
+  FilterSubmissoesDto,
+  TipoFiltroSubmissoes,
+} from './dto/filter-submissoes.dto';
 import { UpdatePedidoStatusDto } from './dto/update-pedido-status.dto';
 import { ConfirmarRecebimentoDto } from './dto/confirmar-recebimento.dto';
 import { NotificacoesService } from '../notificacoes/notificacoes.service';
+
+type StatusConsolidado =
+  | 'AGUARDANDO_SUBLISTAS'
+  | 'PRONTO_PARA_APROVAR'
+  | 'APROVADO_PARCIAL'
+  | 'APROVADO_COMPLETO'
+  | 'EXPIRADO';
 
 @Injectable()
 export class SubmissoesService {
@@ -181,9 +191,195 @@ export class SubmissoesService {
     });
   }
 
+  private calcularStatusConsolidado(
+    submissoes: Array<{ status: StatusSubmissao }>,
+  ): StatusConsolidado {
+    if (submissoes.length === 0) {
+      return 'AGUARDANDO_SUBLISTAS';
+    }
+
+    const hasPendente = submissoes.some(
+      (submissao) => submissao.status === StatusSubmissao.PENDENTE,
+    );
+    if (hasPendente) {
+      return 'AGUARDANDO_SUBLISTAS';
+    }
+
+    const allAprovado = submissoes.every(
+      (submissao) => submissao.status === StatusSubmissao.APROVADO,
+    );
+    if (allAprovado) {
+      return 'APROVADO_COMPLETO';
+    }
+
+    const hasAprovadoOuParcial = submissoes.some(
+      (submissao) =>
+        submissao.status === StatusSubmissao.APROVADO ||
+        submissao.status === StatusSubmissao.PARCIAL,
+    );
+    if (hasAprovadoOuParcial) {
+      return 'APROVADO_PARCIAL';
+    }
+
+    const allRejeitado = submissoes.every(
+      (submissao) => submissao.status === StatusSubmissao.REJEITADO,
+    );
+    if (allRejeitado) {
+      return 'EXPIRADO';
+    }
+
+    return 'PRONTO_PARA_APROVAR';
+  }
+
+  private getMensagemConsolidado(
+    status: StatusConsolidado,
+    total: number,
+    pendentes: number,
+  ): string {
+    if (status === 'AGUARDANDO_SUBLISTAS') {
+      return `${pendentes} de ${total} submiss${total === 1 ? 'ão está pendente' : 'ões estão pendentes'} de análise.`;
+    }
+    if (status === 'APROVADO_COMPLETO') {
+      return 'Todas as submissões deste lote estão aprovadas.';
+    }
+    if (status === 'APROVADO_PARCIAL') {
+      return 'Lote com aprovação parcial (há submissões aprovadas/parciais e rejeitadas).';
+    }
+    if (status === 'EXPIRADO') {
+      return 'Todas as submissões do lote foram rejeitadas.';
+    }
+    return 'Lote pronto para decisão administrativa.';
+  }
+
+  private async findAllConsolidadasAdmin(
+    restauranteId: number,
+    filter: FilterSubmissoesDto,
+  ) {
+    const where: any = { restauranteId };
+    if (filter.arquivada !== undefined) {
+      where.arquivada = filter.arquivada;
+    }
+    if (filter.status !== undefined) {
+      where.status = filter.status;
+    }
+
+    const submissoes = await this.prisma.submissao.findMany({
+      where,
+      include: {
+        lista: { select: { id: true, nome: true } },
+        usuario: { select: { id: true, nome: true, email: true } },
+        _count: { select: { pedidos: true } },
+        recebimento: {
+          select: {
+            id: true,
+            confirmadoEm: true,
+            confirmadoAdminEm: true,
+          },
+        },
+      },
+      orderBy: { criadoEm: 'desc' },
+    });
+
+    const grupos = new Map<
+      string,
+      {
+        id: string;
+        lista: { id: number; nome: string };
+        dataRef: Date;
+        submissoes: Array<{
+          id: number;
+          status: StatusSubmissao;
+          arquivada: boolean;
+          criadoEm: Date;
+          usuario: { id: number; nome: string; email: string };
+          totalPedidos: number;
+          hasRecebimento: boolean;
+        }>;
+      }
+    >();
+
+    for (const submissao of submissoes) {
+      const dayKey = submissao.criadoEm.toISOString().slice(0, 10);
+      const chave = `${submissao.lista.id}:${dayKey}`;
+      if (!grupos.has(chave)) {
+        grupos.set(chave, {
+          id: chave,
+          lista: submissao.lista,
+          dataRef: submissao.criadoEm,
+          submissoes: [],
+        });
+      }
+
+      const grupo = grupos.get(chave)!;
+      grupo.submissoes.push({
+        id: submissao.id,
+        status: submissao.status,
+        arquivada: submissao.arquivada,
+        criadoEm: submissao.criadoEm,
+        usuario: submissao.usuario,
+        totalPedidos: submissao._count.pedidos,
+        hasRecebimento: Boolean(submissao.recebimento?.id),
+      });
+    }
+
+    return Array.from(grupos.values())
+      .map((grupo) => {
+        const totalSubmissoes = grupo.submissoes.length;
+        const totalPedidos = grupo.submissoes.reduce(
+          (acc, submissao) => acc + submissao.totalPedidos,
+          0,
+        );
+        const pendentes = grupo.submissoes.filter(
+          (submissao) => submissao.status === StatusSubmissao.PENDENTE,
+        ).length;
+        const status = this.calcularStatusConsolidado(grupo.submissoes);
+        const recebidas = grupo.submissoes.filter(
+          (submissao) => submissao.hasRecebimento,
+        ).length;
+
+        return {
+          id: grupo.id,
+          lista: grupo.lista,
+          dataReferencia: grupo.dataRef,
+          status,
+          mensagem: this.getMensagemConsolidado(status, totalSubmissoes, pendentes),
+          totalSubmissoes,
+          totalPedidos,
+          recebidas,
+          submissoesParaRecebimento: grupo.submissoes
+            .filter(
+              (submissao) =>
+                !submissao.hasRecebimento &&
+                (submissao.status === StatusSubmissao.APROVADO ||
+                  submissao.status === StatusSubmissao.PARCIAL),
+            )
+            .map((submissao) => submissao.id),
+          submissoesArquivaveis: grupo.submissoes
+            .filter((submissao) => !submissao.arquivada)
+            .map((submissao) => submissao.id),
+          submissoesDesarquivaveis: grupo.submissoes
+            .filter((submissao) => submissao.arquivada)
+            .map((submissao) => submissao.id),
+          submissoes: grupo.submissoes.sort(
+            (a, b) => b.criadoEm.getTime() - a.criadoEm.getTime(),
+          ),
+        };
+      })
+      .sort((a, b) => {
+        if (b.dataReferencia.getTime() !== a.dataReferencia.getTime()) {
+          return b.dataReferencia.getTime() - a.dataReferencia.getTime();
+        }
+        return a.lista.nome.localeCompare(b.lista.nome, 'pt-BR');
+      });
+  }
+
   // ─── Admin endpoints ───────────────────────────────────────────────────────
 
   async findAllAdmin(restauranteId: number, filter: FilterSubmissoesDto) {
+    if (filter.tipo === TipoFiltroSubmissoes.CONSOLIDADAS) {
+      return this.findAllConsolidadasAdmin(restauranteId, filter);
+    }
+
     const where: any = { restauranteId };
 
     if (filter.status !== undefined) {
@@ -335,6 +531,19 @@ export class SubmissoesService {
       where: { id },
       data: { arquivada: true, status: StatusSubmissao.ARQUIVADO },
     });
+
+    return this.findOneAdmin(id, restauranteId);
+  }
+
+  async desarquivarSubmissao(id: number, restauranteId: number) {
+    await this.findSubmissaoOrFail(id, restauranteId);
+
+    await this.prisma.submissao.update({
+      where: { id },
+      data: { arquivada: false },
+    });
+
+    await this.recalcularStatusSubmissao(id);
 
     return this.findOneAdmin(id, restauranteId);
   }
