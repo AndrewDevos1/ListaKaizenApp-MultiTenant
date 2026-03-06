@@ -1,4 +1,4 @@
-const CACHE_NAME = 'kaizen-lists-v1';
+const CACHE_NAME = 'kaizen-lists-v2';
 const STATIC_ASSETS = ['/icons/icon-192.png', '/icons/icon-512.png'];
 
 // Install: pré-cache de assets estáticos
