@@ -1,13 +1,24 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { Table, Alert, Spinner, Badge, Button, Tabs, Tab, Modal, Form } from 'react-bootstrap';
+import {
+  Table,
+  Alert,
+  Spinner,
+  Badge,
+  Button,
+  ButtonGroup,
+  Modal,
+  Form,
+  InputGroup,
+} from 'react-bootstrap';
 import Link from 'next/link';
 import api from '@/lib/api';
 import styles from '@/app/admin/listas/[id]/ListaDetail.module.css';
 import { FaClipboardCheck, FaWhatsapp, FaCopy, FaCheck } from 'react-icons/fa';
 
 type StatusSubmissao = 'PENDENTE' | 'APROVADO' | 'REJEITADO' | 'PARCIAL' | 'ARQUIVADO';
+type StatusFiltro = 'TODOS' | 'PENDENTE' | 'APROVADO' | 'REJEITADO';
 
 interface SubmissaoSummary {
   id: number;
@@ -39,14 +50,6 @@ const STATUS_VARIANT: Record<StatusSubmissao, string> = {
   ARQUIVADO: 'secondary',
 };
 
-const TABS: { key: StatusSubmissao | 'ARQUIVADO'; label: string }[] = [
-  { key: 'PENDENTE', label: 'Pendente' },
-  { key: 'APROVADO', label: 'Aprovado' },
-  { key: 'REJEITADO', label: 'Rejeitado' },
-  { key: 'PARCIAL', label: 'Parcial' },
-  { key: 'ARQUIVADO', label: 'Arquivado' },
-];
-
 function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString('pt-BR', {
     day: '2-digit',
@@ -61,7 +64,8 @@ export default function AdminSubmissoesPage() {
   const [submissoes, setSubmissoes] = useState<SubmissaoSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [activeTab, setActiveTab] = useState<string>('PENDENTE');
+  const [statusFilter, setStatusFilter] = useState<StatusFiltro>('PENDENTE');
+  const [showArchived, setShowArchived] = useState(false);
   const [rowActionLoading, setRowActionLoading] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -76,13 +80,12 @@ export default function AdminSubmissoesPage() {
   const [mergeError, setMergeError] = useState('');
   const [copySuccess, setCopySuccess] = useState(false);
 
-  const fetchSubmissoes = async (status: string) => {
+  const fetchSubmissoes = async (status: StatusFiltro, arquivada: boolean) => {
     setLoading(true);
     setError('');
     try {
-      const arquivada = status === 'ARQUIVADO' ? 'true' : 'false';
-      const params: Record<string, string> = { arquivada };
-      if (status !== 'ARQUIVADO') {
+      const params: Record<string, string> = { arquivada: String(arquivada) };
+      if (status !== 'TODOS') {
         params.status = status;
       }
       const { data } = await api.get('/v1/admin/submissoes', { params });
@@ -95,9 +98,9 @@ export default function AdminSubmissoesPage() {
   };
 
   useEffect(() => {
-    fetchSubmissoes(activeTab);
+    fetchSubmissoes(statusFilter, showArchived);
     setSelectedIds(new Set());
-  }, [activeTab]);
+  }, [statusFilter, showArchived]);
 
   const execSubmissaoAction = async (
     key: string,
@@ -108,7 +111,7 @@ export default function AdminSubmissoesPage() {
     setRowActionLoading(key);
     try {
       await fn();
-      await fetchSubmissoes(activeTab);
+      await fetchSubmissoes(statusFilter, showArchived);
     } catch (err: any) {
       setError(err?.response?.data?.message || fallbackError);
     } finally {
@@ -241,9 +244,21 @@ export default function AdminSubmissoesPage() {
         s.lista.nome.toLowerCase().includes(q) ||
         s.usuario.nome.toLowerCase().includes(q) ||
         s.status.toLowerCase().includes(q) ||
+        formatDate(s.criadoEm).toLowerCase().includes(q) ||
+        s.criadoEm.toLowerCase().includes(q) ||
         String(s.id).includes(q),
     );
   }, [submissoes, searchQuery]);
+
+  const handleToggleArchived = () => {
+    const nextShowArchived = !showArchived;
+    setShowArchived(nextShowArchived);
+    if (nextShowArchived) {
+      setStatusFilter('TODOS');
+    }
+    setSearchQuery('');
+    setSelectedIds(new Set());
+  };
 
   return (
     <div className={styles.pageWrapper}>
@@ -271,36 +286,92 @@ export default function AdminSubmissoesPage() {
           </Alert>
         )}
 
-        {/* Busca */}
-        <div style={{ marginBottom: '1rem', maxWidth: 420 }}>
-          <Form.Control
-            type="text"
-            placeholder="Buscar por lista, colaborador, status ou #id..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            size="sm"
-          />
-          {searchQuery && (
-            <small className="text-muted">
-              {filteredSubmissoes.length} resultado{filteredSubmissoes.length !== 1 ? 's' : ''}
-            </small>
-          )}
-        </div>
-
         <div className={styles.tableSection}>
-          <Tabs
-            activeKey={activeTab}
-            onSelect={(k) => {
-              k && setActiveTab(k);
-              setSearchQuery('');
-              setSelectedIds(new Set());
+          <div
+            style={{
+              display: 'flex',
+              gap: '0.75rem',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              marginBottom: '0.8rem',
             }}
-            className="mb-3"
           >
-            {TABS.map((tab) => (
-              <Tab key={tab.key} eventKey={tab.key} title={tab.label} />
-            ))}
-          </Tabs>
+            <ButtonGroup>
+              <Button
+                size="sm"
+                variant={statusFilter === 'TODOS' ? 'primary' : 'outline-primary'}
+                onClick={() => setStatusFilter('TODOS')}
+              >
+                Todos
+              </Button>
+              <Button
+                size="sm"
+                variant={statusFilter === 'PENDENTE' ? 'warning' : 'outline-warning'}
+                onClick={() => setStatusFilter('PENDENTE')}
+              >
+                Pendente
+              </Button>
+              <Button
+                size="sm"
+                variant={statusFilter === 'APROVADO' ? 'success' : 'outline-success'}
+                onClick={() => setStatusFilter('APROVADO')}
+              >
+                Aprovados
+              </Button>
+              <Button
+                size="sm"
+                variant={statusFilter === 'REJEITADO' ? 'danger' : 'outline-danger'}
+                onClick={() => setStatusFilter('REJEITADO')}
+              >
+                Rejeitados
+              </Button>
+            </ButtonGroup>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
+              <span style={{ fontSize: '0.9rem', color: !showArchived ? 'var(--text-primary)' : 'var(--text-secondary)' }}>
+                Ativas
+              </span>
+              <Form.Check
+                type="switch"
+                id="submissoes-arquivadas-switch"
+                checked={showArchived}
+                onChange={handleToggleArchived}
+                aria-label="Alternar entre ativas e arquivadas"
+                style={{ marginBottom: 0 }}
+              />
+              <span style={{ fontSize: '0.9rem', color: showArchived ? 'var(--text-primary)' : 'var(--text-secondary)' }}>
+                Arquivadas
+              </span>
+            </div>
+          </div>
+
+          <div style={{ marginBottom: '1rem', maxWidth: 520 }}>
+            <InputGroup size="sm">
+              <Form.Control
+                type="text"
+                placeholder="Buscar por lista, colaborador, data/hora, status ou #id..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+              {searchQuery && (
+                <Button variant="outline-secondary" onClick={() => setSearchQuery('')}>
+                  Limpar
+                </Button>
+              )}
+            </InputGroup>
+            {searchQuery && (
+              <small className="text-muted">
+                {filteredSubmissoes.length} resultado{filteredSubmissoes.length !== 1 ? 's' : ''}
+              </small>
+            )}
+          </div>
+
+          {showArchived && (
+            <Alert variant="secondary" className="py-2">
+              Modo Arquivadas ativo. Altere a chave para voltar às submissões ativas.
+            </Alert>
+          )}
 
           {loading ? (
             <div className="text-center py-5">
