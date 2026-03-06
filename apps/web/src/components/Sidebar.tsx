@@ -537,6 +537,15 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
             >
               <FaChevronRight style={{ transform: isCollapsed ? 'rotate(180deg)' : 'rotate(0deg)' }} />
             </button>
+            <button
+              className={styles.mobileCloseBtn}
+              onClick={closeMobileMenu}
+              aria-label="Fechar menu"
+              title="Fechar menu"
+              type="button"
+            >
+              <FaTimes />
+            </button>
           </div>
         </div>
 

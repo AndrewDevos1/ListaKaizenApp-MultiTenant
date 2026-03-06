@@ -118,9 +118,33 @@
   margin: 0 auto;
 }
 
+/* Mobile close button (shown only on small screens) */
+.mobileCloseBtn {
+  display: none;
+  background: rgba(255, 255, 255, 0.15);
+  border: none;
+  color: var(--sidebar-text);
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.mobileCloseBtn:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
 @media (max-width: 768px) {
   .collapseBtn {
     display: none;
+  }
+
+  .mobileCloseBtn {
+    display: flex;
   }
 }
 
