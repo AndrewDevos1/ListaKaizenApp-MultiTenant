@@ -32,13 +32,22 @@ interface Area {
   nome: string;
 }
 
+interface GrupoLista {
+  id: number;
+  nome: string;
+  listas: { id: number; nome: string }[];
+  _count: { listas: number };
+}
+
 interface ListaSummary {
   id: number;
   nome: string;
   descricao?: string | null;
   criadoEm: string;
+  grupo?: { id: number; nome: string } | null;
+  listaPaiId?: number | null;
   area?: Area | null;
-  _count: { colaboradores: number; itensRef: number };
+  _count: { colaboradores: number; itensRef: number; sublistas: number };
   itensRef: ItemPreview[];
 }
 
@@ -63,6 +72,7 @@ export default function ListasPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [listas, setListas] = useState<ListaSummary[]>([]);
+  const [grupos, setGrupos] = useState<GrupoLista[]>([]);
   const [areas, setAreas] = useState<Area[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -110,15 +120,29 @@ export default function ListasPage() {
   const [listaImport, setListaImport] = useState<ListaSummary | null>(null);
   const [importing, setImporting] = useState(false);
 
+  // Modal criar grupo
+  const [showModalCriarGrupo, setShowModalCriarGrupo] = useState(false);
+  const [nomeGrupo, setNomeGrupo] = useState('');
+  const [listasGrupoSelecionadas, setListasGrupoSelecionadas] = useState<Set<number>>(new Set());
+  const [savingGrupo, setSavingGrupo] = useState(false);
+
+  // Modal vincular lista a grupo
+  const [showModalVincularGrupo, setShowModalVincularGrupo] = useState(false);
+  const [listaVincularGrupo, setListaVincularGrupo] = useState<ListaSummary | null>(null);
+  const [grupoSelecionadoId, setGrupoSelecionadoId] = useState<number | ''>('');
+  const [savingVinculoGrupo, setSavingVinculoGrupo] = useState(false);
+
   const fetchListas = async () => {
     try {
       setLoading(true);
-      const [listasRes, areasRes] = await Promise.all([
+      const [listasRes, areasRes, gruposRes] = await Promise.all([
         api.get('/v1/listas'),
         api.get('/v1/areas'),
+        api.get('/v1/admin/grupos-listas'),
       ]);
       setListas(listasRes.data);
       setAreas(areasRes.data);
+      setGrupos(gruposRes.data);
     } catch {
       setError('Erro ao carregar listas');
     } finally {
@@ -144,6 +168,13 @@ export default function ListasPage() {
     const itemMatch = l.itensRef.some((r) => normalizeText(r.item.nome).includes(termo));
     return nomeMatch || itemMatch;
   });
+
+  const listasElegiveisParaGrupo = listas.filter(
+    (lista) =>
+      !lista.grupo &&
+      !lista.listaPaiId &&
+      (lista._count.sublistas ?? 0) === 0,
+  );
 
   // Criar
   const handleCreate = async (e: FormEvent) => {
@@ -379,6 +410,67 @@ export default function ListasPage() {
     }
   };
 
+  const toggleListaGrupoSelecionada = (listaId: number) => {
+    setListasGrupoSelecionadas((prev) => {
+      const next = new Set(prev);
+      if (next.has(listaId)) next.delete(listaId);
+      else next.add(listaId);
+      return next;
+    });
+  };
+
+  const handleCriarGrupo = async (e: FormEvent) => {
+    e.preventDefault();
+    setSavingGrupo(true);
+    try {
+      await api.post('/v1/admin/grupos-listas', {
+        nomeGrupo: nomeGrupo.trim(),
+        listaIds: Array.from(listasGrupoSelecionadas),
+      });
+      setShowModalCriarGrupo(false);
+      setNomeGrupo('');
+      setListasGrupoSelecionadas(new Set());
+      fetchListas();
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Erro ao criar grupo');
+    } finally {
+      setSavingGrupo(false);
+    }
+  };
+
+  const abrirVincularGrupo = (lista: ListaSummary) => {
+    setListaVincularGrupo(lista);
+    setGrupoSelecionadoId('');
+    setShowModalVincularGrupo(true);
+  };
+
+  const salvarVinculoGrupo = async () => {
+    if (!listaVincularGrupo || !grupoSelecionadoId) return;
+    setSavingVinculoGrupo(true);
+    try {
+      await api.post(`/v1/admin/grupos-listas/${grupoSelecionadoId}/listas`, {
+        listaId: listaVincularGrupo.id,
+      });
+      setShowModalVincularGrupo(false);
+      fetchListas();
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Erro ao vincular lista ao grupo');
+    } finally {
+      setSavingVinculoGrupo(false);
+    }
+  };
+
+  const removerListaDoGrupo = async (lista: ListaSummary) => {
+    if (!lista.grupo) return;
+    if (!confirm(`Remover "${lista.nome}" do grupo "${lista.grupo.nome}"?`)) return;
+    try {
+      await api.delete(`/v1/admin/grupos-listas/${lista.grupo.id}/listas/${lista.id}`);
+      fetchListas();
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Erro ao remover lista do grupo');
+    }
+  };
+
   if (loading) {
     return (
       <div className="text-center py-5">
@@ -419,6 +511,17 @@ export default function ListasPage() {
                 <FaTrash className="me-1" /> Lixeira
               </Button>
             </div>
+            <Button
+              variant="outline-warning"
+              size="sm"
+              onClick={() => {
+                setShowModalCriarGrupo(true);
+                setNomeGrupo('');
+                setListasGrupoSelecionadas(new Set());
+              }}
+            >
+              <FaLink className="me-1" /> Criar Grupo
+            </Button>
             <Button variant="primary" onClick={() => setShowModalCriar(true)}>
               <FaPlus /> Nova Lista
             </Button>
@@ -481,6 +584,12 @@ export default function ListasPage() {
                   <span className={styles.areaBadge}>
                     <FaMapMarkerAlt className="me-1" />
                     {lista.area.nome}
+                  </span>
+                )}
+                {lista.grupo && (
+                  <span className={styles.areaBadge}>
+                    <FaLink className="me-1" />
+                    Grupo: {lista.grupo.nome}
                   </span>
                 )}
               </div>
@@ -559,6 +668,20 @@ export default function ListasPage() {
                       <FaLink className="me-2" />
                       Vincular Área
                     </Dropdown.Item>
+                    {lista.grupo ? (
+                      <Dropdown.Item onClick={() => removerListaDoGrupo(lista)}>
+                        <FaLink className="me-2" />
+                        Remover do Grupo
+                      </Dropdown.Item>
+                    ) : (
+                      <Dropdown.Item
+                        onClick={() => abrirVincularGrupo(lista)}
+                        disabled={grupos.length === 0}
+                      >
+                        <FaLink className="me-2" />
+                        Vincular a Grupo
+                      </Dropdown.Item>
+                    )}
                     <Dropdown.Item onClick={() => abrirEditar(lista)}>
                       <FaEdit className="me-2" />
                       Editar
@@ -864,6 +987,120 @@ export default function ListasPage() {
           <Modal.Footer>
             <Button variant="secondary" onClick={() => setShowModalImport(false)}>
               Fechar
+            </Button>
+          </Modal.Footer>
+        </Modal>
+
+        {/* Modal Criar Grupo */}
+        <Modal
+          show={showModalCriarGrupo}
+          onHide={() => setShowModalCriarGrupo(false)}
+          size="lg"
+        >
+          <Form onSubmit={handleCriarGrupo}>
+            <Modal.Header closeButton>
+              <Modal.Title>Criar Grupo de Listas</Modal.Title>
+            </Modal.Header>
+            <Modal.Body>
+              <Form.Group className="mb-3">
+                <Form.Label>Nome do Grupo</Form.Label>
+                <Form.Control
+                  value={nomeGrupo}
+                  onChange={(e) => setNomeGrupo(e.target.value)}
+                  placeholder="Ex: Operação Turno Noite"
+                  required
+                />
+              </Form.Group>
+
+              <Form.Group>
+                <Form.Label>Listas para incluir</Form.Label>
+                {listasElegiveisParaGrupo.length === 0 ? (
+                  <p className="text-muted mb-0">
+                    Não há listas elegíveis no momento.
+                  </p>
+                ) : (
+                  <div style={{ maxHeight: 240, overflowY: 'auto' }}>
+                    {listasElegiveisParaGrupo.map((lista) => (
+                      <Form.Check
+                        key={lista.id}
+                        id={`grupo-lista-${lista.id}`}
+                        className="mb-2"
+                        label={`${lista.nome} (${lista._count.itensRef} itens)`}
+                        checked={listasGrupoSelecionadas.has(lista.id)}
+                        onChange={() => toggleListaGrupoSelecionada(lista.id)}
+                      />
+                    ))}
+                  </div>
+                )}
+              </Form.Group>
+            </Modal.Body>
+            <Modal.Footer>
+              <Button
+                variant="secondary"
+                onClick={() => setShowModalCriarGrupo(false)}
+              >
+                Cancelar
+              </Button>
+              <Button
+                variant="warning"
+                type="submit"
+                disabled={savingGrupo || !nomeGrupo.trim()}
+              >
+                {savingGrupo ? <Spinner size="sm" animation="border" /> : 'Criar Grupo'}
+              </Button>
+            </Modal.Footer>
+          </Form>
+        </Modal>
+
+        {/* Modal Vincular Lista a Grupo */}
+        <Modal
+          show={showModalVincularGrupo}
+          onHide={() => setShowModalVincularGrupo(false)}
+        >
+          <Modal.Header closeButton>
+            <Modal.Title>Vincular a Grupo</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            <p className="mb-2">
+              Lista: <strong>{listaVincularGrupo?.nome}</strong>
+            </p>
+            <Form.Group>
+              <Form.Label>Grupo</Form.Label>
+              <Form.Select
+                value={grupoSelecionadoId}
+                onChange={(e) =>
+                  setGrupoSelecionadoId(
+                    e.target.value ? Number(e.target.value) : '',
+                  )
+                }
+              >
+                <option value="">Selecione um grupo</option>
+                {grupos.map((grupo) => (
+                  <option key={grupo.id} value={grupo.id}>
+                    {grupo.nome} ({grupo._count.listas} lista
+                    {grupo._count.listas !== 1 ? 's' : ''})
+                  </option>
+                ))}
+              </Form.Select>
+            </Form.Group>
+          </Modal.Body>
+          <Modal.Footer>
+            <Button
+              variant="secondary"
+              onClick={() => setShowModalVincularGrupo(false)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant="primary"
+              onClick={salvarVinculoGrupo}
+              disabled={!grupoSelecionadoId || savingVinculoGrupo}
+            >
+              {savingVinculoGrupo ? (
+                <Spinner size="sm" animation="border" />
+              ) : (
+                'Vincular'
+              )}
             </Button>
           </Modal.Footer>
         </Modal>

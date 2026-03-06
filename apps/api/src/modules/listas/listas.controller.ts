@@ -27,6 +27,9 @@ import { UpdateMaeItemDto } from './dto/update-mae-item.dto';
 import { BulkImportNamesDto } from './dto/bulk-import-names.dto';
 import { CopyMoveItemsDto } from './dto/copy-move-items.dto';
 import { AtribuirFornecedorDto } from './dto/atribuir-fornecedor.dto';
+import { CreateGrupoListaDto } from './dto/create-grupo-lista.dto';
+import { UpdateGrupoListaDto } from './dto/update-grupo-lista.dto';
+import { VincularListaGrupoDto } from './dto/vincular-lista-grupo.dto';
 
 @ApiTags('Listas')
 @Controller('v1/listas')
@@ -335,6 +338,90 @@ export class ListasController {
       dto.fornecedorId,
       restauranteId,
       usuarioId,
+    );
+  }
+}
+
+@ApiTags('Admin — Grupos de Listas')
+@Controller('v1/admin/grupos-listas')
+@UseGuards(AuthGuard('jwt'), RolesGuard, TenantGuard)
+@ApiBearerAuth()
+export class AdminGruposListasController {
+  constructor(private listasService: ListasService) {}
+
+  @Get()
+  @Roles('ADMIN' as any, 'SUPER_ADMIN' as any)
+  @ApiOperation({ summary: 'Listar grupos de listas do restaurante' })
+  findAll(@TenantId() restauranteId: number) {
+    return this.listasService.findAllGrupos(restauranteId);
+  }
+
+  @Post()
+  @Roles('ADMIN' as any, 'SUPER_ADMIN' as any)
+  @ApiOperation({ summary: 'Criar grupo e vincular listas' })
+  create(
+    @Body() dto: CreateGrupoListaDto,
+    @TenantId() restauranteId: number,
+  ) {
+    return this.listasService.createGrupo(
+      dto.nomeGrupo,
+      dto.listaIds ?? [],
+      restauranteId,
+    );
+  }
+
+  @Put(':id')
+  @Roles('ADMIN' as any, 'SUPER_ADMIN' as any)
+  @ApiOperation({ summary: 'Renomear grupo de listas' })
+  update(
+    @Param('id', ParseIntPipe) grupoId: number,
+    @Body() dto: UpdateGrupoListaDto,
+    @TenantId() restauranteId: number,
+  ) {
+    return this.listasService.renomearGrupo(
+      grupoId,
+      dto.nomeGrupo,
+      restauranteId,
+    );
+  }
+
+  @Delete(':id')
+  @Roles('ADMIN' as any, 'SUPER_ADMIN' as any)
+  @ApiOperation({ summary: 'Deletar grupo e desvincular listas' })
+  remove(
+    @Param('id', ParseIntPipe) grupoId: number,
+    @TenantId() restauranteId: number,
+  ) {
+    return this.listasService.deletarGrupo(grupoId, restauranteId);
+  }
+
+  @Post(':id/listas')
+  @Roles('ADMIN' as any, 'SUPER_ADMIN' as any)
+  @ApiOperation({ summary: 'Vincular lista ao grupo' })
+  addLista(
+    @Param('id', ParseIntPipe) grupoId: number,
+    @Body() dto: VincularListaGrupoDto,
+    @TenantId() restauranteId: number,
+  ) {
+    return this.listasService.adicionarListaAoGrupo(
+      grupoId,
+      dto.listaId,
+      restauranteId,
+    );
+  }
+
+  @Delete(':id/listas/:listaId')
+  @Roles('ADMIN' as any, 'SUPER_ADMIN' as any)
+  @ApiOperation({ summary: 'Desvincular lista do grupo' })
+  removeLista(
+    @Param('id', ParseIntPipe) grupoId: number,
+    @Param('listaId', ParseIntPipe) listaId: number,
+    @TenantId() restauranteId: number,
+  ) {
+    return this.listasService.removerListaDoGrupo(
+      grupoId,
+      listaId,
+      restauranteId,
     );
   }
 }

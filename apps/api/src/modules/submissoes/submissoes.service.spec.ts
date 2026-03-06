@@ -11,6 +11,12 @@ describe('SubmissoesService', () => {
         findFirst: jest.fn(),
         findMany: jest.fn(),
       },
+      submissaoConsolidadaParticipante: {
+        findFirst: jest.fn().mockResolvedValue(null),
+      },
+      submissaoConsolidadaLote: {
+        findMany: jest.fn(),
+      },
       pedido: {
         findFirst: jest.fn(),
         findMany: jest.fn(),
@@ -108,26 +114,42 @@ describe('SubmissoesService', () => {
 
   it('deve retornar consolidadas quando filtro tipo=CONSOLIDADAS', async () => {
     const { prisma, service } = makeService();
-    prisma.submissao.findMany.mockResolvedValue([
+    prisma.submissaoConsolidadaLote.findMany.mockResolvedValue([
       {
-        id: 10,
-        status: StatusSubmissao.APROVADO,
-        criadoEm: new Date('2026-03-06T08:00:00.000Z'),
-        arquivada: false,
-        lista: { id: 1, nome: 'Hortifruti' },
-        usuario: { id: 100, nome: 'Colab 1', email: 'c1@demo.com' },
-        _count: { pedidos: 2 },
-        recebimento: null,
-      },
-      {
-        id: 11,
-        status: StatusSubmissao.REJEITADO,
-        criadoEm: new Date('2026-03-06T07:00:00.000Z'),
-        arquivada: false,
-        lista: { id: 1, nome: 'Hortifruti' },
-        usuario: { id: 101, nome: 'Colab 2', email: 'c2@demo.com' },
-        _count: { pedidos: 1 },
-        recebimento: { id: 1, confirmadoEm: null, confirmadoAdminEm: null },
+        id: 55,
+        status: 'APROVADO_PARCIAL',
+        janelaInicio: new Date('2026-03-06T08:00:00.000Z'),
+        janelaFim: new Date('2026-03-07T08:00:00.000Z'),
+        grupo: { id: 1, nome: 'Grupo Cozinha' },
+        listaPai: null,
+        participantes: [
+          {
+            recebida: true,
+            lista: { id: 10, nome: 'Lista A' },
+            submissaoAtual: {
+              id: 10,
+              status: StatusSubmissao.APROVADO,
+              arquivada: false,
+              criadoEm: new Date('2026-03-06T08:00:00.000Z'),
+              usuario: { id: 100, nome: 'Colab 1', email: 'c1@demo.com' },
+              _count: { pedidos: 2 },
+              recebimento: null,
+            },
+          },
+          {
+            recebida: true,
+            lista: { id: 11, nome: 'Lista B' },
+            submissaoAtual: {
+              id: 11,
+              status: StatusSubmissao.PARCIAL,
+              arquivada: false,
+              criadoEm: new Date('2026-03-06T07:00:00.000Z'),
+              usuario: { id: 101, nome: 'Colab 2', email: 'c2@demo.com' },
+              _count: { pedidos: 1 },
+              recebimento: { id: 1, confirmadoEm: null, confirmadoAdminEm: null },
+            },
+          },
+        ],
       },
     ]);
 
@@ -138,6 +160,7 @@ describe('SubmissoesService', () => {
 
     const lote = result[0] as any;
     expect(result).toHaveLength(1);
+    expect(lote.id).toBe('55');
     expect(lote.status).toBe('APROVADO_PARCIAL');
     expect(lote.totalSubmissoes).toBe(2);
     expect(lote.totalPedidos).toBe(3);

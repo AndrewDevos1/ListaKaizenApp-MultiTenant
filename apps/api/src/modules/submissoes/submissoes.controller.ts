@@ -17,6 +17,7 @@ import { FilterSubmissoesDto } from './dto/filter-submissoes.dto';
 import { UpdatePedidoStatusDto } from './dto/update-pedido-status.dto';
 import { MergePreviewDto } from './dto/merge-preview.dto';
 import { ConfirmarRecebimentoDto } from './dto/confirmar-recebimento.dto';
+import { AprovarLoteConsolidadoDto } from './dto/aprovar-lote-consolidado.dto';
 import { CurrentUser, Roles, TenantId } from '../../common/decorators';
 import { RolesGuard, TenantGuard } from '../../common/guards';
 
@@ -81,6 +82,33 @@ export class AdminSubmissoesController {
     @TenantId() restauranteId: number,
   ) {
     return this.submissoesService.aprovarSubmissao(id, restauranteId);
+  }
+
+  @Post('submissoes/consolidadas/:id/aprovar')
+  @Roles('ADMIN' as any, 'SUPER_ADMIN' as any)
+  @ApiOperation({ summary: 'Aprovar lote consolidado' })
+  aprovarConsolidada(
+    @Param('id', ParseIntPipe) id: number,
+    @TenantId() restauranteId: number,
+    @CurrentUser('id') adminId: number,
+    @Body() dto: AprovarLoteConsolidadoDto,
+  ) {
+    return this.submissoesService.aprovarLoteConsolidado(
+      id,
+      restauranteId,
+      adminId,
+      dto.confirmarParcial ?? false,
+    );
+  }
+
+  @Post('submissoes/consolidadas/:id/reverter')
+  @Roles('ADMIN' as any, 'SUPER_ADMIN' as any)
+  @ApiOperation({ summary: 'Reverter lote consolidado para pendente' })
+  reverterConsolidada(
+    @Param('id', ParseIntPipe) id: number,
+    @TenantId() restauranteId: number,
+  ) {
+    return this.submissoesService.reverterLoteConsolidado(id, restauranteId);
   }
 
   @Post('submissoes/:id/rejeitar')
