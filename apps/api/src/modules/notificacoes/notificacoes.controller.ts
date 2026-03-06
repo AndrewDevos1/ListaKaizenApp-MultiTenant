@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Put,
+  Delete,
   Param,
   ParseIntPipe,
   UseGuards,
@@ -47,6 +48,16 @@ export class NotificacoesController {
     @TenantId() restauranteId: number,
   ) {
     return this.notificacoesService.marcarTodasLidas(usuarioId, restauranteId);
+  }
+
+  @Delete('limpar')
+  @Roles('COLLABORATOR' as any, 'ADMIN' as any, 'SUPER_ADMIN' as any)
+  @ApiOperation({ summary: 'Limpar todas as notificações do usuário' })
+  limparTodas(
+    @CurrentUser('id') usuarioId: number,
+    @TenantId() restauranteId: number,
+  ) {
+    return this.notificacoesService.limparTodas(usuarioId, restauranteId);
   }
 
   @Put(':id/lida')

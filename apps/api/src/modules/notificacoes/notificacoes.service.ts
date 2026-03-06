@@ -74,4 +74,14 @@ export class NotificacoesService {
     });
     return { message: 'Todas as notificações foram marcadas como lidas' };
   }
+
+  async limparTodas(usuarioId: number, restauranteId: number) {
+    const result = await this.prisma.notificacao.deleteMany({
+      where: { usuarioId, restauranteId },
+    });
+    return {
+      message: 'Notificações limpas com sucesso',
+      removidas: result.count,
+    };
+  }
 }

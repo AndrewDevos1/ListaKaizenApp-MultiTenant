@@ -120,11 +120,17 @@ export default function ListasPage() {
   const [listaImport, setListaImport] = useState<ListaSummary | null>(null);
   const [importing, setImporting] = useState(false);
 
-  // Modal criar grupo
+  // Modal grupos (criar/editar)
   const [showModalCriarGrupo, setShowModalCriarGrupo] = useState(false);
+  const [modoEditarGrupo, setModoEditarGrupo] = useState(false);
   const [nomeGrupo, setNomeGrupo] = useState('');
   const [listasGrupoSelecionadas, setListasGrupoSelecionadas] = useState<Set<number>>(new Set());
   const [savingGrupo, setSavingGrupo] = useState(false);
+  const [grupoEdicaoId, setGrupoEdicaoId] = useState<number | ''>('');
+  const [nomeGrupoEdicao, setNomeGrupoEdicao] = useState('');
+  const [listaAdicionarGrupoId, setListaAdicionarGrupoId] = useState<number | ''>('');
+  const [savingGrupoEdicao, setSavingGrupoEdicao] = useState(false);
+  const [buscaListaGrupo, setBuscaListaGrupo] = useState('');
 
   // Modal vincular lista a grupo
   const [showModalVincularGrupo, setShowModalVincularGrupo] = useState(false);
@@ -154,6 +160,20 @@ export default function ListasPage() {
     fetchListas();
   }, []);
 
+  useEffect(() => {
+    if (!modoEditarGrupo) return;
+    if (grupos.length === 0) {
+      setGrupoEdicaoId('');
+      setNomeGrupoEdicao('');
+      return;
+    }
+
+    if (grupoEdicaoId === '' || !grupos.some((g) => g.id === grupoEdicaoId)) {
+      setGrupoEdicaoId(grupos[0].id);
+      setNomeGrupoEdicao(grupos[0].nome);
+    }
+  }, [modoEditarGrupo, grupos, grupoEdicaoId]);
+
   const listasFiltradas = listas.filter((l) => {
     if (areaFiltro !== null) {
       if (areaFiltro === 0) {
@@ -175,6 +195,25 @@ export default function ListasPage() {
       !lista.listaPaiId &&
       (lista._count.sublistas ?? 0) === 0,
   );
+
+  const listasElegiveisParaGrupoFiltradas = listasElegiveisParaGrupo.filter(
+    (lista) => {
+      const termo = buscaListaGrupo.trim();
+      if (!termo) return true;
+
+      const termoNormalizado = normalizeText(termo);
+      const nomeMatch = normalizeText(lista.nome).includes(termoNormalizado);
+      const itemMatch = lista.itensRef.some((ref) =>
+        normalizeText(ref.item.nome).includes(termoNormalizado),
+      );
+      return nomeMatch || itemMatch;
+    },
+  );
+
+  const grupoSelecionadoEdicao =
+    grupoEdicaoId === ''
+      ? null
+      : grupos.find((grupo) => grupo.id === grupoEdicaoId) || null;
 
   // Criar
   const handleCreate = async (e: FormEvent) => {
@@ -419,8 +458,7 @@ export default function ListasPage() {
     });
   };
 
-  const handleCriarGrupo = async (e: FormEvent) => {
-    e.preventDefault();
+  const handleCriarGrupo = async () => {
     setSavingGrupo(true);
     try {
       await api.post('/v1/admin/grupos-listas', {
@@ -435,6 +473,118 @@ export default function ListasPage() {
       setError(err.response?.data?.message || 'Erro ao criar grupo');
     } finally {
       setSavingGrupo(false);
+    }
+  };
+
+  const abrirModalGrupo = () => {
+    setShowModalCriarGrupo(true);
+    setModoEditarGrupo(false);
+    setNomeGrupo('');
+    setListasGrupoSelecionadas(new Set());
+    setGrupoEdicaoId('');
+    setNomeGrupoEdicao('');
+    setListaAdicionarGrupoId('');
+    setBuscaListaGrupo('');
+  };
+
+  const alternarModoEditarGrupo = (checked: boolean) => {
+    setModoEditarGrupo(checked);
+    if (!checked) {
+      setGrupoEdicaoId('');
+      setNomeGrupoEdicao('');
+      setListaAdicionarGrupoId('');
+      return;
+    }
+
+    if (grupos.length > 0) {
+      setGrupoEdicaoId(grupos[0].id);
+      setNomeGrupoEdicao(grupos[0].nome);
+      setListaAdicionarGrupoId('');
+    }
+  };
+
+  const selecionarGrupoEdicao = (grupoId: number | '') => {
+    setGrupoEdicaoId(grupoId);
+    if (grupoId === '') {
+      setNomeGrupoEdicao('');
+      return;
+    }
+    const grupo = grupos.find((g) => g.id === grupoId);
+    setNomeGrupoEdicao(grupo?.nome || '');
+  };
+
+  const salvarNomeGrupoEdicao = async () => {
+    if (!grupoEdicaoId || !nomeGrupoEdicao.trim()) return;
+    setSavingGrupoEdicao(true);
+    try {
+      await api.put(`/v1/admin/grupos-listas/${grupoEdicaoId}`, {
+        nomeGrupo: nomeGrupoEdicao.trim(),
+      });
+      await fetchListas();
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Erro ao renomear grupo');
+    } finally {
+      setSavingGrupoEdicao(false);
+    }
+  };
+
+  const adicionarListaNoGrupoEdicao = async () => {
+    if (!grupoEdicaoId || !listaAdicionarGrupoId) return;
+    setSavingGrupoEdicao(true);
+    try {
+      await api.post(`/v1/admin/grupos-listas/${grupoEdicaoId}/listas`, {
+        listaId: listaAdicionarGrupoId,
+      });
+      setListaAdicionarGrupoId('');
+      await fetchListas();
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Erro ao adicionar lista ao grupo');
+    } finally {
+      setSavingGrupoEdicao(false);
+    }
+  };
+
+  const removerListaDoGrupoEdicao = async (grupoId: number, listaId: number) => {
+    setSavingGrupoEdicao(true);
+    try {
+      await api.delete(`/v1/admin/grupos-listas/${grupoId}/listas/${listaId}`);
+      await fetchListas();
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Erro ao remover lista do grupo');
+    } finally {
+      setSavingGrupoEdicao(false);
+    }
+  };
+
+  const excluirGrupoEdicao = async () => {
+    if (!grupoEdicaoId) return;
+    const grupoAtual = grupos.find((g) => g.id === grupoEdicaoId);
+    if (!grupoAtual) return;
+
+    if (
+      !confirm(
+        `Deletar o grupo "${grupoAtual.nome}"? Todas as listas serão desvinculadas.`,
+      )
+    ) {
+      return;
+    }
+
+    setSavingGrupoEdicao(true);
+    try {
+      await api.delete(`/v1/admin/grupos-listas/${grupoEdicaoId}`);
+      await fetchListas();
+      if (grupos.length > 1) {
+        const proximo = grupos.find((g) => g.id !== grupoEdicaoId);
+        setGrupoEdicaoId(proximo?.id ?? '');
+        setNomeGrupoEdicao(proximo?.nome ?? '');
+      } else {
+        setGrupoEdicaoId('');
+        setNomeGrupoEdicao('');
+      }
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Erro ao deletar grupo');
+    } finally {
+      setSavingGrupoEdicao(false);
     }
   };
 
@@ -514,13 +664,9 @@ export default function ListasPage() {
             <Button
               variant="outline-warning"
               size="sm"
-              onClick={() => {
-                setShowModalCriarGrupo(true);
-                setNomeGrupo('');
-                setListasGrupoSelecionadas(new Set());
-              }}
+              onClick={abrirModalGrupo}
             >
-              <FaLink className="me-1" /> Criar Grupo
+              <FaLink className="me-1" /> Grupo
             </Button>
             <Button variant="primary" onClick={() => setShowModalCriar(true)}>
               <FaPlus /> Nova Lista
@@ -991,65 +1137,227 @@ export default function ListasPage() {
           </Modal.Footer>
         </Modal>
 
-        {/* Modal Criar Grupo */}
+        {/* Modal Grupo (Criar/Editar) */}
         <Modal
           show={showModalCriarGrupo}
           onHide={() => setShowModalCriarGrupo(false)}
           size="lg"
         >
-          <Form onSubmit={handleCriarGrupo}>
-            <Modal.Header closeButton>
-              <Modal.Title>Criar Grupo de Listas</Modal.Title>
-            </Modal.Header>
-            <Modal.Body>
-              <Form.Group className="mb-3">
-                <Form.Label>Nome do Grupo</Form.Label>
-                <Form.Control
-                  value={nomeGrupo}
-                  onChange={(e) => setNomeGrupo(e.target.value)}
-                  placeholder="Ex: Operação Turno Noite"
-                  required
-                />
-              </Form.Group>
+          <Modal.Header closeButton>
+            <Modal.Title>Grupo de Listas</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            <div className="row g-2 mb-3">
+              <div className="col-6">
+                <Button
+                  variant={modoEditarGrupo ? 'outline-primary' : 'primary'}
+                  className="w-100"
+                  onClick={() => alternarModoEditarGrupo(false)}
+                >
+                  Criar grupo
+                </Button>
+              </div>
+              <div className="col-6">
+                <Button
+                  variant={modoEditarGrupo ? 'primary' : 'outline-primary'}
+                  className="w-100"
+                  onClick={() => alternarModoEditarGrupo(true)}
+                  disabled={grupos.length === 0}
+                >
+                  Editar grupo
+                </Button>
+              </div>
+            </div>
 
-              <Form.Group>
-                <Form.Label>Listas para incluir</Form.Label>
-                {listasElegiveisParaGrupo.length === 0 ? (
-                  <p className="text-muted mb-0">
-                    Não há listas elegíveis no momento.
-                  </p>
-                ) : (
-                  <div style={{ maxHeight: 240, overflowY: 'auto' }}>
-                    {listasElegiveisParaGrupo.map((lista) => (
-                      <Form.Check
-                        key={lista.id}
-                        id={`grupo-lista-${lista.id}`}
-                        className="mb-2"
-                        label={`${lista.nome} (${lista._count.itensRef} itens)`}
-                        checked={listasGrupoSelecionadas.has(lista.id)}
-                        onChange={() => toggleListaGrupoSelecionada(lista.id)}
-                      />
-                    ))}
-                  </div>
-                )}
-              </Form.Group>
-            </Modal.Body>
-            <Modal.Footer>
+            {modoEditarGrupo ? (
+              grupos.length === 0 ? (
+                <Alert variant="warning" className="mb-0">
+                  Não há grupos cadastrados para editar.
+                </Alert>
+              ) : (
+                <>
+                  <Form.Group className="mb-3">
+                    <Form.Label>Grupo</Form.Label>
+                    <Form.Select
+                      value={grupoEdicaoId}
+                      onChange={(e) =>
+                        selecionarGrupoEdicao(
+                          e.target.value ? Number(e.target.value) : '',
+                        )
+                      }
+                    >
+                      {grupos.map((grupo) => (
+                        <option key={grupo.id} value={grupo.id}>
+                          {grupo.nome} ({grupo._count.listas} lista
+                          {grupo._count.listas !== 1 ? 's' : ''})
+                        </option>
+                      ))}
+                    </Form.Select>
+                  </Form.Group>
+
+                  {grupoSelecionadoEdicao && (
+                    <>
+                      <Form.Group className="mb-3">
+                        <Form.Label>Nome do Grupo</Form.Label>
+                        <div className="d-flex gap-2">
+                          <Form.Control
+                            value={nomeGrupoEdicao}
+                            onChange={(e) => setNomeGrupoEdicao(e.target.value)}
+                            placeholder="Nome do grupo"
+                          />
+                          <Button
+                            variant="outline-primary"
+                            onClick={salvarNomeGrupoEdicao}
+                            disabled={savingGrupoEdicao || !nomeGrupoEdicao.trim()}
+                          >
+                            Salvar
+                          </Button>
+                        </div>
+                      </Form.Group>
+
+                      <Form.Group className="mb-3">
+                        <Form.Label>Listas vinculadas</Form.Label>
+                        {grupoSelecionadoEdicao.listas.length === 0 ? (
+                          <p className="text-muted mb-0">
+                            Este grupo não possui listas.
+                          </p>
+                        ) : (
+                          <div style={{ maxHeight: 200, overflowY: 'auto' }}>
+                            {grupoSelecionadoEdicao.listas.map((lista) => (
+                              <div
+                                key={lista.id}
+                                className="d-flex justify-content-between align-items-center border rounded px-2 py-1 mb-2"
+                              >
+                                <span>{lista.nome}</span>
+                                <Button
+                                  size="sm"
+                                  variant="outline-danger"
+                                  onClick={() =>
+                                    removerListaDoGrupoEdicao(
+                                      grupoSelecionadoEdicao.id,
+                                      lista.id,
+                                    )
+                                  }
+                                  disabled={savingGrupoEdicao}
+                                >
+                                  Remover
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </Form.Group>
+
+                      <Form.Group>
+                        <Form.Label>Adicionar lista ao grupo</Form.Label>
+                        <Form.Control
+                          className="mb-2"
+                          value={buscaListaGrupo}
+                          onChange={(e) => setBuscaListaGrupo(e.target.value)}
+                          placeholder="Pesquisar por nome da lista ou item (sem diferenciar acento/maiúsculas)"
+                        />
+                        <div className="d-flex gap-2">
+                          <Form.Select
+                            value={listaAdicionarGrupoId}
+                            onChange={(e) =>
+                              setListaAdicionarGrupoId(
+                                e.target.value ? Number(e.target.value) : '',
+                              )
+                            }
+                          >
+                            <option value="">Selecione uma lista</option>
+                            {listasElegiveisParaGrupoFiltradas.map((lista) => (
+                              <option key={lista.id} value={lista.id}>
+                                {lista.nome}
+                              </option>
+                            ))}
+                          </Form.Select>
+                          <Button
+                            variant="outline-success"
+                            onClick={adicionarListaNoGrupoEdicao}
+                            disabled={!listaAdicionarGrupoId || savingGrupoEdicao}
+                          >
+                            Vincular
+                          </Button>
+                        </div>
+                      </Form.Group>
+                    </>
+                  )}
+                </>
+              )
+            ) : (
+              <>
+                <Form.Group className="mb-3">
+                  <Form.Label>Nome do Grupo</Form.Label>
+                  <Form.Control
+                    value={nomeGrupo}
+                    onChange={(e) => setNomeGrupo(e.target.value)}
+                    placeholder="Ex: Operação Turno Noite"
+                    required
+                  />
+                </Form.Group>
+
+                <Form.Group>
+                  <Form.Label>Listas para incluir</Form.Label>
+                  <Form.Control
+                    className="mb-2"
+                    value={buscaListaGrupo}
+                    onChange={(e) => setBuscaListaGrupo(e.target.value)}
+                    placeholder="Pesquisar por nome da lista ou item (sem diferenciar acento/maiúsculas)"
+                  />
+                  {listasElegiveisParaGrupo.length === 0 ? (
+                    <p className="text-muted mb-0">
+                      Não há listas elegíveis no momento.
+                    </p>
+                  ) : listasElegiveisParaGrupoFiltradas.length === 0 ? (
+                    <p className="text-muted mb-0">
+                      Nenhuma lista encontrada para essa busca.
+                    </p>
+                  ) : (
+                    <div style={{ maxHeight: 240, overflowY: 'auto' }}>
+                      {listasElegiveisParaGrupoFiltradas.map((lista) => (
+                        <Form.Check
+                          key={lista.id}
+                          id={`grupo-lista-${lista.id}`}
+                          className="mb-2"
+                          label={`${lista.nome} (${lista._count.itensRef} itens)`}
+                          checked={listasGrupoSelecionadas.has(lista.id)}
+                          onChange={() => toggleListaGrupoSelecionada(lista.id)}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </Form.Group>
+              </>
+            )}
+          </Modal.Body>
+          <Modal.Footer>
+            {modoEditarGrupo && grupoSelecionadoEdicao && (
               <Button
-                variant="secondary"
-                onClick={() => setShowModalCriarGrupo(false)}
+                variant="outline-danger"
+                className="me-auto"
+                onClick={excluirGrupoEdicao}
+                disabled={savingGrupoEdicao}
               >
-                Cancelar
+                Excluir Grupo
               </Button>
+            )}
+            <Button
+              variant="secondary"
+              onClick={() => setShowModalCriarGrupo(false)}
+            >
+              Fechar
+            </Button>
+            {!modoEditarGrupo && (
               <Button
                 variant="warning"
-                type="submit"
+                onClick={handleCriarGrupo}
                 disabled={savingGrupo || !nomeGrupo.trim()}
               >
                 {savingGrupo ? <Spinner size="sm" animation="border" /> : 'Criar Grupo'}
               </Button>
-            </Modal.Footer>
-          </Form>
+            )}
+          </Modal.Footer>
         </Modal>
 
         {/* Modal Vincular Lista a Grupo */}
