@@ -17,6 +17,7 @@ import { hardRefreshApp } from '@/lib/hardRefreshApp';
 import {
   type NavbarStyle,
   getNavbarStyle,
+  getNavbarStyleLabel,
   setNavbarStyle as persistNavbarStyle,
 } from '@/lib/navbarStyle';
 
@@ -53,6 +54,7 @@ export default function ConfiguracoesAdmin() {
 
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [navbarStyle, setNavbarStyle] = useState<NavbarStyle>('current');
+  const [savingNavbarStyle, setSavingNavbarStyle] = useState(false);
   const [sessionTimeout, setSessionTimeout] = useState(30);
   const [refreshing, setRefreshing] = useState(false);
   const [exportingItens, setExportingItens] = useState(false);
@@ -73,7 +75,6 @@ export default function ConfiguracoesAdmin() {
   useEffect(() => {
     const theme = localStorage.getItem('theme') || 'light';
     setIsDarkMode(theme === 'dark');
-    setNavbarStyle(getNavbarStyle());
     const saved = localStorage.getItem('configSessionTimeout');
     if (saved) setSessionTimeout(parseInt(saved, 10));
     // Load listas for phase 2 dropdown
@@ -81,6 +82,28 @@ export default function ConfiguracoesAdmin() {
       .then((r) => setListas(r.data))
       .catch(() => {/* silently ignore */});
   }, []);
+
+  useEffect(() => {
+    if (!user) return;
+    let isMounted = true;
+
+    setNavbarStyle(getNavbarStyle(user.id));
+
+    api.get('/v1/auth/navbar-style')
+      .then((response) => {
+        if (!isMounted) return;
+        const remoteStyle = (response.data?.style === 'next' ? 'next' : 'current') as NavbarStyle;
+        setNavbarStyle(remoteStyle);
+        persistNavbarStyle(remoteStyle, user.id);
+      })
+      .catch(() => {
+        // fallback local
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user?.id]);
 
   const handleToggleDarkMode = () => {
     const newState = !isDarkMode;
@@ -95,15 +118,20 @@ export default function ConfiguracoesAdmin() {
     success('Configuração salva', `Timeout de sessão definido para ${sessionTimeout} minutos`);
   };
 
-  const handleNavbarStyleChange = (style: NavbarStyle) => {
+  const handleNavbarStyleChange = async (style: NavbarStyle) => {
+    if (!user || savingNavbarStyle) return;
     setNavbarStyle(style);
-    persistNavbarStyle(style);
-    success(
-      'Navbar atualizada',
-      style === 'current'
-        ? 'Estilo atual ativado.'
-        : 'Estilo próximo ativado para preparação da nova navbar.',
-    );
+    persistNavbarStyle(style, user.id);
+    setSavingNavbarStyle(true);
+
+    try {
+      await api.put('/v1/auth/navbar-style', { style });
+      success('Navbar atualizada', `${getNavbarStyleLabel(style)} ativado.`);
+    } catch {
+      error('Falha ao salvar', 'Não foi possível persistir o estilo do navbar no servidor.');
+    } finally {
+      setSavingNavbarStyle(false);
+    }
   };
 
   const handleExportItens = async () => {
@@ -231,27 +259,29 @@ export default function ConfiguracoesAdmin() {
           <div className="mb-2">
             <div className="fw-semibold">Alternar visual da barra lateral</div>
             <small className="text-muted">
-              Escolha entre o layout atual e o layout novo em preparação.
+              Escolha entre Ecrã Full e Ecrã Parcial.
             </small>
           </div>
           <div className="d-flex gap-2 flex-wrap">
             <Button
               size="sm"
               variant={navbarStyle === 'current' ? 'primary' : 'outline-primary'}
-              onClick={() => handleNavbarStyleChange('current')}
+              onClick={() => void handleNavbarStyleChange('current')}
+              disabled={savingNavbarStyle}
             >
-              Navbar Atual
+              Ecrã Full
             </Button>
             <Button
               size="sm"
               variant={navbarStyle === 'next' ? 'primary' : 'outline-primary'}
-              onClick={() => handleNavbarStyleChange('next')}
+              onClick={() => void handleNavbarStyleChange('next')}
+              disabled={savingNavbarStyle}
             >
-              Próxima Navbar
+              Ecrã Parcial
             </Button>
           </div>
           <small className="text-muted d-block mt-2">
-            Estilo ativo: <strong>{navbarStyle === 'current' ? 'Navbar Atual' : 'Próxima Navbar'}</strong>
+            Estilo ativo: <strong>{getNavbarStyleLabel(navbarStyle)}</strong>
           </small>
         </Card.Body>
       </Card>

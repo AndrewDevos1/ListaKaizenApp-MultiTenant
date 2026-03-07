@@ -12,6 +12,13 @@ import { useToast } from '@/contexts/ToastContext';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import InstallAppButton from '@/components/InstallAppButton';
 import { hardRefreshApp } from '@/lib/hardRefreshApp';
+import api from '@/lib/api';
+import {
+  type NavbarStyle,
+  getNavbarStyle,
+  getNavbarStyleLabel,
+  setNavbarStyle as persistNavbarStyle,
+} from '@/lib/navbarStyle';
 
 const SESSION_TIMEOUTS = [
   { value: 5, label: '5 minutos — Alta segurança' },
@@ -26,10 +33,12 @@ const SESSION_TIMEOUTS = [
 
 export default function ConfiguracoesColaborador() {
   const { logout, user } = useAuth();
-  const { success } = useToast();
+  const { success, error } = useToast();
   const { state: pushState, subscribe, unsubscribe } = usePushNotifications();
 
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [navbarStyle, setNavbarStyle] = useState<NavbarStyle>('current');
+  const [savingNavbarStyle, setSavingNavbarStyle] = useState(false);
   const [sessionTimeout, setSessionTimeout] = useState(30);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -41,6 +50,28 @@ export default function ConfiguracoesColaborador() {
     if (saved) setSessionTimeout(parseInt(saved, 10));
   }, []);
 
+  useEffect(() => {
+    if (!user) return;
+    let isMounted = true;
+
+    setNavbarStyle(getNavbarStyle(user.id));
+
+    api.get('/v1/auth/navbar-style')
+      .then((response) => {
+        if (!isMounted) return;
+        const remoteStyle = (response.data?.style === 'next' ? 'next' : 'current') as NavbarStyle;
+        setNavbarStyle(remoteStyle);
+        persistNavbarStyle(remoteStyle, user.id);
+      })
+      .catch(() => {
+        // fallback local
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user?.id]);
+
   const handleToggleDarkMode = () => {
     const newState = !isDarkMode;
     setIsDarkMode(newState);
@@ -50,6 +81,22 @@ export default function ConfiguracoesColaborador() {
       document.documentElement.setAttribute('data-theme', 'dark');
     } else {
       document.documentElement.removeAttribute('data-theme');
+    }
+  };
+
+  const handleNavbarStyleChange = async (style: NavbarStyle) => {
+    if (!user || savingNavbarStyle) return;
+    setNavbarStyle(style);
+    persistNavbarStyle(style, user.id);
+    setSavingNavbarStyle(true);
+
+    try {
+      await api.put('/v1/auth/navbar-style', { style });
+      success('Navbar atualizada', `${getNavbarStyleLabel(style)} ativado.`);
+    } catch {
+      error('Falha ao salvar', 'Não foi possível persistir o estilo do navbar no servidor.');
+    } finally {
+      setSavingNavbarStyle(false);
     }
   };
 
@@ -102,6 +149,39 @@ export default function ConfiguracoesColaborador() {
               {isDarkMode ? <><FaSun className="me-1" /> Modo Claro</> : <><FaMoon className="me-1" /> Modo Escuro</>}
             </Button>
           </div>
+        </Card.Body>
+      </Card>
+
+      <Card className="mb-4 shadow-sm">
+        <Card.Header><strong><FaCog className="me-2" />Estilo da Navbar</strong></Card.Header>
+        <Card.Body>
+          <div className="mb-2">
+            <div className="fw-semibold">Alternar visual da barra lateral</div>
+            <small className="text-muted">
+              Escolha entre Ecrã Full e Ecrã Parcial.
+            </small>
+          </div>
+          <div className="d-flex gap-2 flex-wrap">
+            <Button
+              size="sm"
+              variant={navbarStyle === 'current' ? 'primary' : 'outline-primary'}
+              onClick={() => void handleNavbarStyleChange('current')}
+              disabled={savingNavbarStyle}
+            >
+              Ecrã Full
+            </Button>
+            <Button
+              size="sm"
+              variant={navbarStyle === 'next' ? 'primary' : 'outline-primary'}
+              onClick={() => void handleNavbarStyleChange('next')}
+              disabled={savingNavbarStyle}
+            >
+              Ecrã Parcial
+            </Button>
+          </div>
+          <small className="text-muted d-block mt-2">
+            Estilo ativo: <strong>{getNavbarStyleLabel(navbarStyle)}</strong>
+          </small>
         </Card.Body>
       </Card>
 
