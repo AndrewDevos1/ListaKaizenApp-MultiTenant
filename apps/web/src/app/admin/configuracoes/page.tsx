@@ -14,6 +14,11 @@ import { usePushNotifications } from '@/hooks/usePushNotifications';
 import InstallAppButton from '@/components/InstallAppButton';
 import api from '@/lib/api';
 import { hardRefreshApp } from '@/lib/hardRefreshApp';
+import {
+  type NavbarStyle,
+  getNavbarStyle,
+  setNavbarStyle as persistNavbarStyle,
+} from '@/lib/navbarStyle';
 
 const SESSION_TIMEOUTS = [
   { value: 5, label: '5 minutos — Alta segurança' },
@@ -47,6 +52,7 @@ export default function ConfiguracoesAdmin() {
   const { state: pushState, subscribe, unsubscribe } = usePushNotifications();
 
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [navbarStyle, setNavbarStyle] = useState<NavbarStyle>('current');
   const [sessionTimeout, setSessionTimeout] = useState(30);
   const [refreshing, setRefreshing] = useState(false);
   const [exportingItens, setExportingItens] = useState(false);
@@ -67,6 +73,7 @@ export default function ConfiguracoesAdmin() {
   useEffect(() => {
     const theme = localStorage.getItem('theme') || 'light';
     setIsDarkMode(theme === 'dark');
+    setNavbarStyle(getNavbarStyle());
     const saved = localStorage.getItem('configSessionTimeout');
     if (saved) setSessionTimeout(parseInt(saved, 10));
     // Load listas for phase 2 dropdown
@@ -86,6 +93,17 @@ export default function ConfiguracoesAdmin() {
   const handleSaveSession = () => {
     localStorage.setItem('configSessionTimeout', sessionTimeout.toString());
     success('Configuração salva', `Timeout de sessão definido para ${sessionTimeout} minutos`);
+  };
+
+  const handleNavbarStyleChange = (style: NavbarStyle) => {
+    setNavbarStyle(style);
+    persistNavbarStyle(style);
+    success(
+      'Navbar atualizada',
+      style === 'current'
+        ? 'Estilo atual ativado.'
+        : 'Estilo próximo ativado para preparação da nova navbar.',
+    );
   };
 
   const handleExportItens = async () => {
@@ -204,6 +222,37 @@ export default function ConfiguracoesAdmin() {
               {isDarkMode ? <><FaSun className="me-1" /> Modo Claro</> : <><FaMoon className="me-1" /> Modo Escuro</>}
             </Button>
           </div>
+        </Card.Body>
+      </Card>
+
+      <Card className="mb-4 shadow-sm">
+        <Card.Header><strong><FaCog className="me-2" />Estilo da Navbar</strong></Card.Header>
+        <Card.Body>
+          <div className="mb-2">
+            <div className="fw-semibold">Alternar visual da barra lateral</div>
+            <small className="text-muted">
+              Escolha entre o layout atual e o layout novo em preparação.
+            </small>
+          </div>
+          <div className="d-flex gap-2 flex-wrap">
+            <Button
+              size="sm"
+              variant={navbarStyle === 'current' ? 'primary' : 'outline-primary'}
+              onClick={() => handleNavbarStyleChange('current')}
+            >
+              Navbar Atual
+            </Button>
+            <Button
+              size="sm"
+              variant={navbarStyle === 'next' ? 'primary' : 'outline-primary'}
+              onClick={() => handleNavbarStyleChange('next')}
+            >
+              Próxima Navbar
+            </Button>
+          </div>
+          <small className="text-muted d-block mt-2">
+            Estilo ativo: <strong>{navbarStyle === 'current' ? 'Navbar Atual' : 'Próxima Navbar'}</strong>
+          </small>
         </Card.Body>
       </Card>
 
