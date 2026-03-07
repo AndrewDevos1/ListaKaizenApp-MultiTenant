@@ -4,6 +4,7 @@ import {
   UnauthorizedException,
   BadRequestException,
 } from '@nestjs/common';
+import { UserRole } from '@prisma/client';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -12,14 +13,175 @@ import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
+import { SaveNavbarLayoutDto } from './dto/save-navbar-layout.dto';
+import { SaveNavbarStyleDto } from './dto/save-navbar-style.dto';
+
+type NavbarLayout = {
+  hiddenGroupIds: string[];
+  hiddenItemKeys: string[];
+};
+
+type NavbarLayoutMap = Record<UserRole, NavbarLayout>;
+type NavbarStyle = 'current' | 'next';
 
 @Injectable()
 export class AuthService {
+  private navbarLayoutTableReady = false;
+  private navbarStyleTableReady = false;
+
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
     private convitesService: ConvitesService,
   ) {}
+
+  private createDefaultNavbarLayoutMap(): NavbarLayoutMap {
+    return {
+      [UserRole.SUPER_ADMIN]: { hiddenGroupIds: [], hiddenItemKeys: [] },
+      [UserRole.ADMIN]: { hiddenGroupIds: [], hiddenItemKeys: [] },
+      [UserRole.COLLABORATOR]: { hiddenGroupIds: [], hiddenItemKeys: [] },
+      [UserRole.SUPPLIER]: { hiddenGroupIds: [], hiddenItemKeys: [] },
+    };
+  }
+
+  private normalizeStringArray(values: unknown): string[] {
+    if (!Array.isArray(values)) return [];
+    const normalized = values
+      .map((value) => (typeof value === 'string' ? value.trim() : ''))
+      .filter((value) => value.length > 0);
+    return [...new Set(normalized)];
+  }
+
+  private async ensureNavbarLayoutTable() {
+    if (this.navbarLayoutTableReady) return;
+
+    await this.prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS navbar_layouts (
+        role TEXT PRIMARY KEY,
+        hidden_group_ids TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[],
+        hidden_item_keys TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[],
+        criado_em TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        atualizado_em TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `);
+
+    this.navbarLayoutTableReady = true;
+  }
+
+  private normalizeNavbarStyle(value: unknown): NavbarStyle {
+    return value === 'next' ? 'next' : 'current';
+  }
+
+  private async ensureNavbarStyleTable() {
+    if (this.navbarStyleTableReady) return;
+
+    await this.prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS usuario_navbar_estilos (
+        usuario_id INTEGER PRIMARY KEY REFERENCES usuarios(id) ON DELETE CASCADE,
+        style TEXT NOT NULL DEFAULT 'current',
+        criado_em TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        atualizado_em TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `);
+
+    this.navbarStyleTableReady = true;
+  }
+
+  async getNavbarLayouts(): Promise<NavbarLayoutMap> {
+    await this.ensureNavbarLayoutTable();
+
+    const rows = await this.prisma.$queryRawUnsafe<
+      Array<{ role: string; hidden_group_ids: string[]; hidden_item_keys: string[] }>
+    >(
+      `SELECT role, hidden_group_ids, hidden_item_keys FROM navbar_layouts`,
+    );
+
+    const layouts = this.createDefaultNavbarLayoutMap();
+
+    rows.forEach((row) => {
+      const role = row.role as UserRole;
+      if (!(role in layouts)) return;
+
+      layouts[role] = {
+        hiddenGroupIds: this.normalizeStringArray(row.hidden_group_ids),
+        hiddenItemKeys: this.normalizeStringArray(row.hidden_item_keys),
+      };
+    });
+
+    return layouts;
+  }
+
+  async saveNavbarLayout(currentRole: UserRole, dto: SaveNavbarLayoutDto) {
+    const targetRole =
+      currentRole === UserRole.SUPER_ADMIN
+        ? (dto.role ?? UserRole.SUPER_ADMIN)
+        : currentRole;
+
+    if (currentRole !== UserRole.SUPER_ADMIN && dto.role && dto.role !== currentRole) {
+      throw new UnauthorizedException('Apenas SUPER_ADMIN pode alterar layout de outras roles');
+    }
+
+    const hiddenGroupIds = this.normalizeStringArray(dto.hiddenGroupIds);
+    const hiddenItemKeys = this.normalizeStringArray(dto.hiddenItemKeys);
+
+    await this.ensureNavbarLayoutTable();
+
+    await this.prisma.$executeRawUnsafe(
+      `
+        INSERT INTO navbar_layouts (role, hidden_group_ids, hidden_item_keys, atualizado_em)
+        VALUES ($1, $2::TEXT[], $3::TEXT[], NOW())
+        ON CONFLICT (role)
+        DO UPDATE SET
+          hidden_group_ids = EXCLUDED.hidden_group_ids,
+          hidden_item_keys = EXCLUDED.hidden_item_keys,
+          atualizado_em = NOW()
+      `,
+      targetRole,
+      hiddenGroupIds,
+      hiddenItemKeys,
+    );
+
+    return {
+      message: 'Layout do navbar salvo com sucesso',
+      layouts: await this.getNavbarLayouts(),
+    };
+  }
+
+  async getNavbarStyle(userId: number) {
+    await this.ensureNavbarStyleTable();
+
+    const rows = await this.prisma.$queryRawUnsafe<Array<{ style: string }>>(
+      'SELECT style FROM usuario_navbar_estilos WHERE usuario_id = $1 LIMIT 1',
+      userId,
+    );
+
+    const style = this.normalizeNavbarStyle(rows[0]?.style);
+    return { style };
+  }
+
+  async saveNavbarStyle(userId: number, dto: SaveNavbarStyleDto) {
+    await this.ensureNavbarStyleTable();
+
+    const style = this.normalizeNavbarStyle(dto.style);
+
+    await this.prisma.$executeRawUnsafe(
+      `
+        INSERT INTO usuario_navbar_estilos (usuario_id, style, atualizado_em)
+        VALUES ($1, $2, NOW())
+        ON CONFLICT (usuario_id)
+        DO UPDATE SET
+          style = EXCLUDED.style,
+          atualizado_em = NOW()
+      `,
+      userId,
+      style,
+    );
+
+    return {
+      message: 'Estilo de navbar salvo com sucesso',
+      style,
+    };
+  }
 
   async register(dto: RegisterDto) {
     // Se há token de convite, valida antes de criar o usuário
