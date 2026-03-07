@@ -793,7 +793,7 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
     });
   }, [effectiveRole, updateCustomizationForRole]);
 
-  const canEditNavbar = isLegacyStyle && isSuperAdmin && !isMobile && !isMenuCollapsed;
+  const canEditNavbar = isSuperAdmin && !isMobile && !isMenuCollapsed;
 
   // Filter groups and items based on search
   // allMenuGroups já é memoizado — só recalcula quando searchTerm ou menu mudam
@@ -998,12 +998,12 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
         <div className={styles.menuContainer}>
           {filteredGroups.map((group, groupIndex) => {
             const groupHidden = hiddenGroups.has(group.id);
-            const groupExpanded = isEditMode && isLegacyStyle ? true : expandedGroups[group.id];
+            const groupExpanded = isEditMode ? true : expandedGroups[group.id];
 
             return (
             <div
               key={group.id}
-              className={`${styles.menuGroup} ${isEditMode && isLegacyStyle && groupHidden ? styles.menuGroupHidden : ''}`}
+              className={`${styles.menuGroup} ${isEditMode && groupHidden ? styles.menuGroupHidden : ''}`}
             >
               {isLegacyStyle && isMenuCollapsed && groupIndex > 0 ? (
                 <div className={styles.menuDivider} aria-hidden="true" />
@@ -1018,7 +1018,7 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
                 </button>
               )}
 
-              {isLegacyStyle && isEditMode && !isMenuCollapsed && (
+              {isEditMode && !isMenuCollapsed && (
                 <div className={styles.groupEditActions}>
                   <button
                     type="button"
@@ -1045,7 +1045,7 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
                         ? 'Em breve'
                         : undefined;
 
-                    if (isLegacyStyle && isEditMode) {
+                    if (isEditMode) {
                       return (
                         <div
                           key={itemKey}

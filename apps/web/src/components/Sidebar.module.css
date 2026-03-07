@@ -615,6 +615,105 @@
   transition: transform 0.3s ease;
 }
 
+.editModeBar {
+  margin: 0.5rem 1rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.editModeActions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.editModeRole {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-right: 0.25rem;
+}
+
+.editModeRoleLabel {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.editModeRoleSelect {
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  border-radius: 6px;
+  padding: 0.35rem 0.5rem;
+  font-size: 0.8rem;
+  min-width: 140px;
+  max-width: 100%;
+}
+
+.editModeRoleSelect option {
+  color: #111;
+  background: #fff;
+}
+
+.editModeButton {
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #fff;
+  border-radius: 6px;
+  padding: 0.45rem 0.75rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.editModeButton:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.editModeIcon {
+  font-size: 0.85rem;
+}
+
+.groupEditActions {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0 1rem;
+}
+
+.menuGroupHidden {
+  opacity: 0.5;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.menuItemHidden {
+  opacity: 0.55;
+  background: rgba(0, 0, 0, 0.15);
+}
+
+.itemToggleButton {
+  margin-left: auto;
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.itemToggleButton:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.12);
+}
+
 /* Legacy Sidebar Variant (sidebar 2) */
 .wrapper[data-navbar-style='next'] .sidebarWrapper {
   min-height: 100vh;
