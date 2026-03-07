@@ -5,7 +5,7 @@ import { AppModule } from './app.module';
 import type { CorsOptions } from '@nestjs/common/interfaces/external/cors-options.interface';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, { logger: ['log', 'error', 'warn', 'debug'] });
 
   const corsOptions: CorsOptions = {
     origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
@@ -52,9 +52,12 @@ async function bootstrap() {
   const parsedPort = rawPort ? Number(rawPort) : NaN;
   const port = Number.isFinite(parsedPort) && parsedPort > 0 ? parsedPort : 3001;
 
-  // Em plataformas como Railway, PORT é obrigatório e precisa escutar em 0.0.0.0.
   await app.listen(port, '0.0.0.0');
   console.log(`API running on http://0.0.0.0:${port}`);
   console.log(`Swagger docs at http://0.0.0.0:${port}/api/docs`);
 }
-bootstrap(); // v1.0.1
+
+bootstrap().catch((err) => {
+  console.error('FATAL: Bootstrap failed', err);
+  process.exit(1);
+});
