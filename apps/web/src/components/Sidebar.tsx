@@ -38,7 +38,12 @@ import {
   FaChartBar,
   FaStore,
   FaGlobe,
+  FaEye,
+  FaEyeSlash,
+  FaPencilAlt,
+  FaSave,
 } from 'react-icons/fa';
+import { UserRole } from 'shared';
 import styles from './Sidebar.module.css';
 import Breadcrumbs from './Breadcrumbs';
 import NotificationBell from './NotificationBell';
@@ -51,6 +56,7 @@ import {
 } from '@/lib/navbarStyle';
 
 interface MenuItem {
+  key?: string;
   label: string;
   href?: string;
   icon: React.ReactNode;
@@ -64,8 +70,43 @@ interface MenuGroup {
   items: MenuItem[];
 }
 
+interface RoleNavbarCustomization {
+  hiddenGroupIds: string[];
+  hiddenItemKeys: string[];
+}
+
+type NavbarCustomizationState = Record<UserRole, RoleNavbarCustomization>;
+
+const NAVBAR_NEXT_LAYOUT_STORAGE_KEY = 'navbar:next:layout';
+
+function createEmptyNavbarCustomizationState(): NavbarCustomizationState {
+  return {
+    [UserRole.SUPER_ADMIN]: { hiddenGroupIds: [], hiddenItemKeys: [] },
+    [UserRole.ADMIN]: { hiddenGroupIds: [], hiddenItemKeys: [] },
+    [UserRole.COLLABORATOR]: { hiddenGroupIds: [], hiddenItemKeys: [] },
+    [UserRole.SUPPLIER]: { hiddenGroupIds: [], hiddenItemKeys: [] },
+  };
+}
+
+function normalizeNavbarCustomization(raw: unknown): NavbarCustomizationState {
+  const base = createEmptyNavbarCustomizationState();
+  if (!raw || typeof raw !== 'object') return base;
+
+  const source = raw as Partial<Record<UserRole, Partial<RoleNavbarCustomization>>>;
+  (Object.values(UserRole) as UserRole[]).forEach((role) => {
+    const roleData = source[role];
+    if (!roleData) return;
+    base[role] = {
+      hiddenGroupIds: Array.isArray(roleData.hiddenGroupIds) ? roleData.hiddenGroupIds.filter((v): v is string => typeof v === 'string') : [],
+      hiddenItemKeys: Array.isArray(roleData.hiddenItemKeys) ? roleData.hiddenItemKeys.filter((v): v is string => typeof v === 'string') : [],
+    };
+  });
+
+  return base;
+}
+
 export default function Sidebar({ children }: { children: React.ReactNode }) {
-  const { user, logout, isAdmin, isSuperAdmin } = useAuth();
+  const { user, logout, isSuperAdmin } = useAuth();
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isToggled, setIsToggled] = useState(false);
@@ -73,8 +114,14 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
   const [isMobileCollapsed, setIsMobileCollapsed] = useState(true);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [navbarStyle, setNavbarStyle] = useState<NavbarStyle>('current');
+  const [previewRole, setPreviewRole] = useState<UserRole>(UserRole.SUPER_ADMIN);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [navbarCustomization, setNavbarCustomization] = useState<NavbarCustomizationState>(
+    createEmptyNavbarCustomizationState(),
+  );
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
+  const editSnapshotRef = useRef<NavbarCustomizationState | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const touchStartX = useRef<number | null>(null);
   const touchStartY = useRef<number | null>(null);
@@ -82,6 +129,9 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
   const touchEndY = useRef<number | null>(null);
   const isLegacyStyle = navbarStyle === 'next';
   const isMenuCollapsed = isLegacyStyle ? (isMobile ? isMobileCollapsed : isCollapsed) : isCollapsed;
+  const effectiveRole = isLegacyStyle && isSuperAdmin ? previewRole : user?.role ?? UserRole.COLLABORATOR;
+  const roleIsAdmin = effectiveRole === UserRole.ADMIN || effectiveRole === UserRole.SUPER_ADMIN;
+  const roleIsSuperAdmin = effectiveRole === UserRole.SUPER_ADMIN;
 
   const expandSidebarForSearch = useCallback(() => {
     if (isLegacyStyle && isMobile) {
@@ -129,6 +179,27 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
+  useEffect(() => {
+    const stored = localStorage.getItem(NAVBAR_NEXT_LAYOUT_STORAGE_KEY);
+    if (!stored) return;
+
+    try {
+      const parsed = JSON.parse(stored);
+      setNavbarCustomization(normalizeNavbarCustomization(parsed));
+    } catch {
+      setNavbarCustomization(createEmptyNavbarCustomizationState());
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!user) return;
+    if (user.role === UserRole.SUPER_ADMIN) {
+      setPreviewRole(UserRole.SUPER_ADMIN);
+    } else {
+      setPreviewRole(user.role);
+    }
+  }, [user]);
+
   // Initialize collapsed state from localStorage
   useEffect(() => {
     const mobile = window.innerWidth < 768;
@@ -144,17 +215,18 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
 
   // Initialize expanded groups from localStorage
   useEffect(() => {
-    const defaultGroups: Record<string, boolean> = isAdmin
-      ? {
-          'visao-geral': true,
-          'listas-estoque': true,
-          pop: true,
-          itens: true,
-          gestao: true,
-          configuracoes: true,
-          perfil: true,
-        }
-      : { dashboard: true, atividades: true, perfil: true };
+    const defaultGroups: Record<string, boolean> = {
+      'visao-geral': true,
+      'listas-estoque': true,
+      pop: true,
+      itens: true,
+      gestao: true,
+      configuracoes: true,
+      dashboard: true,
+      atividades: true,
+      supplier: true,
+      perfil: true,
+    };
 
     const saved = localStorage.getItem('expandedGroups');
     if (saved) {
@@ -169,7 +241,7 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
       // Default: expand all groups
       setExpandedGroups(defaultGroups);
     }
-  }, [isAdmin]);
+  }, []);
 
   // Persist collapsed state
   const handleToggleCollapse = useCallback(() => {
@@ -228,6 +300,41 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
       return newState;
     });
   }, []);
+
+  const updateCustomizationForRole = useCallback(
+    (
+      role: UserRole,
+      updater: (current: RoleNavbarCustomization) => RoleNavbarCustomization,
+    ) => {
+      setNavbarCustomization((prev) => {
+        const current = prev[role] ?? { hiddenGroupIds: [], hiddenItemKeys: [] };
+        return {
+          ...prev,
+          [role]: updater(current),
+        };
+      });
+    },
+    [],
+  );
+
+  const handleEnterEditMode = useCallback(() => {
+    editSnapshotRef.current = JSON.parse(JSON.stringify(navbarCustomization)) as NavbarCustomizationState;
+    setIsEditMode(true);
+  }, [navbarCustomization]);
+
+  const handleCancelEditMode = useCallback(() => {
+    if (editSnapshotRef.current) {
+      setNavbarCustomization(editSnapshotRef.current);
+    }
+    setIsEditMode(false);
+    editSnapshotRef.current = null;
+  }, []);
+
+  const handleSaveEditMode = useCallback(() => {
+    localStorage.setItem(NAVBAR_NEXT_LAYOUT_STORAGE_KEY, JSON.stringify(navbarCustomization));
+    setIsEditMode(false);
+    editSnapshotRef.current = null;
+  }, [navbarCustomization]);
 
   // Toggle dark mode
   const handleToggleDarkMode = useCallback(() => {
@@ -351,7 +458,7 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
           icon: <FaTachometerAlt />,
           status: 'available',
         },
-        ...(isSuperAdmin
+        ...(roleIsSuperAdmin
           ? [
               {
                 label: 'Dashboard Global',
@@ -493,7 +600,7 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
           icon: <FaStore />,
           status: 'available',
         },
-        ...(isSuperAdmin
+        ...(roleIsSuperAdmin
           ? [
               {
                 label: 'Restaurantes',
@@ -523,7 +630,7 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
       ],
     },
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  ], [isSuperAdmin]);
+  ], [roleIsSuperAdmin]);
 
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const collaboratorMenuGroups = useMemo<MenuGroup[]>(() => [
@@ -594,13 +701,29 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
   ], []);
 
   // eslint-disable-next-line react-hooks/rules-of-hooks
+  const supplierMenuGroups = useMemo<MenuGroup[]>(() => [
+    {
+      id: 'supplier',
+      label: 'PAINEL FORNECEDOR',
+      items: [
+        {
+          label: 'Painel',
+          href: '/supplier/dashboard',
+          icon: <FaTachometerAlt />,
+          status: 'available',
+        },
+      ],
+    },
+  ], []);
+
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   const profileMenuGroup = useMemo<MenuGroup>(() => ({
     id: 'perfil',
     label: 'PERFIL',
     items: [
       {
         label: 'Editar Perfil',
-        href: isAdmin ? '/admin/editar-perfil' : '/collaborator/perfil',
+        href: roleIsAdmin ? '/admin/editar-perfil' : '/collaborator/perfil',
         icon: <FaUserEdit />,
         status: 'available' as const,
       },
@@ -611,29 +734,91 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
         onClick: logout,
       },
     ],
-  }), [isAdmin, logout]);
+  }), [roleIsAdmin, logout]);
 
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const allMenuGroups = useMemo(
-    () => [...(isAdmin ? adminMenuGroups : collaboratorMenuGroups), profileMenuGroup],
-    [isAdmin, adminMenuGroups, collaboratorMenuGroups, profileMenuGroup],
+    () => [
+      ...(
+        roleIsAdmin
+          ? adminMenuGroups
+          : effectiveRole === UserRole.SUPPLIER
+            ? supplierMenuGroups
+            : collaboratorMenuGroups
+      ),
+      profileMenuGroup,
+    ],
+    [roleIsAdmin, effectiveRole, adminMenuGroups, collaboratorMenuGroups, supplierMenuGroups, profileMenuGroup],
   );
+
+  const activeCustomization = navbarCustomization[effectiveRole] ?? {
+    hiddenGroupIds: [],
+    hiddenItemKeys: [],
+  };
+  const hiddenGroups = useMemo(
+    () => new Set(activeCustomization.hiddenGroupIds),
+    [activeCustomization.hiddenGroupIds],
+  );
+  const hiddenItems = useMemo(
+    () => new Set(activeCustomization.hiddenItemKeys),
+    [activeCustomization.hiddenItemKeys],
+  );
+
+  const getMenuItemKey = useCallback(
+    (item: MenuItem) => item.key ?? item.href ?? item.label,
+    [],
+  );
+
+  const toggleGroupHidden = useCallback((groupId: string) => {
+    updateCustomizationForRole(effectiveRole, (current) => {
+      const exists = current.hiddenGroupIds.includes(groupId);
+      return {
+        ...current,
+        hiddenGroupIds: exists
+          ? current.hiddenGroupIds.filter((id) => id !== groupId)
+          : [...current.hiddenGroupIds, groupId],
+      };
+    });
+  }, [effectiveRole, updateCustomizationForRole]);
+
+  const toggleItemHidden = useCallback((itemKey: string) => {
+    updateCustomizationForRole(effectiveRole, (current) => {
+      const exists = current.hiddenItemKeys.includes(itemKey);
+      return {
+        ...current,
+        hiddenItemKeys: exists
+          ? current.hiddenItemKeys.filter((key) => key !== itemKey)
+          : [...current.hiddenItemKeys, itemKey],
+      };
+    });
+  }, [effectiveRole, updateCustomizationForRole]);
+
+  const canEditNavbar = isLegacyStyle && isSuperAdmin && !isMobile && !isMenuCollapsed;
 
   // Filter groups and items based on search
   // allMenuGroups já é memoizado — só recalcula quando searchTerm ou menu mudam
   const filteredGroups = useMemo(() => {
-    if (!searchTerm.trim()) return allMenuGroups;
+    const baseGroups = allMenuGroups
+      .map((group) => ({
+        ...group,
+        items: group.items.filter((item) => isEditMode || !hiddenItems.has(getMenuItemKey(item))),
+      }))
+      .filter((group) => (isEditMode ? true : group.items.length > 0))
+      .filter((group) => (isEditMode ? true : !hiddenGroups.has(group.id)));
+
+    if (!searchTerm.trim()) return baseGroups;
+
     const term = searchTerm.toLowerCase();
-    return allMenuGroups
+    return baseGroups
       .map((group) => ({
         ...group,
         items: group.items.filter((item) => item.label.toLowerCase().includes(term)),
       }))
       .filter((group) => group.items.length > 0);
-  }, [searchTerm, allMenuGroups]);
+  }, [searchTerm, allMenuGroups, isEditMode, hiddenItems, hiddenGroups, getMenuItemKey]);
 
   useEffect(() => {
-    if (!searchTerm.trim() || filteredGroups.length === 0) return;
+    if (!searchTerm.trim() || filteredGroups.length === 0 || isEditMode) return;
 
     setExpandedGroups((prev) => {
       const next = { ...prev };
@@ -650,11 +835,25 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
       localStorage.setItem('expandedGroups', JSON.stringify(next));
       return next;
     });
-  }, [searchTerm, filteredGroups]);
+  }, [searchTerm, filteredGroups, isEditMode]);
+
+  useEffect(() => {
+    if (canEditNavbar || !isEditMode) return;
+    handleCancelEditMode();
+  }, [canEditNavbar, isEditMode, handleCancelEditMode]);
 
   const isMenuItemActive = (href: string): boolean => {
     return pathname === href || pathname.startsWith(`${href}/`);
   };
+
+  const roleLabel =
+    effectiveRole === UserRole.SUPER_ADMIN
+      ? 'Super Admin'
+      : effectiveRole === UserRole.ADMIN
+        ? 'Administrador'
+        : effectiveRole === UserRole.SUPPLIER
+          ? 'Fornecedor'
+          : 'Colaborador';
 
   return (
     <div
@@ -704,7 +903,7 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
                 {user.avatarUrl ? (
                   <img src={user.avatarUrl} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
                 ) : (
-                  isAdmin ? <FaUserShield /> : <FaUser />
+                  roleIsAdmin ? <FaUserShield /> : <FaUser />
                 )}
               </div>
             ) : (
@@ -717,7 +916,7 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
           </div>
           <div className={styles.userDetails}>
             <div className={styles.userName}>{user.nome}</div>
-            <div className={styles.userRole}>{isAdmin ? 'Administrador' : 'Colaborador'}</div>
+            <div className={styles.userRole}>{roleLabel}</div>
           </div>
         </div>
 
@@ -748,10 +947,64 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
           </div>
         )}
 
+        {canEditNavbar && (
+          <div className={styles.editModeBar}>
+            {!isEditMode ? (
+              <div className={styles.editModeActions}>
+                <div className={styles.editModeRole}>
+                  <span className={styles.editModeRoleLabel}>Visualizar como:</span>
+                  <select
+                    className={styles.editModeRoleSelect}
+                    value={previewRole}
+                    onChange={(e) => setPreviewRole(e.target.value as UserRole)}
+                  >
+                    <option value={UserRole.SUPER_ADMIN}>Super Admin</option>
+                    <option value={UserRole.ADMIN}>Admin</option>
+                    <option value={UserRole.COLLABORATOR}>Colaborador</option>
+                    <option value={UserRole.SUPPLIER}>Fornecedor</option>
+                  </select>
+                </div>
+                <button
+                  type="button"
+                  className={styles.editModeButton}
+                  onClick={handleEnterEditMode}
+                >
+                  <FaPencilAlt className={styles.editModeIcon} /> Editar navbar
+                </button>
+              </div>
+            ) : (
+              <div className={styles.editModeActions}>
+                <span className={styles.editModeRoleLabel}>Editando: {roleLabel}</span>
+                <button
+                  type="button"
+                  className={styles.editModeButton}
+                  onClick={handleSaveEditMode}
+                >
+                  <FaSave className={styles.editModeIcon} /> Salvar
+                </button>
+                <button
+                  type="button"
+                  className={styles.editModeButton}
+                  onClick={handleCancelEditMode}
+                >
+                  <FaTimes className={styles.editModeIcon} /> Cancelar
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Menu Container */}
         <div className={styles.menuContainer}>
-          {filteredGroups.map((group, groupIndex) => (
-            <div key={group.id} className={styles.menuGroup}>
+          {filteredGroups.map((group, groupIndex) => {
+            const groupHidden = hiddenGroups.has(group.id);
+            const groupExpanded = isEditMode && isLegacyStyle ? true : expandedGroups[group.id];
+
+            return (
+            <div
+              key={group.id}
+              className={`${styles.menuGroup} ${isEditMode && isLegacyStyle && groupHidden ? styles.menuGroupHidden : ''}`}
+            >
               {isLegacyStyle && isMenuCollapsed && groupIndex > 0 ? (
                 <div className={styles.menuDivider} aria-hidden="true" />
               ) : (
@@ -761,13 +1014,29 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
                   aria-label={`${expandedGroups[group.id] ? 'Recolher' : 'Expandir'} ${group.label}`}
                 >
                   <span>{group.label}</span>
-                  <FaChevronRight className={expandedGroups[group.id] ? styles.rotated : ''} />
+                  <FaChevronRight className={groupExpanded ? styles.rotated : ''} />
                 </button>
               )}
-              {(isMenuCollapsed || expandedGroups[group.id]) && (
+
+              {isLegacyStyle && isEditMode && !isMenuCollapsed && (
+                <div className={styles.groupEditActions}>
+                  <button
+                    type="button"
+                    className={styles.itemToggleButton}
+                    onClick={() => toggleGroupHidden(group.id)}
+                    title={groupHidden ? 'Exibir grupo' : 'Ocultar grupo'}
+                  >
+                    {groupHidden ? <FaEye /> : <FaEyeSlash />}
+                  </button>
+                </div>
+              )}
+
+              {(isMenuCollapsed || groupExpanded) && (
                 <div className={styles.menuItems}>
-                  {group.items.map((item, itemIndex) => {
+                  {group.items.map((item) => {
                     const isDisabled = item.status === 'soon' || !item.href;
+                    const itemKey = getMenuItemKey(item);
+                    const itemHidden = hiddenItems.has(itemKey);
                     const title = isMenuCollapsed
                       ? item.status === 'soon'
                         ? `${item.label} (em breve)`
@@ -776,10 +1045,31 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
                         ? 'Em breve'
                         : undefined;
 
+                    if (isLegacyStyle && isEditMode) {
+                      return (
+                        <div
+                          key={itemKey}
+                          className={`${styles.menuItem} ${itemHidden ? styles.menuItemHidden : ''}`}
+                          title={title}
+                        >
+                          {item.icon}
+                          <span className={styles.menuItemLabel}>{item.label}</span>
+                          <button
+                            type="button"
+                            className={styles.itemToggleButton}
+                            onClick={() => toggleItemHidden(itemKey)}
+                            title={itemHidden ? 'Exibir item' : 'Ocultar item'}
+                          >
+                            {itemHidden ? <FaEye /> : <FaEyeSlash />}
+                          </button>
+                        </div>
+                      );
+                    }
+
                     if (item.onClick) {
                       return (
                         <button
-                          key={itemIndex}
+                          key={itemKey}
                           type="button"
                           className={`${styles.menuItem} ${styles.menuItemButton}`}
                           onClick={() => {
@@ -797,7 +1087,7 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
                     if (isDisabled) {
                       return (
                         <div
-                          key={itemIndex}
+                          key={itemKey}
                           className={`${styles.menuItem} ${styles.menuItemDisabled}`}
                           title={title}
                           role="button"
@@ -812,7 +1102,7 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
 
                     return (
                       <Link
-                        key={itemIndex}
+                        key={itemKey}
                         href={item.href!}
                         className={`${styles.menuItem} ${isMenuItemActive(item.href!) ? styles.active : ''}`}
                         onClick={closeMobileMenu}
@@ -826,7 +1116,7 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
                 </div>
               )}
             </div>
-          ))}
+          )})}
         </div>
 
         {/* Sidebar Footer */}
@@ -851,7 +1141,7 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
                 Ajuda & Suporte
               </Link>
               <Link
-                href={isAdmin ? '/admin/configuracoes' : '/collaborator/configuracoes'}
+                href={roleIsAdmin ? '/admin/configuracoes' : '/collaborator/configuracoes'}
                 className={styles.footerLink}
                 onClick={closeMobileMenu}
               >
@@ -865,7 +1155,7 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
                 <FaQuestionCircle />
               </Link>
               <Link
-                href={isAdmin ? '/admin/configuracoes' : '/collaborator/configuracoes'}
+                href={roleIsAdmin ? '/admin/configuracoes' : '/collaborator/configuracoes'}
                 className={styles.footerIconLink}
                 title="Configurações"
                 onClick={closeMobileMenu}
