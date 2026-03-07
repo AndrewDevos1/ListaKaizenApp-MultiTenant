@@ -48,9 +48,13 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, document);
 
-  const port = process.env.API_PORT || 3001;
-  await app.listen(port);
-  console.log(`API running on http://localhost:${port}`);
-  console.log(`Swagger docs at http://localhost:${port}/api/docs`);
+  const rawPort = process.env.PORT ?? process.env.API_PORT;
+  const parsedPort = rawPort ? Number(rawPort) : NaN;
+  const port = Number.isFinite(parsedPort) && parsedPort > 0 ? parsedPort : 3001;
+
+  // Em plataformas como Railway, PORT é obrigatório e precisa escutar em 0.0.0.0.
+  await app.listen(port, '0.0.0.0');
+  console.log(`API running on http://0.0.0.0:${port}`);
+  console.log(`Swagger docs at http://0.0.0.0:${port}/api/docs`);
 }
 bootstrap(); // v1.0.1
