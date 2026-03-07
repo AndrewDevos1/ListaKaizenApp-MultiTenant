@@ -50,10 +50,12 @@ import NotificationBell from './NotificationBell';
 import {
   type NavbarStyle,
   getNavbarStyle,
+  setNavbarStyle as persistNavbarStyle,
   NAVBAR_STYLE_CHANGE_EVENT,
   NAVBAR_STYLE_STORAGE_KEY,
   normalizeNavbarStyle,
 } from '@/lib/navbarStyle';
+import api from '@/lib/api';
 
 interface MenuItem {
   key?: string;
@@ -116,6 +118,7 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
   const [navbarStyle, setNavbarStyle] = useState<NavbarStyle>('current');
   const [previewRole, setPreviewRole] = useState<UserRole>(UserRole.SUPER_ADMIN);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [isSavingNavbarLayout, setIsSavingNavbarLayout] = useState(false);
   const [navbarCustomization, setNavbarCustomization] = useState<NavbarCustomizationState>(
     createEmptyNavbarCustomizationState(),
   );
@@ -160,10 +163,15 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
 
   // Initialize navbar style from localStorage and keep it in sync
   useEffect(() => {
-    setNavbarStyle(getNavbarStyle());
+    const userStorageKey =
+      typeof user?.id === 'number'
+        ? `${NAVBAR_STYLE_STORAGE_KEY}:${user.id}`
+        : NAVBAR_STYLE_STORAGE_KEY;
+
+    setNavbarStyle(getNavbarStyle(user?.id));
 
     const handleStorageChange = (event: StorageEvent) => {
-      if (event.key !== NAVBAR_STYLE_STORAGE_KEY) return;
+      if (event.key !== NAVBAR_STYLE_STORAGE_KEY && event.key !== userStorageKey) return;
       setNavbarStyle(normalizeNavbarStyle(event.newValue));
     };
 
@@ -179,7 +187,30 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener(NAVBAR_STYLE_CHANGE_EVENT, handleNavbarStyleChange);
     };
-  }, []);
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!user) return;
+    let isMounted = true;
+
+    const loadNavbarStyleFromServer = async () => {
+      try {
+        const response = await api.get('/v1/auth/navbar-style');
+        const remoteStyle = normalizeNavbarStyle(response.data?.style);
+        if (!isMounted) return;
+        setNavbarStyle(remoteStyle);
+        persistNavbarStyle(remoteStyle, user.id);
+      } catch {
+        // Fallback local já aplicado na inicialização.
+      }
+    };
+
+    void loadNavbarStyleFromServer();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user?.id]);
 
   useEffect(() => {
     const stored = localStorage.getItem(NAVBAR_NEXT_LAYOUT_STORAGE_KEY);
@@ -192,6 +223,29 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
       setNavbarCustomization(createEmptyNavbarCustomizationState());
     }
   }, []);
+
+  useEffect(() => {
+    if (!user) return;
+    let isMounted = true;
+
+    const loadNavbarLayoutFromServer = async () => {
+      try {
+        const response = await api.get('/v1/auth/navbar-layout');
+        const remoteLayouts = normalizeNavbarCustomization(response.data?.layouts ?? response.data);
+        if (!isMounted) return;
+        setNavbarCustomization(remoteLayouts);
+        localStorage.setItem(NAVBAR_NEXT_LAYOUT_STORAGE_KEY, JSON.stringify(remoteLayouts));
+      } catch {
+        // Fallback para localStorage já carregado; evita bloquear o menu por falha de rede.
+      }
+    };
+
+    void loadNavbarLayoutFromServer();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user]);
 
   useEffect(() => {
     if (!user) return;
@@ -332,11 +386,36 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
     editSnapshotRef.current = null;
   }, []);
 
-  const handleSaveEditMode = useCallback(() => {
+  const handleSaveEditMode = useCallback(async () => {
+    if (isSavingNavbarLayout) return;
+
+    const targetLayout = navbarCustomization[effectiveRole] ?? {
+      hiddenGroupIds: [],
+      hiddenItemKeys: [],
+    };
+
+    // Salva localmente primeiro para feedback imediato.
     localStorage.setItem(NAVBAR_NEXT_LAYOUT_STORAGE_KEY, JSON.stringify(navbarCustomization));
-    setIsEditMode(false);
-    editSnapshotRef.current = null;
-  }, [navbarCustomization]);
+    setIsSavingNavbarLayout(true);
+
+    try {
+      const response = await api.post('/v1/auth/navbar-layout', {
+        role: effectiveRole,
+        hiddenGroupIds: targetLayout.hiddenGroupIds,
+        hiddenItemKeys: targetLayout.hiddenItemKeys,
+      });
+
+      const remoteLayouts = normalizeNavbarCustomization(response.data?.layouts ?? response.data);
+      setNavbarCustomization(remoteLayouts);
+      localStorage.setItem(NAVBAR_NEXT_LAYOUT_STORAGE_KEY, JSON.stringify(remoteLayouts));
+    } catch {
+      // Mantém fallback local se backend falhar.
+    } finally {
+      setIsSavingNavbarLayout(false);
+      setIsEditMode(false);
+      editSnapshotRef.current = null;
+    }
+  }, [effectiveRole, isSavingNavbarLayout, navbarCustomization]);
 
   // Toggle dark mode
   const handleToggleDarkMode = useCallback(() => {
@@ -980,14 +1059,16 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
                 <button
                   type="button"
                   className={styles.editModeButton}
-                  onClick={handleSaveEditMode}
+                  onClick={() => void handleSaveEditMode()}
+                  disabled={isSavingNavbarLayout}
                 >
-                  <FaSave className={styles.editModeIcon} /> Salvar
+                  <FaSave className={styles.editModeIcon} /> {isSavingNavbarLayout ? 'Salvando...' : 'Salvar'}
                 </button>
                 <button
                   type="button"
                   className={styles.editModeButton}
                   onClick={handleCancelEditMode}
+                  disabled={isSavingNavbarLayout}
                 >
                   <FaTimes className={styles.editModeIcon} /> Cancelar
                 </button>
@@ -1123,21 +1204,17 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
 
         {/* Sidebar Footer */}
         {(!isLegacyStyle || !isMenuCollapsed) && <div className={styles.sidebarFooter}>
-          <div className={styles.footerControls}>
-            <button
-              className={styles.themeToggleBtn}
-              onClick={handleToggleDarkMode}
-              aria-label={isDarkMode ? 'Modo claro' : 'Modo escuro'}
-              title={isDarkMode ? 'Modo claro' : 'Modo escuro'}
-              type="button"
-            >
-              {isDarkMode ? <FaSun /> : <FaMoon />}
-            </button>
-            {!isMenuCollapsed && <label className={styles.themeToggleLabel}>{isDarkMode ? 'Claro' : 'Escuro'}</label>}
-          </div>
-
           {!isMenuCollapsed ? (
-            <div className={styles.footerLinks}>
+            <div className={styles.footerLinksRow}>
+              <button
+                className={styles.themeToggleBtn}
+                onClick={handleToggleDarkMode}
+                aria-label={isDarkMode ? 'Modo claro' : 'Modo escuro'}
+                title={isDarkMode ? 'Modo claro' : 'Modo escuro'}
+                type="button"
+              >
+                {isDarkMode ? <FaSun /> : <FaMoon />}
+              </button>
               <Link href="#" className={`${styles.footerLink} ${styles.footerLinkDisabled}`} title="Em breve">
                 <FaQuestionCircle />
                 Ajuda & Suporte
@@ -1153,6 +1230,15 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
             </div>
           ) : (
             <div className={styles.footerIconLinks}>
+              <button
+                className={`${styles.themeToggleBtn} ${styles.footerIconThemeBtn}`}
+                onClick={handleToggleDarkMode}
+                aria-label={isDarkMode ? 'Modo claro' : 'Modo escuro'}
+                title={isDarkMode ? 'Modo claro' : 'Modo escuro'}
+                type="button"
+              >
+                {isDarkMode ? <FaSun /> : <FaMoon />}
+              </button>
               <Link href="#" className={`${styles.footerIconLink} ${styles.footerLinkDisabled}`} title="Ajuda & Suporte (em breve)">
                 <FaQuestionCircle />
               </Link>
