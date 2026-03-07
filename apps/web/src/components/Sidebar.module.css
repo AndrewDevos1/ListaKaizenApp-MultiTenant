@@ -669,6 +669,7 @@
 .editModeRoleRow .editModeRoleSelect {
   flex: 1;
   min-width: 0;
+  height: 34px;
 }
 
 .editModeRoleSelect option {
@@ -694,6 +695,10 @@
 .editModeRoleRow .editModeButton {
   margin-left: auto;
   white-space: nowrap;
+  height: 34px;
+  padding: 0 0.7rem;
+  font-size: 0.8rem;
+  line-height: 1;
 }
 
 .editModeButton:hover:not(:disabled) {
@@ -898,6 +903,7 @@
 .wrapper[data-navbar-style='next'] .editModeRoleRow .editModeRoleSelect {
   flex: 1;
   min-width: 0;
+  height: 34px;
 }
 
 .wrapper[data-navbar-style='next'] .editModeRoleSelect option {
@@ -923,6 +929,10 @@
 .wrapper[data-navbar-style='next'] .editModeRoleRow .editModeButton {
   margin-left: auto;
   white-space: nowrap;
+  height: 34px;
+  padding: 0 0.7rem;
+  font-size: 0.8rem;
+  line-height: 1;
 }
 
 .wrapper[data-navbar-style='next'] .editModeButton:hover:not(:disabled) {
