@@ -25,7 +25,7 @@ export class NotificacoesController {
   @ApiOperation({ summary: 'Listar notificações do usuário' })
   findAll(
     @CurrentUser('id') usuarioId: number,
-    @TenantId() restauranteId: number,
+    @TenantId() restauranteId: number | null,
   ) {
     return this.notificacoesService.findAll(usuarioId, restauranteId);
   }
@@ -35,7 +35,7 @@ export class NotificacoesController {
   @ApiOperation({ summary: 'Contar notificações não lidas' })
   contarNaoLidas(
     @CurrentUser('id') usuarioId: number,
-    @TenantId() restauranteId: number,
+    @TenantId() restauranteId: number | null,
   ) {
     return this.notificacoesService.contarNaoLidas(usuarioId, restauranteId);
   }
@@ -45,7 +45,7 @@ export class NotificacoesController {
   @ApiOperation({ summary: 'Marcar todas as notificações como lidas' })
   marcarTodasLidas(
     @CurrentUser('id') usuarioId: number,
-    @TenantId() restauranteId: number,
+    @TenantId() restauranteId: number | null,
   ) {
     return this.notificacoesService.marcarTodasLidas(usuarioId, restauranteId);
   }
@@ -55,7 +55,7 @@ export class NotificacoesController {
   @ApiOperation({ summary: 'Limpar todas as notificações do usuário' })
   limparTodas(
     @CurrentUser('id') usuarioId: number,
-    @TenantId() restauranteId: number,
+    @TenantId() restauranteId: number | null,
   ) {
     return this.notificacoesService.limparTodas(usuarioId, restauranteId);
   }
