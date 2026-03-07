@@ -1204,21 +1204,17 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
 
         {/* Sidebar Footer */}
         {(!isLegacyStyle || !isMenuCollapsed) && <div className={styles.sidebarFooter}>
-          <div className={styles.footerControls}>
-            <button
-              className={styles.themeToggleBtn}
-              onClick={handleToggleDarkMode}
-              aria-label={isDarkMode ? 'Modo claro' : 'Modo escuro'}
-              title={isDarkMode ? 'Modo claro' : 'Modo escuro'}
-              type="button"
-            >
-              {isDarkMode ? <FaSun /> : <FaMoon />}
-            </button>
-            {!isMenuCollapsed && <label className={styles.themeToggleLabel}>{isDarkMode ? 'Claro' : 'Escuro'}</label>}
-          </div>
-
           {!isMenuCollapsed ? (
-            <div className={styles.footerLinks}>
+            <div className={styles.footerLinksRow}>
+              <button
+                className={styles.themeToggleBtn}
+                onClick={handleToggleDarkMode}
+                aria-label={isDarkMode ? 'Modo claro' : 'Modo escuro'}
+                title={isDarkMode ? 'Modo claro' : 'Modo escuro'}
+                type="button"
+              >
+                {isDarkMode ? <FaSun /> : <FaMoon />}
+              </button>
               <Link href="#" className={`${styles.footerLink} ${styles.footerLinkDisabled}`} title="Em breve">
                 <FaQuestionCircle />
                 Ajuda & Suporte
@@ -1234,6 +1230,15 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
             </div>
           ) : (
             <div className={styles.footerIconLinks}>
+              <button
+                className={`${styles.themeToggleBtn} ${styles.footerIconThemeBtn}`}
+                onClick={handleToggleDarkMode}
+                aria-label={isDarkMode ? 'Modo claro' : 'Modo escuro'}
+                title={isDarkMode ? 'Modo claro' : 'Modo escuro'}
+                type="button"
+              >
+                {isDarkMode ? <FaSun /> : <FaMoon />}
+              </button>
               <Link href="#" className={`${styles.footerIconLink} ${styles.footerLinkDisabled}`} title="Ajuda & Suporte (em breve)">
                 <FaQuestionCircle />
               </Link>

@@ -400,31 +400,33 @@
   gap: 0.35rem;
 }
 
-.footerControls {
+.footerLinksRow {
   display: flex;
   align-items: center;
-  gap: var(--spacing-md);
+  gap: var(--spacing-sm);
   justify-content: center;
+  flex-wrap: nowrap;
 }
 
 .themeToggleBtn {
   background: rgba(255, 255, 255, 0.15);
   border: none;
   color: var(--sidebar-text);
-  width: 30px;
-  height: 30px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all var(--transition-fast);
-  font-size: 0.9rem;
+  font-size: 0.82rem;
+  flex-shrink: 0;
 }
 
 .themeToggleBtn:hover {
   background: rgba(255, 255, 255, 0.25);
-  transform: rotate(20deg);
+  transform: translateY(-1px);
 }
 
 .themeToggleLabel {
@@ -449,12 +451,15 @@
   display: flex;
   align-items: center;
   gap: 0.35rem;
+  justify-content: center;
   color: var(--sidebar-text);
   text-decoration: none;
-  font-size: 0.78rem;
-  padding: 0.25rem 0.4rem;
+  font-size: 0.76rem;
+  padding: 0.3rem 0.45rem;
   border-radius: 6px;
   transition: background var(--transition-fast);
+  white-space: nowrap;
+  min-height: 28px;
 }
 
 .footerLinkDisabled {
@@ -469,25 +474,41 @@
 .footerIconLinks {
   display: flex;
   align-items: center;
-  gap: var(--spacing-sm);
+  gap: 4px;
   justify-content: center;
   align-self: center;
+  width: 100%;
+  flex-wrap: nowrap;
 }
 
 .footerIconLink {
   background: rgba(255, 255, 255, 0.12);
   border-radius: 8px;
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--sidebar-text);
   text-decoration: none;
   transition: background var(--transition-fast), transform var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.footerIconThemeBtn {
+  width: 24px;
+  height: 24px;
+  border-radius: 8px;
+  font-size: 0.72rem;
+  background: rgba(255, 255, 255, 0.12);
 }
 
 .footerIconLink:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
+}
+
+.footerIconThemeBtn:hover {
   background: rgba(255, 255, 255, 0.2);
   transform: translateY(-1px);
 }
