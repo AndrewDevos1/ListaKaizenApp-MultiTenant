@@ -169,7 +169,7 @@ export default function GlobalDashboardPage() {
       if (selectedRestauranteId !== 'ALL') {
         params.restauranteId = Number(selectedRestauranteId);
       }
-      const response = await api.get<DashboardGlobalData>('/v1/restaurantes/stats/global', { params });
+      const response = await api.get<DashboardGlobalData>('/restaurantes/stats/global', { params });
       setDashboard(response.data);
     } catch {
       setError('Erro ao carregar o dashboard global.');
