@@ -40,16 +40,18 @@ export class NotificacoesService {
     return notificacao;
   }
 
-  async findAll(usuarioId: number, restauranteId: number) {
+  async findAll(usuarioId: number, restauranteId?: number | null) {
+    const whereBase = this.buildWhereUsuario(usuarioId, restauranteId);
     return this.prisma.notificacao.findMany({
-      where: { usuarioId, restauranteId },
+      where: whereBase,
       orderBy: { criadoEm: 'desc' },
     });
   }
 
-  async contarNaoLidas(usuarioId: number, restauranteId: number) {
+  async contarNaoLidas(usuarioId: number, restauranteId?: number | null) {
+    const whereBase = this.buildWhereUsuario(usuarioId, restauranteId);
     const count = await this.prisma.notificacao.count({
-      where: { usuarioId, restauranteId, lida: false },
+      where: { ...whereBase, lida: false },
     });
     return { count };
   }
@@ -67,21 +69,30 @@ export class NotificacoesService {
     });
   }
 
-  async marcarTodasLidas(usuarioId: number, restauranteId: number) {
+  async marcarTodasLidas(usuarioId: number, restauranteId?: number | null) {
+    const whereBase = this.buildWhereUsuario(usuarioId, restauranteId);
     await this.prisma.notificacao.updateMany({
-      where: { usuarioId, restauranteId, lida: false },
+      where: { ...whereBase, lida: false },
       data: { lida: true },
     });
     return { message: 'Todas as notificações foram marcadas como lidas' };
   }
 
-  async limparTodas(usuarioId: number, restauranteId: number) {
+  async limparTodas(usuarioId: number, restauranteId?: number | null) {
+    const whereBase = this.buildWhereUsuario(usuarioId, restauranteId);
     const result = await this.prisma.notificacao.deleteMany({
-      where: { usuarioId, restauranteId },
+      where: whereBase,
     });
     return {
       message: 'Notificações limpas com sucesso',
       removidas: result.count,
     };
+  }
+
+  private buildWhereUsuario(usuarioId: number, restauranteId?: number | null) {
+    if (restauranteId === null || restauranteId === undefined) {
+      return { usuarioId };
+    }
+    return { usuarioId, restauranteId };
   }
 }

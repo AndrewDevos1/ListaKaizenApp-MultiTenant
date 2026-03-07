@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { gzipSync, gunzipSync } from 'zlib';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateRestauranteDto } from './dto/create-restaurante.dto';
@@ -12,6 +13,16 @@ export interface ResumoRestore {
   itens: { criados: number; ignorados: number };
   listas: { criadas: number; ignoradas: number };
   listaItemRefs: { criados: number; ignorados: number };
+}
+
+interface DashboardGlobalOptions {
+  restauranteId?: number;
+  period?: number;
+}
+
+interface SerieTemporalRow {
+  dia: string;
+  total: number | bigint;
 }
 
 @Injectable()
@@ -55,36 +66,315 @@ export class RestaurantesService {
     });
   }
 
-  async getGlobalStats() {
-    const [restaurantes, totalUsuarios, totalListas, totalSubmissoes, submissoesPendentes] = await Promise.all([
+  async getGlobalStats(options: DashboardGlobalOptions = {}) {
+    const period = this.normalizePeriod(options.period);
+    const now = new Date();
+    const hojeInicio = new Date(now);
+    hojeInicio.setHours(0, 0, 0, 0);
+    const periodStart = new Date(hojeInicio);
+    periodStart.setDate(periodStart.getDate() - (period - 1));
+
+    const restauranteId = options.restauranteId;
+    if (restauranteId) {
+      await this.findOne(restauranteId);
+    }
+
+    const restauranteWhere = restauranteId ? { id: restauranteId } : {};
+    const entidadeWhere = restauranteId ? { restauranteId } : {};
+
+    const [restaurantesDisponiveis, restaurantesResumo, totalUsuarios, usuariosPendentesAprovacao, totalListas, totalItens, submissoesHoje, pendingCotacoes, completedCotacoes, totalSubmissoes, totalSubmissoesPendentes, checklistsAbertos, checklistsFinalizados, fornecedoresAtivos, fornecedoresInativos, usuariosAtivos, usuariosInativos, topListasRaw, logsRecentes, submissoesPendentesPorRestaurante, usuariosPendentesPorRestaurante, sugestoesPorStatus, usuariosPorRole] = await Promise.all([
       this.prisma.restaurante.findMany({
+        orderBy: { nome: 'asc' },
+        select: { id: true, nome: true, ativo: true },
+      }),
+      this.prisma.restaurante.findMany({
+        where: restauranteWhere,
+        orderBy: { nome: 'asc' },
         include: {
           _count: {
-            select: { usuarios: true, listas: true, submissoes: true },
+            select: {
+              usuarios: true,
+              listas: true,
+              items: true,
+              submissoes: true,
+            },
           },
         },
       }),
-      this.prisma.usuario.count(),
-      this.prisma.lista.count(),
-      this.prisma.submissao.count(),
-      this.prisma.submissao.count({ where: { status: 'PENDENTE' as any } }),
+      this.prisma.usuario.count({ where: entidadeWhere }),
+      this.prisma.usuario.count({ where: { ...entidadeWhere, aprovado: false } }),
+      this.prisma.lista.count({ where: { ...entidadeWhere, deletado: false } }),
+      this.prisma.item.count({ where: entidadeWhere }),
+      this.prisma.submissao.count({
+        where: {
+          ...entidadeWhere,
+          criadoEm: { gte: hojeInicio },
+        },
+      }),
+      this.prisma.cotacao.count({ where: { ...entidadeWhere, status: 'ABERTA' as any } }),
+      this.prisma.cotacao.count({ where: { ...entidadeWhere, status: 'FECHADA' as any } }),
+      this.prisma.submissao.count({
+        where: {
+          ...entidadeWhere,
+          criadoEm: { gte: periodStart },
+        },
+      }),
+      this.prisma.submissao.count({
+        where: {
+          ...entidadeWhere,
+          status: 'PENDENTE' as any,
+        },
+      }),
+      this.prisma.checklist.count({ where: { ...entidadeWhere, status: 'ABERTO' as any } }),
+      this.prisma.checklist.count({ where: { ...entidadeWhere, status: 'FINALIZADO' as any } }),
+      this.prisma.fornecedor.count({ where: { ...entidadeWhere, ativo: true } }),
+      this.prisma.fornecedor.count({ where: { ...entidadeWhere, ativo: false } }),
+      this.prisma.usuario.count({ where: { ...entidadeWhere, ativo: true } }),
+      this.prisma.usuario.count({ where: { ...entidadeWhere, ativo: false } }),
+      this.prisma.lista.findMany({
+        where: {
+          ...entidadeWhere,
+          deletado: false,
+        },
+        include: {
+          restaurante: { select: { id: true, nome: true } },
+          _count: {
+            select: {
+              itensRef: true,
+              submissoes: true,
+            },
+          },
+        },
+      }),
+      this.prisma.appLog.findMany({
+        where: restauranteId ? { restauranteId } : {},
+        orderBy: { criadoEm: 'desc' },
+        take: 12,
+      }),
+      this.prisma.submissao.groupBy({
+        by: ['restauranteId'],
+        where: {
+          ...(restauranteId ? { restauranteId } : {}),
+          status: 'PENDENTE' as any,
+        },
+        _count: { _all: true },
+      }),
+      this.prisma.usuario.groupBy({
+        by: ['restauranteId'],
+        where: {
+          ...(restauranteId ? { restauranteId } : {}),
+          aprovado: false,
+        },
+        _count: { _all: true },
+      }),
+      this.prisma.sugestaoItem.groupBy({
+        by: ['status'],
+        where: {
+          ...entidadeWhere,
+          criadoEm: { gte: periodStart },
+        },
+        _count: { _all: true },
+      }),
+      this.prisma.usuario.groupBy({
+        by: ['role'],
+        where: entidadeWhere,
+        _count: { _all: true },
+      }),
     ]);
 
-    return {
+    const filtroRestauranteSql = restauranteId
+      ? Prisma.sql`AND "restaurante_id" = ${restauranteId}`
+      : Prisma.empty;
+
+    const [submissoesRaw, usuariosRaw] = await Promise.all([
+      this.prisma.$queryRaw<SerieTemporalRow[]>(Prisma.sql`
+        SELECT to_char(date("criado_em"), 'YYYY-MM-DD') AS dia, count(*)::int AS total
+        FROM "submissoes"
+        WHERE "criado_em" >= ${periodStart}
+        ${filtroRestauranteSql}
+        GROUP BY 1
+        ORDER BY 1
+      `),
+      this.prisma.$queryRaw<SerieTemporalRow[]>(Prisma.sql`
+        SELECT to_char(date("criado_em"), 'YYYY-MM-DD') AS dia, count(*)::int AS total
+        FROM "usuarios"
+        WHERE "criado_em" >= ${periodStart}
+        ${filtroRestauranteSql}
+        GROUP BY 1
+        ORDER BY 1
+      `),
+    ]);
+
+    const restaurantesById = new Map(
+      restaurantesDisponiveis.map((restaurante) => [restaurante.id, restaurante.nome]),
+    );
+    const usuariosIds = [...new Set(logsRecentes.map((log) => log.usuarioId).filter((id): id is number => !!id))];
+    const usuariosRecentes = usuariosIds.length === 0
+      ? []
+      : await this.prisma.usuario.findMany({
+          where: { id: { in: usuariosIds } },
+          select: { id: true, nome: true },
+        });
+    const usuariosById = new Map(usuariosRecentes.map((usuario) => [usuario.id, usuario.nome]));
+
+    const submissoesPendentesMap = new Map(
+      submissoesPendentesPorRestaurante
+        .filter((item) => item.restauranteId !== null)
+        .map((item) => [item.restauranteId, item._count._all]),
+    );
+    const usuariosPendentesMap = new Map(
+      usuariosPendentesPorRestaurante
+        .filter((item) => item.restauranteId !== null)
+        .map((item) => [item.restauranteId, item._count._all]),
+    );
+    const sugestoesByStatus = new Map(
+      sugestoesPorStatus.map((item) => [item.status, item._count._all]),
+    );
+    const usuariosByRole = new Map(
+      usuariosPorRole.map((item) => [item.role, item._count._all]),
+    );
+
+    const topListas = [...topListasRaw]
+      .sort((a, b) => b._count.submissoes - a._count.submissoes)
+      .slice(0, 8)
+      .map((lista) => ({
+        id: lista.id,
+        nome: lista.nome,
+        restauranteId: lista.restauranteId,
+        restauranteNome: lista.restaurante?.nome ?? 'Sem restaurante',
+        itens: lista._count.itensRef,
+        submissoes: lista._count.submissoes,
+      }));
+
+    const seriesSubmissoes = this.buildTimeSeries(periodStart, now, submissoesRaw);
+    const seriesUsuarios = this.buildTimeSeries(periodStart, now, usuariosRaw);
+
+    const restaurantes = restaurantesResumo.map((restaurante) => ({
+      id: restaurante.id,
+      nome: restaurante.nome,
+      ativo: restaurante.ativo,
+      usuarios: restaurante._count.usuarios,
+      listas: restaurante._count.listas,
+      itens: restaurante._count.items,
+      submissoes: restaurante._count.submissoes,
+      submissoesPendentes: submissoesPendentesMap.get(restaurante.id) ?? 0,
+      aprovacoesPendentes: usuariosPendentesMap.get(restaurante.id) ?? 0,
+    }));
+
+    const summary = {
       totalRestaurantes: restaurantes.length,
       totalUsuarios,
+      pendingApprovals: usuariosPendentesAprovacao,
       totalListas,
-      totalSubmissoes,
-      submissoesPendentes,
-      restaurantes: restaurantes.map((r) => ({
-        id: r.id,
-        nome: r.nome,
-        ativo: r.ativo,
-        usuarios: r._count.usuarios,
-        listas: r._count.listas,
-        submissoes: r._count.submissoes,
-      })),
+      totalItens,
+      submissoesHoje,
+      pendingCotacoes,
+      completedCotacoes,
     };
+
+    return {
+      filtros: {
+        restauranteId: restauranteId ?? null,
+        period,
+        generatedAt: now.toISOString(),
+      },
+      restaurantesDisponiveis,
+      summary,
+      temporal: {
+        submissoesPorDia: seriesSubmissoes,
+        usuariosPorDia: seriesUsuarios,
+      },
+      listas: {
+        total: totalListas,
+        top: topListas,
+      },
+      checklists: {
+        total: checklistsAbertos + checklistsFinalizados,
+        abertos: checklistsAbertos,
+        finalizados: checklistsFinalizados,
+      },
+      users: {
+        ativos: usuariosAtivos,
+        inativos: usuariosInativos,
+        pendingApproval: usuariosPendentesAprovacao,
+        porRole: {
+          SUPER_ADMIN: usuariosByRole.get('SUPER_ADMIN') ?? 0,
+          ADMIN: usuariosByRole.get('ADMIN') ?? 0,
+          COLLABORATOR: usuariosByRole.get('COLLABORATOR') ?? 0,
+          SUPPLIER: usuariosByRole.get('SUPPLIER') ?? 0,
+        },
+      },
+      suppliers: {
+        total: fornecedoresAtivos + fornecedoresInativos,
+        ativos: fornecedoresAtivos,
+        inativos: fornecedoresInativos,
+      },
+      suggestions: {
+        total:
+          (sugestoesByStatus.get('PENDENTE') ?? 0) +
+          (sugestoesByStatus.get('APROVADO') ?? 0) +
+          (sugestoesByStatus.get('REJEITADO') ?? 0),
+        pendentes: sugestoesByStatus.get('PENDENTE') ?? 0,
+        aprovadas: sugestoesByStatus.get('APROVADO') ?? 0,
+        rejeitadas: sugestoesByStatus.get('REJEITADO') ?? 0,
+      },
+      recentActivities: logsRecentes.map((log) => ({
+        id: log.id,
+        criadoEm: log.criadoEm,
+        acao: log.acao,
+        entidade: log.entidade,
+        mensagem: this.buildActivityMessage(log.acao, log.entidade),
+        restauranteId: log.restauranteId,
+        restauranteNome: log.restauranteId ? restaurantesById.get(log.restauranteId) ?? 'Restaurante' : 'Global',
+        usuarioId: log.usuarioId,
+        usuarioNome: log.usuarioId ? usuariosById.get(log.usuarioId) ?? 'Usuário' : null,
+      })),
+      restaurantes,
+      // Mantém chaves antigas por compatibilidade com consumidores legados da rota.
+      totalRestaurantes: summary.totalRestaurantes,
+      totalUsuarios: summary.totalUsuarios,
+      totalListas: summary.totalListas,
+      totalSubmissoes,
+      submissoesPendentes: totalSubmissoesPendentes,
+    };
+  }
+
+  private normalizePeriod(period?: number): number {
+    if (!period || Number.isNaN(period)) return 30;
+    if (period < 7) return 7;
+    if (period > 365) return 365;
+    return Math.trunc(period);
+  }
+
+  private buildTimeSeries(start: Date, end: Date, rows: SerieTemporalRow[]) {
+    const map = new Map<string, number>(
+      rows.map((row) => [row.dia, Number(row.total)]),
+    );
+    const result: Array<{ dia: string; total: number }> = [];
+    const cursor = new Date(start);
+    cursor.setHours(0, 0, 0, 0);
+    const endDate = new Date(end);
+    endDate.setHours(0, 0, 0, 0);
+
+    while (cursor <= endDate) {
+      const dia = cursor.toISOString().slice(0, 10);
+      result.push({
+        dia,
+        total: map.get(dia) ?? 0,
+      });
+      cursor.setDate(cursor.getDate() + 1);
+    }
+
+    return result;
+  }
+
+  private buildActivityMessage(acao: string, entidade?: string | null) {
+    const acaoNormalizada = acao
+      .replace(/_/g, ' ')
+      .toLowerCase()
+      .replace(/^\w/, (char) => char.toUpperCase());
+    if (!entidade) return acaoNormalizada;
+    return `${acaoNormalizada} em ${entidade}`;
   }
 
   async backupRestaurante(id: number): Promise<{ buffer: Buffer; filename: string }> {

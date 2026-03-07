@@ -7,6 +7,7 @@ import {
   Body,
   Param,
   ParseIntPipe,
+  Query,
   UseGuards,
   Res,
   UseInterceptors,
@@ -22,7 +23,7 @@ import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagg
 import { RestaurantesService } from './restaurantes.service';
 import { CreateRestauranteDto } from './dto/create-restaurante.dto';
 import { UpdateRestauranteDto } from './dto/update-restaurante.dto';
-import { Roles } from '../../common/decorators';
+import { CurrentUser, Roles } from '../../common/decorators';
 import { RolesGuard } from '../../common/guards';
 
 @ApiTags('Restaurantes')
@@ -47,10 +48,36 @@ export class RestaurantesController {
   }
 
   @Get('stats/global')
-  @Roles('SUPER_ADMIN' as any)
-  @ApiOperation({ summary: 'Stats globais (SUPER_ADMIN)' })
-  async getGlobalStats() {
-    return this.restaurantesService.getGlobalStats();
+  @Roles('SUPER_ADMIN' as any, 'ADMIN' as any)
+  @ApiOperation({ summary: 'Stats globais (ADMIN e SUPER_ADMIN)' })
+  async getGlobalStats(
+    @CurrentUser('role') role: string,
+    @CurrentUser('restauranteId') currentRestauranteId: number | null,
+    @Query('restauranteId') restauranteIdQuery?: string,
+    @Query('period') periodQuery?: string,
+  ) {
+    const period = periodQuery ? Number.parseInt(periodQuery, 10) : undefined;
+    if (periodQuery && Number.isNaN(period)) {
+      throw new BadRequestException('Parâmetro period inválido');
+    }
+
+    if (role === 'SUPER_ADMIN') {
+      const restauranteId = restauranteIdQuery
+        ? Number.parseInt(restauranteIdQuery, 10)
+        : undefined;
+      if (restauranteIdQuery && Number.isNaN(restauranteId)) {
+        throw new BadRequestException('Parâmetro restauranteId inválido');
+      }
+      return this.restaurantesService.getGlobalStats({
+        restauranteId,
+        period,
+      });
+    }
+
+    return this.restaurantesService.getGlobalStats({
+      restauranteId: currentRestauranteId ?? undefined,
+      period,
+    });
   }
 
   @Post('restore')
