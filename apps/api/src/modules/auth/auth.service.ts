@@ -26,9 +26,6 @@ type NavbarStyle = 'current' | 'next';
 
 @Injectable()
 export class AuthService {
-  private navbarLayoutTableReady = false;
-  private navbarStyleTableReady = false;
-
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
@@ -52,59 +49,28 @@ export class AuthService {
     return [...new Set(normalized)];
   }
 
-  private async ensureNavbarLayoutTable() {
-    if (this.navbarLayoutTableReady) return;
-
-    await this.prisma.$executeRawUnsafe(`
-      CREATE TABLE IF NOT EXISTS navbar_layouts (
-        role TEXT PRIMARY KEY,
-        hidden_group_ids TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[],
-        hidden_item_keys TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[],
-        criado_em TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-        atualizado_em TIMESTAMPTZ NOT NULL DEFAULT NOW()
-      )
-    `);
-
-    this.navbarLayoutTableReady = true;
-  }
-
   private normalizeNavbarStyle(value: unknown): NavbarStyle {
     return value === 'next' ? 'next' : 'current';
   }
 
-  private async ensureNavbarStyleTable() {
-    if (this.navbarStyleTableReady) return;
-
-    await this.prisma.$executeRawUnsafe(`
-      CREATE TABLE IF NOT EXISTS usuario_navbar_estilos (
-        usuario_id INTEGER PRIMARY KEY REFERENCES usuarios(id) ON DELETE CASCADE,
-        style TEXT NOT NULL DEFAULT 'current',
-        criado_em TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-        atualizado_em TIMESTAMPTZ NOT NULL DEFAULT NOW()
-      )
-    `);
-
-    this.navbarStyleTableReady = true;
-  }
-
   async getNavbarLayouts(): Promise<NavbarLayoutMap> {
-    await this.ensureNavbarLayoutTable();
-
-    const rows = await this.prisma.$queryRawUnsafe<
-      Array<{ role: string; hidden_group_ids: string[]; hidden_item_keys: string[] }>
-    >(
-      `SELECT role, hidden_group_ids, hidden_item_keys FROM navbar_layouts`,
-    );
+    const rows = await this.prisma.navbarLayout.findMany({
+      select: {
+        role: true,
+        hiddenGroupIds: true,
+        hiddenItemKeys: true,
+      },
+    });
 
     const layouts = this.createDefaultNavbarLayoutMap();
 
     rows.forEach((row) => {
-      const role = row.role as UserRole;
+      const role = row.role;
       if (!(role in layouts)) return;
 
       layouts[role] = {
-        hiddenGroupIds: this.normalizeStringArray(row.hidden_group_ids),
-        hiddenItemKeys: this.normalizeStringArray(row.hidden_item_keys),
+        hiddenGroupIds: this.normalizeStringArray(row.hiddenGroupIds),
+        hiddenItemKeys: this.normalizeStringArray(row.hiddenItemKeys),
       };
     });
 
@@ -124,22 +90,18 @@ export class AuthService {
     const hiddenGroupIds = this.normalizeStringArray(dto.hiddenGroupIds);
     const hiddenItemKeys = this.normalizeStringArray(dto.hiddenItemKeys);
 
-    await this.ensureNavbarLayoutTable();
-
-    await this.prisma.$executeRawUnsafe(
-      `
-        INSERT INTO navbar_layouts (role, hidden_group_ids, hidden_item_keys, atualizado_em)
-        VALUES ($1, $2::TEXT[], $3::TEXT[], NOW())
-        ON CONFLICT (role)
-        DO UPDATE SET
-          hidden_group_ids = EXCLUDED.hidden_group_ids,
-          hidden_item_keys = EXCLUDED.hidden_item_keys,
-          atualizado_em = NOW()
-      `,
-      targetRole,
-      hiddenGroupIds,
-      hiddenItemKeys,
-    );
+    await this.prisma.navbarLayout.upsert({
+      where: { role: targetRole },
+      create: {
+        role: targetRole,
+        hiddenGroupIds,
+        hiddenItemKeys,
+      },
+      update: {
+        hiddenGroupIds,
+        hiddenItemKeys,
+      },
+    });
 
     return {
       message: 'Layout do navbar salvo com sucesso',
@@ -148,34 +110,28 @@ export class AuthService {
   }
 
   async getNavbarStyle(userId: number) {
-    await this.ensureNavbarStyleTable();
+    const row = await this.prisma.usuarioNavbarEstilo.findUnique({
+      where: { usuarioId: userId },
+      select: { style: true },
+    });
 
-    const rows = await this.prisma.$queryRawUnsafe<Array<{ style: string }>>(
-      'SELECT style FROM usuario_navbar_estilos WHERE usuario_id = $1 LIMIT 1',
-      userId,
-    );
-
-    const style = this.normalizeNavbarStyle(rows[0]?.style);
+    const style = this.normalizeNavbarStyle(row?.style);
     return { style };
   }
 
   async saveNavbarStyle(userId: number, dto: SaveNavbarStyleDto) {
-    await this.ensureNavbarStyleTable();
-
     const style = this.normalizeNavbarStyle(dto.style);
 
-    await this.prisma.$executeRawUnsafe(
-      `
-        INSERT INTO usuario_navbar_estilos (usuario_id, style, atualizado_em)
-        VALUES ($1, $2, NOW())
-        ON CONFLICT (usuario_id)
-        DO UPDATE SET
-          style = EXCLUDED.style,
-          atualizado_em = NOW()
-      `,
-      userId,
-      style,
-    );
+    await this.prisma.usuarioNavbarEstilo.upsert({
+      where: { usuarioId: userId },
+      create: {
+        usuarioId: userId,
+        style,
+      },
+      update: {
+        style,
+      },
+    });
 
     return {
       message: 'Estilo de navbar salvo com sucesso',
