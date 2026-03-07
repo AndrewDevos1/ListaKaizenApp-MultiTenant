@@ -120,6 +120,49 @@ export class RestaurantesController {
     return new StreamableFile(buffer);
   }
 
+  @Get(':id/usuarios')
+  @Roles('SUPER_ADMIN' as any)
+  @ApiOperation({ summary: 'Listar usuários de um restaurante (SUPER_ADMIN)' })
+  listarUsuarios(@Param('id', ParseIntPipe) id: number) {
+    return this.restaurantesService.listarUsuarios(id);
+  }
+
+  @Put('usuarios/:id/alterar-senha')
+  @Roles('SUPER_ADMIN' as any)
+  @ApiOperation({ summary: 'Alterar senha de usuário do restaurante (SUPER_ADMIN)' })
+  alterarSenhaUsuario(
+    @Param('id', ParseIntPipe) usuarioId: number,
+    @Body('restauranteId') restauranteIdRaw: string | number,
+    @Body('novaSenha') novaSenha?: string,
+  ) {
+    const restauranteId = Number(restauranteIdRaw);
+    if (!restauranteId || Number.isNaN(restauranteId)) {
+      throw new BadRequestException('restauranteId inválido');
+    }
+    if (!novaSenha || novaSenha.trim().length < 6) {
+      throw new BadRequestException('novaSenha deve ter no mínimo 6 caracteres');
+    }
+    return this.restaurantesService.alterarSenhaUsuario(
+      restauranteId,
+      usuarioId,
+      novaSenha.trim(),
+    );
+  }
+
+  @Post('usuarios/:id/resetar-senha')
+  @Roles('SUPER_ADMIN' as any)
+  @ApiOperation({ summary: 'Resetar senha de usuário do restaurante (SUPER_ADMIN)' })
+  resetarSenhaUsuario(
+    @Param('id', ParseIntPipe) usuarioId: number,
+    @Body('restauranteId') restauranteIdRaw: string | number,
+  ) {
+    const restauranteId = Number(restauranteIdRaw);
+    if (!restauranteId || Number.isNaN(restauranteId)) {
+      throw new BadRequestException('restauranteId inválido');
+    }
+    return this.restaurantesService.resetarSenhaUsuario(restauranteId, usuarioId);
+  }
+
   @Get(':id')
   @Roles('SUPER_ADMIN' as any)
   @ApiOperation({ summary: 'Detalhes de restaurante (SUPER_ADMIN)' })
