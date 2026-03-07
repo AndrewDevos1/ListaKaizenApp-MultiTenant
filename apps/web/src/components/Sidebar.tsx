@@ -129,7 +129,9 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
   const touchEndY = useRef<number | null>(null);
   const isLegacyStyle = navbarStyle === 'next';
   const isMenuCollapsed = isLegacyStyle ? (isMobile ? isMobileCollapsed : isCollapsed) : isCollapsed;
-  const effectiveRole = isLegacyStyle && isSuperAdmin ? previewRole : user?.role ?? UserRole.COLLABORATOR;
+  // Super Admin sempre edita/visualiza a role selecionada no "Visualizar como",
+  // independentemente do estilo de navbar ativo.
+  const effectiveRole = isSuperAdmin ? previewRole : user?.role ?? UserRole.COLLABORATOR;
   const roleIsAdmin = effectiveRole === UserRole.ADMIN || effectiveRole === UserRole.SUPER_ADMIN;
   const roleIsSuperAdmin = effectiveRole === UserRole.SUPER_ADMIN;
 
