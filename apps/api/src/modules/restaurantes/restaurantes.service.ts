@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import * as bcrypt from 'bcrypt';
 import { gzipSync, gunzipSync } from 'zlib';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateRestauranteDto } from './dto/create-restaurante.dto';
@@ -34,10 +35,43 @@ export class RestaurantesService {
   }
 
   async findAll() {
-    return this.prisma.restaurante.findMany({
+    const restaurantes = await this.prisma.restaurante.findMany({
       include: { _count: { select: { usuarios: true } } },
       orderBy: { nome: 'asc' },
     });
+
+    const restaurantesIds = restaurantes.map((restaurante) => restaurante.id);
+    const admins = restaurantesIds.length
+      ? await this.prisma.usuario.findMany({
+          where: {
+            restauranteId: { in: restaurantesIds },
+            role: 'ADMIN' as any,
+            ativo: true,
+          },
+          select: {
+            id: true,
+            restauranteId: true,
+            email: true,
+            nome: true,
+          },
+          orderBy: { id: 'asc' },
+        })
+      : [];
+
+    const adminByRestaurante = new Map<number, { email: string; nome: string; id: number }>();
+    for (const admin of admins) {
+      if (!admin.restauranteId) continue;
+      if (!adminByRestaurante.has(admin.restauranteId)) {
+        adminByRestaurante.set(admin.restauranteId, admin);
+      }
+    }
+
+    return restaurantes.map((restaurante) => ({
+      ...restaurante,
+      adminPrincipalEmail: adminByRestaurante.get(restaurante.id)?.email ?? null,
+      adminPrincipalNome: adminByRestaurante.get(restaurante.id)?.nome ?? null,
+      adminPrincipalId: adminByRestaurante.get(restaurante.id)?.id ?? null,
+    }));
   }
 
   async findOne(id: number) {
@@ -64,6 +98,79 @@ export class RestaurantesService {
       where: { id },
       data: { ativo: false },
     });
+  }
+
+  async listarUsuarios(restauranteId: number) {
+    await this.findOne(restauranteId);
+    return this.prisma.usuario.findMany({
+      where: {
+        restauranteId,
+        role: { not: 'SUPER_ADMIN' as any },
+      },
+      select: {
+        id: true,
+        nome: true,
+        email: true,
+        role: true,
+        ativo: true,
+        aprovado: true,
+        criadoEm: true,
+      },
+      orderBy: { criadoEm: 'desc' },
+    });
+  }
+
+  async alterarSenhaUsuario(
+    restauranteId: number,
+    usuarioId: number,
+    novaSenha: string,
+  ) {
+    const usuario = await this.prisma.usuario.findFirst({
+      where: {
+        id: usuarioId,
+        restauranteId,
+        role: { not: 'SUPER_ADMIN' as any },
+      },
+      select: { id: true },
+    });
+
+    if (!usuario) {
+      throw new NotFoundException('Usuário não encontrado para este restaurante');
+    }
+
+    const senhaHash = await bcrypt.hash(novaSenha, 10);
+    await this.prisma.usuario.update({
+      where: { id: usuarioId },
+      data: { senha: senhaHash },
+    });
+
+    return { message: 'Senha alterada com sucesso' };
+  }
+
+  async resetarSenhaUsuario(restauranteId: number, usuarioId: number) {
+    const usuario = await this.prisma.usuario.findFirst({
+      where: {
+        id: usuarioId,
+        restauranteId,
+        role: { not: 'SUPER_ADMIN' as any },
+      },
+      select: { id: true },
+    });
+
+    if (!usuario) {
+      throw new NotFoundException('Usuário não encontrado para este restaurante');
+    }
+
+    const novaSenha =
+      Math.random().toString(36).slice(2, 8).toUpperCase() +
+      Math.random().toString(36).slice(2, 6);
+    const senhaHash = await bcrypt.hash(novaSenha, 10);
+    await this.prisma.usuario.update({
+      where: { id: usuarioId },
+      data: { senha: senhaHash },
+    });
+
+    return { novaSenha };
   }
 
   async getGlobalStats(options: DashboardGlobalOptions = {}) {

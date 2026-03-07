@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Controller,
   Get,
   Post,
@@ -13,7 +14,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ConvitesService } from './convites.service';
 import { CreateConviteDto } from './dto/create-convite.dto';
-import { Roles, TenantId } from '../../common/decorators';
+import { CurrentUser, Roles, TenantId } from '../../common/decorators';
 import { RolesGuard, TenantGuard } from '../../common/guards';
 
 // ─── Admin Controller ────────────────────────────────────────────────────────
@@ -25,20 +26,60 @@ import { RolesGuard, TenantGuard } from '../../common/guards';
 export class AdminConvitesController {
   constructor(private readonly convitesService: ConvitesService) {}
 
+  private resolverRestauranteId(
+    role: string,
+    tenantId: number | null,
+    restauranteIdQuery?: string,
+  ): number {
+    if (role === 'SUPER_ADMIN') {
+      const restauranteId = restauranteIdQuery
+        ? Number.parseInt(restauranteIdQuery, 10)
+        : undefined;
+      if (!restauranteId || Number.isNaN(restauranteId)) {
+        throw new BadRequestException(
+          'SUPER_ADMIN deve informar restauranteId na query',
+        );
+      }
+      return restauranteId;
+    }
+
+    if (!tenantId) {
+      throw new BadRequestException('restauranteId não encontrado');
+    }
+
+    return tenantId;
+  }
+
   @Post()
   @Roles('ADMIN' as any, 'SUPER_ADMIN' as any)
   @ApiOperation({ summary: 'Gerar novo convite' })
   gerarConvite(
-    @TenantId() restauranteId: number,
+    @CurrentUser('role') role: string,
+    @TenantId() tenantId: number | null,
     @Body() dto: CreateConviteDto,
+    @Query('restauranteId') restauranteIdQuery?: string,
   ) {
+    const restauranteId = this.resolverRestauranteId(
+      role,
+      tenantId,
+      restauranteIdQuery,
+    );
     return this.convitesService.gerarConvite(restauranteId, dto);
   }
 
   @Get()
   @Roles('ADMIN' as any, 'SUPER_ADMIN' as any)
   @ApiOperation({ summary: 'Listar convites do restaurante' })
-  findAll(@TenantId() restauranteId: number) {
+  findAll(
+    @CurrentUser('role') role: string,
+    @TenantId() tenantId: number | null,
+    @Query('restauranteId') restauranteIdQuery?: string,
+  ) {
+    const restauranteId = this.resolverRestauranteId(
+      role,
+      tenantId,
+      restauranteIdQuery,
+    );
     return this.convitesService.findAll(restauranteId);
   }
 
@@ -47,8 +88,15 @@ export class AdminConvitesController {
   @ApiOperation({ summary: 'Revogar convite' })
   revogar(
     @Param('id', ParseIntPipe) id: number,
-    @TenantId() restauranteId: number,
+    @CurrentUser('role') role: string,
+    @TenantId() tenantId: number | null,
+    @Query('restauranteId') restauranteIdQuery?: string,
   ) {
+    const restauranteId = this.resolverRestauranteId(
+      role,
+      tenantId,
+      restauranteIdQuery,
+    );
     return this.convitesService.revogar(id, restauranteId);
   }
 }
