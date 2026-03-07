@@ -950,9 +950,9 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
         {canEditNavbar && (
           <div className={styles.editModeBar}>
             {!isEditMode ? (
-              <div className={styles.editModeActions}>
-                <div className={styles.editModeRole}>
-                  <span className={styles.editModeRoleLabel}>Visualizar como:</span>
+              <div className={styles.editModeRoleStack}>
+                <span className={styles.editModeRoleLabel}>Visualizar como:</span>
+                <div className={styles.editModeRoleRow}>
                   <select
                     className={styles.editModeRoleSelect}
                     value={previewRole}
@@ -963,14 +963,14 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
                     <option value={UserRole.COLLABORATOR}>Colaborador</option>
                     <option value={UserRole.SUPPLIER}>Fornecedor</option>
                   </select>
+                  <button
+                    type="button"
+                    className={styles.editModeButton}
+                    onClick={handleEnterEditMode}
+                  >
+                    <FaPencilAlt className={styles.editModeIcon} /> Editar navbar
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  className={styles.editModeButton}
-                  onClick={handleEnterEditMode}
-                >
-                  <FaPencilAlt className={styles.editModeIcon} /> Editar navbar
-                </button>
               </div>
             ) : (
               <div className={styles.editModeActions}>

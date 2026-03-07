@@ -636,6 +636,18 @@
   margin-right: 0.25rem;
 }
 
+.editModeRoleStack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.editModeRoleRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .editModeRoleLabel {
   font-size: 0.75rem;
   text-transform: uppercase;
@@ -652,6 +664,11 @@
   font-size: 0.8rem;
   min-width: 140px;
   max-width: 100%;
+}
+
+.editModeRoleRow .editModeRoleSelect {
+  flex: 1;
+  min-width: 0;
 }
 
 .editModeRoleSelect option {
@@ -672,6 +689,11 @@
   gap: 0.4rem;
   cursor: pointer;
   transition: all 0.2s ease;
+}
+
+.editModeRoleRow .editModeButton {
+  margin-left: auto;
+  white-space: nowrap;
 }
 
 .editModeButton:hover:not(:disabled) {
@@ -843,6 +865,18 @@
   margin-right: 0.25rem;
 }
 
+.wrapper[data-navbar-style='next'] .editModeRoleStack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.wrapper[data-navbar-style='next'] .editModeRoleRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .wrapper[data-navbar-style='next'] .editModeRoleLabel {
   font-size: 0.75rem;
   text-transform: uppercase;
@@ -859,6 +893,11 @@
   font-size: 0.8rem;
   min-width: 140px;
   max-width: 100%;
+}
+
+.wrapper[data-navbar-style='next'] .editModeRoleRow .editModeRoleSelect {
+  flex: 1;
+  min-width: 0;
 }
 
 .wrapper[data-navbar-style='next'] .editModeRoleSelect option {
@@ -879,6 +918,11 @@
   gap: 0.4rem;
   cursor: pointer;
   transition: all 0.2s ease;
+}
+
+.wrapper[data-navbar-style='next'] .editModeRoleRow .editModeButton {
+  margin-left: auto;
+  white-space: nowrap;
 }
 
 .wrapper[data-navbar-style='next'] .editModeButton:hover:not(:disabled) {
