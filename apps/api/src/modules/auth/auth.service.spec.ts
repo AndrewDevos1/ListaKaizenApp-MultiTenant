@@ -1,9 +1,16 @@
 import { JwtService } from '@nestjs/jwt';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { AuthService } from './auth.service';
 
 jest.mock('bcrypt', () => ({ compare: jest.fn().mockResolvedValue(true) }));
 
 describe('AuthService session timeout', () => {
+  it('keeps session_token nullable in the additive migration', () => {
+    const migration = readFileSync(join(process.cwd(), 'prisma/migrations/20261016000000_add_session_timeout/migration.sql'), 'utf8');
+    expect(migration).toContain('ALTER TABLE "usuarios" ADD COLUMN "session_token" TEXT;');
+    expect(migration).not.toMatch(/DROP\s+COLUMN\s+"session_token"/i);
+  });
   const user = {
     id: 7,
     nome: 'User',
@@ -65,7 +72,7 @@ describe('AuthService session timeout', () => {
     expect(prisma.restaurante.update).not.toHaveBeenCalled();
   });
 
-  it('revokes other tenant sessions without revoking the actor', async () => {
+  it('revokes other tenant sessions while preserving the actor session', async () => {
     const updateMany = jest.fn();
     const prisma = {
       usuario: {

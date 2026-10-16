@@ -1,4 +1,5 @@
 ALTER TABLE "restaurantes" ADD COLUMN "session_timeout_minutes" INTEGER;
+ALTER TABLE "usuarios" ADD COLUMN "session_token" TEXT;
 ALTER TABLE "usuarios" ADD COLUMN "session_timeout_minutes" INTEGER;
 
 ALTER TABLE "restaurantes"
