@@ -21,6 +21,9 @@
     "test": {
       "dependsOn": ["build"]
     },
+    "test:pwa": {
+      "cache": false
+    },
     "db:generate": {
       "cache": false
     },

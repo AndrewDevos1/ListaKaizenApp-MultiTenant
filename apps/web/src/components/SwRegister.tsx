@@ -15,13 +15,27 @@ export default function SwRegister() {
     // Em desenvolvimento/local, evita qualquer SW ativo para não quebrar assets do Next.
     if (process.env.NODE_ENV !== 'production' || isLocalhost) {
       navigator.serviceWorker.getRegistrations().then((regs) => {
-        regs.forEach((reg) => reg.unregister());
+        regs
+          .filter((reg) => reg.active?.scriptURL === `${window.location.origin}/sw.js`)
+          .forEach((reg) => reg.unregister());
       });
       caches.keys().then((keys) => {
-        keys.forEach((key) => caches.delete(key));
+        keys.filter((key) => key.startsWith('kaizen-lists-')).forEach((key) => caches.delete(key));
       });
       return;
     }
+
+    const onControllerChange = () => {
+      const lastReload = Number(sessionStorage.getItem('kaizen-sw-reloaded-at') || 0);
+      if (reloading || Date.now() - lastReload < 5000) return;
+      sessionStorage.setItem('kaizen-sw-reloaded-at', String(Date.now()));
+      reloading = true;
+      console.log('[SW] Novo controller ativo. Recarregando para aplicar a atualização.');
+      window.location.reload();
+    };
+
+    let reloading = false;
+    navigator.serviceWorker.addEventListener('controllerchange', onControllerChange);
 
     const onLoad = () => {
       navigator.serviceWorker
@@ -52,6 +66,7 @@ export default function SwRegister() {
     window.addEventListener('load', onLoad);
     return () => {
       window.removeEventListener('load', onLoad);
+      navigator.serviceWorker.removeEventListener('controllerchange', onControllerChange);
     };
   }, []);
 

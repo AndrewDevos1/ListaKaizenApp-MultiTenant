@@ -8,7 +8,7 @@ interface PWAInstallResult {
   state: PWAState;
   canShow: boolean;
   isIOS: boolean;
-  install: () => Promise<void>;
+  install: () => Promise<boolean>;
 }
 
 let deferredPrompt: BeforeInstallPromptEvent | null = null;
@@ -23,11 +23,13 @@ export function usePWAInstall(): PWAInstallResult {
 
   const isIOS =
     typeof navigator !== 'undefined' &&
-    /iphone|ipad|ipod/i.test(navigator.userAgent);
+    (/iphone|ipad|ipod/i.test(navigator.userAgent) ||
+      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1));
 
   const isSafari =
     typeof navigator !== 'undefined' &&
-    /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+    /safari/i.test(navigator.userAgent) &&
+    !/(crios|fxios|edgios)/i.test(navigator.userAgent);
 
   const isStandalone =
     typeof window !== 'undefined' &&
@@ -61,8 +63,10 @@ export function usePWAInstall(): PWAInstallResult {
     let received = false;
 
     const handler = (e: Event) => {
+      const prompt = e as BeforeInstallPromptEvent;
+      if (typeof prompt.prompt !== 'function' || !prompt.userChoice) return;
       e.preventDefault();
-      deferredPrompt = e as BeforeInstallPromptEvent;
+      deferredPrompt = prompt;
       received = true;
       console.log("[PWA Install] Evento 'beforeinstallprompt' recebido! Botão VISÍVEL.");
       setState('installable');
@@ -94,14 +98,19 @@ export function usePWAInstall(): PWAInstallResult {
 
   const install = async () => {
     if (state === 'installable' && deferredPrompt) {
-      await deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      console.log('[PWA Install] Resultado do prompt:', outcome);
-      if (outcome === 'accepted') {
-        setState('installed');
-      }
+      const prompt = deferredPrompt;
       deferredPrompt = null;
+      try {
+        await prompt.prompt();
+        const { outcome } = await prompt.userChoice;
+        console.log('[PWA Install] Resultado do prompt:', outcome);
+        if (outcome === 'accepted') setState('installed');
+        return outcome === 'accepted';
+      } catch (error) {
+        console.warn('[PWA Install] Falha ao abrir prompt:', error);
+      }
     }
+    return false;
   };
 
   const canShow = state === 'installable' || state === 'ios-safari';

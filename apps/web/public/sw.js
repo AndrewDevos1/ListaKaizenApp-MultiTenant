@@ -1,11 +1,20 @@
-const CACHE_NAME = 'kaizen-lists-v3';
-const STATIC_ASSETS = ['/icons/icon-192.png', '/icons/icon-512.png'];
+const CACHE_PREFIX = 'kaizen-lists-';
+const CACHE_NAME = `${CACHE_PREFIX}v4`;
+const STATIC_ASSETS = [
+  '/',
+  '/login',
+  '/admin/dashboard',
+  '/collaborator/dashboard',
+  '/manifest.webmanifest',
+  '/icons/icon-192.png',
+  '/icons/icon-512.png',
+];
 
 // Install: pré-cache de assets estáticos
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(STATIC_ASSETS.filter(() => false)); // não bloquear se ícones não existirem
+      return cache.addAll(STATIC_ASSETS);
     })
   );
   self.skipWaiting();
@@ -17,7 +26,7 @@ self.addEventListener('activate', (event) => {
     caches.keys().then((keys) =>
       Promise.all(
         keys
-          .filter((key) => key !== CACHE_NAME)
+          .filter((key) => key.startsWith(CACHE_PREFIX) && key !== CACHE_NAME)
           .map((key) => caches.delete(key))
       )
     )
@@ -56,14 +65,24 @@ self.addEventListener('notificationclick', (event) => {
 // Fetch: network-first (API nunca vai para cache)
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
+  if (url.origin !== self.location.origin) return;
+
+  const isApiRequest =
+    url.pathname === '/v1' ||
+    url.pathname.startsWith('/v1/') ||
+    url.pathname === '/api' ||
+    url.pathname.startsWith('/api/');
+  const isDocumentRequest = event.request.mode === 'navigate';
   const isStaticAsset =
     url.pathname.startsWith('/icons/') || url.pathname.startsWith('/_next/static/');
+  const isAuthenticatedRequest =
+    event.request.headers.has('authorization') || event.request.headers.has('cookie');
 
   // Nunca cachear chamadas de API ou requests não-GET
   if (
     event.request.method !== 'GET' ||
-    url.pathname.startsWith('/v1/') ||
-    !isStaticAsset
+    isApiRequest ||
+    (!isStaticAsset && !isDocumentRequest)
   ) {
     return;
   }
@@ -72,15 +91,18 @@ self.addEventListener('fetch', (event) => {
     fetch(event.request)
       .then((response) => {
         // Cachear apenas respostas bem-sucedidas de assets estáticos
-        if (response.ok) {
+        const canCacheDocument = isStaticAsset || !isAuthenticatedRequest;
+        if (response.ok && canCacheDocument) {
           const clone = response.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
         }
         return response;
       })
       .catch(() => {
-        // Fallback: tentar servir do cache
-        return caches.match(event.request, { ignoreSearch: true });
+        // Documentos usam o shell precacheado; dados autenticados nunca têm fallback offline.
+        return isDocumentRequest
+          ? caches.match(event.request).then((cached) => cached || caches.match('/'))
+          : caches.match(event.request, { ignoreSearch: true });
       })
   );
 });
