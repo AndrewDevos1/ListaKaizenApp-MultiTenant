@@ -9,8 +9,6 @@ const installHook = await readFile(new URL('../src/hooks/usePWAInstall.ts', impo
 
 const required = [
   [sw, "'/login'"],
-  [sw, "'/admin/dashboard'"],
-  [sw, "'/collaborator/dashboard'"],
   [sw, "startsWith('/v1/')"],
   [sw, "startsWith('/api/')"],
   [sw, "startsWith(CACHE_PREFIX)"],
@@ -33,9 +31,12 @@ for (const [source, expected] of required) {
   if (!source.includes(expected)) throw new Error(`Missing PWA check: ${expected}`);
 }
 
-const precachedRoutes = ['/', '/login', '/admin/dashboard', '/collaborator/dashboard'];
+const precachedRoutes = ['/', '/login'];
 for (const route of precachedRoutes) {
   if (!sw.includes(`'${route}'`)) throw new Error(`Missing precached shell route: ${route}`);
+}
+for (const route of ['/admin/dashboard', '/collaborator/dashboard']) {
+  if (sw.includes(`'${route}'`)) throw new Error(`Authenticated route must not be precached: ${route}`);
 }
 
 if (!sw.includes('cache.addAll(STATIC_ASSETS)')) throw new Error('Shell is not precached');

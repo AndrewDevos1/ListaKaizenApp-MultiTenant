@@ -3,8 +3,6 @@ const CACHE_NAME = `${CACHE_PREFIX}v4`;
 const STATIC_ASSETS = [
   '/',
   '/login',
-  '/admin/dashboard',
-  '/collaborator/dashboard',
   '/manifest.webmanifest',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
