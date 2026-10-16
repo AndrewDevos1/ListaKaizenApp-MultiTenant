@@ -71,6 +71,7 @@ self.addEventListener('fetch', (event) => {
     url.pathname === '/api' ||
     url.pathname.startsWith('/api/');
   const isDocumentRequest = event.request.mode === 'navigate';
+  const isPublicDocument = url.pathname === '/' || url.pathname === '/login';
   const isStaticAsset =
     url.pathname.startsWith('/icons/') || url.pathname.startsWith('/_next/static/');
   const isAuthenticatedRequest =
@@ -80,7 +81,7 @@ self.addEventListener('fetch', (event) => {
   if (
     event.request.method !== 'GET' ||
     isApiRequest ||
-    (!isStaticAsset && !isDocumentRequest)
+    (!isStaticAsset && (!isDocumentRequest || !isPublicDocument))
   ) {
     return;
   }
@@ -98,7 +99,7 @@ self.addEventListener('fetch', (event) => {
       })
       .catch(() => {
         // Documentos usam o shell precacheado; dados autenticados nunca têm fallback offline.
-        return isDocumentRequest
+        return isPublicDocument
           ? caches.match(event.request).then((cached) => cached || caches.match('/'))
           : caches.match(event.request, { ignoreSearch: true });
       })

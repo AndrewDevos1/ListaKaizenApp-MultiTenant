@@ -43,6 +43,20 @@ if (!sw.includes('cache.addAll(STATIC_ASSETS)')) throw new Error('Shell is not p
 if (!sw.includes("url.pathname.startsWith('/_next/static/')")) {
   throw new Error('Build chunks are not covered by the static asset cache path');
 }
+if (!sw.includes("const isPublicDocument = url.pathname === '/' || url.pathname === '/login'")) {
+  throw new Error('Public document allowlist is missing');
+}
+if (!sw.includes("(!isDocumentRequest || !isPublicDocument)")) {
+  throw new Error('Protected documents are not excluded from cache handling');
+}
+if (!sw.includes('return isPublicDocument')) {
+  throw new Error('Offline document fallback is not limited to public documents');
+}
+for (const route of ['/admin/', '/collaborator/']) {
+  if (sw.includes(`url.pathname.startsWith('${route}')`)) {
+    throw new Error(`Protected document route is explicitly cacheable: ${route}`);
+  }
+}
 if (/cache\.put\([^\n]*\/(?:v1|api)/.test(sw)) {
   throw new Error('API response is eligible for cache.put');
 }
