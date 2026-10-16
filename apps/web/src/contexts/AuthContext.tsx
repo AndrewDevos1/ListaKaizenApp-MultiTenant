@@ -7,7 +7,7 @@ import React, {
   useCallback,
   useEffect,
 } from 'react';
-import api, { invalidateTokenCache } from '@/lib/api';
+import api, { clearStoredSession, invalidateTokenCache } from '@/lib/api';
 import { AuthUser, LoginResponse } from 'shared';
 
 interface AuthContextType {
@@ -39,6 +39,10 @@ function readStoredToken(): string | null {
   );
 }
 
+function getSessionExpiryKey(storage: Storage): string {
+  return storage === localStorage ? 'sessionExpiry' : 'sessionExpirySession';
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Estado inicial estável entre server/client para evitar hydration mismatch.
   const [user, setUser] = useState<AuthUser | null>(null);
@@ -47,7 +51,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const token = readStoredToken();
     const storedUser = readStoredUser();
-    setUser(token && storedUser ? storedUser : null);
+    const storage = localStorage.getItem('accessToken') ? localStorage : sessionStorage;
+    const expiry = Number.parseInt(storage.getItem(getSessionExpiryKey(storage)) ?? '0', 10);
+    if (token && storedUser && expiry > Date.now()) {
+      setUser(storedUser);
+    } else if (token || storedUser || expiry) {
+      clearStoredSession();
+    }
     setLoading(false);
   }, []);
 
@@ -63,6 +73,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     storage.setItem('accessToken', data.accessToken);
     storage.setItem('user', JSON.stringify(data.user));
+    try {
+      const encodedPayload = data.accessToken.split('.')[1];
+      const tokenPayload = JSON.parse(atob(encodedPayload.replace(/-/g, '+').replace(/_/g, '/')));
+      const tokenExpiry = Number(tokenPayload.exp) * 1000;
+      if (!Number.isFinite(tokenExpiry) || tokenExpiry <= Date.now()) throw new Error('expired');
+      storage.setItem(getSessionExpiryKey(storage), String(tokenExpiry));
+    } catch {
+      clearStoredSession();
+      throw new Error('Token JWT inválido');
+    }
 
     invalidateTokenCache();
     setUser(data.user);
@@ -70,13 +90,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = useCallback(() => {
     invalidateTokenCache();
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('user');
-    sessionStorage.removeItem('accessToken');
-    sessionStorage.removeItem('user');
+    clearStoredSession();
     setUser(null);
     window.location.href = '/login';
   }, []);
+
+  useEffect(() => {
+    if (!user) return;
+    const storage = localStorage.getItem('accessToken') ? localStorage : sessionStorage;
+    const key = getSessionExpiryKey(storage);
+    const expiry = Number.parseInt(storage.getItem(key) ?? '0', 10);
+    const timer = window.setTimeout(() => logout(), Math.max(0, expiry - Date.now()));
+    return () => window.clearTimeout(timer);
+  }, [user, logout]);
 
   const updateAvatarUrl = useCallback((url: string | null) => {
     setUser((prev) => {

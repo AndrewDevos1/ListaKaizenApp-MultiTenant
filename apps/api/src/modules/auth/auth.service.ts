@@ -15,6 +15,8 @@ import { ChangePasswordDto } from './dto/change-password.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { SaveNavbarLayoutDto } from './dto/save-navbar-layout.dto';
 import { SaveNavbarStyleDto } from './dto/save-navbar-style.dto';
+import { UpdateSessionTimeoutDto } from './dto/update-session-timeout.dto';
+import { randomUUID } from 'node:crypto';
 
 type NavbarLayout = {
   hiddenGroupIds: string[];
@@ -31,6 +33,66 @@ export class AuthService {
     private jwtService: JwtService,
     private convitesService: ConvitesService,
   ) {}
+
+  private getSessionTimeoutMinutes(): number {
+    const raw = process.env.SESSION_TIMEOUT_MINUTES;
+    const configured = raw && /^[0-9]+$/.test(raw) ? Number(raw) : 30;
+    return Number.isFinite(configured) && configured >= 5 && configured <= 480 ? configured : 30;
+  }
+
+  private normalizeSessionTimeout(value: unknown): number | null {
+    return typeof value === 'number' && Number.isInteger(value) && value >= 5 && value <= 480 ? value : null;
+  }
+
+  private resolveSessionTimeoutMinutes(user: { sessionTimeoutMinutes?: number | null; restaurante?: { sessionTimeoutMinutes: number | null } | null }): number {
+    return this.normalizeSessionTimeout(user.sessionTimeoutMinutes)
+      ?? this.normalizeSessionTimeout(user.restaurante?.sessionTimeoutMinutes)
+      ?? this.getSessionTimeoutMinutes();
+  }
+
+  async getSessionTimeout(userId: number) {
+    const user = await this.prisma.usuario.findUnique({
+      where: { id: userId },
+      select: { sessionTimeoutMinutes: true, restaurante: { select: { id: true, sessionTimeoutMinutes: true } } },
+    });
+    if (!user) throw new UnauthorizedException('Usuário não encontrado');
+    return {
+      timeoutMinutes: this.resolveSessionTimeoutMinutes(user),
+      userTimeoutMinutes: user.sessionTimeoutMinutes,
+      restauranteTimeoutMinutes: user.restaurante?.sessionTimeoutMinutes ?? null,
+      globalTimeoutMinutes: this.getSessionTimeoutMinutes(),
+    };
+  }
+
+  async updateSessionTimeout(currentUserId: number, currentRole: UserRole, dto: UpdateSessionTimeoutDto) {
+    const actor = await this.prisma.usuario.findUnique({ where: { id: currentUserId }, select: { restauranteId: true } });
+    if (!actor) throw new UnauthorizedException('Usuário não encontrado');
+    const timeoutMinutes = dto.timeoutMinutes === null || dto.timeoutMinutes === undefined ? null : this.normalizeSessionTimeout(dto.timeoutMinutes);
+    if (dto.timeoutMinutes !== null && dto.timeoutMinutes !== undefined && timeoutMinutes === null) {
+      throw new BadRequestException('Timeout deve ser um inteiro entre 5 e 480 minutos');
+    }
+    if (dto.usuarioId) {
+      const target = await this.prisma.usuario.findUnique({ where: { id: dto.usuarioId }, select: { restauranteId: true } });
+      if (!target || (currentRole !== UserRole.ADMIN && currentRole !== UserRole.SUPER_ADMIN && dto.usuarioId !== currentUserId) || (currentRole !== UserRole.SUPER_ADMIN && target.restauranteId !== actor.restauranteId)) throw new UnauthorizedException('Usuário fora do tenant autorizado');
+      await this.prisma.usuario.update({
+        where: { id: dto.usuarioId },
+        data: {
+          sessionTimeoutMinutes: timeoutMinutes,
+          ...(dto.usuarioId === currentUserId ? {} : { sessionToken: randomUUID() }),
+        },
+      });
+    } else {
+      const restauranteId = dto.restauranteId ?? actor.restauranteId;
+      if (currentRole !== UserRole.ADMIN && currentRole !== UserRole.SUPER_ADMIN) throw new UnauthorizedException('Apenas administradores podem alterar o timeout do restaurante');
+      if (!restauranteId || (currentRole !== UserRole.SUPER_ADMIN && restauranteId !== actor.restauranteId)) throw new UnauthorizedException('Restaurante fora do tenant autorizado');
+      await this.prisma.restaurante.update({ where: { id: restauranteId }, data: { sessionTimeoutMinutes: timeoutMinutes } });
+      await this.prisma.usuario.updateMany({
+        where: { restauranteId, id: { not: currentUserId } },
+        data: { sessionToken: randomUUID() },
+      });
+    }
+    return this.getSessionTimeout(currentUserId);
+  }
 
   private createDefaultNavbarLayoutMap(): NavbarLayoutMap {
     return {
@@ -197,6 +259,7 @@ export class AuthService {
   async login(dto: LoginDto) {
     const user = await this.prisma.usuario.findUnique({
       where: { email: dto.email },
+      include: { restaurante: { select: { sessionTimeoutMinutes: true } } },
     });
 
     if (!user) {
@@ -221,10 +284,18 @@ export class AuthService {
       email: user.email,
       role: user.role,
       restauranteId: user.restauranteId,
+      sessionToken: randomUUID(),
     };
+    await this.prisma.usuario.update({
+      where: { id: user.id },
+      data: { sessionToken: payload.sessionToken },
+    });
+    const sessionTimeoutMinutes = this.resolveSessionTimeoutMinutes(user);
 
     return {
-      accessToken: this.jwtService.sign(payload),
+      accessToken: this.jwtService.sign(payload, {
+        expiresIn: `${sessionTimeoutMinutes}m`,
+      }),
       user: {
         id: user.id,
         nome: user.nome,
