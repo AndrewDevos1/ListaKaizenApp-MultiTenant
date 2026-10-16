@@ -56,6 +56,7 @@ export default function ConfiguracoesAdmin() {
   const [navbarStyle, setNavbarStyle] = useState<NavbarStyle>('current');
   const [savingNavbarStyle, setSavingNavbarStyle] = useState(false);
   const [sessionTimeout, setSessionTimeout] = useState(30);
+  const [sessionTimeoutSource, setSessionTimeoutSource] = useState('global');
   const [refreshing, setRefreshing] = useState(false);
   const [exportingItens, setExportingItens] = useState(false);
   const [exportingFornecedores, setExportingFornecedores] = useState(false);
@@ -75,8 +76,14 @@ export default function ConfiguracoesAdmin() {
   useEffect(() => {
     const theme = localStorage.getItem('theme') || 'light';
     setIsDarkMode(theme === 'dark');
-    const saved = localStorage.getItem('configSessionTimeout');
-    if (saved) setSessionTimeout(parseInt(saved, 10));
+    api.get('/v1/auth/session-timeout')
+      .then((response) => {
+        setSessionTimeout(response.data.timeoutMinutes);
+        setSessionTimeoutSource(response.data.userTimeoutMinutes !== null
+          ? 'usuário'
+          : (response.data.restauranteTimeoutMinutes === null ? 'global' : 'restaurante'));
+      })
+      .catch(() => undefined);
     // Load listas for phase 2 dropdown
     api.get('/v1/admin/import/listas')
       .then((r) => setListas(r.data))
@@ -113,8 +120,13 @@ export default function ConfiguracoesAdmin() {
     else document.documentElement.removeAttribute('data-theme');
   };
 
-  const handleSaveSession = () => {
-    localStorage.setItem('configSessionTimeout', sessionTimeout.toString());
+  const handleSaveSession = async () => {
+    if (!user?.restauranteId) return;
+    const { data } = await api.put('/v1/auth/session-timeout', { timeoutMinutes: sessionTimeout, restauranteId: user.restauranteId });
+    setSessionTimeout(data.timeoutMinutes);
+    setSessionTimeoutSource(data.userTimeoutMinutes !== null
+      ? 'usuário'
+      : (data.restauranteTimeoutMinutes === null ? 'global' : 'restaurante'));
     success('Configuração salva', `Timeout de sessão definido para ${sessionTimeout} minutos`);
   };
 
@@ -443,12 +455,12 @@ export default function ConfiguracoesAdmin() {
               {SESSION_TIMEOUTS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
             </Form.Select>
             <Form.Text className="text-muted">
-              Após {sessionTimeout} minuto{sessionTimeout !== 1 ? 's' : ''} sem atividade, o login será encerrado.
+             Valor efetivo: {sessionTimeout} minuto{sessionTimeout !== 1 ? 's' : ''} ({sessionTimeoutSource}). Overrides de usuário têm precedência.
             </Form.Text>
           </Form.Group>
           <div className="d-flex gap-2">
             <Button variant="primary" size="sm" onClick={handleSaveSession}>Salvar</Button>
-            <Button variant="outline-secondary" size="sm" onClick={() => { setSessionTimeout(30); localStorage.setItem('configSessionTimeout', '30'); success('Padrão restaurado', 'Timeout resetado para 30 minutos'); }}>
+            <Button variant="outline-secondary" size="sm" onClick={async () => { if (user?.restauranteId) { const { data } = await api.put('/v1/auth/session-timeout', { timeoutMinutes: null, restauranteId: user.restauranteId }); setSessionTimeout(data.timeoutMinutes); setSessionTimeoutSource(data.restauranteTimeoutMinutes === null ? 'global' : 'restaurante'); } success('Padrão restaurado', 'Timeout herdado restaurado. Sessões atuais usam o prazo anterior; próximo login aplica o novo prazo.'); }}>
               Resetar Padrão
             </Button>
           </div>
