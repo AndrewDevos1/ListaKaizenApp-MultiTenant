@@ -50,12 +50,22 @@ export class AuthService {
       ?? this.getSessionTimeoutMinutes();
   }
 
-  async getSessionTimeout(userId: number) {
+  async getSessionTimeout(userId: number, targetRestauranteId?: number) {
     const user = await this.prisma.usuario.findUnique({
       where: { id: userId },
       select: { sessionTimeoutMinutes: true, restaurante: { select: { id: true, sessionTimeoutMinutes: true } } },
     });
     if (!user) throw new UnauthorizedException('Usuário não encontrado');
+    if (targetRestauranteId) {
+      const restaurante = await this.prisma.restaurante.findUnique({ where: { id: targetRestauranteId }, select: { id: true, sessionTimeoutMinutes: true } });
+      if (!restaurante) throw new UnauthorizedException('Restaurante não encontrado');
+      return {
+        timeoutMinutes: this.normalizeSessionTimeout(restaurante.sessionTimeoutMinutes) ?? this.getSessionTimeoutMinutes(),
+        userTimeoutMinutes: null,
+        restauranteTimeoutMinutes: restaurante.sessionTimeoutMinutes,
+        globalTimeoutMinutes: this.getSessionTimeoutMinutes(),
+      };
+    }
     return {
       timeoutMinutes: this.resolveSessionTimeoutMinutes(user),
       userTimeoutMinutes: user.sessionTimeoutMinutes,
@@ -91,7 +101,7 @@ export class AuthService {
         data: { sessionToken: randomUUID() },
       });
     }
-    return this.getSessionTimeout(currentUserId);
+    return this.getSessionTimeout(currentUserId, dto.usuarioId ? undefined : (dto.restauranteId ?? actor.restauranteId ?? undefined));
   }
 
   private createDefaultNavbarLayoutMap(): NavbarLayoutMap {

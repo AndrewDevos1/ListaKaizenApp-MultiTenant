@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Put, Delete, Body, UseGuards } from '@nestjs/common';
+import { Controller, Post, Get, Put, Delete, Body, UseGuards, Query, BadRequestException } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { UserRole } from '@prisma/client';
@@ -33,8 +33,15 @@ export class AuthController {
   @Get('session-timeout')
   @UseGuards(AuthGuard('jwt'), TenantGuard)
   @ApiBearerAuth()
-  getSessionTimeout(@CurrentUser('id') userId: number) {
-    return this.authService.getSessionTimeout(userId);
+  getSessionTimeout(
+    @CurrentUser('id') userId: number,
+    @CurrentUser('role') role: UserRole,
+    @Query('restauranteId') restauranteId?: string,
+  ) {
+    const target = restauranteId === undefined ? undefined : Number(restauranteId);
+    if (restauranteId !== undefined && (target === undefined || !Number.isInteger(target) || target < 1)) throw new BadRequestException('restauranteId inválido');
+    if (target !== undefined && role !== UserRole.SUPER_ADMIN) throw new BadRequestException('Somente SUPER_ADMIN pode selecionar restaurante');
+    return this.authService.getSessionTimeout(userId, target);
   }
 
   @Put('session-timeout')
