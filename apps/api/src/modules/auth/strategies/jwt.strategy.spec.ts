@@ -43,7 +43,7 @@ describe('JwtStrategy', () => {
       { usuario: { findUnique: jest.fn().mockResolvedValue({ id: 7, ativo: true, aprovado: true, sessionToken: 'stored-token' }) } } as any,
     );
 
-    await expect(strategy.validate({ sub: 7, email: 'user@example.com', role: 'COLLABORATOR', restauranteId: 22, sessionToken }))
+    await expect(strategy.validate({ sub: 7, email: 'user@example.com', role: 'COLLABORATOR', restauranteId: 22, sessionToken: sessionToken as string }))
       .rejects.toThrow('Usuário não encontrado ou inativo');
   });
 });

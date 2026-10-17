@@ -202,7 +202,7 @@ export default function ConfiguracoesColaborador() {
         <Card.Header><strong><FaClock className="me-2" />Timeout de Sessão</strong></Card.Header>
         <Card.Body>
           <p className="text-muted mb-3">
-            Define o tempo de inatividade antes de solicitar novo login.
+            Duração absoluta do JWT server-side. A sessão expira após o prazo efetivo, independentemente de atividade.
           </p>
           <Form.Group className="mb-3">
             <Form.Label>Tempo de sessão</Form.Label>

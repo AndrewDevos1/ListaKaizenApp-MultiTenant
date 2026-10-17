@@ -447,11 +447,14 @@ export default function ConfiguracoesAdmin() {
         <Card.Header><strong><FaClock className="me-2" />Timeout de Sessão</strong></Card.Header>
         <Card.Body>
           <p className="text-muted mb-3">
-            Define o tempo de inatividade antes de solicitar novo login.
+            Duração absoluta do JWT server-side. A sessão expira após o prazo efetivo, independentemente de atividade.
           </p>
+          {user?.role === 'SUPER_ADMIN' && (
+            <Alert variant="info">Seleção de restaurante não disponível nesta tela para SUPER_ADMIN. A configuração de timeout permanece indisponível aqui.</Alert>
+          )}
           <Form.Group className="mb-3">
             <Form.Label>Tempo de sessão</Form.Label>
-            <Form.Select value={sessionTimeout} onChange={(e) => setSessionTimeout(parseInt(e.target.value, 10))} style={{ maxWidth: 360 }}>
+             <Form.Select value={sessionTimeout} disabled={user?.role === 'SUPER_ADMIN'} onChange={(e) => setSessionTimeout(parseInt(e.target.value, 10))} style={{ maxWidth: 360 }}>
               {SESSION_TIMEOUTS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
             </Form.Select>
             <Form.Text className="text-muted">
@@ -459,8 +462,8 @@ export default function ConfiguracoesAdmin() {
             </Form.Text>
           </Form.Group>
           <div className="d-flex gap-2">
-            <Button variant="primary" size="sm" onClick={handleSaveSession}>Salvar</Button>
-            <Button variant="outline-secondary" size="sm" onClick={async () => { if (user?.restauranteId) { const { data } = await api.put('/v1/auth/session-timeout', { timeoutMinutes: null, restauranteId: user.restauranteId }); setSessionTimeout(data.timeoutMinutes); setSessionTimeoutSource(data.restauranteTimeoutMinutes === null ? 'global' : 'restaurante'); } success('Padrão restaurado', 'Timeout herdado restaurado. Sessões atuais usam o prazo anterior; próximo login aplica o novo prazo.'); }}>
+            <Button variant="primary" size="sm" disabled={user?.role === 'SUPER_ADMIN'} onClick={handleSaveSession}>Salvar</Button>
+            <Button variant="outline-secondary" size="sm" disabled={user?.role === 'SUPER_ADMIN'} onClick={async () => { if (user?.restauranteId) { const { data } = await api.put('/v1/auth/session-timeout', { timeoutMinutes: null, restauranteId: user.restauranteId }); setSessionTimeout(data.timeoutMinutes); setSessionTimeoutSource(data.restauranteTimeoutMinutes === null ? 'global' : 'restaurante'); } success('Padrão restaurado', 'Timeout herdado restaurado. Sessões atuais usam o prazo anterior; próximo login aplica o novo prazo.'); }}>
               Resetar Padrão
             </Button>
           </div>

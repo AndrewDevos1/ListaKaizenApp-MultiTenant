@@ -9,7 +9,7 @@ export interface JwtPayload {
   email: string;
   role: string;
   restauranteId: number | null;
-  sessionToken?: string;
+  sessionToken: string;
 }
 
 @Injectable()
