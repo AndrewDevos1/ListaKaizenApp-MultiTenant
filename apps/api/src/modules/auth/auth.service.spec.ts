@@ -94,6 +94,23 @@ describe('AuthService session timeout', () => {
     expect(prisma.usuario.update).not.toHaveBeenCalled();
   });
 
+  it('returns the configured target scope after an override update', async () => {
+    const prisma = {
+      usuario: {
+        findUnique: jest.fn()
+          .mockResolvedValueOnce({ restauranteId: 10 })
+          .mockResolvedValueOnce({ restauranteId: 10 })
+          .mockResolvedValueOnce({ sessionTimeoutMinutes: 45, restaurante: { sessionTimeoutMinutes: 30 } }),
+        update: jest.fn(),
+      },
+      restaurante: { update: jest.fn() },
+    } as any;
+    const service = new AuthService(prisma, {} as JwtService, {} as any);
+
+    await expect(service.updateSessionTimeout(1, 'ADMIN' as any, { usuarioId: 2, timeoutMinutes: 45 }))
+      .resolves.toMatchObject({ timeoutMinutes: 45, effectiveScope: 'usuário', targetScope: 'usuário' });
+  });
+
   it('emits a JWT expiring in the configured interval', async () => {
     process.env.SESSION_TIMEOUT_MINUTES = '5';
     const jwt = new JwtService({ secret: 'test-secret' });

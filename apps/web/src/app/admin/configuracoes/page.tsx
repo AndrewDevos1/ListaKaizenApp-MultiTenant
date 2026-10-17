@@ -143,10 +143,8 @@ export default function ConfiguracoesAdmin() {
     if (!restauranteId) return;
     const { data } = await api.put('/v1/auth/session-timeout', { timeoutMinutes: sessionTimeout, restauranteId });
     setSessionTimeout(data.timeoutMinutes);
-    setSessionTimeoutSource(data.userTimeoutMinutes !== null
-      ? 'usuário'
-      : (data.restauranteTimeoutMinutes === null ? 'global' : 'restaurante'));
-    success('Configuração salva', `Timeout de sessão definido para ${sessionTimeout} minutos`);
+    setSessionTimeoutSource(data.effectiveScope);
+    success('Configuração salva', `Timeout de sessão definido para ${sessionTimeout} minutos. Sessões dos demais usuários do tenant foram revogadas; o ator mantém a sessão atual.`);
   };
 
   const handleNavbarStyleChange = async (style: NavbarStyle) => {

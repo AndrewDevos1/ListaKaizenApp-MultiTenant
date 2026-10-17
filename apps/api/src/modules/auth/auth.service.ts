@@ -50,6 +50,12 @@ export class AuthService {
       ?? this.getSessionTimeoutMinutes();
   }
 
+  private resolveSessionTimeoutScope(user: { sessionTimeoutMinutes?: number | null; restaurante?: { sessionTimeoutMinutes: number | null } | null }): 'usuário' | 'restaurante' | 'global' {
+    if (this.normalizeSessionTimeout(user.sessionTimeoutMinutes) !== null) return 'usuário';
+    if (this.normalizeSessionTimeout(user.restaurante?.sessionTimeoutMinutes) !== null) return 'restaurante';
+    return 'global';
+  }
+
   async getSessionTimeout(userId: number, targetRestauranteId?: number) {
     const user = await this.prisma.usuario.findUnique({
       where: { id: userId },
@@ -64,6 +70,8 @@ export class AuthService {
         userTimeoutMinutes: null,
         restauranteTimeoutMinutes: restaurante.sessionTimeoutMinutes,
         globalTimeoutMinutes: this.getSessionTimeoutMinutes(),
+        effectiveScope: restaurante.sessionTimeoutMinutes === null ? 'global' : 'restaurante',
+        targetScope: 'restaurante',
       };
     }
     return {
@@ -71,6 +79,8 @@ export class AuthService {
       userTimeoutMinutes: user.sessionTimeoutMinutes,
       restauranteTimeoutMinutes: user.restaurante?.sessionTimeoutMinutes ?? null,
       globalTimeoutMinutes: this.getSessionTimeoutMinutes(),
+      effectiveScope: this.resolveSessionTimeoutScope(user),
+      targetScope: 'usuário',
     };
   }
 
@@ -101,7 +111,7 @@ export class AuthService {
         data: { sessionToken: randomUUID() },
       });
     }
-    return this.getSessionTimeout(currentUserId, dto.usuarioId ? undefined : (dto.restauranteId ?? actor.restauranteId ?? undefined));
+    return this.getSessionTimeout(dto.usuarioId ?? currentUserId, dto.usuarioId ? undefined : (dto.restauranteId ?? actor.restauranteId ?? undefined));
   }
 
   private createDefaultNavbarLayoutMap(): NavbarLayoutMap {
