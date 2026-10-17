@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Put, Delete, Body, UseGuards } from '@nestjs/common';
+import { Controller, Post, Get, Put, Delete, Body, UseGuards, Query, BadRequestException } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { UserRole } from '@prisma/client';
@@ -9,7 +9,9 @@ import { ChangePasswordDto } from './dto/change-password.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { SaveNavbarLayoutDto } from './dto/save-navbar-layout.dto';
 import { SaveNavbarStyleDto } from './dto/save-navbar-style.dto';
-import { CurrentUser } from '../../common/decorators';
+import { CurrentUser, Roles } from '../../common/decorators';
+import { RolesGuard, TenantGuard } from '../../common/guards';
+import { UpdateSessionTimeoutDto } from './dto/update-session-timeout.dto';
 
 @ApiTags('Auth')
 @Controller('v1/auth')
@@ -26,6 +28,32 @@ export class AuthController {
   @ApiOperation({ summary: 'Login' })
   login(@Body() dto: LoginDto) {
     return this.authService.login(dto);
+  }
+
+  @Get('session-timeout')
+  @UseGuards(AuthGuard('jwt'), TenantGuard)
+  @ApiBearerAuth()
+  getSessionTimeout(
+    @CurrentUser('id') userId: number,
+    @CurrentUser('role') role: UserRole,
+    @Query('restauranteId') restauranteId?: string,
+  ) {
+    const target = restauranteId === undefined ? undefined : Number(restauranteId);
+    if (restauranteId !== undefined && (target === undefined || !Number.isInteger(target) || target < 1)) throw new BadRequestException('restauranteId inválido');
+    if (target !== undefined && role !== UserRole.SUPER_ADMIN) throw new BadRequestException('Somente SUPER_ADMIN pode selecionar restaurante');
+    return this.authService.getSessionTimeout(userId, target);
+  }
+
+  @Put('session-timeout')
+  @UseGuards(AuthGuard('jwt'), RolesGuard, TenantGuard)
+  @Roles(UserRole.COLLABORATOR, UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @ApiBearerAuth()
+  updateSessionTimeout(
+    @CurrentUser('id') userId: number,
+    @CurrentUser('role') role: UserRole,
+    @Body() dto: UpdateSessionTimeoutDto,
+  ) {
+    return this.authService.updateSessionTimeout(userId, role, dto);
   }
 
   @Get('profile')
