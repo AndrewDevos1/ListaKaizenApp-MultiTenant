@@ -31,6 +31,10 @@ export function usePWAInstall(): PWAInstallResult {
     /safari/i.test(navigator.userAgent) &&
     !/(crios|fxios|edgios)/i.test(navigator.userAgent);
 
+  const isIOSBrowser =
+    isIOS ||
+    (typeof navigator !== 'undefined' && /(?:crios|fxios|edgios)/i.test(navigator.userAgent));
+
   const isStandalone =
     typeof window !== 'undefined' &&
     (window.matchMedia('(display-mode: standalone)').matches ||
@@ -52,7 +56,7 @@ export function usePWAInstall(): PWAInstallResult {
     }
 
     // iOS Safari: mostra instruções manuais
-    if (isIOS && isSafari) {
+    if (isIOSBrowser) {
       console.log('[PWA Install] iOS Safari detectado. Botão VISÍVEL (instruções manuais).');
       setState('ios-safari');
       return;

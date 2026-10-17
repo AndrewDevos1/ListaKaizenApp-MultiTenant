@@ -17,6 +17,8 @@ const required = [
   [sw, "event.request.method !== 'GET'"],
   [registration, 'controllerchange'],
   [registration, 'kaizen-sw-reloaded-at'],
+  [registration, "document.readyState === 'complete'"],
+  [registration, "else window.addEventListener('load', onLoad)"],
   [manifest, "display: 'standalone'"],
   [manifest, "src: '/icons/icon-192.png'"],
   [adminDashboard, '<InstallAppButton />'],
@@ -25,6 +27,8 @@ const required = [
   [installHook, "navigator.platform === 'MacIntel'"],
   [installHook, 'navigator.maxTouchPoints > 1'],
   [installHook, 'crios|fxios|edgios'],
+  [installHook, 'const isIOSBrowser'],
+  [installHook, 'if (isIOSBrowser)'],
 ];
 
 for (const [source, expected] of required) {
