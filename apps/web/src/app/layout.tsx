@@ -5,6 +5,7 @@ import { AuthProvider } from '@/contexts/AuthContext';
 import { ToastProvider } from '@/contexts/ToastContext';
 import ToastContainer from '@/components/ToastContainer';
 import SwRegister from '@/components/SwRegister';
+import PWAInstallBootstrap from '@/components/PWAInstallBootstrap';
 
 export const metadata: Metadata = {
   title: 'Kaizen - Lista de Compras',
@@ -22,6 +23,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <ToastProvider>
           <AuthProvider>{children}</AuthProvider>
           <ToastContainer />
+          <PWAInstallBootstrap />
           <SwRegister />
         </ToastProvider>
       </body>

@@ -6,6 +6,8 @@ const adminDashboard = await readFile(new URL('../src/app/admin/dashboard/page.t
 const registration = await readFile(new URL('../src/components/SwRegister.tsx', import.meta.url), 'utf8');
 const installButton = await readFile(new URL('../src/components/InstallAppButton.tsx', import.meta.url), 'utf8');
 const installHook = await readFile(new URL('../src/hooks/usePWAInstall.ts', import.meta.url), 'utf8');
+const installBootstrap = await readFile(new URL('../src/components/PWAInstallBootstrap.tsx', import.meta.url), 'utf8');
+const layout = await readFile(new URL('../src/app/layout.tsx', import.meta.url), 'utf8');
 
 const required = [
   [sw, "'/login'"],
@@ -29,6 +31,9 @@ const required = [
   [installHook, 'crios|fxios|edgios'],
   [installHook, 'const isIOSBrowser'],
   [installHook, 'if (isIOSBrowser)'],
+  [installBootstrap, "window.addEventListener('beforeinstallprompt'"],
+  [installBootstrap, 'capturePWAInstallPrompt(event)'],
+  [layout, 'PWAInstallBootstrap'],
 ];
 
 for (const [source, expected] of required) {

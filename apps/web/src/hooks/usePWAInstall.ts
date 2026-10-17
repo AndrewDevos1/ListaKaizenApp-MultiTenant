@@ -18,6 +18,15 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
 }
 
+export function capturePWAInstallPrompt(event: Event) {
+  const prompt = event as BeforeInstallPromptEvent;
+  if (typeof prompt.prompt !== 'function' || !prompt.userChoice) return false;
+  event.preventDefault();
+  deferredPrompt = prompt;
+  window.dispatchEvent(new Event('kaizen:pwa-installable'));
+  return true;
+}
+
 export function usePWAInstall(): PWAInstallResult {
   const [state, setState] = useState<PWAState>('loading');
 
@@ -67,16 +76,19 @@ export function usePWAInstall(): PWAInstallResult {
     let received = false;
 
     const handler = (e: Event) => {
-      const prompt = e as BeforeInstallPromptEvent;
-      if (typeof prompt.prompt !== 'function' || !prompt.userChoice) return;
-      e.preventDefault();
-      deferredPrompt = prompt;
+      if (!capturePWAInstallPrompt(e)) return;
       received = true;
       console.log("[PWA Install] Evento 'beforeinstallprompt' recebido! Botão VISÍVEL.");
       setState('installable');
     };
 
+    const installableHandler = () => {
+      received = true;
+      setState('installable');
+    };
     window.addEventListener('beforeinstallprompt', handler);
+    window.addEventListener('kaizen:pwa-installable', installableHandler);
+    if (deferredPrompt) installableHandler();
 
     const timer = setTimeout(() => {
       if (!received) {
@@ -94,6 +106,7 @@ export function usePWAInstall(): PWAInstallResult {
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handler);
+      window.removeEventListener('kaizen:pwa-installable', installableHandler);
       window.removeEventListener('appinstalled', installedHandler);
       clearTimeout(timer);
     };
