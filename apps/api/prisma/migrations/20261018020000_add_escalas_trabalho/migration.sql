@@ -1,3 +1,5 @@
+CREATE EXTENSION IF NOT EXISTS btree_gist;
+
 CREATE TABLE "escalas_trabalho" (
   "id" SERIAL NOT NULL,
   "usuario_id" INTEGER NOT NULL,
@@ -27,7 +29,13 @@ CREATE TABLE "dias_escala_trabalho" (
 );
 
 CREATE INDEX "escalas_trabalho_restaurante_id_usuario_id_vigencia_inicio_idx" ON "escalas_trabalho"("restaurante_id", "usuario_id", "vigencia_inicio");
+ALTER TABLE "escalas_trabalho" ADD CONSTRAINT "escalas_trabalho_sem_sobreposicao" EXCLUDE USING gist (
+  "restaurante_id" WITH =,
+  "usuario_id" WITH =,
+  daterange("vigencia_inicio", COALESCE("vigencia_fim", 'infinity'::date), '[]') WITH &&
+);
 CREATE UNIQUE INDEX "dias_escala_trabalho_escala_id_dia_semana_key" ON "dias_escala_trabalho"("escala_id", "dia_semana");
 ALTER TABLE "escalas_trabalho" ADD CONSTRAINT "escalas_trabalho_usuario_id_fkey" FOREIGN KEY ("usuario_id") REFERENCES "usuarios"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 ALTER TABLE "escalas_trabalho" ADD CONSTRAINT "escalas_trabalho_restaurante_id_fkey" FOREIGN KEY ("restaurante_id") REFERENCES "restaurantes"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "escalas_trabalho" ADD CONSTRAINT "escalas_trabalho_criado_por_id_fkey" FOREIGN KEY ("criado_por_id") REFERENCES "usuarios"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 ALTER TABLE "dias_escala_trabalho" ADD CONSTRAINT "dias_escala_trabalho_escala_id_fkey" FOREIGN KEY ("escala_id") REFERENCES "escalas_trabalho"("id") ON DELETE CASCADE ON UPDATE CASCADE;

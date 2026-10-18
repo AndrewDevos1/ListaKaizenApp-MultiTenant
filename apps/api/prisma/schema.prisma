@@ -152,6 +152,7 @@ model Usuario {
   lotesConsolidadosAprovados   SubmissaoConsolidadaLote[] @relation("LoteConsolidadoAprovadoPor")
   registrosPonto               RegistroPonto[]
   escalasTrabalho              EscalaTrabalho[]
+  escalasTrabalhoCriadas       EscalaTrabalho[] @relation("EscalaTrabalhoCriadaPor")
   lancamentosBancoHoras        LancamentoBancoHoras[] @relation("LancamentoBancoHorasUsuario")
   lancamentosBancoHorasFeitos  LancamentoBancoHoras[] @relation("LancamentoBancoHorasCriadoPor")
 
@@ -191,6 +192,7 @@ model EscalaTrabalho {
   dias           DiaEscalaTrabalho[]
   usuario        Usuario @relation(fields: [usuarioId], references: [id])
   restaurante    Restaurante @relation(fields: [restauranteId], references: [id])
+  criadoPor      Usuario @relation("EscalaTrabalhoCriadaPor", fields: [criadoPorId], references: [id])
 
   @@index([restauranteId, usuarioId, vigenciaInicio])
   @@map("escalas_trabalho")

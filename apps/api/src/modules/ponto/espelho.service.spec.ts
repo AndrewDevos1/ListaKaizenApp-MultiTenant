@@ -19,4 +19,15 @@ describe('EspelhoService', () => {
     expect(espelho.dias).toContainEqual(expect.objectContaining({ data: '2026-11-04', minutosRealizados: 0, minutosPrevistos: 0, pendente: false }));
     expect(prisma.registroPonto.findMany).toHaveBeenCalledTimes(1);
   });
+
+  it('zera saldo operacional dentro da tolerância da escala', async () => {
+    prisma.registroPonto.findMany.mockResolvedValue([
+      { tipo: 'ENTRADA', registradoEm: new Date('2026-11-03T11:00:00Z'), dataOperacional: new Date('2026-11-03T00:00:00Z') },
+      { tipo: 'SAIDA', registradoEm: new Date('2026-11-03T19:55:00Z'), dataOperacional: new Date('2026-11-03T00:00:00Z') },
+    ]);
+    prisma.escalaTrabalho.findMany.mockResolvedValue([{ vigenciaInicio: new Date('2026-11-01T00:00:00Z'), vigenciaFim: null, dias: [{ diaSemana: 2, trabalha: true, entradaPrevista: '08:00', saidaPrevista: '17:00', toleranciaMinutos: 5 }] }]);
+
+    const espelho = await service.consultar(3, 7, '2026-11');
+    expect(espelho.dias).toContainEqual(expect.objectContaining({ data: '2026-11-03', saldoOperacionalMinutos: 0 }));
+  });
 });

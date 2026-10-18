@@ -1,4 +1,4 @@
-import { Body, Controller, ForbiddenException, Get, Post, Query, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, ForbiddenException, Get, Post, Query, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser, Modulo, Roles, TenantId } from '../../common/decorators';
@@ -15,8 +15,23 @@ import { CriarLancamentoBancoHorasDto } from './dto/criar-lancamento-banco-horas
 export class BancoHorasController {
   constructor(private readonly service: BancoHorasService) {}
   @Get('lancamentos') @ApiOperation({ summary: 'Listar lançamentos do banco de horas' })
-  listar(@TenantId() restauranteId: number | null, @Query('usuarioId') usuarioId?: string) { return this.service.listar(this.tenant(restauranteId), usuarioId ? Number(usuarioId) : undefined); }
+  listar(@TenantId() restauranteId: number | null, @Query('usuarioId') usuarioId?: string) {
+    return this.service.listar(this.tenant(restauranteId), usuarioId ? this.usuarioId(usuarioId) : undefined);
+  }
+
   @Post('lancamentos') @ApiOperation({ summary: 'Criar lançamento manual auditado' })
-  criar(@TenantId() restauranteId: number | null, @CurrentUser('id') adminId: number, @Body() dto: CriarLancamentoBancoHorasDto) { return this.service.criar(this.tenant(restauranteId), adminId, dto); }
-  private tenant(id: number | null) { if (!id) throw new ForbiddenException('Usuário não está vinculado a nenhum restaurante'); return id; }
+  criar(@TenantId() restauranteId: number | null, @CurrentUser('id') adminId: number, @Body() dto: CriarLancamentoBancoHorasDto) {
+    return this.service.criar(this.tenant(restauranteId), adminId, dto);
+  }
+
+  private tenant(id: number | null) {
+    if (!id) throw new ForbiddenException('Usuário não está vinculado a nenhum restaurante');
+    return id;
+  }
+
+  private usuarioId(value: string) {
+    const id = Number(value);
+    if (!Number.isSafeInteger(id) || id < 1) throw new BadRequestException('usuarioId inválido');
+    return id;
+  }
 }

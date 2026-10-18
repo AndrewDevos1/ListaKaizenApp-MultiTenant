@@ -23,7 +23,9 @@ export class EspelhoService {
       const minutosPrevistos = diaEscala?.trabalha ? minutos(diaEscala.entradaPrevista!, diaEscala.saidaPrevista!) : 0;
       const apuracao = apurar(batidas);
       const pendente = batidas.length > 0 && apuracao.pendente;
-      return { data, batidas, minutosPrevistos, minutosRealizados: apuracao.minutos, pendente, saldoOperacionalMinutos: pendente ? null : apuracao.minutos - minutosPrevistos };
+      const saldoBruto = apuracao.minutos - minutosPrevistos;
+      const saldoOperacionalMinutos = pendente ? null : Math.abs(saldoBruto) <= (diaEscala?.toleranciaMinutos ?? 0) ? 0 : saldoBruto;
+      return { data, batidas, minutosPrevistos, minutosRealizados: apuracao.minutos, pendente, saldoOperacionalMinutos };
     });
     // ponytail: faltas/folgas ainda não compõem saldo; integrar classificação na issue #5.
     const concluidos = dias.filter((dia) => !dia.pendente && dia.batidas.length > 0);
@@ -53,7 +55,7 @@ function diasDoMes(inicio: Date, fim: Date) {
   return dias;
 }
 function weekday(data: string) { return new Date(`${data}T00:00:00.000Z`).getUTCDay(); }
-type EscalaComDias = { vigenciaInicio: Date; vigenciaFim: Date | null; dias: Array<{ diaSemana: number; trabalha: boolean; entradaPrevista: string | null; saidaPrevista: string | null }> };
+type EscalaComDias = { vigenciaInicio: Date; vigenciaFim: Date | null; dias: Array<{ diaSemana: number; trabalha: boolean; entradaPrevista: string | null; saidaPrevista: string | null; toleranciaMinutos: number }> };
 function escalaDaData(escalas: EscalaComDias[], data: string) {
   const dia = new Date(`${data}T00:00:00.000Z`);
   return escalas.find((escala) => escala.vigenciaInicio <= dia && (!escala.vigenciaFim || escala.vigenciaFim >= dia));
