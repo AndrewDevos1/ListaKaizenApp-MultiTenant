@@ -4,7 +4,7 @@ import { AtestadosService } from './atestados.service';
 describe('AtestadosService', () => {
   const prisma = {
     usuario: { findFirst: jest.fn() },
-    atestado: { create: jest.fn(), findMany: jest.fn() },
+    atestado: { create: jest.fn(), findMany: jest.fn(), findFirst: jest.fn(), update: jest.fn() },
     appLog: { create: jest.fn() },
     $transaction: jest.fn(),
   } as any;
@@ -45,6 +45,22 @@ describe('AtestadosService', () => {
     await service.listar(3, { usuarioId: 7 });
     expect(prisma.atestado.findMany).toHaveBeenCalledWith(expect.objectContaining({
       where: expect.objectContaining({ restauranteId: 3, usuarioId: 7 }),
+    }));
+  });
+
+  it('rejeita data civil inexistente', async () => {
+    await expect(service.criar(3, 10, {
+      usuarioId: 7, inicio: '2026-02-30', fim: '2026-03-01', motivo: 'Atestado médico',
+    })).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('cancela somente atestado do restaurante e audita', async () => {
+    prisma.atestado.findFirst.mockResolvedValue({ id: 9, situacao: 'ATIVO' });
+    prisma.atestado.update.mockResolvedValue({ id: 9, situacao: 'CANCELADO' });
+    await expect(service.cancelar(3, 10, 9)).resolves.toEqual({ id: 9, situacao: 'CANCELADO' });
+    expect(prisma.atestado.findFirst).toHaveBeenCalledWith({ where: { id: 9, restauranteId: 3 }, select: { id: true, situacao: true } });
+    expect(prisma.appLog.create).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ acao: 'ATESTADO_CANCELADO', entidadeId: 9, restauranteId: 3, usuarioId: 10 }),
     }));
   });
 });

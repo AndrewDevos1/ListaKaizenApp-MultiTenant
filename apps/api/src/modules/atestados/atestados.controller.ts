@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseIntPipe, Post, Put, Query, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser, Modulo, Roles, TenantId } from '../../common/decorators';
@@ -11,7 +11,7 @@ import { ListarAtestadosDto } from './dto/listar-atestados.dto';
 @Controller('v1/admin/atestados')
 @Modulo('moduloFuncionarios')
 @UseGuards(AuthGuard('jwt'), RolesGuard, TenantGuard, ModuloGuard)
-@Roles('ADMIN' as any)
+@Roles('ADMIN' as any, 'SUPER_ADMIN' as any)
 @ApiBearerAuth()
 export class AtestadosController {
   constructor(private readonly service: AtestadosService) {}
@@ -26,5 +26,11 @@ export class AtestadosController {
   @ApiOperation({ summary: 'Cadastrar atestado sem alterar banco de horas' })
   criar(@TenantId() restauranteId: number, @CurrentUser('id') adminId: number, @Body() dto: CriarAtestadoDto) {
     return this.service.criar(restauranteId, adminId, dto);
+  }
+
+  @Put(':id/cancelar')
+  @ApiOperation({ summary: 'Cancelar atestado sem alterar banco de horas' })
+  cancelar(@TenantId() restauranteId: number, @CurrentUser('id') adminId: number, @Param('id', ParseIntPipe) id: number) {
+    return this.service.cancelar(restauranteId, adminId, id);
   }
 }

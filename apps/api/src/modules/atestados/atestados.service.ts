@@ -15,6 +15,19 @@ export class AtestadosService {
     });
   }
 
+  async cancelar(restauranteId: number, adminId: number, id: number) {
+    const atestado = await this.prisma.atestado.findFirst({ where: { id, restauranteId }, select: { id: true, situacao: true } });
+    if (!atestado) throw new NotFoundException('Atestado não encontrado para este restaurante');
+    if (atestado.situacao === 'CANCELADO') return atestado;
+    return this.prisma.$transaction(async (tx) => {
+      const cancelado = await tx.atestado.update({ where: { id: atestado.id }, data: { situacao: 'CANCELADO' } });
+      await tx.appLog.create({
+        data: { acao: 'ATESTADO_CANCELADO', entidade: 'Atestado', entidadeId: atestado.id, restauranteId, usuarioId: adminId },
+      });
+      return cancelado;
+    });
+  }
+
   async criar(restauranteId: number, adminId: number, dto: CriarAtestadoDto) {
     const inicio = parseData(dto.inicio);
     const fim = parseData(dto.fim);
