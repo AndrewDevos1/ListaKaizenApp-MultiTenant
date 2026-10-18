@@ -42,6 +42,7 @@ import {
   FaEyeSlash,
   FaPencilAlt,
   FaSave,
+  FaClock,
 } from 'react-icons/fa';
 import { UserRole } from 'shared';
 import styles from './Sidebar.module.css';
@@ -718,6 +719,15 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
 
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const collaboratorMenuGroups = useMemo<MenuGroup[]>(() => [
+    ...(user?.modulos?.moduloPonto ? [{
+      id: 'ponto',
+      label: 'PONTO',
+      items: [{
+        label: 'Meu Ponto',
+        href: '/collaborator/ponto',
+        icon: <FaClock />,
+      }],
+    }] : []),
     {
       id: 'dashboard',
       label: 'DASHBOARD',
@@ -781,8 +791,7 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
         },
       ],
     },
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  ], []);
+  ], [user?.modulos?.moduloPonto]);
 
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const supplierMenuGroups = useMemo<MenuGroup[]>(() => [

@@ -73,6 +73,13 @@ enum StatusPedido {
   REJEITADO
 }
 
+enum TipoPonto {
+  ENTRADA
+  PAUSA
+  RETORNO
+  SAIDA
+}
+
 model Restaurante {
   id       Int      @id @default(autoincrement())
   nome     String
@@ -102,6 +109,7 @@ model Restaurante {
   popExecucoes   POPExecucao[]
   notificacoes   Notificacao[]
   conviteTokens  ConviteToken[]
+  registrosPonto RegistroPonto[]
 
   @@map("restaurantes")
 }
@@ -133,8 +141,29 @@ model Usuario {
   recebimentosConfirmados      Recebimento[] @relation("RecebimentoConfirmadoPor")
   recebimentosAdministrativos  Recebimento[] @relation("RecebimentoConfirmadoAdmin")
   lotesConsolidadosAprovados   SubmissaoConsolidadaLote[] @relation("LoteConsolidadoAprovadoPor")
+  registrosPonto               RegistroPonto[]
 
   @@map("usuarios")
+}
+
+model RegistroPonto {
+  id              Int       @id @default(autoincrement())
+  usuarioId       Int       @map("usuario_id")
+  restauranteId   Int       @map("restaurante_id")
+  tipo            TipoPonto
+  registradoEm    DateTime  @default(now()) @map("registrado_em")
+  dataOperacional DateTime  @map("data_operacional") @db.Date
+  observacoes     String?
+  criadoEm        DateTime  @default(now()) @map("criado_em")
+
+  usuario     Usuario     @relation(fields: [usuarioId], references: [id])
+  restaurante Restaurante @relation(fields: [restauranteId], references: [id])
+
+  @@index([restauranteId, registradoEm])
+  @@index([usuarioId, registradoEm])
+  @@index([restauranteId, dataOperacional])
+  @@index([usuarioId, dataOperacional])
+  @@map("registros_ponto")
 }
 
 model NavbarLayout {
