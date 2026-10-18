@@ -107,7 +107,7 @@ export class AuthService {
       if (!restauranteId || (currentRole !== UserRole.SUPER_ADMIN && restauranteId !== actor.restauranteId)) throw new UnauthorizedException('Restaurante fora do tenant autorizado');
       await this.prisma.restaurante.update({ where: { id: restauranteId }, data: { sessionTimeoutMinutes: timeoutMinutes } });
       await this.prisma.usuario.updateMany({
-        where: { restauranteId, id: { not: currentUserId } },
+        where: { restauranteId },
         data: { sessionToken: randomUUID() },
       });
     }

@@ -72,7 +72,7 @@ describe('AuthService session timeout', () => {
     expect(prisma.restaurante.update).not.toHaveBeenCalled();
   });
 
-  it('revokes other tenant sessions while preserving the actor session', async () => {
+  it('revokes every tenant session when the restaurant policy changes', async () => {
     const updateMany = jest.fn();
     const prisma = {
       usuario: {
@@ -88,7 +88,7 @@ describe('AuthService session timeout', () => {
     await service.updateSessionTimeout(1, 'ADMIN' as any, { timeoutMinutes: 45 });
 
     expect(updateMany).toHaveBeenCalledWith({
-      where: { restauranteId: 10, id: { not: 1 } },
+      where: { restauranteId: 10 },
       data: { sessionToken: expect.any(String) },
     });
     expect(prisma.usuario.update).not.toHaveBeenCalled();
