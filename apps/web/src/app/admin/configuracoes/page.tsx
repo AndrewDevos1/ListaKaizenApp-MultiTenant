@@ -56,6 +56,9 @@ export default function ConfiguracoesAdmin() {
   const [navbarStyle, setNavbarStyle] = useState<NavbarStyle>('current');
   const [savingNavbarStyle, setSavingNavbarStyle] = useState(false);
   const [sessionTimeout, setSessionTimeout] = useState(30);
+  const [sessionTimeoutSource, setSessionTimeoutSource] = useState('global');
+  const [restaurantes, setRestaurantes] = useState<{ id: number; nome: string }[]>([]);
+  const [selectedRestauranteId, setSelectedRestauranteId] = useState<number | ''>('');
   const [refreshing, setRefreshing] = useState(false);
   const [exportingItens, setExportingItens] = useState(false);
   const [exportingFornecedores, setExportingFornecedores] = useState(false);
@@ -75,13 +78,35 @@ export default function ConfiguracoesAdmin() {
   useEffect(() => {
     const theme = localStorage.getItem('theme') || 'light';
     setIsDarkMode(theme === 'dark');
-    const saved = localStorage.getItem('configSessionTimeout');
-    if (saved) setSessionTimeout(parseInt(saved, 10));
+    api.get('/v1/auth/session-timeout')
+      .then((response) => {
+        setSessionTimeout(response.data.timeoutMinutes);
+        setSessionTimeoutSource(response.data.userTimeoutMinutes !== null
+          ? 'usuário'
+          : (response.data.restauranteTimeoutMinutes === null ? 'global' : 'restaurante'));
+      })
+      .catch(() => undefined);
+    if (user?.role === 'SUPER_ADMIN') {
+      api.get('/restaurantes')
+        .then((response) => {
+          const values = response.data.map((item: { id: number; nome: string }) => ({ id: item.id, nome: item.nome }));
+          setRestaurantes(values);
+          if (values[0]) setSelectedRestauranteId(values[0].id);
+        })
+        .catch(() => undefined);
+    }
     // Load listas for phase 2 dropdown
     api.get('/v1/admin/import/listas')
       .then((r) => setListas(r.data))
       .catch(() => {/* silently ignore */});
-  }, []);
+  }, [user?.role]);
+
+  useEffect(() => {
+    if (user?.role !== 'SUPER_ADMIN' || selectedRestauranteId === '') return;
+    api.get('/v1/auth/session-timeout', { params: { restauranteId: selectedRestauranteId } })
+      .then(({ data }) => { setSessionTimeout(data.timeoutMinutes); setSessionTimeoutSource(data.restauranteTimeoutMinutes === null ? 'global' : 'restaurante'); })
+      .catch(() => undefined);
+  }, [user?.role, selectedRestauranteId]);
 
   useEffect(() => {
     if (!user) return;
@@ -113,9 +138,13 @@ export default function ConfiguracoesAdmin() {
     else document.documentElement.removeAttribute('data-theme');
   };
 
-  const handleSaveSession = () => {
-    localStorage.setItem('configSessionTimeout', sessionTimeout.toString());
-    success('Configuração salva', `Timeout de sessão definido para ${sessionTimeout} minutos`);
+  const handleSaveSession = async () => {
+    const restauranteId = user?.role === 'SUPER_ADMIN' ? selectedRestauranteId : user?.restauranteId;
+    if (!restauranteId) return;
+    const { data } = await api.put('/v1/auth/session-timeout', { timeoutMinutes: sessionTimeout, restauranteId });
+    setSessionTimeout(data.timeoutMinutes);
+    setSessionTimeoutSource(data.effectiveScope);
+    success('Configuração salva', `Timeout de sessão definido para ${sessionTimeout} minutos. Todas as sessões do tenant foram revogadas; faça login novamente para aplicar o novo prazo.`);
   };
 
   const handleNavbarStyleChange = async (style: NavbarStyle) => {
@@ -435,20 +464,24 @@ export default function ConfiguracoesAdmin() {
         <Card.Header><strong><FaClock className="me-2" />Timeout de Sessão</strong></Card.Header>
         <Card.Body>
           <p className="text-muted mb-3">
-            Define o tempo de inatividade antes de solicitar novo login.
+            Duração absoluta do JWT server-side. A sessão expira após o prazo efetivo, independentemente de atividade.
           </p>
+          {user?.role === 'SUPER_ADMIN' && <Form.Select className="mb-3" value={selectedRestauranteId} onChange={(e) => setSelectedRestauranteId(Number(e.target.value))}>
+            <option value="">Selecione um restaurante</option>
+            {restaurantes.map((restaurante) => <option key={restaurante.id} value={restaurante.id}>{restaurante.nome}</option>)}
+          </Form.Select>}
           <Form.Group className="mb-3">
             <Form.Label>Tempo de sessão</Form.Label>
-            <Form.Select value={sessionTimeout} onChange={(e) => setSessionTimeout(parseInt(e.target.value, 10))} style={{ maxWidth: 360 }}>
+             <Form.Select value={sessionTimeout} disabled={user?.role === 'SUPER_ADMIN' && selectedRestauranteId === ''} onChange={(e) => setSessionTimeout(parseInt(e.target.value, 10))} style={{ maxWidth: 360 }}>
               {SESSION_TIMEOUTS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
             </Form.Select>
             <Form.Text className="text-muted">
-              Após {sessionTimeout} minuto{sessionTimeout !== 1 ? 's' : ''} sem atividade, o login será encerrado.
+             Valor efetivo: {sessionTimeout} minuto{sessionTimeout !== 1 ? 's' : ''} ({sessionTimeoutSource}). Overrides de usuário têm precedência.
             </Form.Text>
           </Form.Group>
           <div className="d-flex gap-2">
-            <Button variant="primary" size="sm" onClick={handleSaveSession}>Salvar</Button>
-            <Button variant="outline-secondary" size="sm" onClick={() => { setSessionTimeout(30); localStorage.setItem('configSessionTimeout', '30'); success('Padrão restaurado', 'Timeout resetado para 30 minutos'); }}>
+            <Button variant="primary" size="sm" disabled={user?.role === 'SUPER_ADMIN' && selectedRestauranteId === ''} onClick={handleSaveSession}>Salvar</Button>
+            <Button variant="outline-secondary" size="sm" disabled={user?.role === 'SUPER_ADMIN' && selectedRestauranteId === ''} onClick={async () => { const restauranteId = user?.role === 'SUPER_ADMIN' ? selectedRestauranteId : user?.restauranteId; if (restauranteId) { const { data } = await api.put('/v1/auth/session-timeout', { timeoutMinutes: null, restauranteId }); setSessionTimeout(data.timeoutMinutes); setSessionTimeoutSource(data.restauranteTimeoutMinutes === null ? 'global' : 'restaurante'); } success('Padrão restaurado', 'Timeout herdado restaurado. Sessões atuais usam o prazo anterior. Os demais usuários do tenant foram desconectados; o ator permanece nesta sessão.'); }}>
               Resetar Padrão
             </Button>
           </div>

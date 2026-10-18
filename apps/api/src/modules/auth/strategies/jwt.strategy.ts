@@ -9,6 +9,7 @@ export interface JwtPayload {
   email: string;
   role: string;
   restauranteId: number | null;
+  sessionToken: string;
 }
 
 @Injectable()
@@ -29,7 +30,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       where: { id: payload.sub },
     });
 
-    if (!user || !user.ativo) {
+    if (!user || !user.ativo || !payload.sessionToken || user.sessionToken !== payload.sessionToken) {
       throw new UnauthorizedException('Usuário não encontrado ou inativo');
     }
 
