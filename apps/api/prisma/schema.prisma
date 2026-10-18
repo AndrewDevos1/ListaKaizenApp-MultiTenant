@@ -92,6 +92,11 @@ enum TipoClassificacaoAusencia {
   FOLGA
 }
 
+enum SituacaoAtestado {
+  ATIVO
+  CANCELADO
+}
+
 model Restaurante {
   id       Int      @id @default(autoincrement())
   nome     String
@@ -125,6 +130,7 @@ model Restaurante {
   escalasTrabalho          EscalaTrabalho[]
   lancamentosBancoHoras    LancamentoBancoHoras[]
   classificacoesAusencia   ClassificacaoAusencia[]
+  atestados               Atestado[]
 
   @@map("restaurantes")
 }
@@ -163,6 +169,8 @@ model Usuario {
   lancamentosBancoHorasFeitos  LancamentoBancoHoras[] @relation("LancamentoBancoHorasCriadoPor")
   classificacoesAusencia       ClassificacaoAusencia[] @relation("AusenciaUsuario")
   classificacoesAusenciaFeitas ClassificacaoAusencia[] @relation("AusenciaClassificadaPor")
+  atestados                    Atestado[] @relation("AtestadoUsuario")
+  atestadosCriados             Atestado[] @relation("AtestadoCriadoPor")
 
   @@map("usuarios")
 }
@@ -259,6 +267,27 @@ model ClassificacaoAusencia {
   @@unique([usuarioId, restauranteId, data])
   @@index([restauranteId, data])
   @@map("classificacoes_ausencia")
+}
+
+model Atestado {
+  id            Int             @id @default(autoincrement())
+  usuarioId     Int             @map("usuario_id")
+  restauranteId Int             @map("restaurante_id")
+  inicio        DateTime        @db.Date
+  fim           DateTime        @db.Date
+  motivo        String          @db.VarChar(500)
+  situacao      SituacaoAtestado @default(ATIVO)
+  criadoPorId   Int             @map("criado_por_id")
+  criadoEm      DateTime        @default(now()) @map("criado_em")
+  atualizadoEm  DateTime        @updatedAt @map("atualizado_em")
+
+  usuario     Usuario     @relation("AtestadoUsuario", fields: [usuarioId], references: [id])
+  restaurante Restaurante @relation(fields: [restauranteId], references: [id])
+  criadoPor   Usuario     @relation("AtestadoCriadoPor", fields: [criadoPorId], references: [id])
+
+  @@index([restauranteId, inicio])
+  @@index([usuarioId, inicio])
+  @@map("atestados")
 }
 
 model NavbarLayout {

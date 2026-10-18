@@ -21,6 +21,7 @@ import { PushModule } from './modules/push/push.module';
 import { ImportModule } from './modules/import/import.module';
 import { PontoModule } from './modules/ponto/ponto.module';
 import { AusenciasModule } from './modules/ausencias/ausencias.module';
+import { AtestadosModule } from './modules/atestados/atestados.module';
 
 @Module({
   imports: [
@@ -46,6 +47,7 @@ import { AusenciasModule } from './modules/ausencias/ausencias.module';
     ImportModule,
     PontoModule,
     AusenciasModule,
+    AtestadosModule,
   ],
 })
 export class AppModule {}
