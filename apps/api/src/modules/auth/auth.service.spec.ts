@@ -81,12 +81,14 @@ describe('AuthService session timeout', () => {
         updateMany,
       },
       restaurante: { update: jest.fn() },
+      $transaction: jest.fn().mockResolvedValue([]),
     } as any;
     const service = new AuthService(prisma, {} as JwtService, {} as any);
     jest.spyOn(service, 'getSessionTimeout').mockResolvedValue({} as any);
 
     await service.updateSessionTimeout(1, 'ADMIN' as any, { timeoutMinutes: 45 });
 
+    expect(prisma.$transaction).toHaveBeenCalled();
     expect(updateMany).toHaveBeenCalledWith({
       where: { restauranteId: 10 },
       data: { sessionToken: expect.any(String) },

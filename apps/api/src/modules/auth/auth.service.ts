@@ -96,20 +96,16 @@ export class AuthService {
       if (!target || (currentRole !== UserRole.ADMIN && currentRole !== UserRole.SUPER_ADMIN && dto.usuarioId !== currentUserId) || (currentRole !== UserRole.SUPER_ADMIN && target.restauranteId !== actor.restauranteId)) throw new UnauthorizedException('Usuário fora do tenant autorizado');
       await this.prisma.usuario.update({
         where: { id: dto.usuarioId },
-        data: {
-          sessionTimeoutMinutes: timeoutMinutes,
-          ...(dto.usuarioId === currentUserId ? {} : { sessionToken: randomUUID() }),
-        },
+        data: { sessionTimeoutMinutes: timeoutMinutes, sessionToken: randomUUID() },
       });
     } else {
       const restauranteId = dto.restauranteId ?? actor.restauranteId;
       if (currentRole !== UserRole.ADMIN && currentRole !== UserRole.SUPER_ADMIN) throw new UnauthorizedException('Apenas administradores podem alterar o timeout do restaurante');
       if (!restauranteId || (currentRole !== UserRole.SUPER_ADMIN && restauranteId !== actor.restauranteId)) throw new UnauthorizedException('Restaurante fora do tenant autorizado');
-      await this.prisma.restaurante.update({ where: { id: restauranteId }, data: { sessionTimeoutMinutes: timeoutMinutes } });
-      await this.prisma.usuario.updateMany({
-        where: { restauranteId },
-        data: { sessionToken: randomUUID() },
-      });
+      await this.prisma.$transaction([
+        this.prisma.restaurante.update({ where: { id: restauranteId }, data: { sessionTimeoutMinutes: timeoutMinutes } }),
+        this.prisma.usuario.updateMany({ where: { restauranteId }, data: { sessionToken: randomUUID() } }),
+      ]);
     }
     return this.getSessionTimeout(dto.usuarioId ?? currentUserId, dto.usuarioId ? undefined : (dto.restauranteId ?? actor.restauranteId ?? undefined));
   }
