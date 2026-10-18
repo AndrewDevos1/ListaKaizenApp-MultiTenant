@@ -48,7 +48,8 @@ for (const route of ['/admin/dashboard', '/collaborator/dashboard']) {
   if (sw.includes(`'${route}'`)) throw new Error(`Authenticated route must not be precached: ${route}`);
 }
 
-if (!sw.includes('cache.addAll(STATIC_ASSETS)')) throw new Error('Shell is not precached');
+if (!sw.includes('cache.addAll(SHELL_ASSETS)')) throw new Error('Shell is not precached');
+if (!sw.includes('OPTIONAL_ASSETS.map')) throw new Error('Optional assets are not isolated from shell install');
 if (!sw.includes("url.pathname.startsWith('/_next/static/')")) {
   throw new Error('Build chunks are not covered by the static asset cache path');
 }
@@ -60,6 +61,9 @@ if (!sw.includes("(!isDocumentRequest || !isPublicDocument)")) {
 }
 if (!sw.includes('return isPublicDocument')) {
   throw new Error('Offline document fallback is not limited to public documents');
+}
+if (!sw.includes(': Response.error()')) {
+  throw new Error('Protected documents retain an offline cache fallback');
 }
 for (const route of ['/admin/', '/collaborator/']) {
   if (sw.includes(`url.pathname.startsWith('${route}')`)) {

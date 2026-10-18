@@ -1,19 +1,15 @@
 const CACHE_PREFIX = 'kaizen-lists-';
 const CACHE_NAME = `${CACHE_PREFIX}v4`;
-const STATIC_ASSETS = [
-  '/',
-  '/login',
-  '/manifest.webmanifest',
-  '/icons/icon-192.png',
-  '/icons/icon-512.png',
-];
+const SHELL_ASSETS = ['/', '/login'];
+const OPTIONAL_ASSETS = ['/manifest.webmanifest', '/icons/icon-192.png', '/icons/icon-512.png'];
 
-// Install: pré-cache de assets estáticos
+// Install: shell público obrigatório; recursos auxiliares não bloqueiam a instalação.
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(STATIC_ASSETS);
-    })
+    caches.open(CACHE_NAME).then(async (cache) => {
+      await cache.addAll(SHELL_ASSETS);
+      await Promise.all(OPTIONAL_ASSETS.map((asset) => cache.add(asset).catch(() => undefined)));
+    }),
   );
   self.skipWaiting();
 });
@@ -101,7 +97,7 @@ self.addEventListener('fetch', (event) => {
         // Documentos usam o shell precacheado; dados autenticados nunca têm fallback offline.
         return isPublicDocument
           ? caches.match(event.request).then((cached) => cached || caches.match('/'))
-          : caches.match(event.request, { ignoreSearch: true });
+          : Response.error();
       })
   );
 });
