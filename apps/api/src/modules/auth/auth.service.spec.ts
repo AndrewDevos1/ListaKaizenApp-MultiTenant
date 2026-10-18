@@ -96,6 +96,28 @@ describe('AuthService session timeout', () => {
     expect(prisma.usuario.update).not.toHaveBeenCalled();
   });
 
+  it('revokes the actor session on individual override', async () => {
+    const update = jest.fn();
+    const prisma = {
+      usuario: {
+        findUnique: jest.fn()
+          .mockResolvedValueOnce({ restauranteId: 10 })
+          .mockResolvedValueOnce({ restauranteId: 10 })
+          .mockResolvedValueOnce({ sessionTimeoutMinutes: 45, restaurante: { sessionTimeoutMinutes: 30 } }),
+        update,
+      },
+    } as any;
+    const service = new AuthService(prisma, {} as JwtService, {} as any);
+    jest.spyOn(service, 'getSessionTimeout').mockResolvedValue({} as any);
+
+    await service.updateSessionTimeout(1, 'COLLABORATOR' as any, { usuarioId: 1, timeoutMinutes: 45 });
+
+    expect(update).toHaveBeenCalledWith({
+      where: { id: 1 },
+      data: { sessionTimeoutMinutes: 45, sessionToken: expect.any(String) },
+    });
+  });
+
   it('returns the configured target scope after an override update', async () => {
     const prisma = {
       usuario: {
