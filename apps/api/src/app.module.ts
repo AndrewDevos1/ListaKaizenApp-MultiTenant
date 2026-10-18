@@ -19,6 +19,7 @@ import { ConvitesModule } from './modules/convites/convites.module';
 import { LogsModule } from './modules/logs/logs.module';
 import { PushModule } from './modules/push/push.module';
 import { ImportModule } from './modules/import/import.module';
+import { PontoModule } from './modules/ponto/ponto.module';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { ImportModule } from './modules/import/import.module';
     LogsModule,
     PushModule,
     ImportModule,
+    PontoModule,
   ],
 })
 export class AppModule {}

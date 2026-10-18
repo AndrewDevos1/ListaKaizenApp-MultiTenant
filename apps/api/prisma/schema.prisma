@@ -47,6 +47,13 @@ enum StatusCotacao {
   FECHADA
 }
 
+enum TipoLancamentoBancoHoras {
+  AJUSTE_MANUAL
+  FOLGA_COMPENSATORIA
+  PAGAMENTO_HORAS
+  ATESTADO
+}
+
 enum StatusChecklist {
   ABERTO
   FINALIZADO
@@ -71,6 +78,13 @@ enum StatusPedido {
   PENDENTE
   APROVADO
   REJEITADO
+}
+
+enum TipoPonto {
+  ENTRADA
+  PAUSA
+  RETORNO
+  SAIDA
 }
 
 model Restaurante {
@@ -102,6 +116,9 @@ model Restaurante {
   popExecucoes   POPExecucao[]
   notificacoes   Notificacao[]
   conviteTokens  ConviteToken[]
+  registrosPonto RegistroPonto[]
+  escalasTrabalho EscalaTrabalho[]
+  lancamentosBancoHoras LancamentoBancoHoras[]
 
   @@map("restaurantes")
 }
@@ -133,8 +150,87 @@ model Usuario {
   recebimentosConfirmados      Recebimento[] @relation("RecebimentoConfirmadoPor")
   recebimentosAdministrativos  Recebimento[] @relation("RecebimentoConfirmadoAdmin")
   lotesConsolidadosAprovados   SubmissaoConsolidadaLote[] @relation("LoteConsolidadoAprovadoPor")
+  registrosPonto               RegistroPonto[]
+  escalasTrabalho              EscalaTrabalho[]
+  escalasTrabalhoCriadas       EscalaTrabalho[] @relation("EscalaTrabalhoCriadaPor")
+  lancamentosBancoHoras        LancamentoBancoHoras[] @relation("LancamentoBancoHorasUsuario")
+  lancamentosBancoHorasFeitos  LancamentoBancoHoras[] @relation("LancamentoBancoHorasCriadoPor")
 
   @@map("usuarios")
+}
+
+model RegistroPonto {
+  id              Int       @id @default(autoincrement())
+  usuarioId       Int       @map("usuario_id")
+  restauranteId   Int       @map("restaurante_id")
+  tipo            TipoPonto
+  registradoEm    DateTime  @default(now()) @map("registrado_em")
+  dataOperacional DateTime  @map("data_operacional") @db.Date
+  observacoes     String?
+  criadoEm        DateTime  @default(now()) @map("criado_em")
+
+  usuario     Usuario     @relation(fields: [usuarioId], references: [id])
+  restaurante Restaurante @relation(fields: [restauranteId], references: [id])
+
+  @@index([restauranteId, registradoEm])
+  @@index([usuarioId, registradoEm])
+  @@index([restauranteId, dataOperacional])
+  @@index([usuarioId, dataOperacional])
+  @@map("registros_ponto")
+}
+
+model EscalaTrabalho {
+  id             Int      @id @default(autoincrement())
+  usuarioId      Int      @map("usuario_id")
+  restauranteId  Int      @map("restaurante_id")
+  nome           String   @db.VarChar(120)
+  vigenciaInicio DateTime @map("vigencia_inicio") @db.Date
+  vigenciaFim    DateTime? @map("vigencia_fim") @db.Date
+  criadoPorId    Int      @map("criado_por_id")
+  criadoEm       DateTime @default(now()) @map("criado_em")
+  atualizadoEm   DateTime @updatedAt @map("atualizado_em")
+  dias           DiaEscalaTrabalho[]
+  usuario        Usuario @relation(fields: [usuarioId], references: [id])
+  restaurante    Restaurante @relation(fields: [restauranteId], references: [id])
+  criadoPor      Usuario @relation("EscalaTrabalhoCriadaPor", fields: [criadoPorId], references: [id])
+
+  @@index([restauranteId, usuarioId, vigenciaInicio])
+  @@map("escalas_trabalho")
+}
+
+model DiaEscalaTrabalho {
+  id                Int      @id @default(autoincrement())
+  escalaId          Int      @map("escala_id")
+  diaSemana         Int      @map("dia_semana")
+  trabalha          Boolean  @default(false)
+  entradaPrevista   String?  @map("entrada_prevista") @db.VarChar(5)
+  saidaPrevista     String?  @map("saida_prevista") @db.VarChar(5)
+  toleranciaMinutos Int      @default(0) @map("tolerancia_minutos")
+  escala            EscalaTrabalho @relation(fields: [escalaId], references: [id], onDelete: Cascade)
+
+  @@unique([escalaId, diaSemana])
+  @@map("dias_escala_trabalho")
+}
+
+model LancamentoBancoHoras {
+  id             Int                       @id @default(autoincrement())
+  usuarioId      Int                       @map("usuario_id")
+  restauranteId  Int                       @map("restaurante_id")
+  tipo           TipoLancamentoBancoHoras
+  minutosDelta   Int                       @map("minutos_delta")
+  dataReferencia DateTime                  @map("data_referencia") @db.Date
+  periodoInicio  DateTime?                 @map("periodo_inicio") @db.Date
+  periodoFim     DateTime?                 @map("periodo_fim") @db.Date
+  motivo         String
+  criadoPorId    Int                       @map("criado_por_id")
+  criadoEm       DateTime                  @default(now()) @map("criado_em")
+  usuario        Usuario                   @relation("LancamentoBancoHorasUsuario", fields: [usuarioId], references: [id])
+  restaurante    Restaurante                @relation(fields: [restauranteId], references: [id])
+  criadoPor      Usuario                   @relation("LancamentoBancoHorasCriadoPor", fields: [criadoPorId], references: [id])
+
+  @@index([usuarioId, dataReferencia])
+  @@index([restauranteId, dataReferencia])
+  @@map("lancamentos_banco_horas")
 }
 
 model NavbarLayout {
