@@ -47,8 +47,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const token = readStoredToken();
     const storedUser = readStoredUser();
-    setUser(token && storedUser ? storedUser : null);
-    setLoading(false);
+    if (!token || !storedUser) {
+      setUser(null);
+      setLoading(false);
+      return;
+    }
+
+    setUser(storedUser);
+    void api.get<AuthUser>('/v1/auth/profile')
+      .then(({ data }) => {
+        const refreshed = { ...storedUser, ...data };
+        const storage = localStorage.getItem('user') ? localStorage : sessionStorage;
+        storage.setItem('user', JSON.stringify(refreshed));
+        setUser(refreshed);
+      })
+      .catch(() => undefined)
+      .finally(() => setLoading(false));
   }, []);
 
   const login = useCallback(async (email: string, senha: string, manterConectado = false) => {

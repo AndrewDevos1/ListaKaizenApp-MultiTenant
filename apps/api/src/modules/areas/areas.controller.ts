@@ -17,8 +17,8 @@ import { UpdateAreaDto } from './dto/update-area.dto';
 import { SetColaboradoresDto } from './dto/set-colaboradores.dto';
 import { SetListasDto } from './dto/set-listas.dto';
 import { AtualizarEstoqueAreaDto } from './dto/atualizar-estoque-area.dto';
-import { CurrentUser, Roles, TenantId } from '../../common/decorators';
-import { RolesGuard, TenantGuard } from '../../common/guards';
+import { CurrentUser, Modulo, Roles, TenantId } from '../../common/decorators';
+import { ModuloGuard, RolesGuard, TenantGuard } from '../../common/guards';
 
 @ApiTags('Areas')
 @Controller('v1/areas')
@@ -41,6 +41,8 @@ export class AreasController {
   }
 
   @Get(':id/colaboradores')
+  @UseGuards(ModuloGuard)
+  @Modulo('moduloFuncionarios')
   @Roles('ADMIN' as any, 'SUPER_ADMIN' as any)
   @ApiOperation({ summary: 'Listar colaboradores da área' })
   getColaboradores(
@@ -51,6 +53,8 @@ export class AreasController {
   }
 
   @Post(':id/colaboradores')
+  @UseGuards(ModuloGuard)
+  @Modulo('moduloFuncionarios')
   @Roles('ADMIN' as any, 'SUPER_ADMIN' as any)
   @ApiOperation({ summary: 'Definir colaboradores da área (substitui todos)' })
   setColaboradores(
