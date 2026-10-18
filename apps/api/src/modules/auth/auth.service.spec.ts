@@ -6,9 +6,9 @@ import { AuthService } from './auth.service';
 jest.mock('bcrypt', () => ({ compare: jest.fn().mockResolvedValue(true) }));
 
 describe('AuthService session timeout', () => {
-  it('keeps session_token nullable in the additive migration', () => {
+  it('does not recreate the session_token column already present in the baseline schema', () => {
     const migration = readFileSync(join(process.cwd(), 'prisma/migrations/20261016000000_add_session_timeout/migration.sql'), 'utf8');
-    expect(migration).toContain('ALTER TABLE "usuarios" ADD COLUMN "session_token" TEXT;');
+    expect(migration).not.toMatch(/ADD\s+COLUMN\s+"session_token"/i);
     expect(migration).not.toMatch(/DROP\s+COLUMN\s+"session_token"/i);
   });
   const user = {
