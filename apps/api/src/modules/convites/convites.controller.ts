@@ -14,14 +14,15 @@ import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ConvitesService } from './convites.service';
 import { CreateConviteDto } from './dto/create-convite.dto';
-import { CurrentUser, Roles, TenantId } from '../../common/decorators';
-import { RolesGuard, TenantGuard } from '../../common/guards';
+import { CurrentUser, Modulo, Roles, TenantId } from '../../common/decorators';
+import { ModuloGuard, RolesGuard, TenantGuard } from '../../common/guards';
 
 // ─── Admin Controller ────────────────────────────────────────────────────────
 
 @ApiTags('Admin — Convites')
 @Controller('v1/admin/convites')
-@UseGuards(AuthGuard('jwt'), RolesGuard, TenantGuard)
+@Modulo('moduloFuncionarios')
+@UseGuards(AuthGuard('jwt'), RolesGuard, TenantGuard, ModuloGuard)
 @ApiBearerAuth()
 export class AdminConvitesController {
   constructor(private readonly convitesService: ConvitesService) {}

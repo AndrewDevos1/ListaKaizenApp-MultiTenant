@@ -33,7 +33,8 @@ import { VincularListaGrupoDto } from './dto/vincular-lista-grupo.dto';
 
 @ApiTags('Listas')
 @Controller('v1/listas')
-@UseGuards(AuthGuard('jwt'), RolesGuard, TenantGuard)
+@Modulo('moduloFuncionarios')
+@UseGuards(AuthGuard('jwt'), RolesGuard, TenantGuard, ModuloGuard)
 @ApiBearerAuth()
 export class ListasController {
   constructor(private listasService: ListasService) {}
