@@ -232,6 +232,16 @@ export class AuthService {
         role: user.role,
         restauranteId: user.restauranteId,
         avatarUrl: user.avatarUrl ?? null,
+        modulos: user.restauranteId
+          ? await this.prisma.restaurante.findUnique({
+              where: { id: user.restauranteId },
+              select: {
+                moduloPonto: true,
+                moduloFuncionarios: true,
+                moduloAlmoxarifadoEpi: true,
+              },
+            })
+          : null,
       },
     };
   }

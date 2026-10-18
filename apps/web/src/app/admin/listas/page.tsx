@@ -4,6 +4,7 @@ import { useState, useEffect, FormEvent, useRef } from 'react';
 import { Button, Modal, Form, Alert, Spinner, Dropdown } from 'react-bootstrap';
 import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
+import { useAuth } from '@/contexts/AuthContext';
 import styles from './Listas.module.css';
 import {
   FaPlus,
@@ -68,6 +69,9 @@ const normalizeText = (t: string) =>
   t.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
 export default function ListasPage() {
+  const { user } = useAuth();
+  const funcionariosEnabled =
+    user?.role === 'SUPER_ADMIN' || user?.modulos?.moduloFuncionarios !== false;
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -808,10 +812,12 @@ export default function ListasPage() {
                       Preencher Estoque
                     </Dropdown.Item>
                     <Dropdown.Divider />
-                    <Dropdown.Item onClick={() => abrirColabs(lista)}>
-                      <FaUsers className="me-2" />
-                      Colaboradores
-                    </Dropdown.Item>
+                    {funcionariosEnabled && (
+                      <Dropdown.Item onClick={() => abrirColabs(lista)}>
+                        <FaUsers className="me-2" />
+                        Colaboradores
+                      </Dropdown.Item>
+                    )}
                     <Dropdown.Item onClick={() => abrirVincularArea(lista)}>
                       <FaLink className="me-2" />
                       Vincular Área

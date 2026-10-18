@@ -20,8 +20,8 @@ import { AtualizarEstoqueDto } from './dto/atualizar-estoque.dto';
 import { UpdateItemRefDto } from './dto/update-item-ref.dto';
 import { AssignColaboradoresDto } from './dto/assign-colaboradores.dto';
 import { ImportCsvDto } from './dto/import-csv.dto';
-import { CurrentUser, Roles, TenantId } from '../../common/decorators';
-import { RolesGuard, TenantGuard } from '../../common/guards';
+import { CurrentUser, Modulo, Roles, TenantId } from '../../common/decorators';
+import { ModuloGuard, RolesGuard, TenantGuard } from '../../common/guards';
 import { AddItemByNomeDto } from './dto/add-item-by-nome.dto';
 import { UpdateMaeItemDto } from './dto/update-mae-item.dto';
 import { BulkImportNamesDto } from './dto/bulk-import-names.dto';
@@ -126,6 +126,8 @@ export class ListasController {
 
   // Colaboradores
   @Post(':id/colaboradores')
+  @UseGuards(ModuloGuard)
+  @Modulo('moduloFuncionarios')
   @Roles('ADMIN' as any, 'SUPER_ADMIN' as any)
   @ApiOperation({ summary: 'Adicionar colaborador à lista' })
   addColaborador(
@@ -141,6 +143,8 @@ export class ListasController {
   }
 
   @Delete(':id/colaboradores/:userId')
+  @UseGuards(ModuloGuard)
+  @Modulo('moduloFuncionarios')
   @Roles('ADMIN' as any, 'SUPER_ADMIN' as any)
   @ApiOperation({ summary: 'Remover colaborador da lista' })
   removeColaborador(
@@ -206,6 +210,8 @@ export class ListasController {
   }
 
   @Post(':id/assign')
+  @UseGuards(ModuloGuard)
+  @Modulo('moduloFuncionarios')
   @Roles('ADMIN' as any, 'SUPER_ADMIN' as any)
   @ApiOperation({ summary: 'Substituir todos os colaboradores da lista' })
   assign(

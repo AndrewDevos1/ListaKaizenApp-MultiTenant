@@ -23,6 +23,7 @@ import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagg
 import { RestaurantesService } from './restaurantes.service';
 import { CreateRestauranteDto } from './dto/create-restaurante.dto';
 import { UpdateRestauranteDto } from './dto/update-restaurante.dto';
+import { UpdateRestauranteModulosDto } from './dto/update-restaurante-modulos.dto';
 import { CurrentUser, Roles } from '../../common/decorators';
 import { RolesGuard } from '../../common/guards';
 
@@ -161,6 +162,16 @@ export class RestaurantesController {
       throw new BadRequestException('restauranteId inválido');
     }
     return this.restaurantesService.resetarSenhaUsuario(restauranteId, usuarioId);
+  }
+
+  @Put(':id/modulos')
+  @Roles('SUPER_ADMIN' as any)
+  @ApiOperation({ summary: 'Configurar módulos do restaurante (SUPER_ADMIN)' })
+  updateModulos(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateRestauranteModulosDto,
+  ) {
+    return this.restaurantesService.updateModulos(id, dto);
   }
 
   @Get(':id')

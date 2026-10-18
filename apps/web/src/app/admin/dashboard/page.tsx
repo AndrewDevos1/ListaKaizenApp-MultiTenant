@@ -30,6 +30,8 @@ interface DashboardData {
 
 export default function AdminDashboard() {
   const { user } = useAuth();
+  const funcionariosEnabled =
+    user?.role === 'SUPER_ADMIN' || user?.modulos?.moduloFuncionarios !== false;
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -44,7 +46,7 @@ export default function AdminDashboard() {
           api.get<Area[]>('/v1/areas'),
           api.get<Lista[]>('/v1/listas'),
           api.get<any[]>('/v1/admin/listas-rapidas'),
-          api.get<any[]>('/v1/admin/usuarios'),
+          funcionariosEnabled ? api.get<any[]>('/v1/admin/usuarios') : Promise.resolve({ data: [] }),
           api.get<any[]>('/v1/admin/submissoes'),
           api.get<any[]>('/v1/admin/checklists'),
         ]);
@@ -64,7 +66,7 @@ export default function AdminDashboard() {
       }
     };
     load();
-  }, []);
+  }, [funcionariosEnabled]);
 
   return (
     <div className={styles.dashboardWrapper}>
@@ -89,8 +91,8 @@ export default function AdminDashboard() {
           <div className={styles.errorBox}>{error}</div>
         ) : data ? (
           <>
-            <WidgetsPanel data={data} />
-            <QuickActions />
+            <WidgetsPanel data={data} funcionariosEnabled={funcionariosEnabled} />
+            <QuickActions funcionariosEnabled={funcionariosEnabled} />
             <ListsPanel listas={data.listas} />
           </>
         ) : null}
@@ -101,7 +103,13 @@ export default function AdminDashboard() {
 
 // ─── Widgets ──────────────────────────────────────────────────────────────────
 
-function WidgetsPanel({ data }: { data: DashboardData }) {
+function WidgetsPanel({
+  data,
+  funcionariosEnabled,
+}: {
+  data: DashboardData;
+  funcionariosEnabled: boolean;
+}) {
   const widgets = useMemo(
     () => [
       { id: 'itens',         title: 'Itens',            value: data.items,            icon: FaBoxes,          color: 'widgetBlue',   link: '/admin/items' },
@@ -110,9 +118,11 @@ function WidgetsPanel({ data }: { data: DashboardData }) {
       { id: 'listas-rapidas', title: 'Listas Rápidas',  value: data.listasRapidas,    icon: FaBolt,           color: 'widgetPurple', link: '/admin/listas-rapidas' },
       { id: 'submissoes',    title: 'Submissões',        value: data.submissoes,       icon: FaClipboardCheck, color: 'widgetOrange', link: '/admin/submissoes' },
       { id: 'checklists',    title: 'Checklist de Compras', value: data.checklists,    icon: FaTasks,          color: 'widgetTeal',   link: '/admin/checklists' },
-      { id: 'usuarios',      title: 'Usuários',          value: data.usuarios,         icon: FaUsers,          color: 'widgetRed',    link: '/admin/gerenciar-usuarios' },
+      ...(funcionariosEnabled
+        ? [{ id: 'usuarios', title: 'Usuários', value: data.usuarios, icon: FaUsers, color: 'widgetRed', link: '/admin/gerenciar-usuarios' }]
+        : []),
     ],
-    [data],
+    [data, funcionariosEnabled],
   );
 
   return (
@@ -145,7 +155,7 @@ function WidgetsPanel({ data }: { data: DashboardData }) {
 
 // ─── Quick Actions ────────────────────────────────────────────────────────────
 
-function QuickActions() {
+function QuickActions({ funcionariosEnabled }: { funcionariosEnabled: boolean }) {
   return (
     <div className={styles.quickActionsSection}>
       <h2 className={styles.sectionTitle}>Ações rápidas</h2>
@@ -165,9 +175,11 @@ function QuickActions() {
         <Link href="/admin/items" className={styles.actionButton}>
           <FaBoxes className={styles.actionIcon} /> Itens
         </Link>
-        <Link href="/admin/gerenciar-usuarios" className={styles.actionButton}>
-          <FaUsersCog className={styles.actionIcon} /> Usuários
-        </Link>
+        {funcionariosEnabled && (
+          <Link href="/admin/gerenciar-usuarios" className={styles.actionButton}>
+            <FaUsersCog className={styles.actionIcon} /> Usuários
+          </Link>
+        )}
         <Link href="/admin/checklists" className={styles.actionButton}>
           <FaTasks className={styles.actionIcon} /> Checklists
         </Link>

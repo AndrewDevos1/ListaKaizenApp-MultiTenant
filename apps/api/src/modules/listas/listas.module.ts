@@ -5,8 +5,10 @@ import {
   AdminGruposListasController,
 } from './listas.controller';
 import { ListasService } from './listas.service';
+import { RestaurantesModule } from '../restaurantes/restaurantes.module';
 
 @Module({
+  imports: [RestaurantesModule],
   controllers: [
     ListasController,
     CollaboratorListasController,

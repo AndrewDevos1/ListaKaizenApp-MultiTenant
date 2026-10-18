@@ -18,12 +18,13 @@ import { UpdateRoleDto } from './dto/update-role.dto';
 import { UpdateUsuarioDto } from './dto/update-usuario.dto';
 import { CriarUsuarioDto } from './dto/criar-usuario.dto';
 import { AlterarSenhaDto } from './dto/alterar-senha.dto';
-import { Roles, TenantId } from '../../common/decorators';
-import { RolesGuard, TenantGuard } from '../../common/guards';
+import { Modulo, Roles, TenantId } from '../../common/decorators';
+import { ModuloGuard, RolesGuard, TenantGuard } from '../../common/guards';
 
 @ApiTags('Admin — Usuarios')
 @Controller('v1/admin/usuarios')
-@UseGuards(AuthGuard('jwt'), RolesGuard, TenantGuard)
+@Modulo('moduloFuncionarios')
+@UseGuards(AuthGuard('jwt'), RolesGuard, TenantGuard, ModuloGuard)
 @ApiBearerAuth()
 export class UsuariosController {
   constructor(private usuariosService: UsuariosService) {}
