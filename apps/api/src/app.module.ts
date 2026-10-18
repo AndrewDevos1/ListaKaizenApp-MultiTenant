@@ -20,6 +20,7 @@ import { LogsModule } from './modules/logs/logs.module';
 import { PushModule } from './modules/push/push.module';
 import { ImportModule } from './modules/import/import.module';
 import { PontoModule } from './modules/ponto/ponto.module';
+import { AusenciasModule } from './modules/ausencias/ausencias.module';
 
 @Module({
   imports: [
@@ -44,6 +45,7 @@ import { PontoModule } from './modules/ponto/ponto.module';
     PushModule,
     ImportModule,
     PontoModule,
+    AusenciasModule,
   ],
 })
 export class AppModule {}

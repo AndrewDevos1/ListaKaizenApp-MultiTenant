@@ -557,6 +557,11 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
               href: '/admin/usuarios',
               icon: <FaUsersCog />,
               status: 'available' as const,
+            }, {
+              label: 'Faltas e folgas',
+              href: '/admin/ausencias',
+              icon: <FaClock />,
+              status: 'available' as const,
             }]
           : []),
         ...(user?.modulos?.moduloPonto

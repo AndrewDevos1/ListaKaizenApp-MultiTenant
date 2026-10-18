@@ -87,6 +87,11 @@ enum TipoPonto {
   SAIDA
 }
 
+enum TipoClassificacaoAusencia {
+  FALTA
+  FOLGA
+}
+
 model Restaurante {
   id       Int      @id @default(autoincrement())
   nome     String
@@ -116,9 +121,10 @@ model Restaurante {
   popExecucoes   POPExecucao[]
   notificacoes   Notificacao[]
   conviteTokens  ConviteToken[]
-  registrosPonto RegistroPonto[]
-  escalasTrabalho EscalaTrabalho[]
-  lancamentosBancoHoras LancamentoBancoHoras[]
+  registrosPonto           RegistroPonto[]
+  escalasTrabalho          EscalaTrabalho[]
+  lancamentosBancoHoras    LancamentoBancoHoras[]
+  classificacoesAusencia   ClassificacaoAusencia[]
 
   @@map("restaurantes")
 }
@@ -155,6 +161,8 @@ model Usuario {
   escalasTrabalhoCriadas       EscalaTrabalho[] @relation("EscalaTrabalhoCriadaPor")
   lancamentosBancoHoras        LancamentoBancoHoras[] @relation("LancamentoBancoHorasUsuario")
   lancamentosBancoHorasFeitos  LancamentoBancoHoras[] @relation("LancamentoBancoHorasCriadoPor")
+  classificacoesAusencia       ClassificacaoAusencia[] @relation("AusenciaUsuario")
+  classificacoesAusenciaFeitas ClassificacaoAusencia[] @relation("AusenciaClassificadaPor")
 
   @@map("usuarios")
 }
@@ -231,6 +239,26 @@ model LancamentoBancoHoras {
   @@index([usuarioId, dataReferencia])
   @@index([restauranteId, dataReferencia])
   @@map("lancamentos_banco_horas")
+}
+
+model ClassificacaoAusencia {
+  id                Int                      @id @default(autoincrement())
+  usuarioId         Int                      @map("usuario_id")
+  restauranteId     Int                      @map("restaurante_id")
+  data              DateTime                 @db.Date
+  tipo              TipoClassificacaoAusencia
+  motivo            String?
+  classificadoPorId Int                      @map("classificado_por_id")
+  criadoEm          DateTime                 @default(now()) @map("criado_em")
+  atualizadoEm      DateTime                 @updatedAt @map("atualizado_em")
+
+  usuario         Usuario     @relation("AusenciaUsuario", fields: [usuarioId], references: [id])
+  restaurante     Restaurante @relation(fields: [restauranteId], references: [id])
+  classificadoPor Usuario     @relation("AusenciaClassificadaPor", fields: [classificadoPorId], references: [id])
+
+  @@unique([usuarioId, restauranteId, data])
+  @@index([restauranteId, data])
+  @@map("classificacoes_ausencia")
 }
 
 model NavbarLayout {
@@ -690,6 +718,7 @@ enum TipoNotificacao {
   LISTA_RAPIDA_REJEITADA
   SUGESTAO_APROVADA
   SUGESTAO_REJEITADA
+  CLASSIFICACAO_FALTA
 }
 
 model Notificacao {
