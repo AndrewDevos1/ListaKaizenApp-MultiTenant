@@ -11,5 +11,10 @@ export default [
       parser: tsParser,
       parserOptions: { ecmaFeatures: { jsx: true } },
     },
+    rules: {
+      curly: ['warn', 'multi-line'],
+      eqeqeq: ['warn', 'always'],
+      'no-console': 'warn',
+    },
   },
 ];

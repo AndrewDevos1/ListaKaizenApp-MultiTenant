@@ -38,7 +38,6 @@
     "class-validator": "^0.14.1",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
-    "proxy-addr": "^2.0.8",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
     "shared": "*",
