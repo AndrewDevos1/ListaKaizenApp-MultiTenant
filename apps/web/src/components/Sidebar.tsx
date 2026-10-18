@@ -726,6 +726,10 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
         label: 'Meu Ponto',
         href: '/collaborator/ponto',
         icon: <FaClock />,
+      }, {
+        label: 'Espelho de Ponto',
+        href: '/collaborator/espelho-ponto',
+        icon: <FaHistory />,
       }],
     }] : []),
     {
