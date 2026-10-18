@@ -8,7 +8,7 @@ interface PWAInstallResult {
   state: PWAState;
   canShow: boolean;
   isIOS: boolean;
-  install: () => Promise<void>;
+  install: () => Promise<boolean>;
 }
 
 let deferredPrompt: BeforeInstallPromptEvent | null = null;
@@ -18,16 +18,31 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
 }
 
+export function capturePWAInstallPrompt(event: Event) {
+  const prompt = event as BeforeInstallPromptEvent;
+  if (typeof prompt.prompt !== 'function' || !prompt.userChoice) return false;
+  event.preventDefault();
+  deferredPrompt = prompt;
+  window.dispatchEvent(new Event('kaizen:pwa-installable'));
+  return true;
+}
+
 export function usePWAInstall(): PWAInstallResult {
   const [state, setState] = useState<PWAState>('loading');
 
   const isIOS =
     typeof navigator !== 'undefined' &&
-    /iphone|ipad|ipod/i.test(navigator.userAgent);
+    (/iphone|ipad|ipod/i.test(navigator.userAgent) ||
+      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1));
 
   const isSafari =
     typeof navigator !== 'undefined' &&
-    /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+    /safari/i.test(navigator.userAgent) &&
+    !/(crios|fxios|edgios)/i.test(navigator.userAgent);
+
+  const isIOSBrowser =
+    isIOS ||
+    (typeof navigator !== 'undefined' && /(?:crios|fxios|edgios)/i.test(navigator.userAgent));
 
   const isStandalone =
     typeof window !== 'undefined' &&
@@ -50,7 +65,7 @@ export function usePWAInstall(): PWAInstallResult {
     }
 
     // iOS Safari: mostra instruções manuais
-    if (isIOS && isSafari) {
+    if (isIOSBrowser) {
       console.log('[PWA Install] iOS Safari detectado. Botão VISÍVEL (instruções manuais).');
       setState('ios-safari');
       return;
@@ -61,14 +76,19 @@ export function usePWAInstall(): PWAInstallResult {
     let received = false;
 
     const handler = (e: Event) => {
-      e.preventDefault();
-      deferredPrompt = e as BeforeInstallPromptEvent;
+      if (!capturePWAInstallPrompt(e)) return;
       received = true;
       console.log("[PWA Install] Evento 'beforeinstallprompt' recebido! Botão VISÍVEL.");
       setState('installable');
     };
 
+    const installableHandler = () => {
+      received = true;
+      setState('installable');
+    };
     window.addEventListener('beforeinstallprompt', handler);
+    window.addEventListener('kaizen:pwa-installable', installableHandler);
+    if (deferredPrompt) installableHandler();
 
     const timer = setTimeout(() => {
       if (!received) {
@@ -86,6 +106,7 @@ export function usePWAInstall(): PWAInstallResult {
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handler);
+      window.removeEventListener('kaizen:pwa-installable', installableHandler);
       window.removeEventListener('appinstalled', installedHandler);
       clearTimeout(timer);
     };
@@ -94,14 +115,19 @@ export function usePWAInstall(): PWAInstallResult {
 
   const install = async () => {
     if (state === 'installable' && deferredPrompt) {
-      await deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      console.log('[PWA Install] Resultado do prompt:', outcome);
-      if (outcome === 'accepted') {
-        setState('installed');
-      }
+      const prompt = deferredPrompt;
       deferredPrompt = null;
+      try {
+        await prompt.prompt();
+        const { outcome } = await prompt.userChoice;
+        console.log('[PWA Install] Resultado do prompt:', outcome);
+        if (outcome === 'accepted') setState('installed');
+        return outcome === 'accepted';
+      } catch (error) {
+        console.warn('[PWA Install] Falha ao abrir prompt:', error);
+      }
     }
+    return false;
   };
 
   const canShow = state === 'installable' || state === 'ios-safari';

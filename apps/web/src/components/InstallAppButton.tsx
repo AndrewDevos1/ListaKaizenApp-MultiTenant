@@ -18,8 +18,9 @@ export default function InstallAppButton() {
       setShowIOSModal(true);
       return;
     }
-    await install();
-    success('Aplicativo instalado', 'Kaizen Lists foi adicionado à sua tela inicial');
+    if (await install()) {
+      success('Aplicativo instalado', 'Kaizen Lists foi adicionado à sua tela inicial');
+    }
   };
 
   return (

@@ -2,14 +2,14 @@ import type { MetadataRoute } from 'next';
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'Kaizen Lists',
+    name: 'Kaizen - Lista de Compras',
     short_name: 'Kaizen',
-    description: 'Sistema de gestão de estoque multi-tenant',
+    description: 'Sistema de gerenciamento de listas e estoque',
     start_url: '/',
     display: 'standalone',
     background_color: '#ffffff',
-    theme_color: '#000000',
-    orientation: 'any',
+    theme_color: '#000080',
+    orientation: 'portrait-primary',
     categories: ['business', 'productivity'],
     icons: [
       {
