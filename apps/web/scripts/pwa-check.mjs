@@ -59,11 +59,17 @@ if (!sw.includes("const isPublicDocument = url.pathname === '/' || url.pathname 
 if (!sw.includes("(!isDocumentRequest || !isPublicDocument)")) {
   throw new Error('Protected documents are not excluded from cache handling');
 }
-if (!sw.includes('return isPublicDocument')) {
+if (!sw.includes('if (!isPublicDocument) return Response.error()')) {
   throw new Error('Offline document fallback is not limited to public documents');
 }
-if (!sw.includes(': Response.error()')) {
+if (!sw.includes('if (!isPublicDocument) return Response.error()')) {
   throw new Error('Protected documents retain an offline cache fallback');
+}
+if (!sw.includes("const publicShell = url.pathname === '/login' ? '/login' : '/'")) {
+  throw new Error('Public fallback does not normalize the login query string');
+}
+if (!sw.includes('return caches.match(publicShell)')) {
+  throw new Error('Public fallback does not serve the normalized shell cache');
 }
 for (const route of ['/admin/', '/collaborator/']) {
   if (sw.includes(`url.pathname.startsWith('${route}')`)) {

@@ -95,9 +95,9 @@ self.addEventListener('fetch', (event) => {
       })
       .catch(() => {
         // Documentos usam o shell precacheado; dados autenticados nunca têm fallback offline.
-        return isPublicDocument
-          ? caches.match(event.request).then((cached) => cached || caches.match('/'))
-          : Response.error();
+        if (!isPublicDocument) return Response.error();
+        const publicShell = url.pathname === '/login' ? '/login' : '/';
+        return caches.match(publicShell);
       })
   );
 });
