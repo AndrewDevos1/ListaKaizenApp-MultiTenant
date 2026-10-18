@@ -6,6 +6,14 @@ import { CriarEscalaDto } from './dto/criar-escala.dto';
 export class EscalaService {
   constructor(private readonly prisma: PrismaService) {}
 
+  listar(restauranteId: number, usuarioId?: number) {
+    return this.prisma.escalaTrabalho.findMany({
+      where: { restauranteId, ...(usuarioId ? { usuarioId } : {}) },
+      include: { usuario: { select: { id: true, nome: true } }, dias: { orderBy: { diaSemana: 'asc' } } },
+      orderBy: [{ usuarioId: 'asc' }, { vigenciaInicio: 'desc' }],
+    });
+  }
+
   async criar(restauranteId: number, adminId: number, dto: CriarEscalaDto) {
     const inicio = parseData(dto.vigenciaInicio);
     const fim = dto.vigenciaFim ? parseData(dto.vigenciaFim) : undefined;

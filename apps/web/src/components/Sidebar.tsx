@@ -559,6 +559,14 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
               status: 'available' as const,
             }]
           : []),
+        ...(user?.modulos?.moduloPonto
+          ? [{
+              label: 'Ponto e banco de horas',
+              href: '/admin/ponto',
+              icon: <FaClock />,
+              status: 'available' as const,
+            }]
+          : []),
         {
           label: 'Estatísticas',
           href: '/admin/estatisticas',
