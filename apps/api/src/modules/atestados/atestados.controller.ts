@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, ParseIntPipe, Post, Put, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, ForbiddenException, Get, Param, ParseIntPipe, Post, Put, Query, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser, Modulo, Roles, TenantId } from '../../common/decorators';
@@ -16,8 +16,13 @@ import { ListarAtestadosDto } from './dto/listar-atestados.dto';
 @ApiBearerAuth()
 export class AtestadosController {
   constructor(private readonly service: AtestadosService) {}
-  @Get() listar(@TenantId() restauranteId: number, @Query() filters: ListarAtestadosDto) { return this.service.listar(restauranteId, filters); }
-  @Post() criar(@TenantId() restauranteId: number, @CurrentUser('id') adminId: number, @Body() dto: CriarAtestadoDto) { return this.service.criar(restauranteId, adminId, dto); }
-  @Put(':id/decidir') @ApiOperation({ summary: 'Aprovar ou rejeitar atestado; abono passa a compor o espelho' }) decidir(@TenantId() restauranteId: number, @CurrentUser('id') adminId: number, @Param('id', ParseIntPipe) id: number, @Body() dto: DecidirAtestadoDto) { return this.service.decidir(restauranteId, adminId, id, dto); }
-  @Put(':id/cancelar') cancelar(@TenantId() restauranteId: number, @CurrentUser('id') adminId: number, @Param('id', ParseIntPipe) id: number) { return this.service.cancelar(restauranteId, adminId, id); }
+  @Get() listar(@TenantId() restauranteId: number | null, @Query() filters: ListarAtestadosDto) { return this.service.listar(this.requireTenant(restauranteId), filters); }
+  @Post() criar(@TenantId() restauranteId: number | null, @CurrentUser('id') adminId: number, @Body() dto: CriarAtestadoDto) { return this.service.criar(this.requireTenant(restauranteId), adminId, dto); }
+  @Put(':id/decidir') @ApiOperation({ summary: 'Aprovar ou rejeitar atestado; abono passa a compor o espelho' }) decidir(@TenantId() restauranteId: number | null, @CurrentUser('id') adminId: number, @Param('id', ParseIntPipe) id: number, @Body() dto: DecidirAtestadoDto) { return this.service.decidir(this.requireTenant(restauranteId), adminId, id, dto); }
+  @Put(':id/cancelar') cancelar(@TenantId() restauranteId: number | null, @CurrentUser('id') adminId: number, @Param('id', ParseIntPipe) id: number) { return this.service.cancelar(this.requireTenant(restauranteId), adminId, id); }
+
+  private requireTenant(restauranteId: number | null) {
+    if (restauranteId == null) throw new ForbiddenException('Selecione um restaurante');
+    return restauranteId;
+  }
 }

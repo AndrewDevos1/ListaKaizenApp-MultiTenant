@@ -562,7 +562,8 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
               href: '/admin/ausencias',
               icon: <FaClock />,
               status: 'available' as const,
-            }, {
+            },
+            {
               label: 'Atestados',
               href: '/admin/atestados',
               icon: <FaClock />,

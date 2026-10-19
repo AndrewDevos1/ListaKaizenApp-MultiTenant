@@ -287,7 +287,8 @@ model Atestado {
   decididoPorId   Int?             @map("decidido_por_id")
   decididoEm      DateTime?        @map("decidido_em")
   observacaoDecisao String?        @map("observacao_decisao") @db.VarChar(500)
-  criadoEm        DateTime         @default(now()) @map("criado_em")
+  solicitacaoHash  String          @unique @map("solicitacao_hash") @db.VarChar(64)
+  criadoEm         DateTime         @default(now()) @map("criado_em")
   atualizadoEm    DateTime         @updatedAt @map("atualizado_em")
 
   usuario     Usuario     @relation("AtestadoUsuario", fields: [usuarioId], references: [id])

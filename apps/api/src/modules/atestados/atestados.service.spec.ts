@@ -1,4 +1,5 @@
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, ConflictException } from '@nestjs/common';
+
 import { AtestadosService } from './atestados.service';
 
 describe('AtestadosService', () => {
@@ -31,6 +32,16 @@ describe('AtestadosService', () => {
     expect(prisma.appLog.create).toHaveBeenCalledWith(expect.objectContaining({
       data: expect.objectContaining({ acao: 'ATESTADO_CRIADO', entidade: 'Atestado', entidadeId: 9, restauranteId: 3, usuarioId: 10 }),
     }));
+  });
+
+  it('converte criação concorrente duplicada em conflito', async () => {
+    prisma.usuario.findFirst.mockResolvedValue({ id: 7 });
+    prisma.atestado.create.mockRejectedValue({ code: 'P2002' });
+
+    await expect(service.criar(3, 10, {
+      usuarioId: 7, inicio: '2026-10-18', fim: '2026-10-20', motivo: 'Atestado médico',
+    })).rejects.toBeInstanceOf(ConflictException);
+    expect(prisma.appLog.create).not.toHaveBeenCalled();
   });
 
   it('rejeita período invertido', async () => {
@@ -73,5 +84,13 @@ describe('AtestadosService', () => {
     expect(prisma.appLog.create).toHaveBeenCalledWith(expect.objectContaining({
       data: expect.objectContaining({ acao: 'ATESTADO_CANCELADO', entidadeId: 9, restauranteId: 3, usuarioId: 10 }),
     }));
+  });
+
+  it('rejeita cancelamento perdido para concorrência sem auditar', async () => {
+    prisma.atestado.findFirst.mockResolvedValue({ id: 9, situacao: 'ATIVO' });
+    prisma.atestado.updateMany.mockResolvedValue({ count: 0 });
+
+    await expect(service.cancelar(3, 10, 9)).rejects.toBeInstanceOf(BadRequestException);
+    expect(prisma.appLog.create).not.toHaveBeenCalled();
   });
 });
