@@ -17,6 +17,7 @@ import {
   FaSearch,
   FaUserShield,
   FaUser,
+  FaUsers,
   FaUserEdit,
 
   FaQuestionCircle,
@@ -88,6 +89,7 @@ function createEmptyNavbarCustomizationState(): NavbarCustomizationState {
     [UserRole.ADMIN]: { hiddenGroupIds: [], hiddenItemKeys: [] },
     [UserRole.COLLABORATOR]: { hiddenGroupIds: [], hiddenItemKeys: [] },
     [UserRole.SUPPLIER]: { hiddenGroupIds: [], hiddenItemKeys: [] },
+    [UserRole.CONTADOR]: { hiddenGroupIds: [], hiddenItemKeys: [] },
   };
 }
 
@@ -832,6 +834,17 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
     },
   ], []);
 
+  const contadorMenuGroups = useMemo<MenuGroup[]>(() => [{
+    id: 'contador',
+    label: 'CONTADOR',
+    items: [{
+      label: 'Funcionários',
+      href: '/contador',
+      icon: <FaUsers />,
+      status: 'available',
+    }],
+  }], []);
+
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const profileMenuGroup = useMemo<MenuGroup>(() => ({
     id: 'perfil',
@@ -860,7 +873,9 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
           ? adminMenuGroups
           : effectiveRole === UserRole.SUPPLIER
             ? supplierMenuGroups
-            : collaboratorMenuGroups
+            : effectiveRole === UserRole.CONTADOR
+              ? contadorMenuGroups
+              : collaboratorMenuGroups
       ),
       profileMenuGroup,
     ],
@@ -969,7 +984,9 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
         ? 'Administrador'
         : effectiveRole === UserRole.SUPPLIER
           ? 'Fornecedor'
-          : 'Colaborador';
+          : effectiveRole === UserRole.CONTADOR
+            ? 'Contador'
+            : 'Colaborador';
 
   return (
     <div

@@ -22,6 +22,7 @@ import { ImportModule } from './modules/import/import.module';
 import { PontoModule } from './modules/ponto/ponto.module';
 import { AusenciasModule } from './modules/ausencias/ausencias.module';
 import { AtestadosModule } from './modules/atestados/atestados.module';
+import { ContadorModule } from './modules/contador/contador.module';
 
 @Module({
   imports: [
@@ -48,6 +49,7 @@ import { AtestadosModule } from './modules/atestados/atestados.module';
     PontoModule,
     AusenciasModule,
     AtestadosModule,
+    ContadorModule,
   ],
 })
 export class AppModule {}

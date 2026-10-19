@@ -13,5 +13,6 @@ import { BancoHorasService } from './banco-horas.service';
   imports: [RestaurantesModule],
   controllers: [PontoController, EscalaController, EspelhoController, BancoHorasController],
   providers: [PontoService, EscalaService, EspelhoService, BancoHorasService],
+  exports: [EspelhoService],
 })
 export class PontoModule {}
