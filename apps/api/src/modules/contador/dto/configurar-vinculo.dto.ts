@@ -1,4 +1,4 @@
-import { IsArray, IsEnum, IsInt, IsNotEmpty, ArrayNotEmpty } from 'class-validator';
+import { IsArray, IsEnum, IsInt, IsNotEmpty } from 'class-validator';
 import { ContadorPermissao } from '@prisma/client';
 
 export class ConfigurarVinculoDto {
@@ -11,7 +11,6 @@ export class ConfigurarVinculoDto {
   funcionarioId!: number;
 
   @IsArray()
-  @ArrayNotEmpty()
   @IsEnum(ContadorPermissao, { each: true })
   permissoes!: ContadorPermissao[];
 }

@@ -18,7 +18,11 @@ export class ContadorService {
   async funcionarios(contadorId: number, restauranteId: number) {
     await this.requireAnyPermission(contadorId, restauranteId);
     const rows = await this.prisma.contadorFuncionario.findMany({
-      where: { contadorId, restauranteId },
+      where: {
+        contadorId,
+        restauranteId,
+        funcionario: { restauranteId, role: 'COLLABORATOR', ativo: true },
+      },
       select: { funcionario: { select: { id: true, nome: true, email: true, ativo: true } } },
       orderBy: { funcionario: { nome: 'asc' } },
     });
@@ -28,7 +32,13 @@ export class ContadorService {
   async ponto(contadorId: number, restauranteId: number, funcionarioId: number, inicio?: Date, fim?: Date) {
     await this.requireFuncionario(contadorId, restauranteId, funcionarioId, ContadorPermissao.PONTO);
     return this.prisma.registroPonto.findMany({
-      where: { usuarioId: funcionarioId, restauranteId, ...(inicio || fim ? { dataOperacional: { ...(inicio ? { gte: inicio } : {}), ...(fim ? { lte: fim } : {}) } } : {}) },
+      where: {
+        usuarioId: funcionarioId,
+        restauranteId,
+        ...(inicio || fim
+          ? { dataOperacional: { ...(inicio ? { gte: inicioDoDiaUtc(inicio) } : {}), ...(fim ? { lte: fimDoDiaUtc(fim) } : {}) } }
+          : {}),
+      },
       orderBy: [{ registradoEm: 'desc' }, { id: 'desc' }],
     });
   }
@@ -58,14 +68,31 @@ export class ContadorService {
     });
     if (!admin) throw new ForbiddenException('Administrador fora do restaurante');
     const contador = await this.prisma.usuario.findFirst({ where: { id: contadorId, role: 'CONTADOR', ativo: true } });
-    const funcionario = await this.prisma.usuario.findFirst({ where: { id: funcionarioId, restauranteId, role: 'COLLABORATOR', ativo: true } });
-    if (!contador || !funcionario) throw new NotFoundException('Usuário não encontrado no escopo permitido');
-    const acesso = await this.prisma.contadorRestaurante.upsert({ where: { contadorId_restauranteId: { contadorId, restauranteId } }, create: { contadorId, restauranteId, permissoes }, update: { permissoes } });
-    return this.prisma.contadorFuncionario.upsert({ where: { contadorId_restauranteId_funcionarioId: { contadorId, restauranteId, funcionarioId } }, create: { contadorId, restauranteId, funcionarioId }, update: {}, include: { contador: { select: { id: true, nome: true } }, funcionario: { select: { id: true, nome: true } } } });
+    if (!contador) throw new NotFoundException('Usuário não encontrado no escopo permitido');
+    if (permissoes.length > 0) {
+      const funcionario = await this.prisma.usuario.findFirst({ where: { id: funcionarioId, restauranteId, role: 'COLLABORATOR', ativo: true } });
+      if (!funcionario) throw new NotFoundException('Usuário não encontrado no escopo permitido');
+    }
+    return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      await tx.contadorRestaurante.upsert({ where: { contadorId_restauranteId: { contadorId, restauranteId } }, create: { contadorId, restauranteId, permissoes }, update: { permissoes } });
+      if (permissoes.length === 0) {
+        await tx.contadorFuncionario.deleteMany({ where: { contadorId, restauranteId } });
+        return { contadorId, restauranteId, permissoes };
+      }
+      return tx.contadorFuncionario.upsert({ where: { contadorId_restauranteId_funcionarioId: { contadorId, restauranteId, funcionarioId } }, create: { contadorId, restauranteId, funcionarioId }, update: {}, include: { contador: { select: { id: true, nome: true } }, funcionario: { select: { id: true, nome: true } } } });
+    });
   }
 
   private async requireFuncionario(contadorId: number, restauranteId: number, funcionarioId: number, permissao: ContadorPermissao) {
-    const vínculo = await this.prisma.contadorFuncionario.findFirst({ where: { contadorId, restauranteId, funcionarioId, contador: { contadoresRestaurantes: { some: { restauranteId, permissoes: { has: permissao } } } } } });
+    const vínculo = await this.prisma.contadorFuncionario.findFirst({
+      where: {
+        contadorId,
+        restauranteId,
+        funcionarioId,
+        funcionario: { restauranteId, role: 'COLLABORATOR', ativo: true },
+        contador: { contadoresRestaurantes: { some: { restauranteId, permissoes: { has: permissao } } } },
+      },
+    });
     if (!vínculo) throw new ForbiddenException('Funcionário não autorizado para este contador');
     return vínculo;
   }
@@ -83,4 +110,12 @@ export class ContadorService {
     if (!acesso) throw new ForbiddenException('Contador sem permissão neste restaurante');
     return acesso;
   }
+}
+
+function inicioDoDiaUtc(data: Date) {
+  return new Date(Date.UTC(data.getUTCFullYear(), data.getUTCMonth(), data.getUTCDate()));
+}
+
+function fimDoDiaUtc(data: Date) {
+  return new Date(inicioDoDiaUtc(data).valueOf() + 86_400_000 - 1);
 }
