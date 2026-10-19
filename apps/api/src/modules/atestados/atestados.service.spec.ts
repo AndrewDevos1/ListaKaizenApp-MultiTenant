@@ -4,7 +4,7 @@ import { AtestadosService } from './atestados.service';
 describe('AtestadosService', () => {
   const prisma = {
     usuario: { findFirst: jest.fn() },
-    atestado: { create: jest.fn(), findMany: jest.fn(), findFirst: jest.fn(), update: jest.fn() },
+    atestado: { create: jest.fn(), findMany: jest.fn(), findFirst: jest.fn(), update: jest.fn(), updateMany: jest.fn() },
     appLog: { create: jest.fn() },
     $transaction: jest.fn(),
   } as any;
@@ -54,9 +54,20 @@ describe('AtestadosService', () => {
     })).rejects.toBeInstanceOf(BadRequestException);
   });
 
+  it('aprova pendente com auditoria e não permite redecisão', async () => {
+    prisma.atestado.findFirst.mockResolvedValueOnce({ id: 9 }).mockResolvedValueOnce({ id: 9, situacao: 'APROVADO' });
+    prisma.atestado.updateMany.mockResolvedValue({ count: 1 });
+    await expect(service.decidir(3, 10, 9, { situacao: 'APROVADO' })).resolves.toEqual({ id: 9, situacao: 'APROVADO' });
+    expect(prisma.atestado.updateMany).toHaveBeenCalledWith(expect.objectContaining({ where: { id: 9, restauranteId: 3, situacao: 'PENDENTE' } }));
+    expect(prisma.appLog.create).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ acao: 'ATESTADO_APROVADO', entidadeId: 9, restauranteId: 3, usuarioId: 10 }) }));
+    prisma.atestado.findFirst.mockResolvedValue({ id: 9 });
+    prisma.atestado.updateMany.mockResolvedValueOnce({ count: 0 });
+    await expect(service.decidir(3, 10, 9, { situacao: 'REJEITADO' })).rejects.toBeInstanceOf(BadRequestException);
+  });
+
   it('cancela somente atestado do restaurante e audita', async () => {
-    prisma.atestado.findFirst.mockResolvedValue({ id: 9, situacao: 'ATIVO' });
-    prisma.atestado.update.mockResolvedValue({ id: 9, situacao: 'CANCELADO' });
+    prisma.atestado.findFirst.mockResolvedValueOnce({ id: 9, situacao: 'ATIVO' }).mockResolvedValueOnce({ id: 9, situacao: 'CANCELADO' });
+    prisma.atestado.updateMany.mockResolvedValue({ count: 1 });
     await expect(service.cancelar(3, 10, 9)).resolves.toEqual({ id: 9, situacao: 'CANCELADO' });
     expect(prisma.atestado.findFirst).toHaveBeenCalledWith({ where: { id: 9, restauranteId: 3 }, select: { id: true, situacao: true } });
     expect(prisma.appLog.create).toHaveBeenCalledWith(expect.objectContaining({

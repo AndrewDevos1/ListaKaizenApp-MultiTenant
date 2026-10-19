@@ -94,6 +94,9 @@ enum TipoClassificacaoAusencia {
 
 enum SituacaoAtestado {
   ATIVO
+  PENDENTE
+  APROVADO
+  REJEITADO
   CANCELADO
 }
 
@@ -171,6 +174,7 @@ model Usuario {
   classificacoesAusenciaFeitas ClassificacaoAusencia[] @relation("AusenciaClassificadaPor")
   atestados                    Atestado[] @relation("AtestadoUsuario")
   atestadosCriados             Atestado[] @relation("AtestadoCriadoPor")
+  atestadosDecididos           Atestado[] @relation("AtestadoDecididoPor")
 
   @@map("usuarios")
 }
@@ -273,17 +277,23 @@ model Atestado {
   id            Int             @id @default(autoincrement())
   usuarioId     Int             @map("usuario_id")
   restauranteId Int             @map("restaurante_id")
-  inicio        DateTime        @db.Date
-  fim           DateTime        @db.Date
-  motivo        String          @db.VarChar(500)
-  situacao      SituacaoAtestado @default(ATIVO)
-  criadoPorId   Int             @map("criado_por_id")
-  criadoEm      DateTime        @default(now()) @map("criado_em")
-  atualizadoEm  DateTime        @updatedAt @map("atualizado_em")
+  inicio          DateTime         @db.Date
+  fim             DateTime         @db.Date
+  horaInicio      String?          @map("hora_inicio") @db.VarChar(5)
+  horaFim         String?          @map("hora_fim") @db.VarChar(5)
+  motivo          String           @db.VarChar(500)
+  situacao        SituacaoAtestado @default(PENDENTE)
+  criadoPorId     Int              @map("criado_por_id")
+  decididoPorId   Int?             @map("decidido_por_id")
+  decididoEm      DateTime?        @map("decidido_em")
+  observacaoDecisao String?        @map("observacao_decisao") @db.VarChar(500)
+  criadoEm        DateTime         @default(now()) @map("criado_em")
+  atualizadoEm    DateTime         @updatedAt @map("atualizado_em")
 
   usuario     Usuario     @relation("AtestadoUsuario", fields: [usuarioId], references: [id])
   restaurante Restaurante @relation(fields: [restauranteId], references: [id])
   criadoPor   Usuario     @relation("AtestadoCriadoPor", fields: [criadoPorId], references: [id])
+  decididoPor Usuario?    @relation("AtestadoDecididoPor", fields: [decididoPorId], references: [id])
 
   @@index([restauranteId, inicio])
   @@index([usuarioId, inicio])

@@ -1,19 +1,25 @@
-# Issue #6 — estratégia compatível e rollback
+# Issue #6 — abono de atestados e rollback
 
-## Decisão aplicada
-- `PAGAMENTO_HORAS` permanece inalterado no enum e nos registros históricos.
-- `ATESTADO` continua categoria distinta disponível no enum do banco de horas, mas este fluxo não cria lançamentos.
-- Atestados são registros próprios, auditados e isolados por restaurante.
+## Regra aplicada
+- `PAGAMENTO_HORAS` e todos os lançamentos históricos permanecem inalterados.
+- Atestado nasce `PENDENTE`; somente `APROVADO` abona no espelho mensal.
+- O abono é a interseção entre escala vigente, período do atestado e horário parcial informado.
+- Batidas reais são preservadas; o abono só cobre minutos previstos, limitado ao turno. Não cria crédito positivo artificial.
+- Rejeitado ou cancelado não abona. Consulta do espelho não grava lançamentos nem altera dados.
 
-## Rollback da migration `20261018040000_add_atestados`
-Em banco validado e após interromper o uso do endpoint, executar:
+## Migração
+`20261019050000_approve_atestados` é aditiva: novos estados, campos de período parcial e decisão/auditoria. Não altera `lancamentos_banco_horas`.
+
+## Rollback
+Não execute rollback seletivo em banco compartilhado sem backup e validação. Para ambiente descartável, após interromper o endpoint:
 
 ```sql
-DROP TABLE "atestados";
-DROP TYPE "SituacaoAtestado";
+ALTER TABLE "atestados" DROP CONSTRAINT "atestados_horas_check";
+ALTER TABLE "atestados" DROP CONSTRAINT "atestados_decidido_por_id_fkey";
+ALTER TABLE "atestados" DROP COLUMN "hora_inicio", DROP COLUMN "hora_fim", DROP COLUMN "decidido_por_id", DROP COLUMN "decidido_em", DROP COLUMN "observacao_decisao";
 ```
 
-A migration é aditiva: não altera nem converte `lancamentos_banco_horas`; rollback não toca `PAGAMENTO_HORAS` nem dados históricos.
+Valores adicionados a enum PostgreSQL não são removidos em rollback operacional. Não tocar em `PAGAMENTO_HORAS`, `ATESTADO`, nem histórico.
 
-## Decisão pendente
-Definir se dias cobertos por atestado reduzem horas previstas, contam como crédito, ficam neutros, ou usam política por escala. Até aprovação, espelho e banco de horas não sofrem lançamento automático.
+## Conformidade
+A implementação é parametrizada pela política aprovada; validação jurídica, convenção coletiva e regras locais permanecem gate de produção. Referência legal: CLT, art. 473, Lei 605/1949 e regras de banco de horas aplicáveis ao contrato.
