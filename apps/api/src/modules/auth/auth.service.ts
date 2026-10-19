@@ -38,6 +38,7 @@ export class AuthService {
       [UserRole.ADMIN]: { hiddenGroupIds: [], hiddenItemKeys: [] },
       [UserRole.COLLABORATOR]: { hiddenGroupIds: [], hiddenItemKeys: [] },
       [UserRole.SUPPLIER]: { hiddenGroupIds: [], hiddenItemKeys: [] },
+      [UserRole.CONTADOR]: { hiddenGroupIds: [], hiddenItemKeys: [] },
     };
   }
 

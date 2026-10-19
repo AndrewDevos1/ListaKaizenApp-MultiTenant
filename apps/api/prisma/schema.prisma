@@ -12,6 +12,14 @@ enum UserRole {
   ADMIN
   COLLABORATOR
   SUPPLIER
+  CONTADOR
+}
+
+enum ContadorPermissao {
+  PONTO
+  DOCUMENTOS
+  EPI
+  ALMOXARIFADO
 }
 
 enum StatusListaRapida {
@@ -134,6 +142,8 @@ model Restaurante {
   lancamentosBancoHoras    LancamentoBancoHoras[]
   classificacoesAusencia   ClassificacaoAusencia[]
   atestados               Atestado[]
+  contadores               ContadorRestaurante[]
+  contadorVinculos          ContadorFuncionario[]
 
   @@map("restaurantes")
 }
@@ -175,6 +185,9 @@ model Usuario {
   atestados                    Atestado[] @relation("AtestadoUsuario")
   atestadosCriados             Atestado[] @relation("AtestadoCriadoPor")
   atestadosDecididos           Atestado[] @relation("AtestadoDecididoPor")
+  contadoresRestaurantes       ContadorRestaurante[] @relation("ContadorUsuario")
+  contadorVinculosFuncionarios ContadorFuncionario[] @relation("ContadorVinculo")
+  funcionariosVinculados       ContadorFuncionario[] @relation("FuncionarioVinculo")
 
   @@map("usuarios")
 }
@@ -299,6 +312,37 @@ model Atestado {
   @@index([restauranteId, inicio])
   @@index([usuarioId, inicio])
   @@map("atestados")
+}
+
+model ContadorRestaurante {
+  id           Int              @id @default(autoincrement())
+  contadorId   Int              @map("contador_id")
+  restauranteId Int             @map("restaurante_id")
+  permissoes   ContadorPermissao[] @default([])
+  criadoEm     DateTime         @default(now()) @map("criado_em")
+
+  contador     Usuario          @relation("ContadorUsuario", fields: [contadorId], references: [id], onDelete: Cascade)
+  restaurante  Restaurante      @relation(fields: [restauranteId], references: [id], onDelete: Cascade)
+  @@unique([contadorId, restauranteId])
+  @@index([restauranteId])
+  @@map("contadores_restaurantes")
+}
+
+model ContadorFuncionario {
+  id             Int                @id @default(autoincrement())
+  contadorId     Int                @map("contador_id")
+  restauranteId  Int                @map("restaurante_id")
+  funcionarioId  Int                @map("funcionario_id")
+  criadoEm       DateTime           @default(now()) @map("criado_em")
+
+  contador       Usuario            @relation("ContadorVinculo", fields: [contadorId], references: [id], onDelete: Cascade)
+  restaurante    Restaurante        @relation(fields: [restauranteId], references: [id], onDelete: Cascade)
+  funcionario    Usuario            @relation("FuncionarioVinculo", fields: [funcionarioId], references: [id], onDelete: Cascade)
+
+  @@unique([contadorId, restauranteId, funcionarioId])
+  @@index([contadorId, restauranteId])
+  @@index([funcionarioId, restauranteId])
+  @@map("contador_funcionarios")
 }
 
 model NavbarLayout {
