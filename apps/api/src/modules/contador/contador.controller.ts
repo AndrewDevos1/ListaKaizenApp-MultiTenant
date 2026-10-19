@@ -1,13 +1,13 @@
 import { BadRequestException, Controller, Get, Param, ParseIntPipe, Query, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { CurrentUser, Roles, TenantId } from '../../common/decorators';
-import { RolesGuard, TenantGuard } from '../../common/guards';
+import { CurrentUser, Modulo, Roles, TenantId } from '../../common/decorators';
+import { ModuloGuard, RolesGuard, TenantGuard } from '../../common/guards';
 import { ContadorService } from './contador.service';
 
 @ApiTags('Contador')
 @Controller('v1/contador')
-@UseGuards(AuthGuard('jwt'), RolesGuard, TenantGuard)
+@UseGuards(AuthGuard('jwt'), RolesGuard, TenantGuard, ModuloGuard)
 @Roles('CONTADOR' as any)
 @ApiBearerAuth()
 export class ContadorController {
@@ -19,11 +19,13 @@ export class ContadorController {
   }
 
   @Get('funcionarios')
+  @Modulo('moduloFuncionarios')
   funcionarios(@CurrentUser('id') contadorId: number, @TenantId() restauranteId: number) {
     return this.service.funcionarios(contadorId, restauranteId);
   }
 
   @Get('funcionarios/:funcionarioId/ponto')
+  @Modulo('moduloPonto')
   ponto(
     @CurrentUser('id') contadorId: number,
     @TenantId() restauranteId: number,
@@ -38,6 +40,7 @@ export class ContadorController {
   }
 
   @Get('funcionarios/:funcionarioId/espelho')
+  @Modulo('moduloPonto')
   espelho(
     @CurrentUser('id') contadorId: number,
     @TenantId() restauranteId: number,
@@ -48,6 +51,7 @@ export class ContadorController {
   }
 
   @Get('funcionarios/:funcionarioId/documentos')
+  @Modulo('moduloFuncionarios')
   documentos(
     @CurrentUser('id') contadorId: number,
     @TenantId() restauranteId: number,

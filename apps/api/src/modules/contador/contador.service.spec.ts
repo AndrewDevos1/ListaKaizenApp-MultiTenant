@@ -35,4 +35,14 @@ describe('ContadorService', () => {
   it('não permite administrador configurar outro restaurante', async () => {
     await expect(service.configurarVinculo(2, 10, 7, 99, [])).rejects.toBeInstanceOf(ForbiddenException);
   });
+
+  it('permite super administrador configurar vínculo sem restaurante próprio', async () => {
+    prisma.usuario.findFirst
+      .mockResolvedValueOnce({ id: 1, role: 'SUPER_ADMIN' })
+      .mockResolvedValueOnce({ id: 7, role: 'CONTADOR', ativo: true })
+      .mockResolvedValueOnce({ id: 99, role: 'COLLABORATOR', ativo: true });
+    prisma.contadorRestaurante.upsert.mockResolvedValue({});
+    prisma.contadorFuncionario.upsert.mockResolvedValue({});
+    await expect(service.configurarVinculo(1, 10, 7, 99, ['PONTO'] as any)).resolves.toBeDefined();
+  });
 });

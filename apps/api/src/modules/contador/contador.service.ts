@@ -49,7 +49,13 @@ export class ContadorService {
   }
 
   async configurarVinculo(adminId: number, restauranteId: number, contadorId: number, funcionarioId: number, permissoes: ContadorPermissao[]) {
-    const admin = await this.prisma.usuario.findFirst({ where: { id: adminId, restauranteId, role: { in: ['ADMIN', 'SUPER_ADMIN'] } } });
+    const admin = await this.prisma.usuario.findFirst({
+      where: {
+        id: adminId,
+        role: { in: ['ADMIN', 'SUPER_ADMIN'] },
+        OR: [{ role: 'SUPER_ADMIN' }, { role: 'ADMIN', restauranteId }],
+      },
+    });
     if (!admin) throw new ForbiddenException('Administrador fora do restaurante');
     const contador = await this.prisma.usuario.findFirst({ where: { id: contadorId, role: 'CONTADOR', ativo: true } });
     const funcionario = await this.prisma.usuario.findFirst({ where: { id: funcionarioId, restauranteId, role: 'COLLABORATOR', ativo: true } });
