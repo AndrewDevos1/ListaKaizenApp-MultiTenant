@@ -92,6 +92,14 @@ enum TipoClassificacaoAusencia {
   FOLGA
 }
 
+enum SituacaoAtestado {
+  ATIVO
+  PENDENTE
+  APROVADO
+  REJEITADO
+  CANCELADO
+}
+
 model Restaurante {
   id       Int      @id @default(autoincrement())
   nome     String
@@ -125,6 +133,7 @@ model Restaurante {
   escalasTrabalho          EscalaTrabalho[]
   lancamentosBancoHoras    LancamentoBancoHoras[]
   classificacoesAusencia   ClassificacaoAusencia[]
+  atestados               Atestado[]
 
   @@map("restaurantes")
 }
@@ -163,6 +172,9 @@ model Usuario {
   lancamentosBancoHorasFeitos  LancamentoBancoHoras[] @relation("LancamentoBancoHorasCriadoPor")
   classificacoesAusencia       ClassificacaoAusencia[] @relation("AusenciaUsuario")
   classificacoesAusenciaFeitas ClassificacaoAusencia[] @relation("AusenciaClassificadaPor")
+  atestados                    Atestado[] @relation("AtestadoUsuario")
+  atestadosCriados             Atestado[] @relation("AtestadoCriadoPor")
+  atestadosDecididos           Atestado[] @relation("AtestadoDecididoPor")
 
   @@map("usuarios")
 }
@@ -259,6 +271,34 @@ model ClassificacaoAusencia {
   @@unique([usuarioId, restauranteId, data])
   @@index([restauranteId, data])
   @@map("classificacoes_ausencia")
+}
+
+model Atestado {
+  id            Int             @id @default(autoincrement())
+  usuarioId     Int             @map("usuario_id")
+  restauranteId Int             @map("restaurante_id")
+  inicio          DateTime         @db.Date
+  fim             DateTime         @db.Date
+  horaInicio      String?          @map("hora_inicio") @db.VarChar(5)
+  horaFim         String?          @map("hora_fim") @db.VarChar(5)
+  motivo          String           @db.VarChar(500)
+  situacao        SituacaoAtestado @default(PENDENTE)
+  criadoPorId     Int              @map("criado_por_id")
+  decididoPorId   Int?             @map("decidido_por_id")
+  decididoEm      DateTime?        @map("decidido_em")
+  observacaoDecisao String?        @map("observacao_decisao") @db.VarChar(500)
+  solicitacaoHash  String          @unique @map("solicitacao_hash") @db.VarChar(64)
+  criadoEm         DateTime         @default(now()) @map("criado_em")
+  atualizadoEm    DateTime         @updatedAt @map("atualizado_em")
+
+  usuario     Usuario     @relation("AtestadoUsuario", fields: [usuarioId], references: [id])
+  restaurante Restaurante @relation(fields: [restauranteId], references: [id])
+  criadoPor   Usuario     @relation("AtestadoCriadoPor", fields: [criadoPorId], references: [id])
+  decididoPor Usuario?    @relation("AtestadoDecididoPor", fields: [decididoPorId], references: [id])
+
+  @@index([restauranteId, inicio])
+  @@index([usuarioId, inicio])
+  @@map("atestados")
 }
 
 model NavbarLayout {
