@@ -1,0 +1,862 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  ADMIN
+  COLLABORATOR
+  SUPPLIER
+  CONTADOR
+}
+
+enum ContadorPermissao {
+  PONTO
+  DOCUMENTOS
+  EPI
+  ALMOXARIFADO
+}
+
+enum StatusListaRapida {
+  RASCUNHO
+  PENDENTE
+  APROVADO
+  REJEITADO
+  ARQUIVADO
+}
+
+enum StatusSugestao {
+  PENDENTE
+  APROVADO
+  REJEITADO
+}
+
+enum TipoPOP {
+  ABERTURA
+  FECHAMENTO
+  LIMPEZA
+  OPERACIONAL
+  PERSONALIZADO
+}
+
+enum StatusPOPExecucao {
+  EM_ANDAMENTO
+  CONCLUIDO
+  CANCELADO
+}
+
+enum StatusCotacao {
+  ABERTA
+  FECHADA
+}
+
+enum TipoLancamentoBancoHoras {
+  AJUSTE_MANUAL
+  FOLGA_COMPENSATORIA
+  PAGAMENTO_HORAS
+  ATESTADO
+}
+
+enum StatusChecklist {
+  ABERTO
+  FINALIZADO
+}
+
+enum StatusSubmissao {
+  PENDENTE
+  APROVADO
+  REJEITADO
+  PARCIAL
+  ARQUIVADO
+}
+
+enum StatusLoteConsolidado {
+  AGUARDANDO_SUBLISTAS
+  PRONTO_PARA_APROVAR
+  APROVADO_PARCIAL
+  APROVADO_COMPLETO
+}
+
+enum StatusPedido {
+  PENDENTE
+  APROVADO
+  REJEITADO
+}
+
+enum TipoPonto {
+  ENTRADA
+  PAUSA
+  RETORNO
+  SAIDA
+}
+
+enum TipoClassificacaoAusencia {
+  FALTA
+  FOLGA
+}
+
+enum SituacaoAtestado {
+  ATIVO
+  PENDENTE
+  APROVADO
+  REJEITADO
+  CANCELADO
+}
+
+model Restaurante {
+  id       Int      @id @default(autoincrement())
+  nome     String
+  cnpj     String?  @unique
+  ativo                 Boolean  @default(true)
+  moduloPonto           Boolean  @default(false) @map("modulo_ponto")
+  moduloFuncionarios    Boolean  @default(true) @map("modulo_funcionarios")
+  moduloAlmoxarifadoEpi Boolean  @default(true) @map("modulo_almoxarifado_epi")
+  criadoEm              DateTime @default(now()) @map("criado_em")
+
+  // ponytail: ponto starts opt-in; enable per tenant during rollout.
+
+  usuarios       Usuario[]
+  items          Item[]
+  areas          Area[]
+  listas         Lista[]
+  listaGrupos    ListaGrupo[]
+  submissoes     Submissao[]
+  lotesConsolidados SubmissaoConsolidadaLote[]
+  fornecedores   Fornecedor[]
+  cotacoes       Cotacao[]
+  checklists     Checklist[]
+  recebimentos   Recebimento[]
+  listaRapidas   ListaRapida[]
+  sugestoes      SugestaoItem[]
+  popTemplates   POPTemplate[]
+  popExecucoes   POPExecucao[]
+  notificacoes   Notificacao[]
+  conviteTokens  ConviteToken[]
+  registrosPonto           RegistroPonto[]
+  escalasTrabalho          EscalaTrabalho[]
+  lancamentosBancoHoras    LancamentoBancoHoras[]
+  classificacoesAusencia   ClassificacaoAusencia[]
+  atestados               Atestado[]
+  contadores               ContadorRestaurante[]
+  contadorVinculos          ContadorFuncionario[]
+
+  @@map("restaurantes")
+}
+
+model Usuario {
+  id            Int       @id @default(autoincrement())
+  nome          String
+  email         String    @unique
+  username      String?   @unique
+  senha         String
+  role          UserRole  @default(COLLABORATOR)
+  aprovado      Boolean   @default(false)
+  ativo         Boolean   @default(true)
+  restauranteId Int?      @map("restaurante_id")
+  sessionToken  String?   @map("session_token")
+  avatarUrl     String?   @map("avatar_url")
+  criadoEm      DateTime  @default(now()) @map("criado_em")
+
+  restaurante       Restaurante?       @relation(fields: [restauranteId], references: [id])
+  listas            ListaColaborador[]
+  submissoes        Submissao[]
+  areas             AreaColaborador[]
+  listaRapidas      ListaRapida[]
+  sugestoes         SugestaoItem[]
+  popExecucoes      POPExecucao[]
+  notificacoes      Notificacao[]
+  pushSubscriptions PushSubscription[]
+  navbarStyle       UsuarioNavbarEstilo?
+  recebimentosConfirmados      Recebimento[] @relation("RecebimentoConfirmadoPor")
+  recebimentosAdministrativos  Recebimento[] @relation("RecebimentoConfirmadoAdmin")
+  lotesConsolidadosAprovados   SubmissaoConsolidadaLote[] @relation("LoteConsolidadoAprovadoPor")
+  registrosPonto               RegistroPonto[]
+  escalasTrabalho              EscalaTrabalho[]
+  escalasTrabalhoCriadas       EscalaTrabalho[] @relation("EscalaTrabalhoCriadaPor")
+  lancamentosBancoHoras        LancamentoBancoHoras[] @relation("LancamentoBancoHorasUsuario")
+  lancamentosBancoHorasFeitos  LancamentoBancoHoras[] @relation("LancamentoBancoHorasCriadoPor")
+  classificacoesAusencia       ClassificacaoAusencia[] @relation("AusenciaUsuario")
+  classificacoesAusenciaFeitas ClassificacaoAusencia[] @relation("AusenciaClassificadaPor")
+  atestados                    Atestado[] @relation("AtestadoUsuario")
+  atestadosCriados             Atestado[] @relation("AtestadoCriadoPor")
+  atestadosDecididos           Atestado[] @relation("AtestadoDecididoPor")
+  contadoresRestaurantes       ContadorRestaurante[] @relation("ContadorUsuario")
+  contadorVinculosFuncionarios ContadorFuncionario[] @relation("ContadorVinculo")
+  funcionariosVinculados       ContadorFuncionario[] @relation("FuncionarioVinculo")
+
+  @@map("usuarios")
+}
+
+model RegistroPonto {
+  id              Int       @id @default(autoincrement())
+  usuarioId       Int       @map("usuario_id")
+  restauranteId   Int       @map("restaurante_id")
+  tipo            TipoPonto
+  registradoEm    DateTime  @default(now()) @map("registrado_em")
+  dataOperacional DateTime  @map("data_operacional") @db.Date
+  observacoes     String?
+  criadoEm        DateTime  @default(now()) @map("criado_em")
+
+  usuario     Usuario     @relation(fields: [usuarioId], references: [id])
+  restaurante Restaurante @relation(fields: [restauranteId], references: [id])
+
+  @@index([restauranteId, registradoEm])
+  @@index([usuarioId, registradoEm])
+  @@index([restauranteId, dataOperacional])
+  @@index([usuarioId, dataOperacional])
+  @@map("registros_ponto")
+}
+
+model EscalaTrabalho {
+  id             Int      @id @default(autoincrement())
+  usuarioId      Int      @map("usuario_id")
+  restauranteId  Int      @map("restaurante_id")
+  nome           String   @db.VarChar(120)
+  vigenciaInicio DateTime @map("vigencia_inicio") @db.Date
+  vigenciaFim    DateTime? @map("vigencia_fim") @db.Date
+  criadoPorId    Int      @map("criado_por_id")
+  criadoEm       DateTime @default(now()) @map("criado_em")
+  atualizadoEm   DateTime @updatedAt @map("atualizado_em")
+  dias           DiaEscalaTrabalho[]
+  usuario        Usuario @relation(fields: [usuarioId], references: [id])
+  restaurante    Restaurante @relation(fields: [restauranteId], references: [id])
+  criadoPor      Usuario @relation("EscalaTrabalhoCriadaPor", fields: [criadoPorId], references: [id])
+
+  @@index([restauranteId, usuarioId, vigenciaInicio])
+  @@map("escalas_trabalho")
+}
+
+model DiaEscalaTrabalho {
+  id                Int      @id @default(autoincrement())
+  escalaId          Int      @map("escala_id")
+  diaSemana         Int      @map("dia_semana")
+  trabalha          Boolean  @default(false)
+  entradaPrevista   String?  @map("entrada_prevista") @db.VarChar(5)
+  saidaPrevista     String?  @map("saida_prevista") @db.VarChar(5)
+  toleranciaMinutos Int      @default(0) @map("tolerancia_minutos")
+  escala            EscalaTrabalho @relation(fields: [escalaId], references: [id], onDelete: Cascade)
+
+  @@unique([escalaId, diaSemana])
+  @@map("dias_escala_trabalho")
+}
+
+model LancamentoBancoHoras {
+  id             Int                       @id @default(autoincrement())
+  usuarioId      Int                       @map("usuario_id")
+  restauranteId  Int                       @map("restaurante_id")
+  tipo           TipoLancamentoBancoHoras
+  minutosDelta   Int                       @map("minutos_delta")
+  dataReferencia DateTime                  @map("data_referencia") @db.Date
+  periodoInicio  DateTime?                 @map("periodo_inicio") @db.Date
+  periodoFim     DateTime?                 @map("periodo_fim") @db.Date
+  motivo         String
+  criadoPorId    Int                       @map("criado_por_id")
+  criadoEm       DateTime                  @default(now()) @map("criado_em")
+  usuario        Usuario                   @relation("LancamentoBancoHorasUsuario", fields: [usuarioId], references: [id])
+  restaurante    Restaurante                @relation(fields: [restauranteId], references: [id])
+  criadoPor      Usuario                   @relation("LancamentoBancoHorasCriadoPor", fields: [criadoPorId], references: [id])
+
+  @@index([usuarioId, dataReferencia])
+  @@index([restauranteId, dataReferencia])
+  @@map("lancamentos_banco_horas")
+}
+
+model ClassificacaoAusencia {
+  id                Int                      @id @default(autoincrement())
+  usuarioId         Int                      @map("usuario_id")
+  restauranteId     Int                      @map("restaurante_id")
+  data              DateTime                 @db.Date
+  tipo              TipoClassificacaoAusencia
+  motivo            String?
+  classificadoPorId Int                      @map("classificado_por_id")
+  criadoEm          DateTime                 @default(now()) @map("criado_em")
+  atualizadoEm      DateTime                 @updatedAt @map("atualizado_em")
+
+  usuario         Usuario     @relation("AusenciaUsuario", fields: [usuarioId], references: [id])
+  restaurante     Restaurante @relation(fields: [restauranteId], references: [id])
+  classificadoPor Usuario     @relation("AusenciaClassificadaPor", fields: [classificadoPorId], references: [id])
+
+  @@unique([usuarioId, restauranteId, data])
+  @@index([restauranteId, data])
+  @@map("classificacoes_ausencia")
+}
+
+model Atestado {
+  id            Int             @id @default(autoincrement())
+  usuarioId     Int             @map("usuario_id")
+  restauranteId Int             @map("restaurante_id")
+  inicio          DateTime         @db.Date
+  fim             DateTime         @db.Date
+  horaInicio      String?          @map("hora_inicio") @db.VarChar(5)
+  horaFim         String?          @map("hora_fim") @db.VarChar(5)
+  motivo          String           @db.VarChar(500)
+  situacao        SituacaoAtestado @default(PENDENTE)
+  criadoPorId     Int              @map("criado_por_id")
+  decididoPorId   Int?             @map("decidido_por_id")
+  decididoEm      DateTime?        @map("decidido_em")
+  observacaoDecisao String?        @map("observacao_decisao") @db.VarChar(500)
+  solicitacaoHash  String          @unique @map("solicitacao_hash") @db.VarChar(64)
+  criadoEm         DateTime         @default(now()) @map("criado_em")
+  atualizadoEm    DateTime         @updatedAt @map("atualizado_em")
+
+  usuario     Usuario     @relation("AtestadoUsuario", fields: [usuarioId], references: [id])
+  restaurante Restaurante @relation(fields: [restauranteId], references: [id])
+  criadoPor   Usuario     @relation("AtestadoCriadoPor", fields: [criadoPorId], references: [id])
+  decididoPor Usuario?    @relation("AtestadoDecididoPor", fields: [decididoPorId], references: [id])
+
+  @@index([restauranteId, inicio])
+  @@index([usuarioId, inicio])
+  @@map("atestados")
+}
+
+model ContadorRestaurante {
+  id           Int              @id @default(autoincrement())
+  contadorId   Int              @map("contador_id")
+  restauranteId Int             @map("restaurante_id")
+  permissoes   ContadorPermissao[] @default([])
+  criadoEm     DateTime         @default(now()) @map("criado_em")
+
+  contador     Usuario          @relation("ContadorUsuario", fields: [contadorId], references: [id], onDelete: Cascade)
+  restaurante  Restaurante      @relation(fields: [restauranteId], references: [id], onDelete: Cascade)
+  @@unique([contadorId, restauranteId])
+  @@index([restauranteId])
+  @@map("contadores_restaurantes")
+}
+
+model ContadorFuncionario {
+  id             Int                @id @default(autoincrement())
+  contadorId     Int                @map("contador_id")
+  restauranteId  Int                @map("restaurante_id")
+  funcionarioId  Int                @map("funcionario_id")
+  criadoEm       DateTime           @default(now()) @map("criado_em")
+
+  contador       Usuario            @relation("ContadorVinculo", fields: [contadorId], references: [id], onDelete: Cascade)
+  restaurante    Restaurante        @relation(fields: [restauranteId], references: [id], onDelete: Cascade)
+  funcionario    Usuario            @relation("FuncionarioVinculo", fields: [funcionarioId], references: [id], onDelete: Cascade)
+
+  @@unique([contadorId, restauranteId, funcionarioId])
+  @@index([contadorId, restauranteId])
+  @@index([funcionarioId, restauranteId])
+  @@map("contador_funcionarios")
+}
+
+model NavbarLayout {
+  role           UserRole @id
+  hiddenGroupIds String[] @default([]) @map("hidden_group_ids")
+  hiddenItemKeys String[] @default([]) @map("hidden_item_keys")
+  criadoEm       DateTime @default(now()) @map("criado_em")
+  atualizadoEm   DateTime @updatedAt @map("atualizado_em")
+
+  @@map("navbar_layouts")
+}
+
+model UsuarioNavbarEstilo {
+  usuarioId    Int      @id @map("usuario_id")
+  style        String   @default("current")
+  criadoEm     DateTime @default(now()) @map("criado_em")
+  atualizadoEm DateTime @updatedAt @map("atualizado_em")
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@map("usuario_navbar_estilos")
+}
+
+model Item {
+  id            Int      @id @default(autoincrement())
+  nome          String
+  unidadeMedida String   @map("unidade_medida")
+  ativo         Boolean  @default(true)
+  restauranteId Int      @map("restaurante_id")
+  criadoEm      DateTime @default(now()) @map("criado_em")
+
+  restaurante  Restaurante   @relation(fields: [restauranteId], references: [id])
+  fornecedor   Fornecedor?   @relation(fields: [fornecedorId], references: [id])
+  fornecedorId Int?          @map("fornecedor_id")
+  listasRef       ListaItemRef[]
+  pedidos         Pedido[]
+  cotacaoItens    CotacaoItem[]
+  checklistItens  ChecklistItem[]
+  listaRapidaItens ListaRapidaItem[]
+  sugestoesCriadas SugestaoItem[]
+
+  @@map("itens")
+}
+
+model Area {
+  id            Int      @id @default(autoincrement())
+  nome          String
+  restauranteId Int      @map("restaurante_id")
+  criadoEm      DateTime @default(now()) @map("criado_em")
+
+  restaurante   Restaurante       @relation(fields: [restauranteId], references: [id])
+  colaboradores AreaColaborador[]
+  listas        Lista[]
+
+  @@map("areas")
+}
+
+model AreaColaborador {
+  id        Int @id @default(autoincrement())
+  areaId    Int @map("area_id")
+  usuarioId Int @map("usuario_id")
+
+  area    Area    @relation(fields: [areaId], references: [id], onDelete: Cascade)
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@unique([areaId, usuarioId])
+  @@map("area_colaborador")
+}
+
+model Lista {
+  id            Int      @id @default(autoincrement())
+  nome          String
+  descricao     String?
+  restauranteId Int      @map("restaurante_id")
+  areaId        Int?     @map("area_id")
+  nomeGrupo     String?  @map("nome_grupo")
+  grupoId       Int?     @map("grupo_id")
+  listaPaiId    Int?     @map("lista_pai_id")
+  deletado      Boolean  @default(false)
+  criadoEm      DateTime @default(now()) @map("criado_em")
+
+  restaurante   Restaurante        @relation(fields: [restauranteId], references: [id])
+  area          Area?              @relation(fields: [areaId], references: [id], onDelete: SetNull)
+  grupo         ListaGrupo?        @relation(fields: [grupoId], references: [id], onDelete: SetNull)
+  listaPai      Lista?             @relation("ListaPaiSublistas", fields: [listaPaiId], references: [id], onDelete: SetNull)
+  sublistas     Lista[]            @relation("ListaPaiSublistas")
+  colaboradores ListaColaborador[]
+  itensRef      ListaItemRef[]
+  submissoes    Submissao[]
+  participacoesConsolidadas SubmissaoConsolidadaParticipante[]
+  lotesComoPai  SubmissaoConsolidadaLote[] @relation("LoteListaPai")
+
+  @@map("listas")
+}
+
+model ListaGrupo {
+  id            Int      @id @default(autoincrement())
+  restauranteId Int      @map("restaurante_id")
+  nome          String
+  criadoEm      DateTime @default(now()) @map("criado_em")
+  atualizadoEm  DateTime @updatedAt @map("atualizado_em")
+
+  restaurante Restaurante @relation(fields: [restauranteId], references: [id])
+  listas      Lista[]
+  lotesConsolidados SubmissaoConsolidadaLote[]
+
+  @@map("listas_grupos")
+}
+
+model ListaColaborador {
+  id        Int @id @default(autoincrement())
+  listaId   Int @map("lista_id")
+  usuarioId Int @map("usuario_id")
+
+  lista   Lista   @relation(fields: [listaId], references: [id])
+  usuario Usuario @relation(fields: [usuarioId], references: [id])
+
+  @@unique([listaId, usuarioId])
+  @@map("lista_colaborador")
+}
+
+model ListaItemRef {
+  id               Int   @id @default(autoincrement())
+  listaId          Int   @map("lista_id")
+  itemId           Int   @map("item_id")
+  quantidadeMinima Float   @default(0) @map("quantidade_minima")
+  quantidadeAtual  Float   @default(0) @map("quantidade_atual")
+  usaThreshold     Boolean @default(true) @map("usa_threshold")
+  qtdFardo         Float?  @map("qtd_fardo")
+
+  lista Lista @relation(fields: [listaId], references: [id])
+  item  Item  @relation(fields: [itemId], references: [id])
+
+  @@unique([listaId, itemId])
+  @@map("lista_item_ref")
+}
+
+model Fornecedor {
+  id            Int      @id @default(autoincrement())
+  nome          String
+  cnpj          String?
+  telefone      String?
+  email         String?
+  ativo         Boolean  @default(true)
+  restauranteId Int      @map("restaurante_id")
+  criadoEm      DateTime @default(now()) @map("criado_em")
+  atualizadoEm  DateTime @updatedAt @map("atualizado_em")
+
+  restaurante  Restaurante   @relation(fields: [restauranteId], references: [id])
+  itens        Item[]
+  cotacaoItens CotacaoItem[]
+
+  @@map("fornecedores")
+}
+
+model Submissao {
+  id            Int             @id @default(autoincrement())
+  listaId       Int             @map("lista_id")
+  usuarioId     Int             @map("usuario_id")
+  restauranteId Int             @map("restaurante_id")
+  status        StatusSubmissao @default(PENDENTE)
+  arquivada     Boolean         @default(false)
+  criadoEm      DateTime        @default(now()) @map("criado_em")
+  atualizadoEm  DateTime        @updatedAt @map("atualizado_em")
+
+  lista       Lista       @relation(fields: [listaId], references: [id])
+  usuario     Usuario     @relation(fields: [usuarioId], references: [id])
+  restaurante Restaurante @relation(fields: [restauranteId], references: [id])
+  pedidos     Pedido[]
+  checklist   Checklist?
+  recebimento Recebimento?
+  participacaoConsolidadaAtual SubmissaoConsolidadaParticipante? @relation("ParticipanteSubmissaoAtual")
+
+  @@map("submissoes")
+}
+
+model SubmissaoConsolidadaLote {
+  id            Int                   @id @default(autoincrement())
+  restauranteId Int                   @map("restaurante_id")
+  grupoId       Int?                  @map("grupo_id")
+  listaPaiId    Int?                  @map("lista_pai_id")
+  janelaInicio  DateTime              @map("janela_inicio")
+  janelaFim     DateTime              @map("janela_fim")
+  status        StatusLoteConsolidado @default(AGUARDANDO_SUBLISTAS)
+  aprovadoEm    DateTime?             @map("aprovado_em")
+  aprovadoPorId Int?                  @map("aprovado_por_id")
+  criadoEm      DateTime              @default(now()) @map("criado_em")
+  atualizadoEm  DateTime              @updatedAt @map("atualizado_em")
+
+  restaurante Restaurante @relation(fields: [restauranteId], references: [id])
+  grupo       ListaGrupo? @relation(fields: [grupoId], references: [id], onDelete: SetNull)
+  listaPai    Lista?      @relation("LoteListaPai", fields: [listaPaiId], references: [id], onDelete: SetNull)
+  aprovadoPor Usuario?    @relation("LoteConsolidadoAprovadoPor", fields: [aprovadoPorId], references: [id], onDelete: SetNull)
+  participantes SubmissaoConsolidadaParticipante[]
+
+  @@index([restauranteId, status])
+  @@map("submissoes_consolidadas_lotes")
+}
+
+model SubmissaoConsolidadaParticipante {
+  id              Int      @id @default(autoincrement())
+  loteId          Int      @map("lote_id")
+  listaId         Int      @map("lista_id")
+  submissaoAtualId Int?    @unique @map("submissao_atual_id")
+  recebida        Boolean  @default(false)
+  criadoEm        DateTime @default(now()) @map("criado_em")
+  atualizadoEm    DateTime @updatedAt @map("atualizado_em")
+
+  lote          SubmissaoConsolidadaLote @relation(fields: [loteId], references: [id], onDelete: Cascade)
+  lista         Lista                    @relation(fields: [listaId], references: [id], onDelete: Cascade)
+  submissaoAtual Submissao?              @relation("ParticipanteSubmissaoAtual", fields: [submissaoAtualId], references: [id], onDelete: SetNull)
+
+  @@unique([loteId, listaId])
+  @@index([listaId])
+  @@map("submissoes_consolidadas_participantes")
+}
+
+model Pedido {
+  id            Int          @id @default(autoincrement())
+  submissaoId   Int          @map("submissao_id")
+  itemId        Int          @map("item_id")
+  qtdSolicitada Float        @map("qtd_solicitada")
+  status        StatusPedido @default(PENDENTE)
+  criadoEm      DateTime     @default(now()) @map("criado_em")
+  atualizadoEm  DateTime     @updatedAt @map("atualizado_em")
+
+  submissao Submissao @relation(fields: [submissaoId], references: [id])
+  item      Item      @relation(fields: [itemId], references: [id])
+  recebimentoItem RecebimentoItem?
+
+  @@map("pedidos")
+}
+
+model Recebimento {
+  id               Int       @id @default(autoincrement())
+  submissaoId      Int       @unique @map("submissao_id")
+  restauranteId    Int       @map("restaurante_id")
+  confirmadoPorId  Int?      @map("confirmado_por_id")
+  confirmadoEm     DateTime? @map("confirmado_em")
+  confirmadoAdminId Int?     @map("confirmado_admin_id")
+  confirmadoAdminEm DateTime? @map("confirmado_admin_em")
+  observacoes      String?
+  criadoEm         DateTime  @default(now()) @map("criado_em")
+  atualizadoEm     DateTime  @updatedAt @map("atualizado_em")
+
+  submissao        Submissao   @relation(fields: [submissaoId], references: [id])
+  restaurante      Restaurante @relation(fields: [restauranteId], references: [id])
+  confirmadoPor    Usuario?    @relation("RecebimentoConfirmadoPor", fields: [confirmadoPorId], references: [id])
+  confirmadoAdmin  Usuario?    @relation("RecebimentoConfirmadoAdmin", fields: [confirmadoAdminId], references: [id])
+  itens            RecebimentoItem[]
+
+  @@map("recebimentos")
+}
+
+model RecebimentoItem {
+  id            Int      @id @default(autoincrement())
+  recebimentoId Int      @map("recebimento_id")
+  pedidoId      Int      @unique @map("pedido_id")
+  confirmado    Boolean  @default(false)
+  criadoEm      DateTime @default(now()) @map("criado_em")
+
+  recebimento   Recebimento @relation(fields: [recebimentoId], references: [id], onDelete: Cascade)
+  pedido        Pedido      @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+
+  @@unique([recebimentoId, pedidoId])
+  @@map("recebimento_itens")
+}
+
+model Cotacao {
+  id            Int           @id @default(autoincrement())
+  titulo        String?
+  status        StatusCotacao @default(ABERTA)
+  restauranteId Int           @map("restaurante_id")
+  criadoEm      DateTime      @default(now()) @map("criado_em")
+  atualizadoEm  DateTime      @updatedAt @map("atualizado_em")
+
+  restaurante Restaurante   @relation(fields: [restauranteId], references: [id])
+  itens       CotacaoItem[]
+
+  @@map("cotacoes")
+}
+
+model CotacaoItem {
+  id            Int        @id @default(autoincrement())
+  cotacaoId     Int        @map("cotacao_id")
+  itemId        Int        @map("item_id")
+  fornecedorId  Int?       @map("fornecedor_id")
+  qtdSolicitada Float      @map("qtd_solicitada")
+  precoUnitario Float?     @map("preco_unitario")
+  criadoEm     DateTime   @default(now()) @map("criado_em")
+  atualizadoEm DateTime   @updatedAt @map("atualizado_em")
+
+  cotacao    Cotacao    @relation(fields: [cotacaoId], references: [id])
+  item       Item       @relation(fields: [itemId], references: [id])
+  fornecedor Fornecedor? @relation(fields: [fornecedorId], references: [id])
+
+  @@map("cotacao_itens")
+}
+
+model Checklist {
+  id            Int             @id @default(autoincrement())
+  submissaoId   Int             @unique @map("submissao_id")
+  status        StatusChecklist @default(ABERTO)
+  restauranteId Int             @map("restaurante_id")
+  criadoEm     DateTime        @default(now()) @map("criado_em")
+  atualizadoEm DateTime        @updatedAt @map("atualizado_em")
+
+  submissao   Submissao       @relation(fields: [submissaoId], references: [id])
+  restaurante Restaurante     @relation(fields: [restauranteId], references: [id])
+  itens       ChecklistItem[]
+
+  @@map("checklists")
+}
+
+model ChecklistItem {
+  id          Int       @id @default(autoincrement())
+  checklistId Int       @map("checklist_id")
+  itemId      Int       @map("item_id")
+  qtdPedida   Float     @map("qtd_pedida")
+  marcado     Boolean   @default(false)
+  criadoEm   DateTime  @default(now()) @map("criado_em")
+
+  checklist Checklist @relation(fields: [checklistId], references: [id])
+  item      Item      @relation(fields: [itemId], references: [id])
+
+  @@map("checklist_itens")
+}
+
+// ============================================================
+// FASE 4 — Listas Rápidas, Sugestões de Itens, POPs
+// ============================================================
+
+model ListaRapida {
+  id            Int               @id @default(autoincrement())
+  restauranteId Int               @map("restaurante_id")
+  usuarioId     Int               @map("usuario_id")
+  nome          String
+  status        StatusListaRapida @default(RASCUNHO)
+  criadoEm      DateTime          @default(now()) @map("criado_em")
+  atualizadoEm  DateTime          @updatedAt @map("atualizado_em")
+
+  restaurante Restaurante       @relation(fields: [restauranteId], references: [id])
+  usuario     Usuario           @relation(fields: [usuarioId], references: [id])
+  itens       ListaRapidaItem[]
+
+  @@map("listas_rapidas")
+}
+
+model ListaRapidaItem {
+  id            Int       @id @default(autoincrement())
+  listaRapidaId Int       @map("lista_rapida_id")
+  nome          String
+  quantidade    Float?
+  unidade       String?
+  itemId        Int?      @map("item_id")
+  prioridade    String    @default("prevencao")
+  observacao    String?
+  descartado    Boolean   @default(false)
+  criadoEm      DateTime  @default(now()) @map("criado_em")
+
+  listaRapida ListaRapida @relation(fields: [listaRapidaId], references: [id])
+  item        Item?       @relation(fields: [itemId], references: [id])
+
+  @@map("lista_rapida_itens")
+}
+
+model SugestaoItem {
+  id            Int            @id @default(autoincrement())
+  restauranteId Int            @map("restaurante_id")
+  usuarioId     Int            @map("usuario_id")
+  nome          String
+  unidadeMedida String         @map("unidade_medida")
+  status        StatusSugestao @default(PENDENTE)
+  itemCriadoId  Int?           @map("item_criado_id")
+  criadoEm      DateTime       @default(now()) @map("criado_em")
+  atualizadoEm  DateTime       @updatedAt @map("atualizado_em")
+
+  restaurante Restaurante @relation(fields: [restauranteId], references: [id])
+  usuario     Usuario     @relation(fields: [usuarioId], references: [id])
+  itemCriado  Item?       @relation(fields: [itemCriadoId], references: [id])
+
+  @@map("sugestoes_itens")
+}
+
+model POPTemplate {
+  id            Int      @id @default(autoincrement())
+  restauranteId Int      @map("restaurante_id")
+  nome          String
+  tipo          TipoPOP
+  descricao     String?
+  ativo         Boolean  @default(true)
+  criadoEm      DateTime @default(now()) @map("criado_em")
+  atualizadoEm  DateTime @updatedAt @map("atualizado_em")
+
+  restaurante Restaurante   @relation(fields: [restauranteId], references: [id])
+  passos      POPPasso[]
+  execucoes   POPExecucao[]
+
+  @@map("pop_templates")
+}
+
+model POPPasso {
+  id         Int    @id @default(autoincrement())
+  templateId Int    @map("template_id")
+  descricao  String
+  ordem      Int
+
+  template      POPTemplate      @relation(fields: [templateId], references: [id])
+  execucaoItens POPExecucaoItem[]
+
+  @@map("pop_passos")
+}
+
+model POPExecucao {
+  id            Int               @id @default(autoincrement())
+  templateId    Int               @map("template_id")
+  usuarioId     Int               @map("usuario_id")
+  restauranteId Int               @map("restaurante_id")
+  status        StatusPOPExecucao @default(EM_ANDAMENTO)
+  criadoEm      DateTime          @default(now()) @map("criado_em")
+  atualizadoEm  DateTime          @updatedAt @map("atualizado_em")
+
+  template    POPTemplate      @relation(fields: [templateId], references: [id])
+  usuario     Usuario          @relation(fields: [usuarioId], references: [id])
+  restaurante Restaurante      @relation(fields: [restauranteId], references: [id])
+  itens       POPExecucaoItem[]
+
+  @@map("pop_execucoes")
+}
+
+model POPExecucaoItem {
+  id         Int      @id @default(autoincrement())
+  execucaoId Int      @map("execucao_id")
+  passoId    Int      @map("passo_id")
+  marcado    Boolean  @default(false)
+  observacao String?
+  criadoEm   DateTime @default(now()) @map("criado_em")
+
+  execucao POPExecucao @relation(fields: [execucaoId], references: [id])
+  passo    POPPasso    @relation(fields: [passoId], references: [id])
+
+  @@unique([execucaoId, passoId])
+  @@map("pop_execucao_itens")
+}
+
+// ============================================================
+// FASE 5 — Notificações, Convites, Auditoria
+// ============================================================
+
+enum TipoNotificacao {
+  SUBMISSAO_PENDENTE
+  SUBMISSAO_APROVADA
+  SUBMISSAO_REJEITADA
+  RECEBIMENTO_CONFIRMADO
+  LISTA_RAPIDA_PENDENTE
+  LISTA_RAPIDA_APROVADA
+  LISTA_RAPIDA_REJEITADA
+  SUGESTAO_APROVADA
+  SUGESTAO_REJEITADA
+  CLASSIFICACAO_FALTA
+}
+
+model Notificacao {
+  id            Int              @id @default(autoincrement())
+  usuarioId     Int              @map("usuario_id")
+  restauranteId Int              @map("restaurante_id")
+  tipo          TipoNotificacao
+  mensagem      String
+  lida          Boolean          @default(false)
+  criadoEm      DateTime         @default(now()) @map("criado_em")
+
+  usuario     Usuario     @relation(fields: [usuarioId], references: [id])
+  restaurante Restaurante @relation(fields: [restauranteId], references: [id])
+
+  @@map("notificacoes")
+}
+
+model ConviteToken {
+  id            Int      @id @default(autoincrement())
+  token         String   @unique
+  email         String?
+  restauranteId Int?     @map("restaurante_id")
+  role          UserRole @default(COLLABORATOR)
+  usado         Boolean  @default(false)
+  expiresAt     DateTime @map("expires_at")
+  criadoEm      DateTime @default(now()) @map("criado_em")
+
+  restaurante Restaurante? @relation(fields: [restauranteId], references: [id])
+
+  @@map("convite_tokens")
+}
+
+model AppLog {
+  id            Int      @id @default(autoincrement())
+  restauranteId Int?     @map("restaurante_id")
+  usuarioId     Int?     @map("usuario_id")
+  acao          String
+  entidade      String?
+  entidadeId    Int?     @map("entidade_id")
+  detalhes      Json?
+  criadoEm      DateTime @default(now()) @map("criado_em")
+
+  @@map("app_logs")
+}
+
+model PushSubscription {
+  id        Int      @id @default(autoincrement())
+  usuarioId Int      @map("usuario_id")
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  criadoEm  DateTime @default(now()) @map("criado_em")
+
+  usuario   Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@map("push_subscriptions")
+}

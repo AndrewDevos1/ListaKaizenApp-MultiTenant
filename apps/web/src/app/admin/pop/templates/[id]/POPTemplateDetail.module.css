@@ -1,0 +1,239 @@
+/* Detail Page Wrapper */
+.pageWrapper {
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  min-height: 100vh;
+  padding: 2rem 1.5rem;
+}
+
+.pageContainer {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+/* Back Button */
+.backButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  color: var(--text-primary);
+  cursor: pointer;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all var(--transition-fast);
+  margin-bottom: 1.5rem;
+  font-family: var(--font-family);
+  font-size: 0.9rem;
+}
+
+.backButton:hover {
+  background: white;
+  box-shadow: var(--card-shadow);
+  transform: translateX(-2px);
+}
+
+/* Header */
+.header {
+  background: white;
+  border-radius: 15px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 2rem;
+}
+
+.headerInfo {
+  flex: 1;
+}
+
+.templateTitle {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 0.5rem 0;
+}
+
+.templateMeta {
+  display: flex;
+  gap: 1.5rem;
+  margin-top: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.metaItem {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+}
+
+.metaLabel {
+  font-weight: 600;
+}
+
+.descricao {
+  margin-top: 0.75rem;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.headerActions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+/* Passos Section */
+.passosSection {
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 2px 15px rgba(0, 0, 0, 0.08);
+  margin-bottom: 2rem;
+}
+
+.sectionTitle {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 1.5rem 0;
+}
+
+/* Passo Item */
+.passoItem {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  margin-bottom: 0.75rem;
+  background: var(--bg-primary);
+  transition: all var(--transition-fast);
+}
+
+.passoItem:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.passoOrdem {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 50%;
+  font-weight: 700;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+.passoDescricao {
+  flex: 1;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+}
+
+/* Add Passo Form */
+.addPassoForm {
+  background: var(--bg-tertiary);
+  border-radius: 10px;
+  padding: 1.5rem;
+  margin-top: 1.5rem;
+  border: 1px dashed var(--border-color);
+}
+
+.addPassoTitle {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 1rem 0;
+}
+
+.formRow {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+
+.formGroup {
+  flex: 1;
+  min-width: 140px;
+}
+
+/* Empty State */
+.emptyPassos {
+  text-align: center;
+  padding: 2rem;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  border: 1px dashed var(--border-color);
+  border-radius: 8px;
+}
+
+/* Dark mode */
+[data-theme='dark'] .pageWrapper {
+  background: linear-gradient(135deg, #2b3035 0%, #343a40 100%);
+}
+
+[data-theme='dark'] .header,
+[data-theme='dark'] .passosSection,
+[data-theme='dark'] .backButton {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  box-shadow: 0 2px 15px rgba(0, 0, 0, 0.45);
+}
+
+[data-theme='dark'] .passoItem {
+  background: var(--bg-tertiary);
+  border-color: var(--border-color);
+}
+
+[data-theme='dark'] .addPassoForm {
+  background: var(--bg-tertiary);
+  border-color: var(--border-color);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .pageWrapper {
+    padding: 1.5rem 1rem;
+  }
+
+  .header {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .headerActions {
+    width: 100%;
+  }
+
+  .templateTitle {
+    font-size: 1.4rem;
+  }
+
+  .passosSection {
+    padding: 1rem;
+  }
+
+  .formRow {
+    flex-direction: column;
+  }
+
+  .formGroup {
+    min-width: 100%;
+  }
+}

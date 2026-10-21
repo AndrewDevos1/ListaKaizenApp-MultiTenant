@@ -1,0 +1,134 @@
+.pageWrapper {
+  background: var(--bg-primary);
+  min-height: 100vh;
+  padding: 2rem 1.5rem;
+}
+
+.pageContainer {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.pageHeader {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+}
+
+.backBtn {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.75rem;
+  border-radius: 6px;
+  transition: all var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.backBtn:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.pageTitle {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+  flex: 1;
+}
+
+.headerActions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* Table */
+.tableWrapper {
+  background: var(--bg-secondary);
+  border-radius: 12px;
+  box-shadow: var(--card-shadow);
+  overflow: hidden;
+}
+
+.table {
+  margin: 0;
+}
+
+.tableHeader {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.th {
+  color: white;
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  padding: 0.85rem 1rem;
+  border: none;
+}
+
+.row {
+  border-bottom: 1px solid var(--border-color);
+  transition: background-color var(--transition-fast);
+}
+
+.row:hover { background: var(--bg-tertiary); }
+
+.rowBaixo {
+  border-bottom: 1px solid var(--border-color);
+  background: rgba(229, 83, 83, 0.06);
+}
+
+.rowBaixo:hover { background: rgba(229, 83, 83, 0.1); }
+
+.td {
+  padding: 0.75rem 1rem;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  border: none;
+  vertical-align: middle;
+}
+
+.listaNome {
+  font-size: 0.78rem;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 0.15rem 0.5rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.qtdInput {
+  width: 90px;
+  text-align: center;
+}
+
+/* Empty */
+.emptyState {
+  text-align: center;
+  padding: 3rem 2rem;
+  background: var(--bg-secondary);
+  border-radius: 12px;
+}
+
+.emptyText {
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+@media (max-width: 768px) {
+  .pageWrapper  { padding: 1.5rem 1rem; }
+  .pageTitle    { font-size: 1.3rem; }
+  .headerActions { width: 100%; }
+  .headerActions > * { flex: 1; }
+}

@@ -1,0 +1,200 @@
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Param,
+  ParseIntPipe,
+  Query,
+  UseGuards,
+  Res,
+  UseInterceptors,
+  UploadedFile,
+  BadRequestException,
+  StreamableFile,
+} from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
+import { Response } from 'express';
+import { AuthGuard } from '@nestjs/passport';
+import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { RestaurantesService } from './restaurantes.service';
+import { CreateRestauranteDto } from './dto/create-restaurante.dto';
+import { UpdateRestauranteDto } from './dto/update-restaurante.dto';
+import { UpdateRestauranteModulosDto } from './dto/update-restaurante-modulos.dto';
+import { CurrentUser, Roles } from '../../common/decorators';
+import { RolesGuard } from '../../common/guards';
+
+@ApiTags('Restaurantes')
+@Controller('restaurantes')
+@UseGuards(AuthGuard('jwt'), RolesGuard)
+@ApiBearerAuth()
+export class RestaurantesController {
+  constructor(private restaurantesService: RestaurantesService) {}
+
+  @Post()
+  @Roles('SUPER_ADMIN' as any)
+  @ApiOperation({ summary: 'Criar restaurante (SUPER_ADMIN)' })
+  create(@Body() dto: CreateRestauranteDto) {
+    return this.restaurantesService.create(dto);
+  }
+
+  @Get()
+  @Roles('SUPER_ADMIN' as any)
+  @ApiOperation({ summary: 'Listar restaurantes (SUPER_ADMIN)' })
+  findAll() {
+    return this.restaurantesService.findAll();
+  }
+
+  @Get('stats/global')
+  @Roles('SUPER_ADMIN' as any, 'ADMIN' as any)
+  @ApiOperation({ summary: 'Stats globais (ADMIN e SUPER_ADMIN)' })
+  async getGlobalStats(
+    @CurrentUser('role') role: string,
+    @CurrentUser('restauranteId') currentRestauranteId: number | null,
+    @Query('restauranteId') restauranteIdQuery?: string,
+    @Query('period') periodQuery?: string,
+  ) {
+    const period = periodQuery ? Number.parseInt(periodQuery, 10) : undefined;
+    if (periodQuery && Number.isNaN(period)) {
+      throw new BadRequestException('Parâmetro period inválido');
+    }
+
+    if (role === 'SUPER_ADMIN') {
+      const restauranteId = restauranteIdQuery
+        ? Number.parseInt(restauranteIdQuery, 10)
+        : undefined;
+      if (restauranteIdQuery && Number.isNaN(restauranteId)) {
+        throw new BadRequestException('Parâmetro restauranteId inválido');
+      }
+      return this.restaurantesService.getGlobalStats({
+        restauranteId,
+        period,
+      });
+    }
+
+    return this.restaurantesService.getGlobalStats({
+      restauranteId: currentRestauranteId ?? undefined,
+      period,
+    });
+  }
+
+  @Post('restore')
+  @Roles('SUPER_ADMIN' as any)
+  @ApiOperation({ summary: 'Restaurar backup .kaizen (SUPER_ADMIN)' })
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(
+    FileInterceptor('arquivo', {
+      storage: memoryStorage(),
+      limits: { fileSize: 10 * 1024 * 1024 },
+      fileFilter: (_req, file, cb) => {
+        if (!file.originalname.toLowerCase().endsWith('.kaizen')) {
+          return cb(new BadRequestException('Apenas arquivos .kaizen são aceitos'), false);
+        }
+        cb(null, true);
+      },
+    }),
+  )
+  async restore(
+    @UploadedFile() file: Express.Multer.File,
+    @Body('restauranteId') restauranteIdStr?: string,
+  ) {
+    if (!file) throw new BadRequestException('Arquivo .kaizen não enviado');
+    const restauranteId = restauranteIdStr ? parseInt(restauranteIdStr, 10) : undefined;
+    return this.restaurantesService.restoreRestaurante(file.buffer, restauranteId);
+  }
+
+  @Get(':id/backup')
+  @Roles('SUPER_ADMIN' as any)
+  @ApiOperation({ summary: 'Exportar backup .kaizen do restaurante (SUPER_ADMIN)' })
+  async backup(
+    @Param('id', ParseIntPipe) id: number,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<StreamableFile> {
+    const { buffer, filename } = await this.restaurantesService.backupRestaurante(id);
+    res.set({
+      'Content-Type': 'application/gzip',
+      'Content-Disposition': `attachment; filename="${filename}"`,
+    });
+    return new StreamableFile(buffer);
+  }
+
+  @Get(':id/usuarios')
+  @Roles('SUPER_ADMIN' as any)
+  @ApiOperation({ summary: 'Listar usuários de um restaurante (SUPER_ADMIN)' })
+  listarUsuarios(@Param('id', ParseIntPipe) id: number) {
+    return this.restaurantesService.listarUsuarios(id);
+  }
+
+  @Put('usuarios/:id/alterar-senha')
+  @Roles('SUPER_ADMIN' as any)
+  @ApiOperation({ summary: 'Alterar senha de usuário do restaurante (SUPER_ADMIN)' })
+  alterarSenhaUsuario(
+    @Param('id', ParseIntPipe) usuarioId: number,
+    @Body('restauranteId') restauranteIdRaw: string | number,
+    @Body('novaSenha') novaSenha?: string,
+  ) {
+    const restauranteId = Number(restauranteIdRaw);
+    if (!restauranteId || Number.isNaN(restauranteId)) {
+      throw new BadRequestException('restauranteId inválido');
+    }
+    if (!novaSenha || novaSenha.trim().length < 6) {
+      throw new BadRequestException('novaSenha deve ter no mínimo 6 caracteres');
+    }
+    return this.restaurantesService.alterarSenhaUsuario(
+      restauranteId,
+      usuarioId,
+      novaSenha.trim(),
+    );
+  }
+
+  @Post('usuarios/:id/resetar-senha')
+  @Roles('SUPER_ADMIN' as any)
+  @ApiOperation({ summary: 'Resetar senha de usuário do restaurante (SUPER_ADMIN)' })
+  resetarSenhaUsuario(
+    @Param('id', ParseIntPipe) usuarioId: number,
+    @Body('restauranteId') restauranteIdRaw: string | number,
+  ) {
+    const restauranteId = Number(restauranteIdRaw);
+    if (!restauranteId || Number.isNaN(restauranteId)) {
+      throw new BadRequestException('restauranteId inválido');
+    }
+    return this.restaurantesService.resetarSenhaUsuario(restauranteId, usuarioId);
+  }
+
+  @Put(':id/modulos')
+  @Roles('SUPER_ADMIN' as any)
+  @ApiOperation({ summary: 'Configurar módulos do restaurante (SUPER_ADMIN)' })
+  updateModulos(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateRestauranteModulosDto,
+  ) {
+    return this.restaurantesService.updateModulos(id, dto);
+  }
+
+  @Get(':id')
+  @Roles('SUPER_ADMIN' as any)
+  @ApiOperation({ summary: 'Detalhes de restaurante (SUPER_ADMIN)' })
+  findOne(@Param('id', ParseIntPipe) id: number) {
+    return this.restaurantesService.findOne(id);
+  }
+
+  @Put(':id')
+  @Roles('SUPER_ADMIN' as any)
+  @ApiOperation({ summary: 'Atualizar restaurante (SUPER_ADMIN)' })
+  update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateRestauranteDto,
+  ) {
+    return this.restaurantesService.update(id, dto);
+  }
+
+  @Delete(':id')
+  @Roles('SUPER_ADMIN' as any)
+  @ApiOperation({ summary: 'Desativar restaurante (SUPER_ADMIN)' })
+  remove(@Param('id', ParseIntPipe) id: number) {
+    return this.restaurantesService.remove(id);
+  }
+}
