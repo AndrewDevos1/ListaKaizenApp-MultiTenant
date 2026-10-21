@@ -301,7 +301,7 @@
 .groupLabel {
   font-size: 0.75rem;
   font-weight: 700;
-  color: var(--sidebar-text-muted);
+  color: var(--sidebar-text);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   padding: 0.45rem var(--spacing-md) 0.3rem var(--spacing-md);
@@ -980,7 +980,7 @@
   font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 1px;
-  color: rgba(255, 255, 255, 0.6);
+  color: rgba(255, 255, 255, 0.85);
   padding: 0.35rem 1.5rem;
   text-transform: uppercase;
   background: rgba(255, 255, 255, 0.05);
