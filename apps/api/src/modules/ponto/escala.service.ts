@@ -49,7 +49,7 @@ function validarDias(dias: CriarEscalaDto['dias']) {
   for (const dia of dias) {
     if (dia.diaSemana > 6 || vistos.has(dia.diaSemana)) throw new BadRequestException('Dias da escala inválidos');
     vistos.add(dia.diaSemana);
-    if (dia.trabalha && (!horaValida(dia.entradaPrevista) || !horaValida(dia.saidaPrevista) || dia.entradaPrevista! >= dia.saidaPrevista!)) throw new BadRequestException('Horários da escala inválidos');
+    if (dia.trabalha && (!horaValida(dia.entradaPrevista) || !horaValida(dia.saidaPrevista) || dia.entradaPrevista === dia.saidaPrevista)) throw new BadRequestException('Horários da escala inválidos');
   }
 }
 function horaValida(value?: string) { return !!value && /^([01]\d|2[0-3]):[0-5]\d$/.test(value); }
