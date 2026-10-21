@@ -40,4 +40,32 @@ describe('EscalaService', () => {
       dias: [{ diaSemana: 1, trabalha: true, entradaPrevista: '08:00', saidaPrevista: '17:00' }],
     })).rejects.toBeInstanceOf(BadRequestException);
   });
+
+  it('permite escala noturna 18h–02h (+1 dia) no mesmo restaurante', async () => {
+    prisma.usuario.findFirst.mockResolvedValue({ id: 7 });
+    prisma.escalaTrabalho.findFirst.mockResolvedValue(null);
+    prisma.escalaTrabalho.create.mockResolvedValue({ id: 5, usuarioId: 7 });
+
+    await expect(service.criar(3, 10, {
+      usuarioId: 7, nome: 'Noturno', vigenciaInicio: '2026-10-19',
+      dias: [{ diaSemana: 1, trabalha: true, entradaPrevista: '18:00', saidaPrevista: '02:00' }],
+    })).resolves.toMatchObject({ id: 5 });
+    expect(prisma.usuario.findFirst).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({ id: 7, restauranteId: 3 }),
+    }));
+    expect(prisma.escalaTrabalho.create).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({
+        restauranteId: 3,
+        dias: { create: [expect.objectContaining({ entradaPrevista: '18:00', saidaPrevista: '02:00' })] },
+      }),
+    }));
+  });
+
+  it('rejeita entrada e saída iguais em vez de interpretar como 24 horas', async () => {
+    await expect(service.criar(3, 10, {
+      usuarioId: 7, nome: 'Invalida', vigenciaInicio: '2026-10-19',
+      dias: [{ diaSemana: 1, trabalha: true, entradaPrevista: '18:00', saidaPrevista: '18:00' }],
+    })).rejects.toBeInstanceOf(BadRequestException);
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
 });

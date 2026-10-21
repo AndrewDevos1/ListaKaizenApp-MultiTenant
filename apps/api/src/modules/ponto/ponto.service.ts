@@ -1,5 +1,5 @@
 import { BadRequestException, HttpException, HttpStatus, Injectable } from '@nestjs/common';
-import { TipoPonto } from '@prisma/client';
+import { Prisma, TipoPonto } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RegistrarPontoDto } from './dto/registrar-ponto.dto';
 
@@ -19,10 +19,7 @@ export class PontoService {
     return this.prisma.$transaction(async (tx) => {
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(${usuarioId}, ${restauranteId})`;
       const agora = new Date();
-      const registros = await tx.registroPonto.findMany({
-        where: { usuarioId, restauranteId, dataOperacional: inicioDoDiaUtc(agora) },
-        orderBy: [{ registradoEm: 'asc' }, { id: 'asc' }],
-      });
+      const { registros, dataOperacional } = await this.registrosDaJornada(tx, usuarioId, restauranteId, agora);
       if (registros.length >= 4) {
         throw new BadRequestException('Limite diário de registros atingido');
       }
@@ -42,7 +39,7 @@ export class PontoService {
           restauranteId,
           tipo,
           registradoEm: agora,
-          dataOperacional: inicioDoDiaUtc(agora),
+          dataOperacional,
           observacoes: dto.observacoes,
         },
       });
@@ -55,7 +52,7 @@ export class PontoService {
   }
 
   async status(usuarioId: number, restauranteId: number) {
-    const registros = await this.registrosDoDia(usuarioId, restauranteId);
+    const { registros } = await this.registrosDaJornada(this.prisma, usuarioId, restauranteId, new Date());
     const ultimoRegistro = registros.at(-1) ?? null;
     const tiposDisponiveis = proximoTipos[ultimoRegistro?.tipo ?? 'INICIAL'];
     return {
@@ -82,12 +79,26 @@ export class PontoService {
     });
   }
 
-  private registrosDoDia(usuarioId: number, restauranteId: number) {
-    const inicio = inicioDoDiaUtc(new Date());
-    return this.prisma.registroPonto.findMany({
-      where: { usuarioId, restauranteId, dataOperacional: inicio },
+  // A jornada continua associada ao dia local da ENTRADA, mesmo depois de 00:00.
+  // Usar a mesma resolução em registrar e status evita abrir duas jornadas.
+  private async registrosDaJornada(
+    client: Prisma.TransactionClient,
+    usuarioId: number,
+    restauranteId: number,
+    agora: Date,
+  ) {
+    const ultimo = await client.registroPonto.findFirst({
+      where: { usuarioId, restauranteId },
+      orderBy: [{ registradoEm: 'desc' }, { id: 'desc' }],
+    });
+    const dataOperacional = ultimo && ultimo.tipo !== TipoPonto.SAIDA
+      ? ultimo.dataOperacional
+      : inicioDoDiaUtc(agora);
+    const registros = await client.registroPonto.findMany({
+      where: { usuarioId, restauranteId, dataOperacional },
       orderBy: [{ registradoEm: 'asc' }, { id: 'asc' }],
     });
+    return { registros, dataOperacional };
   }
 }
 

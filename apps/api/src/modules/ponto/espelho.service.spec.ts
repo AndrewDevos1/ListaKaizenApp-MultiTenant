@@ -62,4 +62,79 @@ describe('EspelhoService', () => {
     const espelho = await service.consultar(3, 7, '2026-11');
     expect(espelho.dias).toContainEqual(expect.objectContaining({ data: '2026-11-03', minutosAbonados: 0, saldoOperacionalMinutos: -540 }));
   });
+
+  it('apura 18h–02h sem pausa como 8 horas na data da ENTRADA', async () => {
+    const dataOperacional = new Date('2026-10-19T00:00:00.000Z');
+    prisma.registroPonto.findMany.mockResolvedValue([
+      { tipo: 'ENTRADA', registradoEm: new Date('2026-10-19T21:00:00Z'), dataOperacional },
+      { tipo: 'SAIDA', registradoEm: new Date('2026-10-20T05:00:00Z'), dataOperacional },
+    ]);
+    prisma.escalaTrabalho.findMany.mockResolvedValue([{
+      vigenciaInicio: new Date('2026-10-01T00:00:00Z'), vigenciaFim: null,
+      dias: [{ diaSemana: 1, trabalha: true, entradaPrevista: '18:00', saidaPrevista: '02:00', toleranciaMinutos: 0 }],
+    }]);
+
+    const espelho = await service.consultar(3, 7, '2026-10');
+    expect(espelho.dias).toContainEqual(expect.objectContaining({
+      data: '2026-10-19', minutosPrevistos: 480, minutosRealizados: 480, saldoOperacionalMinutos: 0, pendente: false,
+      batidas: expect.arrayContaining([expect.objectContaining({ tipo: 'SAIDA' })]),
+    }));
+    expect(espelho.totais.minutosRealizados).toBe(480);
+    expect(prisma.registroPonto.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({ usuarioId: 7, restauranteId: 3 }),
+    }));
+  });
+
+  it('desconta somente pausa registrada na jornada noturna', async () => {
+    const dataOperacional = new Date('2026-10-19T00:00:00.000Z');
+    prisma.registroPonto.findMany.mockResolvedValue([
+      { tipo: 'ENTRADA', registradoEm: new Date('2026-10-19T21:00:00Z'), dataOperacional },
+      { tipo: 'PAUSA', registradoEm: new Date('2026-10-20T01:30:00Z'), dataOperacional },
+      { tipo: 'RETORNO', registradoEm: new Date('2026-10-20T02:00:00Z'), dataOperacional },
+      { tipo: 'SAIDA', registradoEm: new Date('2026-10-20T05:00:00Z'), dataOperacional },
+    ]);
+    prisma.escalaTrabalho.findMany.mockResolvedValue([{
+      vigenciaInicio: new Date('2026-10-01T00:00:00Z'), vigenciaFim: null,
+      dias: [{ diaSemana: 1, trabalha: true, entradaPrevista: '18:00', saidaPrevista: '02:00', toleranciaMinutos: 0 }],
+    }]);
+    const espelho = await service.consultar(3, 7, '2026-10');
+    expect(espelho.dias).toContainEqual(expect.objectContaining({
+      data: '2026-10-19', minutosPrevistos: 480, minutosRealizados: 450, saldoOperacionalMinutos: -30,
+    }));
+  });
+
+  it('não duplica SAÍDA de 01/11 no espelho de novembro', async () => {
+    const dataOperacional = new Date('2026-10-31T00:00:00.000Z');
+    const registros = [
+      { tipo: 'ENTRADA', registradoEm: new Date('2026-10-31T21:00:00Z'), dataOperacional },
+      { tipo: 'SAIDA', registradoEm: new Date('2026-11-01T05:00:00Z'), dataOperacional },
+    ];
+    prisma.registroPonto.findMany.mockImplementation(async ({ where }: any) =>
+      registros.filter((r) => r.dataOperacional >= where.dataOperacional.gte && r.dataOperacional <= where.dataOperacional.lte));
+    prisma.escalaTrabalho.findMany.mockResolvedValue([{
+      vigenciaInicio: new Date('2026-10-01T00:00:00Z'), vigenciaFim: null,
+      dias: [{ diaSemana: 6, trabalha: true, entradaPrevista: '18:00', saidaPrevista: '02:00', toleranciaMinutos: 0 }],
+    }]);
+    const outubro = await service.consultar(3, 7, '2026-10');
+    const novembro = await service.consultar(3, 7, '2026-11');
+    expect(outubro.dias).toContainEqual(expect.objectContaining({ data: '2026-10-31', minutosRealizados: 480 }));
+    expect(novembro.dias).toContainEqual(expect.objectContaining({ data: '2026-11-01', minutosRealizados: 0, batidas: [] }));
+    expect(outubro.totais.minutosRealizados + novembro.totais.minutosRealizados).toBe(480);
+  });
+
+  it('mantém sobreposição de atestado aprovado em turno noturno sem crédito além do previsto', async () => {
+    prisma.registroPonto.findMany.mockResolvedValue([]);
+    prisma.escalaTrabalho.findMany.mockResolvedValue([{
+      vigenciaInicio: new Date('2026-10-01T00:00:00Z'), vigenciaFim: null,
+      dias: [{ diaSemana: 1, trabalha: true, entradaPrevista: '18:00', saidaPrevista: '02:00', toleranciaMinutos: 0 }],
+    }]);
+    prisma.atestado.findMany.mockResolvedValue([{
+      inicio: new Date('2026-10-19T00:00:00Z'), fim: new Date('2026-10-19T00:00:00Z'),
+      horaInicio: '18:00', horaFim: '02:00',
+    }]);
+    const espelho = await service.consultar(3, 7, '2026-10');
+    expect(espelho.dias).toContainEqual(expect.objectContaining({
+      data: '2026-10-19', minutosPrevistos: 480, minutosAbonados: 480, saldoOperacionalMinutos: 0,
+    }));
+  });
 });
