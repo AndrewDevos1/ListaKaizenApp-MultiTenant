@@ -7,10 +7,12 @@ export class EspelhoService {
 
   async consultar(restauranteId: number, usuarioId: number, competencia: string) {
     const { inicio, fim } = competenciaMes(competencia);
-    const [registros, escalas, atestados] = await Promise.all([
+    const [registros, escalas, atestados, ausencias, bancoHoras] = await Promise.all([
       this.prisma.registroPonto.findMany({ where: { restauranteId, usuarioId, dataOperacional: { gte: inicio, lte: fim } }, orderBy: [{ dataOperacional: 'asc' }, { registradoEm: 'asc' }, { id: 'asc' }] }),
       this.prisma.escalaTrabalho.findMany({ where: { restauranteId, usuarioId, vigenciaInicio: { lte: fim }, OR: [{ vigenciaFim: null }, { vigenciaFim: { gte: inicio } }] }, include: { dias: true }, orderBy: { vigenciaInicio: 'desc' } }),
       this.prisma.atestado.findMany({ where: { restauranteId, usuarioId, situacao: 'APROVADO', inicio: { lte: fim }, fim: { gte: inicio } }, select: { inicio: true, fim: true, horaInicio: true, horaFim: true } }),
+      this.prisma.classificacaoAusencia.findMany({ where: { restauranteId, usuarioId, data: { gte: inicio, lte: fim } }, select: { data: true, tipo: true, motivo: true } }),
+      this.prisma.lancamentoBancoHoras.findMany({ where: { restauranteId, usuarioId, dataReferencia: { gte: inicio, lte: fim } }, select: { dataReferencia: true, tipo: true, minutosDelta: true, motivo: true } }),
     ]);
     const porDia = new Map<string, typeof registros>();
     for (const registro of registros) { const data = dataCivil(registro.dataOperacional); porDia.set(data, [...(porDia.get(data) ?? []), registro]); }
@@ -22,12 +24,22 @@ export class EspelhoService {
       const apuracao = apurar(batidas);
       const pendente = batidas.length > 0 && apuracao.pendente;
       const minutosAbonados = minutosPrevistos ? Math.min(minutosPrevistos, cobertura(atestados, data, diaEscala!.entradaPrevista!, diaEscala!.saidaPrevista!)) : 0;
-      const saldoBruto = apuracao.minutos + minutosAbonados - minutosPrevistos;
+      const classificacao = ausencias.find((item) => dataCivil(item.data) === data) ?? null;
+      const lancamentos = bancoHoras.filter((item) => dataCivil(item.dataReferencia) === data);
+      const minutosBancoHoras = lancamentos.reduce((total, item) => total + item.minutosDelta, 0);
+      const saldoBruto = apuracao.minutos + minutosAbonados - minutosPrevistos + minutosBancoHoras;
       const saldoOperacionalMinutos = pendente ? null : Math.abs(saldoBruto) <= (diaEscala?.toleranciaMinutos ?? 0) ? 0 : saldoBruto;
-      return { data, batidas, minutosPrevistos, minutosAbonados, minutosRealizados: apuracao.minutos, pendente, saldoOperacionalMinutos };
+      return { data, batidas, minutosPrevistos, minutosAbonados, minutosRealizados: apuracao.minutos, minutosBancoHoras, classificacao, lancamentos, pendente, saldoOperacionalMinutos };
     });
-    const concluidos = dias.filter((dia) => !dia.pendente && (dia.batidas.length > 0 || dia.minutosAbonados > 0));
-    return { competencia, dias, totais: { minutosRealizados: concluidos.reduce((t, d) => t + d.minutosRealizados, 0), minutosAbonados: concluidos.reduce((t, d) => t + d.minutosAbonados, 0), minutosPrevistos: concluidos.reduce((t, d) => t + d.minutosPrevistos, 0), saldoOperacionalMinutos: concluidos.reduce((t, d) => t + (d.saldoOperacionalMinutos ?? 0), 0), diasPendentes: dias.filter((d) => d.pendente).length } };
+    const concluidos = dias.filter((dia) => !dia.pendente && (dia.batidas.length > 0 || dia.minutosAbonados > 0 || dia.minutosBancoHoras !== 0 || dia.classificacao));
+    return { competencia, dias, totais: {
+      minutosRealizados: concluidos.reduce((t, d) => t + d.minutosRealizados, 0),
+      minutosAbonados: concluidos.reduce((t, d) => t + d.minutosAbonados, 0),
+      minutosBancoHoras: concluidos.reduce((t, d) => t + d.minutosBancoHoras, 0),
+      minutosPrevistos: concluidos.reduce((t, d) => t + d.minutosPrevistos, 0),
+      saldoOperacionalMinutos: concluidos.reduce((t, d) => t + (d.saldoOperacionalMinutos ?? 0), 0),
+      diasPendentes: dias.filter((d) => d.pendente).length,
+    } };
   }
 }
 function competenciaMes(value: string) { if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(value)) throw new BadRequestException('Competência inválida'); const inicio = new Date(`${value}-01T00:00:00.000Z`); return { inicio, fim: new Date(Date.UTC(inicio.getUTCFullYear(), inicio.getUTCMonth() + 1, 0)) }; }
