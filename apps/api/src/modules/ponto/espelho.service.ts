@@ -36,10 +36,19 @@ function diasDoMes(inicio: Date, fim: Date) { const dias: string[] = []; for (le
 function weekday(data: string) { return new Date(`${data}T00:00:00.000Z`).getUTCDay(); }
 type EscalaComDias = { vigenciaInicio: Date; vigenciaFim: Date | null; dias: Array<{ diaSemana: number; trabalha: boolean; entradaPrevista: string | null; saidaPrevista: string | null; toleranciaMinutos: number }> };
 function escalaDaData(escalas: EscalaComDias[], data: string) { const dia = new Date(`${data}T00:00:00.000Z`); return escalas.find((e) => e.vigenciaInicio <= dia && (!e.vigenciaFim || e.vigenciaFim >= dia)); }
-function minutos(inicio: string, fim: string) { const [hi, mi] = inicio.split(':').map(Number); const [hf, mf] = fim.split(':').map(Number); return hf * 60 + mf - hi * 60 - mi; }
+function minutos(inicio: string, fim: string) { const [hi, mi] = inicio.split(':').map(Number); const [hf, mf] = fim.split(':').map(Number); const diferenca = hf * 60 + mf - hi * 60 - mi; return diferenca < 0 ? diferenca + 1_440 : diferenca; }
 function cobertura(atestados: Array<{ inicio: Date; fim: Date; horaInicio: string | null; horaFim: string | null }>, data: string, inicio: string, fim: string) {
-  const inicioTurno = minutos('00:00', inicio), fimTurno = minutos('00:00', fim);
-  const intervalos = atestados.filter((a) => dataCivil(a.inicio) <= data && dataCivil(a.fim) >= data).map((a) => ({ inicio: Math.max(inicioTurno, minutos('00:00', a.horaInicio ?? inicio)), fim: Math.min(fimTurno, minutos('00:00', a.horaFim ?? fim)) })).filter((a) => a.inicio < a.fim).sort((a, b) => a.inicio - b.inicio);
+  const inicioTurno = minutos('00:00', inicio), fimTurno = inicioTurno + minutos(inicio, fim);
+  const intervalos = atestados
+    .filter((a) => dataCivil(a.inicio) <= data && dataCivil(a.fim) >= data)
+    .map((a) => {
+      const horaInicial = minutos('00:00', a.horaInicio ?? inicio);
+      let horaFinal = a.horaFim ? minutos('00:00', a.horaFim) : fimTurno;
+      if (a.horaFim && horaFinal < horaInicial) horaFinal += 1_440;
+      return { inicio: Math.max(inicioTurno, horaInicial), fim: Math.min(fimTurno, horaFinal) };
+    })
+    .filter((a) => a.inicio < a.fim)
+    .sort((a, b) => a.inicio - b.inicio);
   let total = 0, fimAnterior = inicioTurno;
   for (const intervalo of intervalos) { const inicioEfetivo = Math.max(intervalo.inicio, fimAnterior); if (inicioEfetivo < intervalo.fim) total += intervalo.fim - inicioEfetivo; fimAnterior = Math.max(fimAnterior, intervalo.fim); }
   return total;
