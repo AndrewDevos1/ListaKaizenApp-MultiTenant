@@ -277,6 +277,7 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const defaultGroups: Record<string, boolean> = {
       'visao-geral': true,
+      'recursos-humanos': true,
       'listas-estoque': true,
       pop: true,
       itens: true,
@@ -553,33 +554,6 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
               },
             ]
           : []),
-        ...(funcionariosEnabled
-          ? [{
-              label: 'Gerenciar Usuários',
-              href: '/admin/usuarios',
-              icon: <FaUsersCog />,
-              status: 'available' as const,
-            }, {
-              label: 'Faltas e folgas',
-              href: '/admin/ausencias',
-              icon: <FaClock />,
-              status: 'available' as const,
-            },
-            {
-              label: 'Atestados',
-              href: '/admin/atestados',
-              icon: <FaClock />,
-              status: 'available' as const,
-            }]
-          : []),
-        ...(user?.modulos?.moduloPonto
-          ? [{
-              label: 'Ponto e banco de horas',
-              href: '/admin/ponto',
-              icon: <FaClock />,
-              status: 'available' as const,
-            }]
-          : []),
         {
           label: 'Estatísticas',
           href: '/admin/estatisticas',
@@ -588,6 +562,41 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
         },
       ],
     },
+    // Os links continuam sujeitos aos guards da API; esconder itens não concede acesso.
+    ...(funcionariosEnabled || user?.modulos?.moduloPonto
+      ? [{
+          id: 'recursos-humanos',
+          label: 'RECURSOS HUMANOS',
+          items: [
+            ...(funcionariosEnabled
+              ? [{
+                  label: 'Funcionários',
+                  href: '/admin/usuarios',
+                  icon: <FaUsersCog />,
+                  status: 'available' as const,
+                }, {
+                  label: 'Faltas e folgas',
+                  href: '/admin/ausencias',
+                  icon: <FaClock />,
+                  status: 'available' as const,
+                }, {
+                  label: 'Atestados',
+                  href: '/admin/atestados',
+                  icon: <FaClock />,
+                  status: 'available' as const,
+                }]
+              : []),
+            ...(user?.modulos?.moduloPonto
+              ? [{
+                  label: 'Ponto e escalas',
+                  href: '/admin/ponto',
+                  icon: <FaClock />,
+                  status: 'available' as const,
+                }]
+              : []),
+          ],
+        }]
+      : []),
     {
       id: 'listas-estoque',
       label: 'LISTAS & ESTOQUE',
@@ -736,7 +745,7 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
       ],
     },
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  ], [roleIsSuperAdmin, funcionariosEnabled]);
+  ], [roleIsSuperAdmin, funcionariosEnabled, user?.modulos?.moduloPonto]);
 
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const collaboratorMenuGroups = useMemo<MenuGroup[]>(() => [
@@ -748,7 +757,7 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
         href: '/collaborator/ponto',
         icon: <FaClock />,
       }, {
-        label: 'Espelho de Ponto',
+        label: 'Meu Espelho Mensal',
         href: '/collaborator/espelho-ponto',
         icon: <FaHistory />,
       }],
