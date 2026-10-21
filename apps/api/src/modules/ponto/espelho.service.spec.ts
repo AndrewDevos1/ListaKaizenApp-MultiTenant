@@ -142,4 +142,56 @@ describe('EspelhoService', () => {
       data: '2026-10-19', minutosPrevistos: 480, minutosAbonados: 480, saldoOperacionalMinutos: 0,
     }));
   });
+
+  it('exibe falta ou folga e ajuste auditado sem misturar restaurantes', async () => {
+    const data = new Date('2026-11-03T00:00:00.000Z');
+    prisma.registroPonto.findMany.mockResolvedValue([]);
+    prisma.escalaTrabalho.findMany.mockResolvedValue([{
+      vigenciaInicio: new Date('2026-11-01T00:00:00Z'), vigenciaFim: null,
+      dias: [{ diaSemana: 2, trabalha: true, entradaPrevista: '08:00', saidaPrevista: '17:00', toleranciaMinutos: 0 }],
+    }]);
+    prisma.classificacaoAusencia.findMany.mockResolvedValue([{ data, tipo: 'FOLGA', motivo: 'Folga autorizada' }]);
+    prisma.lancamentoBancoHoras.findMany.mockResolvedValue([{ dataReferencia: data, tipo: 'AJUSTE_MANUAL', minutosDelta: 60, motivo: 'Correção auditada' }]);
+
+    const espelho = await service.consultar(3, 7, '2026-11');
+    expect(espelho.dias).toContainEqual(expect.objectContaining({
+      data: '2026-11-03',
+      classificacao: expect.objectContaining({ tipo: 'FOLGA' }),
+      minutosBancoHoras: 60,
+      lancamentos: [expect.objectContaining({ motivo: 'Correção auditada' })],
+      saldoOperacionalMinutos: -480,
+    }));
+    expect(espelho.totais.minutosBancoHoras).toBe(60);
+    for (const metodo of [
+      prisma.registroPonto.findMany,
+      prisma.escalaTrabalho.findMany,
+      prisma.atestado.findMany,
+      prisma.classificacaoAusencia.findMany,
+      prisma.lancamentoBancoHoras.findMany,
+    ]) {
+      expect(metodo).toHaveBeenCalledWith(expect.objectContaining({
+        where: expect.objectContaining({ restauranteId: 3, usuarioId: 7 }),
+      }));
+    }
+  });
+
+  it('não soma saldo de outro mês nem altera o banco durante consulta GET', async () => {
+    prisma.registroPonto.findMany.mockResolvedValue([]);
+    prisma.escalaTrabalho.findMany.mockResolvedValue([]);
+    prisma.classificacaoAusencia.findMany.mockResolvedValue([]);
+    prisma.lancamentoBancoHoras.findMany.mockResolvedValue([]);
+    const espelho = await service.consultar(3, 7, '2026-10');
+    expect(espelho.totais.minutosBancoHoras).toBe(0);
+    expect(espelho.totais.saldoOperacionalMinutos).toBe(0);
+    expect(prisma.lancamentoBancoHoras.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({
+        restauranteId: 3,
+        usuarioId: 7,
+        dataReferencia: {
+          gte: new Date('2026-10-01T00:00:00.000Z'),
+          lte: new Date('2026-10-31T00:00:00.000Z'),
+        },
+      }),
+    }));
+  });
 });
