@@ -534,10 +534,9 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
     }
   };
 
-  if (!user) return null;
 
   // Menu groups memoizados — evitam recriação de arrays a cada render
-  // eslint-disable-next-line react-hooks/rules-of-hooks
+   
   const adminMenuGroups = useMemo<MenuGroup[]>(() => [
     {
       id: 'visao-geral',
@@ -749,10 +748,10 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
         },
       ],
     },
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   ], [roleIsSuperAdmin, funcionariosEnabled, pontoEnabled]);
 
-  // eslint-disable-next-line react-hooks/rules-of-hooks
+   
   const collaboratorMenuGroups = useMemo<MenuGroup[]>(() => [
     ...(user?.modulos?.moduloPonto ? [{
       id: 'ponto',
@@ -765,6 +764,10 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
         label: 'Espelho de Ponto',
         href: '/collaborator/espelho-ponto',
         icon: <FaHistory />,
+      }, {
+        label: 'Banco de Horas',
+        href: '/collaborator/banco-horas',
+        icon: <FaClock />,
       }],
     }] : []),
     {
@@ -832,7 +835,7 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
     },
   ], [user?.modulos?.moduloPonto]);
 
-  // eslint-disable-next-line react-hooks/rules-of-hooks
+   
   const supplierMenuGroups = useMemo<MenuGroup[]>(() => [
     {
       id: 'supplier',
@@ -859,7 +862,7 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
     }],
   }], []);
 
-  // eslint-disable-next-line react-hooks/rules-of-hooks
+   
   const profileMenuGroup = useMemo<MenuGroup>(() => ({
     id: 'perfil',
     label: 'PERFIL',
@@ -879,7 +882,7 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
     ],
   }), [roleIsAdmin, logout]);
 
-  // eslint-disable-next-line react-hooks/rules-of-hooks
+   
   const allMenuGroups = useMemo(
     () => [
       ...(
@@ -1001,6 +1004,8 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
           : effectiveRole === UserRole.CONTADOR
             ? 'Contador'
             : 'Colaborador';
+
+  if (!user) return null;
 
   return (
     <div

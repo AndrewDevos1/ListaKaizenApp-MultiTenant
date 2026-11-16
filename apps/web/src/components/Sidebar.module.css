@@ -1261,3 +1261,9 @@
     padding: 0.6rem 0.25rem;
   }
 }
+
+/* Mobile: orelha não cobre conteúdo (issue #22) */
+@media (max-width: 768px) {
+  .pageContentWrapper { padding-right: 3.25rem; }
+  .sidebarTab, .wrapper[data-navbar-style='next'] .sidebarTab { width: 36px; height: 88px; }
+}

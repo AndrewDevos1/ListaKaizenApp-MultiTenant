@@ -298,7 +298,6 @@ export default function AdminRestaurantesPage() {
     void loadLogs();
   }, [isSuperAdmin, loadLogs]);
 
-  if (!isSuperAdmin) return null;
 
   const openCreateModal = () => {
     setEditingRestaurante(null);
@@ -648,6 +647,8 @@ export default function AdminRestaurantesPage() {
       }),
     [convites],
   );
+
+  if (!isSuperAdmin) return null;
 
   return (
     <Container fluid className={styles.container}>

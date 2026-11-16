@@ -1,5 +1,6 @@
 'use client';
 
+import { dataBR } from '@/lib/formatar';
 import { useEffect, useState } from 'react';
 import { Alert, Card, Form, Spinner, Table } from 'react-bootstrap';
 import api from '@/lib/api';
@@ -93,7 +94,7 @@ export default function EspelhoPontoPage() {
               </tr></thead>
               <tbody>
                 {espelho.dias.map((dia) => <tr key={dia.data}>
-                  <td>{dia.data}</td>
+                  <td>{dataBR(dia.data)}</td>
                   <td>
                     {dia.batidas.length ? (
                       <div className="d-flex flex-column gap-1">

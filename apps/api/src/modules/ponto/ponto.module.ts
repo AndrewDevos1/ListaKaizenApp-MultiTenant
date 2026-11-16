@@ -7,11 +7,12 @@ import { EscalaService } from './escala.service';
 import { EspelhoService } from './espelho.service';
 import { EspelhoController } from './espelho.controller';
 import { BancoHorasController } from './banco-horas.controller';
+import { BancoHorasColaboradorController } from './banco-horas-colaborador.controller';
 import { BancoHorasService } from './banco-horas.service';
 
 @Module({
   imports: [RestaurantesModule],
-  controllers: [PontoController, EscalaController, EspelhoController, BancoHorasController],
+  controllers: [PontoController, EscalaController, EspelhoController, BancoHorasController, BancoHorasColaboradorController],
   providers: [PontoService, EscalaService, EspelhoService, BancoHorasService],
   exports: [EspelhoService],
 })

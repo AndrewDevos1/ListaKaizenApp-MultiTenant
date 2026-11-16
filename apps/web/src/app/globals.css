@@ -371,3 +371,6 @@ select {
 /* Tema escuro: Bootstrap redefine --bs-body-color depois; força cor/tabela do tema (issue #22) */
 [data-theme='dark'] body { color: var(--text-primary); background-color: var(--bg-primary); }
 [data-theme='dark'] .table { --bs-table-color: var(--text-primary); --bs-table-bg: transparent; --bs-table-hover-color: var(--text-primary); --bs-table-hover-bg: var(--bg-tertiary); --bs-table-border-color: var(--border-color); }
+
+[data-theme='dark'] .text-muted { color: #adb5bd !important; }
+[data-theme='dark'] .table thead th { color: var(--text-primary); }
