@@ -3,9 +3,11 @@ import { BadRequestException, createParamDecorator, ExecutionContext } from '@ne
 export const TenantId = createParamDecorator(
   (_data: unknown, ctx: ExecutionContext): number => {
     const request = ctx.switchToHttp().getRequest();
-    const selected = ['CONTADOR', 'SUPER_ADMIN'].includes(request.user?.role) && request.query?.restauranteId
-      ? request.query.restauranteId
-      : request.user?.restauranteId;
+    const queryId = request.query?.restauranteId;
+    const userRestId = request.user?.restauranteId;
+    const selected = ['CONTADOR', 'SUPER_ADMIN'].includes(request.user?.role) && queryId
+      ? queryId
+      : userRestId ?? queryId;
     const restauranteId = Number(selected);
     if (!Number.isInteger(restauranteId) || restauranteId <= 0) {
       throw new BadRequestException('Restaurante inválido');

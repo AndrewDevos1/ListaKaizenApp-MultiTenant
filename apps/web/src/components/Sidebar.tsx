@@ -111,7 +111,7 @@ function normalizeNavbarCustomization(raw: unknown): NavbarCustomizationState {
 }
 
 export default function Sidebar({ children }: { children: React.ReactNode }) {
-  const { user, logout, isSuperAdmin } = useAuth();
+  const { user, logout, isSuperAdmin, refreshUser } = useAuth();
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isToggled, setIsToggled] = useState(false);
@@ -141,6 +141,7 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
   const roleIsAdmin = effectiveRole === UserRole.ADMIN || effectiveRole === UserRole.SUPER_ADMIN;
   const roleIsSuperAdmin = effectiveRole === UserRole.SUPER_ADMIN;
   const funcionariosEnabled = isSuperAdmin || user?.modulos?.moduloFuncionarios === true;
+  const pontoEnabled = isSuperAdmin || user?.modulos?.moduloPonto === true;
 
   const expandSidebarForSearch = useCallback(() => {
     if (isLegacyStyle && isMobile) {
@@ -275,8 +276,13 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
 
   // Initialize expanded groups from localStorage
   useEffect(() => {
+    void refreshUser();
+  }, [refreshUser]);
+
+  useEffect(() => {
     const defaultGroups: Record<string, boolean> = {
       'visao-geral': true,
+      'recursos-humanos': true,
       'listas-estoque': true,
       pop: true,
       itens: true,
@@ -553,33 +559,6 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
               },
             ]
           : []),
-        ...(funcionariosEnabled
-          ? [{
-              label: 'Gerenciar Usuários',
-              href: '/admin/usuarios',
-              icon: <FaUsersCog />,
-              status: 'available' as const,
-            }, {
-              label: 'Faltas e folgas',
-              href: '/admin/ausencias',
-              icon: <FaClock />,
-              status: 'available' as const,
-            },
-            {
-              label: 'Atestados',
-              href: '/admin/atestados',
-              icon: <FaClock />,
-              status: 'available' as const,
-            }]
-          : []),
-        ...(user?.modulos?.moduloPonto
-          ? [{
-              label: 'Ponto e banco de horas',
-              href: '/admin/ponto',
-              icon: <FaClock />,
-              status: 'available' as const,
-            }]
-          : []),
         {
           label: 'Estatísticas',
           href: '/admin/estatisticas',
@@ -588,6 +567,41 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
         },
       ],
     },
+    // Os links continuam sujeitos aos guards da API; esconder itens não concede acesso.
+    ...(funcionariosEnabled || pontoEnabled
+      ? [{
+          id: 'recursos-humanos',
+          label: 'RECURSOS HUMANOS',
+          items: [
+            ...(funcionariosEnabled
+              ? [{
+                  label: 'Funcionários',
+                  href: '/admin/usuarios',
+                  icon: <FaUsersCog />,
+                  status: 'available' as const,
+                }, {
+                  label: 'Faltas e folgas',
+                  href: '/admin/ausencias',
+                  icon: <FaClock />,
+                  status: 'available' as const,
+                }, {
+                  label: 'Atestados',
+                  href: '/admin/atestados',
+                  icon: <FaClock />,
+                  status: 'available' as const,
+                }]
+              : []),
+            ...(pontoEnabled
+              ? [{
+                  label: 'Ponto e escalas',
+                  href: '/admin/ponto',
+                  icon: <FaClock />,
+                  status: 'available' as const,
+                }]
+              : []),
+          ],
+        }]
+      : []),
     {
       id: 'listas-estoque',
       label: 'LISTAS & ESTOQUE',
@@ -736,7 +750,7 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
       ],
     },
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  ], [roleIsSuperAdmin, funcionariosEnabled]);
+  ], [roleIsSuperAdmin, funcionariosEnabled, pontoEnabled]);
 
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const collaboratorMenuGroups = useMemo<MenuGroup[]>(() => [

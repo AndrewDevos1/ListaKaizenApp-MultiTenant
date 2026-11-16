@@ -18,6 +18,7 @@ interface AuthContextType {
   isAdmin: boolean;
   isSuperAdmin: boolean;
   updateAvatarUrl: (url: string | null) => void;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -91,11 +92,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
+  const refreshUser = useCallback(async () => {
+    try {
+      const { data } = await api.get<any>('/v1/auth/profile');
+      if (!data) return;
+      setUser((prev) => {
+        if (!prev) return prev;
+        const updated = {
+          ...prev,
+          nome: data.nome ?? prev.nome,
+          email: data.email ?? prev.email,
+          role: data.role ?? prev.role,
+          restauranteId: data.restaurante?.id ?? prev.restauranteId,
+          avatarUrl: data.avatarUrl ?? prev.avatarUrl,
+          modulos: data.modulos ?? prev.modulos,
+        };
+        if (localStorage.getItem('user')) {
+          localStorage.setItem('user', JSON.stringify(updated));
+        } else if (sessionStorage.getItem('user')) {
+          sessionStorage.setItem('user', JSON.stringify(updated));
+        }
+        return updated;
+      });
+    } catch {
+      // silencioso se falhar
+    }
+  }, []);
+
   const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
   const isSuperAdmin = user?.role === 'SUPER_ADMIN';
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, isAdmin, isSuperAdmin, updateAvatarUrl }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, isAdmin, isSuperAdmin, updateAvatarUrl, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

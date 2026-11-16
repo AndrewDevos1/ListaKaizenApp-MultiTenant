@@ -17,7 +17,7 @@ export class PontoService {
 
   async registrar(usuarioId: number, restauranteId: number, dto: RegistrarPontoDto) {
     return this.prisma.$transaction(async (tx) => {
-      await tx.$executeRaw`SELECT pg_advisory_xact_lock(${usuarioId}, ${restauranteId})`;
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(${usuarioId}::int, ${restauranteId}::int)`;
       const agora = new Date();
       const { registros, dataOperacional } = await this.registrosDaJornada(tx, usuarioId, restauranteId, agora);
       if (registros.length >= 4) {

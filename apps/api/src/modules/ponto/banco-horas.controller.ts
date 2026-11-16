@@ -10,7 +10,7 @@ import { CriarLancamentoBancoHorasDto } from './dto/criar-lancamento-banco-horas
 @Controller('v1/admin/banco-horas')
 @Modulo('moduloPonto')
 @UseGuards(AuthGuard('jwt'), RolesGuard, TenantGuard, ModuloGuard)
-@Roles('ADMIN' as any)
+@Roles('ADMIN' as any, 'SUPER_ADMIN' as any)
 @ApiBearerAuth()
 export class BancoHorasController {
   constructor(private readonly service: BancoHorasService) {}
