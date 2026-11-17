@@ -1,0 +1,354 @@
+   ▲ Next.js 15.5.12
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully in 8.2s
+   Linting and checking validity of types ...
+
+./src/app/admin/areas/page.tsx
+4:54  Warning: 'Badge' is defined but never used.  @typescript-eslint/no-unused-vars
+93:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+120:52  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+132:7  Warning: Expected an assignment or function call and instead saw an expression.  @typescript-eslint/no-unused-expressions
+147:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+166:56  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+167:45  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+178:7  Warning: Expected an assignment or function call and instead saw an expression.  @typescript-eslint/no-unused-expressions
+193:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/admin/atestados/page.tsx
+13:407  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+14:281  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+15:184  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/admin/ausencias/page.tsx
+61:28  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/admin/checklists/[id]/page.tsx
+132:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+149:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+166:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/admin/configuracoes/page.tsx
+106:6  Warning: React Hook useEffect has a missing dependency: 'user'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+186:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+210:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+358:21  Warning: `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`.  react/no-unescaped-entities
+358:34  Warning: `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`.  react/no-unescaped-entities
+
+./src/app/admin/convites/page.tsx
+90:50  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+138:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/admin/cotacoes/[id]/page.tsx
+43:9  Warning: 'router' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+96:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+109:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/admin/cotacoes/page.tsx
+69:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+82:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/admin/dashboard/page.tsx
+48:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+49:41  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+50:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+51:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+62:21  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/admin/editar-perfil/page.tsx
+49:6  Warning: React Hook useEffect has a missing dependency: 'error'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+69:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+99:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+198:17  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+248:17  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/app/admin/fornecedores/page.tsx
+126:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/admin/items/page.tsx
+104:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/admin/listas/[id]/lista-mae/page.tsx
+9:3  Warning: 'ChangeEvent' is defined but never used.  @typescript-eslint/no-unused-vars
+265:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+289:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+392:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+412:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+500:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+530:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/admin/listas/[id]/page.tsx
+158:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/admin/listas/page.tsx
+102:10  Warning: 'colaboradoresAtuais' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+239:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+275:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+290:70  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+319:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+343:41  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+348:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+450:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+478:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+530:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+546:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+558:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+590:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+612:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+625:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/admin/listas-rapidas/[id]/page.tsx
+83:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+98:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+113:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+132:9  Warning: 'itensFiltrados' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+
+./src/app/admin/listas-rapidas/page.tsx
+70:10  Warning: 'novoSelecionado' is defined but never used.  @typescript-eslint/no-unused-vars
+128:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+143:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+158:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+250:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+271:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/admin/logs/page.tsx
+70:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/admin/mudar-senha/page.tsx
+37:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/admin/pop/templates/[id]/page.tsx
+120:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+142:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+156:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/admin/pop/templates/page.tsx
+98:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/admin/restaurantes/page.tsx
+234:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+274:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+342:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+363:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+388:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+407:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+433:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+468:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+515:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+535:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+564:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+601:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+630:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+637:24  Warning: React Hook "useMemo" is called conditionally. React Hooks must be called in the exact same order in every component render.  react-hooks/rules-of-hooks
+
+./src/app/admin/submissoes/[id]/page.tsx
+154:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+259:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+383:55  Warning: `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`.  react/no-unescaped-entities
+383:64  Warning: `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`.  react/no-unescaped-entities
+
+./src/app/admin/submissoes/[id]/recebimento/page.tsx
+77:21  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+83:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+153:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+169:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/admin/submissoes/page.tsx
+234:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+396:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+414:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/admin/sugestoes/page.tsx
+98:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+129:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/admin/usuarios/page.tsx
+157:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+239:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+274:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+305:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+323:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/collaborator/areas/[id]/page.tsx
+67:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+81:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/collaborator/configuracoes/page.tsx
+73:6  Warning: React Hook useEffect has a missing dependency: 'user'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/app/collaborator/dashboard/page.tsx
+26:21  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/collaborator/listas/[id]/page.tsx
+49:7  Warning: Unused eslint-disable directive (no problems were reported from 'no-new-func').
+136:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+304:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+340:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+362:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+459:60  Warning: `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`.  react/no-unescaped-entities
+459:75  Warning: `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`.  react/no-unescaped-entities
+
+./src/app/collaborator/listas-rapidas/[id]/page.tsx
+100:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+115:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/collaborator/listas-rapidas/page.tsx
+83:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/collaborator/mudar-senha/page.tsx
+37:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/collaborator/perfil/page.tsx
+49:6  Warning: React Hook useEffect has a missing dependency: 'error'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+69:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+99:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+198:17  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+248:17  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/app/collaborator/ponto/page.tsx
+55:21  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+70:21  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/collaborator/pop/execucoes/[id]/page.tsx
+106:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+121:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+136:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/collaborator/pop/page.tsx
+59:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/collaborator/submissoes/[id]/page.tsx
+76:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/collaborator/submissoes/[id]/recebimento/page.tsx
+107:21  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+113:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+186:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/collaborator/sugestoes/page.tsx
+90:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/contador/layout.tsx
+8:11  Warning: 'user' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+
+./src/app/login/page.tsx
+53:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/register/page.tsx
+28:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/components/InstallAppButton.tsx
+55:23  Warning: `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`.  react/no-unescaped-entities
+55:50  Warning: `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`.  react/no-unescaped-entities
+
+./src/components/Sidebar.tsx
+218:6  Warning: React Hook useEffect has a missing dependency: 'user'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+752:3  Warning: Unused eslint-disable directive (no problems were reported from 'react-hooks/exhaustive-deps').
+851:30  Warning: React Hook "useMemo" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?  react-hooks/rules-of-hooks
+896:5  Warning: React Hook useMemo has a missing dependency: 'contadorMenuGroups'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+903:24  Warning: React Hook "useMemo" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?  react-hooks/rules-of-hooks
+907:23  Warning: React Hook "useMemo" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?  react-hooks/rules-of-hooks
+912:26  Warning: React Hook "useCallback" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?  react-hooks/rules-of-hooks
+917:29  Warning: React Hook "useCallback" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?  react-hooks/rules-of-hooks
+929:28  Warning: React Hook "useCallback" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?  react-hooks/rules-of-hooks
+945:26  Warning: React Hook "useMemo" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?  react-hooks/rules-of-hooks
+965:3  Warning: React Hook "useEffect" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?  react-hooks/rules-of-hooks
+985:3  Warning: React Hook "useEffect" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?  react-hooks/rules-of-hooks
+1051:19  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+1058:17  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/contexts/AuthContext.tsx
+97:38  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/hooks/usePWAInstall.ts
+35:28  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/app/api-reference/config/eslint#disabling-rules
+   Collecting page data ...
+   Generating static pages (0/56) ...
+   Generating static pages (14/56) 
+   Generating static pages (28/56) 
+   Generating static pages (42/56) 
+ ✓ Generating static pages (56/56)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                                       Size  First Load JS
+┌ ○ /                                          1.77 kB         125 kB
+├ ○ /_not-found                                  995 B         104 kB
+├ ○ /admin/areas                               5.14 kB         160 kB
+├ ○ /admin/atestados                           3.09 kB         135 kB
+├ ○ /admin/ausencias                           2.84 kB         135 kB
+├ ○ /admin/catalogo-global                     3.01 kB         153 kB
+├ ○ /admin/checklists                           2.9 kB         159 kB
+├ ƒ /admin/checklists/[id]                     4.85 kB         163 kB
+├ ○ /admin/configuracoes                       7.03 kB         171 kB
+├ ○ /admin/convites                            4.12 kB         159 kB
+├ ○ /admin/cotacoes                            4.15 kB         163 kB
+├ ƒ /admin/cotacoes/[id]                       4.69 kB         158 kB
+├ ○ /admin/dashboard                           4.01 kB         162 kB
+├ ○ /admin/editar-perfil                       5.52 kB         163 kB
+├ ○ /admin/estatisticas                        4.69 kB         154 kB
+├ ○ /admin/fornecedores                        4.44 kB         163 kB
+├ ○ /admin/fornecedores-regiao                   327 B         103 kB
+├ ƒ /admin/fornecedores/[id]                   2.19 kB         136 kB
+├ ○ /admin/gerar-cotacao                         327 B         103 kB
+├ ○ /admin/gerenciar-usuarios                  2.04 kB         125 kB
+├ ○ /admin/global                              8.02 kB         158 kB
+├ ○ /admin/items                               3.63 kB         142 kB
+├ ○ /admin/itens-regionais                       328 B         103 kB
+├ ○ /admin/lista-rapida                          329 B         103 kB
+├ ○ /admin/listas                              20.5 kB         178 kB
+├ ○ /admin/listas-rapidas                      4.66 kB         169 kB
+├ ƒ /admin/listas-rapidas/[id]                 4.32 kB         155 kB
+├ ƒ /admin/listas/[id]                         3.69 kB         145 kB
+├ ƒ /admin/listas/[id]/lista-mae               8.69 kB         164 kB
+├ ○ /admin/logs                                3.36 kB         151 kB
+├ ○ /admin/mudar-senha                         3.29 kB         153 kB
+├ ○ /admin/ponto                                4.2 kB         137 kB
+├ ○ /admin/pop-atividades                        331 B         103 kB
+├ ○ /admin/pop-auditoria                         328 B         103 kB
+├ ○ /admin/pop-listas                            328 B         103 kB
+├ ○ /admin/pop/execucoes                       3.43 kB         154 kB
+├ ○ /admin/pop/templates                       4.08 kB         163 kB
+├ ƒ /admin/pop/templates/[id]                  4.42 kB         163 kB
+├ ○ /admin/restaurantes                        10.2 kB         165 kB
+├ ○ /admin/submissoes                          7.85 kB         166 kB
+├ ƒ /admin/submissoes/[id]                     6.12 kB         165 kB
+├ ƒ /admin/submissoes/[id]/recebimento            4 kB         140 kB
+├ ○ /admin/sugestoes                           2.96 kB         164 kB
+├ ○ /admin/usuarios                            6.52 kB         165 kB
+├ ○ /collaborator/areas                        2.89 kB         150 kB
+├ ƒ /collaborator/areas/[id]                   3.81 kB         153 kB
+├ ○ /collaborator/catalogo                       328 B         103 kB
+├ ○ /collaborator/configuracoes                3.05 kB         167 kB
+├ ○ /collaborator/dashboard                    3.19 kB         161 kB
+├ ○ /collaborator/espelho-ponto                2.98 kB         135 kB
+├ ○ /collaborator/listas                       2.92 kB         154 kB
+├ ○ /collaborator/listas-rapidas                3.8 kB         162 kB
+├ ƒ /collaborator/listas-rapidas/[id]          4.47 kB         157 kB
+├ ƒ /collaborator/listas/[id]                  4.92 kB         146 kB
+├ ○ /collaborator/mudar-senha                  3.28 kB         153 kB
+├ ○ /collaborator/perfil                       5.52 kB         163 kB
+├ ○ /collaborator/ponto                           4 kB         151 kB
+├ ○ /collaborator/pop                          3.43 kB         154 kB
+├ ○ /collaborator/pop/execucoes                3.46 kB         154 kB
+├ ƒ /collaborator/pop/execucoes/[id]           4.72 kB         158 kB
+├ ○ /collaborator/submissoes                   3.92 kB         157 kB
+├ ƒ /collaborator/submissoes/[id]              4.04 kB         155 kB
+├ ƒ /collaborator/submissoes/[id]/recebimento  5.16 kB         158 kB
+├ ○ /collaborator/sugestoes                    3.67 kB         159 kB
+├ ○ /contador                                  3.64 kB         136 kB
+├ ○ /convite                                   4.02 kB         136 kB
+├ ○ /login                                     3.65 kB         148 kB
+├ ○ /manifest.webmanifest                        125 B         103 kB
+└ ○ /register                                  2.48 kB         138 kB
++ First Load JS shared by all                   103 kB
+  ├ chunks/18-3ce15d1c40878474.js              46.4 kB
+  ├ chunks/87c73c54-09e1ba5c70e60a51.js        54.2 kB
+  └ other shared chunks (total)                 2.2 kB
+
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+

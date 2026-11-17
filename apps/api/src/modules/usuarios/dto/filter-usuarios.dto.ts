@@ -1,5 +1,5 @@
-import { IsEnum, IsOptional, IsBoolean } from 'class-validator';
-import { Transform } from 'class-transformer';
+import { IsEnum, IsInt, IsOptional, IsBoolean, Min } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { UserRole } from '@prisma/client';
 
@@ -18,4 +18,12 @@ export class FilterUsuariosDto {
     return value;
   })
   aprovado?: boolean;
+
+  // Seletor de restaurante (SUPER_ADMIN/CONTADOR); resolvido por @TenantId.
+  @ApiPropertyOptional()
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  restauranteId?: number;
 }

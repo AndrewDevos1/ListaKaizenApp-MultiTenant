@@ -1,0 +1,6 @@
+ id | usuario_id | restaurante_id |      nome       
+----+------------+----------------+-----------------
+  3 |          4 |              1 | Jornada noturna
+  7 |          7 |              2 | B ok
+(2 rows)
+

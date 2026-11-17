@@ -25,4 +25,13 @@ describe('ModuloGuard', () => {
     await expect(guard.canActivate(context({ role: 'SUPER_ADMIN' }))).resolves.toBe(true);
     expect(restaurantes.findEnabled).not.toHaveBeenCalled();
   });
+
+  it('usa restaurante selecionado pelo CONTADOR', async () => {
+    const { guard, restaurantes } = guardFor('moduloPonto');
+    const request = { user: { role: 'CONTADOR' }, query: { restauranteId: '9' } };
+    await expect(guard.canActivate({
+      getHandler: () => ({}), getClass: () => ({}), switchToHttp: () => ({ getRequest: () => request }),
+    } as any)).resolves.toBe(true);
+    expect(restaurantes.findEnabled).toHaveBeenCalledWith(9);
+  });
 });

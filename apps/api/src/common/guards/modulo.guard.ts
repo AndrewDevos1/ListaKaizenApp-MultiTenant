@@ -22,13 +22,18 @@ export class ModuloGuard implements CanActivate {
     ]);
     if (!modulo) return true;
 
-    const { user } = context.switchToHttp().getRequest();
+    const request = context.switchToHttp().getRequest();
+    const { user } = request;
     if (user?.role === 'SUPER_ADMIN') return true;
-    if (!user?.restauranteId) {
+    const selected = ['CONTADOR'].includes(user?.role)
+      ? request.query?.restauranteId
+      : user?.restauranteId;
+    const restauranteId = Number(selected);
+    if (!Number.isInteger(restauranteId) || restauranteId <= 0) {
       throw new ForbiddenException('Usuário não está vinculado a nenhum restaurante');
     }
 
-    const enabled = await this.restauranteModulos.findEnabled(user.restauranteId);
+    const enabled = await this.restauranteModulos.findEnabled(restauranteId);
     if (!enabled[modulo]) {
       throw new ForbiddenException('Módulo não habilitado para este restaurante');
     }

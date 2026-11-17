@@ -1,0 +1,8 @@
+PASS src/modules/atestados/atestados.controller.spec.ts
+PASS src/modules/submissoes/submissoes.service.spec.ts (13.849 s)
+
+Test Suites: 1 skipped, 18 passed, 18 of 19 total
+Tests:       1 skipped, 90 passed, 91 total
+Snapshots:   0 total
+Time:        15.23 s
+Ran all test suites.

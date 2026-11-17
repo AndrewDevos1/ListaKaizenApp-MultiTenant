@@ -301,22 +301,22 @@
 .groupLabel {
   font-size: 0.75rem;
   font-weight: 700;
-  color: var(--sidebar-text-muted);
+  color: var(--sidebar-text);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   padding: 0.45rem var(--spacing-md) 0.3rem var(--spacing-md);
+  margin-top: 0.75rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: var(--spacing-sm);
   background: none;
   border: none;
   width: 100%;
+  text-align: left;
   cursor: pointer;
-  transition: all var(--transition-fast);
-}
-
-.groupLabel:hover {
-  color: var(--sidebar-text);
+  border-radius: var(--border-radius-sm);
+  transition: background-color var(--transition-fast), color var(--transition-fast);
 }
 
 .groupLabel svg {
@@ -980,7 +980,7 @@
   font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 1px;
-  color: rgba(255, 255, 255, 0.6);
+  color: rgba(255, 255, 255, 0.85);
   padding: 0.35rem 1.5rem;
   text-transform: uppercase;
   background: rgba(255, 255, 255, 0.05);
@@ -1260,4 +1260,10 @@
     min-height: 40px;
     padding: 0.6rem 0.25rem;
   }
+}
+
+/* Mobile: orelha não cobre conteúdo (issue #22) */
+@media (max-width: 768px) {
+  .pageContentWrapper { padding-left: 2.25rem; padding-right: 2.25rem; }
+  .sidebarTab, .wrapper[data-navbar-style='next'] .sidebarTab { width: 36px; height: 88px; }
 }

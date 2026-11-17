@@ -1,0 +1,1 @@
+ALTER TABLE "atestados" ALTER COLUMN "situacao" SET DEFAULT 'PENDENTE';
