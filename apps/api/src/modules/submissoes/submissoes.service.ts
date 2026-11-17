@@ -18,6 +18,7 @@ import {
 } from './dto/filter-submissoes.dto';
 import { UpdatePedidoStatusDto } from './dto/update-pedido-status.dto';
 import { ConfirmarRecebimentoDto } from './dto/confirmar-recebimento.dto';
+import { EditarSubmissaoDto } from './dto/editar-submissao.dto';
 import { NotificacoesService } from '../notificacoes/notificacoes.service';
 import { recalcularLotesPorSubmissao } from './lote-consolidado.helper';
 
@@ -630,6 +631,61 @@ export class SubmissoesService {
     await recalcularLotesPorSubmissao(this.prisma, pedido.submissaoId);
 
     return pedidoAtualizado;
+  }
+
+  // Paridade com legado (PUT /admin/submissoes/:id/editar): o admin corrige as
+  // quantidades ATUAIS de uma submissão PENDENTE e os pedidos são recalculados
+  // com a mesma regra de submeterLista (listas.service.ts).
+  async editarSubmissao(id: number, restauranteId: number, dto: EditarSubmissaoDto) {
+    const submissao = await this.findSubmissaoOrFail(id, restauranteId);
+    if (submissao.status !== StatusSubmissao.PENDENTE) {
+      throw new BadRequestException('Apenas submissões PENDENTES podem ser editadas');
+    }
+    const ids = dto.itens.map((i) => i.itemId);
+    if (new Set(ids).size !== ids.length) {
+      throw new BadRequestException('Itens duplicados na edição');
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      const refs = await tx.listaItemRef.findMany({ where: { listaId: submissao.listaId } });
+      const porItem = new Map(refs.map((r) => [r.itemId, r]));
+      for (const { itemId, quantidadeAtual } of dto.itens) {
+        const ref = porItem.get(itemId);
+        if (!ref) {
+          throw new BadRequestException(`Item #${itemId} não pertence a esta lista`);
+        }
+        ref.quantidadeAtual = quantidadeAtual;
+        await tx.listaItemRef.update({ where: { id: ref.id }, data: { quantidadeAtual } });
+      }
+
+      // Só recria pedidos se nenhum já foi decidido (evita perder aprovação/recebimento).
+      const decididos = await tx.pedido.count({
+        where: { submissaoId: id, status: { not: StatusPedido.PENDENTE } },
+      });
+      if (decididos > 0) {
+        throw new BadRequestException('Submissão possui pedidos já decididos; reverta antes de editar');
+      }
+      await tx.pedido.deleteMany({ where: { submissaoId: id } });
+
+      const pedidos = refs
+        .filter((r) => r.quantidadeAtual < r.quantidadeMinima)
+        .map((r) => ({
+          submissaoId: id,
+          itemId: r.itemId,
+          qtdSolicitada:
+            r.usaThreshold === true && r.qtdFardo && r.qtdFardo > 0
+              ? r.qtdFardo
+              : Math.max(0, r.quantidadeMinima - r.quantidadeAtual),
+        }))
+        .filter((p) => p.qtdSolicitada > 0);
+      if (pedidos.length === 0) {
+        throw new BadRequestException('Todos os itens ficariam acima do mínimo; arquive ou rejeite a submissão');
+      }
+      await tx.pedido.createMany({ data: pedidos });
+    });
+
+    await recalcularLotesPorSubmissao(this.prisma, id);
+    return this.findOneAdmin(id, restauranteId);
   }
 
   async reverterSubmissao(id: number, restauranteId: number) {
