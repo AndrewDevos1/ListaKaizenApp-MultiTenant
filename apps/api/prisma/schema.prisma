@@ -130,6 +130,7 @@ model Restaurante {
   fornecedores   Fornecedor[]
   cotacoes       Cotacao[]
   checklists     Checklist[]
+  catalogoImportacoes CatalogoImportacao[]
   recebimentos   Recebimento[]
   listaRapidas   ListaRapida[]
   sugestoes      SugestaoItem[]
@@ -373,6 +374,11 @@ model Item {
   ativo         Boolean  @default(true)
   restauranteId Int      @map("restaurante_id")
   criadoEm      DateTime @default(now()) @map("criado_em")
+  // Catálogo por fornecedor (issue #35). Opcionais: itens existentes seguem válidos.
+  codigoFornecedor String?  @map("codigo_fornecedor") @db.VarChar(60)
+  marca            String?  @db.VarChar(120)
+  descricao        String?
+  precoAtual       Decimal? @map("preco_atual") @db.Decimal(14, 2)
 
   restaurante  Restaurante   @relation(fields: [restauranteId], references: [id])
   fornecedor   Fornecedor?   @relation(fields: [fornecedorId], references: [id])
@@ -384,6 +390,9 @@ model Item {
   listaRapidaItens ListaRapidaItem[]
   sugestoesCriadas SugestaoItem[]
 
+  // NULLs são distintos no Postgres: só códigos informados são únicos por fornecedor.
+  @@unique([restauranteId, fornecedorId, codigoFornecedor])
+  @@index([restauranteId, fornecedorId, ativo])
   @@map("itens")
 }
 
@@ -494,8 +503,35 @@ model Fornecedor {
   restaurante  Restaurante   @relation(fields: [restauranteId], references: [id])
   itens        Item[]
   cotacaoItens CotacaoItem[]
+  importacoesCatalogo CatalogoImportacao[]
 
   @@map("fornecedores")
+}
+
+enum StatusCatalogoImportacao {
+  PENDENTE
+  CONFIRMADA
+}
+
+model CatalogoImportacao {
+  id            Int                      @id @default(autoincrement())
+  token         String                   @unique @db.Uuid
+  restauranteId Int                      @map("restaurante_id")
+  fornecedorId  Int                      @map("fornecedor_id")
+  criadoPorId   Int                      @map("criado_por_id")
+  formato       String                   @db.VarChar(10)
+  status        StatusCatalogoImportacao @default(PENDENTE)
+  linhas        Json
+  resultado     Json?
+  expiraEm      DateTime                 @map("expira_em")
+  confirmadoEm  DateTime?                @map("confirmado_em")
+  criadoEm      DateTime                 @default(now()) @map("criado_em")
+
+  restaurante Restaurante @relation(fields: [restauranteId], references: [id])
+  fornecedor  Fornecedor  @relation(fields: [fornecedorId], references: [id])
+
+  @@index([restauranteId, fornecedorId, status])
+  @@map("catalogo_importacoes")
 }
 
 model Submissao {
