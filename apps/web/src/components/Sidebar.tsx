@@ -44,6 +44,7 @@ import {
   FaPencilAlt,
   FaSave,
   FaClock,
+  FaArchive,
 } from 'react-icons/fa';
 import { UserRole } from 'shared';
 import styles from './Sidebar.module.css';
@@ -142,6 +143,7 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
   const roleIsSuperAdmin = effectiveRole === UserRole.SUPER_ADMIN;
   const funcionariosEnabled = isSuperAdmin || user?.modulos?.moduloFuncionarios === true;
   const pontoEnabled = isSuperAdmin || user?.modulos?.moduloPonto === true;
+  const almoxarifadoEnabled = isSuperAdmin || user?.modulos?.moduloAlmoxarifadoEpi === true;
 
   const expandSidebarForSearch = useCallback(() => {
     if (isLegacyStyle && isMobile) {
@@ -605,6 +607,7 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
       id: 'listas-estoque',
       label: 'LISTAS & ESTOQUE',
       items: [
+        ...(almoxarifadoEnabled ? [{ label: 'Almoxarifado', href: '/admin/almoxarifado', icon: <FaArchive />, status: 'available' as const }] : []),
         {
           label: 'Listas Rápidas',
           href: '/admin/listas-rapidas',
@@ -749,7 +752,7 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
       ],
     },
    
-  ], [roleIsSuperAdmin, funcionariosEnabled, pontoEnabled]);
+  ], [roleIsSuperAdmin, funcionariosEnabled, pontoEnabled, almoxarifadoEnabled]);
 
    
   const collaboratorMenuGroups = useMemo<MenuGroup[]>(() => [

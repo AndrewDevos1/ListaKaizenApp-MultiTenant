@@ -145,6 +145,8 @@ model Restaurante {
   atestados               Atestado[]
   contadores               ContadorRestaurante[]
   contadorVinculos          ContadorFuncionario[]
+  almoxarifadoPosicoes      AlmoxarifadoPosicao[]
+  almoxarifadoMovimentacoes AlmoxarifadoMovimentacao[]
 
   @@map("restaurantes")
 }
@@ -389,6 +391,8 @@ model Item {
   checklistItens  ChecklistItem[]
   listaRapidaItens ListaRapidaItem[]
   sugestoesCriadas SugestaoItem[]
+  almoxarifadoPosicoes AlmoxarifadoPosicao[]
+  almoxarifadoMovimentacoes AlmoxarifadoMovimentacao[]
 
   // NULLs são distintos no Postgres: só códigos informados são únicos por fornecedor.
   @@unique([restauranteId, fornecedorId, codigoFornecedor])
@@ -895,4 +899,56 @@ model PushSubscription {
   usuario   Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
 
   @@map("push_subscriptions")
+}
+
+// --- Almoxarifado MVP (issue #37): estoque físico, independente de ListaItemRef ---
+enum TipoMovimentacaoAlmoxarifado {
+  ENTRADA
+  SAIDA
+  AJUSTE
+}
+
+model AlmoxarifadoPosicao {
+  id            Int      @id @default(autoincrement())
+  restauranteId Int      @map("restaurante_id")
+  itemId        Int      @map("item_id")
+  saldo         Decimal  @default(0) @db.Decimal(14, 3)
+  minimo        Decimal? @db.Decimal(14, 3)
+  localizacao   String?
+  observacao    String?
+  ativo         Boolean  @default(true)
+  criadoEm      DateTime @default(now()) @map("criado_em")
+  atualizadoEm  DateTime @updatedAt @map("atualizado_em")
+
+  restaurante   Restaurante @relation(fields: [restauranteId], references: [id])
+  item          Item        @relation(fields: [itemId], references: [id])
+  movimentacoes AlmoxarifadoMovimentacao[]
+
+  @@unique([restauranteId, itemId])
+  @@map("almoxarifado_posicoes")
+}
+
+// Append-only: sem update/delete na API.
+model AlmoxarifadoMovimentacao {
+  id                Int                          @id @default(autoincrement())
+  restauranteId     Int                          @map("restaurante_id")
+  posicaoId         Int                          @map("posicao_id")
+  itemId            Int                          @map("item_id")
+  tipo              TipoMovimentacaoAlmoxarifado
+  quantidade        Decimal                      @db.Decimal(14, 3)
+  saldoAnterior     Decimal                      @map("saldo_anterior") @db.Decimal(14, 3)
+  saldoNovo         Decimal                      @map("saldo_novo") @db.Decimal(14, 3)
+  motivo            String
+  responsavelId     Int                          @map("responsavel_id")
+  responsavelNome   String                       @map("responsavel_nome")
+  chaveIdempotencia String                       @map("chave_idempotencia")
+  criadoEm          DateTime                     @default(now()) @map("criado_em")
+
+  restaurante Restaurante         @relation(fields: [restauranteId], references: [id])
+  posicao     AlmoxarifadoPosicao @relation(fields: [posicaoId], references: [id])
+  item        Item                @relation(fields: [itemId], references: [id])
+
+  @@unique([restauranteId, chaveIdempotencia])
+  @@index([posicaoId, criadoEm])
+  @@map("almoxarifado_movimentacoes")
 }
