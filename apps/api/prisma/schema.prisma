@@ -77,8 +77,13 @@ model Restaurante {
   id       Int      @id @default(autoincrement())
   nome     String
   cnpj     String?  @unique
-  ativo    Boolean  @default(true)
-  criadoEm DateTime @default(now()) @map("criado_em")
+  ativo                 Boolean  @default(true)
+  moduloPonto           Boolean  @default(false) @map("modulo_ponto")
+  moduloFuncionarios    Boolean  @default(true) @map("modulo_funcionarios")
+  moduloAlmoxarifadoEpi Boolean  @default(true) @map("modulo_almoxarifado_epi")
+  criadoEm              DateTime @default(now()) @map("criado_em")
+
+  // ponytail: ponto starts opt-in; enable per tenant during rollout.
 
   usuarios       Usuario[]
   items          Item[]

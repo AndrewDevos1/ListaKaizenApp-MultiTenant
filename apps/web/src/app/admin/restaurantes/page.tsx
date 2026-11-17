@@ -44,6 +44,9 @@ interface Restaurante {
   adminPrincipalEmail?: string | null;
   adminPrincipalNome?: string | null;
   _count: { usuarios: number };
+  moduloPonto: boolean;
+  moduloFuncionarios: boolean;
+  moduloAlmoxarifadoEpi: boolean;
 }
 
 interface UsuarioRestaurante {
@@ -338,6 +341,27 @@ export default function AdminRestaurantesPage() {
       await loadRestaurantes();
     } catch (err: any) {
       setError(err?.response?.data?.message ?? 'Erro ao salvar restaurante');
+    } finally {
+      setSavingRestaurante(false);
+    }
+  };
+
+  const handleSaveModulos = async (
+    restaurante: Restaurante,
+    changes: Partial<Pick<Restaurante, 'moduloPonto' | 'moduloFuncionarios' | 'moduloAlmoxarifadoEpi'>>,
+  ) => {
+    setSavingRestaurante(true);
+    setError('');
+    setSuccess('');
+    try {
+      await api.put(`/restaurantes/${restaurante.id}/modulos`, changes);
+      setSuccess(`Módulos de ${restaurante.nome} atualizados.`);
+      setEditingRestaurante((current) =>
+        current?.id === restaurante.id ? { ...current, ...changes } : current,
+      );
+      await loadRestaurantes();
+    } catch (err: any) {
+      setError(err?.response?.data?.message ?? 'Erro ao atualizar módulos');
     } finally {
       setSavingRestaurante(false);
     }
@@ -992,6 +1016,32 @@ export default function AdminRestaurantesPage() {
               onChange={(event) => setRestauranteForm((prev) => ({ ...prev, cnpj: event.target.value }))}
             />
           </Form.Group>
+          {editingRestaurante && (
+            <Form.Group className="mt-4">
+              <Form.Label>Módulos habilitados</Form.Label>
+              <Form.Check
+                type="switch"
+                label="Registro de ponto"
+                checked={editingRestaurante.moduloPonto}
+                disabled={savingRestaurante}
+                onChange={(event) => { void handleSaveModulos(editingRestaurante, { moduloPonto: event.target.checked }); }}
+              />
+              <Form.Check
+                type="switch"
+                label="Funcionários"
+                checked={editingRestaurante.moduloFuncionarios}
+                disabled={savingRestaurante}
+                onChange={(event) => { void handleSaveModulos(editingRestaurante, { moduloFuncionarios: event.target.checked }); }}
+              />
+              <Form.Check
+                type="switch"
+                label="Almoxarifado / EPI"
+                checked={editingRestaurante.moduloAlmoxarifadoEpi}
+                disabled={savingRestaurante}
+                onChange={(event) => { void handleSaveModulos(editingRestaurante, { moduloAlmoxarifadoEpi: event.target.checked }); }}
+              />
+            </Form.Group>
+          )}
         </Modal.Body>
         <Modal.Footer>
           <Button variant="secondary" onClick={() => setShowRestauranteModal(false)} disabled={savingRestaurante}>

@@ -5,6 +5,7 @@ import { gzipSync, gunzipSync } from 'zlib';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateRestauranteDto } from './dto/create-restaurante.dto';
 import { UpdateRestauranteDto } from './dto/update-restaurante.dto';
+import { UpdateRestauranteModulosDto } from './dto/update-restaurante-modulos.dto';
 
 export interface ResumoRestore {
   sucesso: true;
@@ -88,6 +89,11 @@ export class RestaurantesService {
   }
 
   async update(id: number, dto: UpdateRestauranteDto) {
+    await this.findOne(id);
+    return this.prisma.restaurante.update({ where: { id }, data: dto });
+  }
+
+  async updateModulos(id: number, dto: UpdateRestauranteModulosDto) {
     await this.findOne(id);
     return this.prisma.restaurante.update({ where: { id }, data: dto });
   }

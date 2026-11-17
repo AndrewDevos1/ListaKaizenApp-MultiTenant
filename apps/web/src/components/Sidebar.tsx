@@ -137,6 +137,7 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
   const effectiveRole = isSuperAdmin ? previewRole : user?.role ?? UserRole.COLLABORATOR;
   const roleIsAdmin = effectiveRole === UserRole.ADMIN || effectiveRole === UserRole.SUPER_ADMIN;
   const roleIsSuperAdmin = effectiveRole === UserRole.SUPER_ADMIN;
+  const funcionariosEnabled = isSuperAdmin || user?.modulos?.moduloFuncionarios === true;
 
   const expandSidebarForSearch = useCallback(() => {
     if (isLegacyStyle && isMobile) {
@@ -549,12 +550,14 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
               },
             ]
           : []),
-        {
-          label: 'Gerenciar Usuários',
-          href: '/admin/usuarios',
-          icon: <FaUsersCog />,
-          status: 'available',
-        },
+        ...(funcionariosEnabled
+          ? [{
+              label: 'Gerenciar Usuários',
+              href: '/admin/usuarios',
+              icon: <FaUsersCog />,
+              status: 'available' as const,
+            }]
+          : []),
         {
           label: 'Estatísticas',
           href: '/admin/estatisticas',
@@ -711,7 +714,7 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
       ],
     },
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  ], [roleIsSuperAdmin]);
+  ], [roleIsSuperAdmin, funcionariosEnabled]);
 
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const collaboratorMenuGroups = useMemo<MenuGroup[]>(() => [

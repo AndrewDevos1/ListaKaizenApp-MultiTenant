@@ -3,6 +3,7 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { Table, Button, Modal, Form, Alert, Spinner, Badge } from 'react-bootstrap';
 import api from '@/lib/api';
+import { useAuth } from '@/contexts/AuthContext';
 import styles from './Areas.module.css';
 import { FaUsers, FaList } from 'react-icons/fa';
 
@@ -25,6 +26,9 @@ interface ListaOpt {
 }
 
 export default function AreasPage() {
+  const { user } = useAuth();
+  const funcionariosEnabled =
+    user?.role === 'SUPER_ADMIN' || user?.modulos?.moduloFuncionarios !== false;
   const [areas, setAreas] = useState<AreaSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -242,9 +246,11 @@ export default function AreasPage() {
                       <Button size="sm" variant="outline-primary" onClick={() => openModal(area)}>
                         Editar
                       </Button>
-                      <Button size="sm" variant="outline-secondary" onClick={() => abrirMembros(area)}>
-                        <FaUsers className="me-1" />Membros
-                      </Button>
+                      {funcionariosEnabled && (
+                        <Button size="sm" variant="outline-secondary" onClick={() => abrirMembros(area)}>
+                          <FaUsers className="me-1" />Membros
+                        </Button>
+                      )}
                       <Button size="sm" variant="outline-secondary" onClick={() => abrirListas(area)}>
                         <FaList className="me-1" />Listas
                       </Button>
