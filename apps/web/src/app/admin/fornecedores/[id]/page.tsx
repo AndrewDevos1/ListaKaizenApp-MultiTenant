@@ -109,6 +109,12 @@ export default function FornecedorDetailPage() {
           </div>
         </div>
 
+        <div style={{ margin: '1rem 0' }}>
+          <Link href={`/admin/fornecedores/${fornecedor.id}/catalogo`} className="btn btn-primary">
+            Gerenciar catálogo e importar itens
+          </Link>
+        </div>
+
         <div className={styles.tableSection}>
           <h2 className={styles.sectionTitle}>
             Itens Vinculados ({fornecedor.itens.length})
