@@ -1,5 +1,6 @@
 'use client';
 
+import { rotuloPonto } from '@/lib/rotulos';
 import SeletorMes from '@/components/SeletorMes';
 import { dataBR } from '@/lib/formatar';
 import { useEffect, useState } from 'react';
@@ -100,7 +101,7 @@ export default function EspelhoPontoPage() {
                     {dia.batidas.length ? (
                       <div className="d-flex flex-column gap-1">
                         {dia.batidas.map((batida) => (
-                          <span key={batida.id}>{batida.tipo}: {horaBatida(batida.registradoEm, dia.data)}</span>
+                          <span key={batida.id}>{rotuloPonto(batida.tipo)}: {horaBatida(batida.registradoEm, dia.data)}</span>
                         ))}
                       </div>
                     ) : '—'}

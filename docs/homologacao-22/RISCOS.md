@@ -42,3 +42,12 @@ Rollback: restaurar o dump. Nunca `db push`, DROP ou CREATE em banco real.
 - CONFLITO REAL: #24 (menu RH) x #27 em `apps/web/src/components/Sidebar.tsx` (merge-tree: conflito de conteudo; Sidebar.module.css auto-merge). #23, #25, #26 sem sobreposicao com #24.
 - Plano: integrar #23->#25->#26->#27 e so depois rebasear #24 sobre o resultado, resolvendo Sidebar.tsx manualmente e mantendo: grupo RH do #24 + hooks sem early return, link banco-horas do colaborador e CSS da orelha do #27. Nao mergear #24 antes: perderia as correcoes de rules-of-hooks.
 - Migrations: ordem lexical baseline(20260101...) < 20261018... < drift(20261020...); nenhuma duplicada.
+
+## Rodada 7 (pendencias pre-aceite)
+- Espelho 01/11/2026: escala do colab1 comeca em 16/11 (seg-sex), logo 01/11 tem previsto 00:00 sem batida e SEM folga presumida (classificacao so existe quando ha registro explicito, ex.: 10/11 FOLGA). Regra confere com escala e registros.
+- "SAIDA" -> "SAÍDA" via `lib/rotulos.ts` (Meu Ponto e Espelho); enum do banco inalterado.
+- Margem mobile: padding lateral simetrico (36/36 px nas paginas de espelho/banco, 48/48 no ponto).
+- Bug achado: SUPER_ADMIN nao abria telas RH (400 "Restaurante invalido": rotas /admin exigem restauranteId). Corrigido: `FilterUsuariosDto` aceita restauranteId; web envia `?restauranteId=N` (guardado em sessionStorage). ADMIN continua ignorando o parametro (isolamento).
+- Limitacao: SUPER_ADMIN precisa abrir uma vez `/admin/usuarios?restauranteId=1`; seletor de restaurante na UI fica como melhoria (fora do MVP).
+- Jest 93/93 com TEST_DATABASE_URL (inclui integracao noturna), tsc API/web, nest build, next build 57/57, lint 0 erros/151 warnings.
+- Ressalvas visuais (nao bloqueantes): tabela do espelho no mobile corta coluna "Previsto" (scroll horizontal sem indicacao); breadcrumb em minuscula; badge "N" e aba lateral sao do ambiente dev.
