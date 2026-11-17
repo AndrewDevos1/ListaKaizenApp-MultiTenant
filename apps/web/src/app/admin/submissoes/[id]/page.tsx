@@ -18,6 +18,14 @@ interface Pedido {
   item: { id: number; nome: string; unidadeMedida: string };
 }
 
+interface ListaItemRef {
+  id: number;
+  itemId: number;
+  quantidadeAtual: number;
+  quantidadeMinima: number;
+  item: { id: number; nome: string; unidadeMedida: string };
+}
+
 interface SubmissaoDetail {
   id: number;
   status: StatusSubmissao;
@@ -114,6 +122,9 @@ export default function AdminSubmissaoDetailPage() {
   const [selectedPedidoIds, setSelectedPedidoIds] = useState<number[]>([]);
   const [showClipboard, setShowClipboard] = useState(false);
   const [clipboardText, setClipboardText] = useState('');
+  const [showEditar, setShowEditar] = useState(false);
+  const [itensEdicao, setItensEdicao] = useState<ListaItemRef[]>([]);
+  const [carregandoEdicao, setCarregandoEdicao] = useState(false);
 
   const fetchSubmissao = useCallback(async () => {
     try {
@@ -219,6 +230,35 @@ export default function AdminSubmissaoDetailPage() {
         setSelectedPedidoIds([]);
       },
       `${totalSelecionados} pedido(s) rejeitado(s)`,
+    );
+  };
+
+  const abrirEdicao = async () => {
+    if (!submissao) return;
+    setError('');
+    setCarregandoEdicao(true);
+    try {
+      const { data } = await api.get<ListaItemRef[]>(`/v1/listas/${submissao.lista.id}/itens`);
+      setItensEdicao(data);
+      setShowEditar(true);
+    } catch (err: any) {
+      setError(err?.response?.data?.message || 'Erro ao carregar estoque da lista');
+    } finally {
+      setCarregandoEdicao(false);
+    }
+  };
+
+  const salvarEdicao = () => {
+    if (!submissao) return;
+    execAction(
+      'editar-submissao',
+      async () => {
+        await api.put(`/v1/admin/submissoes/${submissao.id}/editar`, {
+          itens: itensEdicao.map(({ itemId, quantidadeAtual }) => ({ itemId, quantidadeAtual })),
+        });
+        setShowEditar(false);
+      },
+      'Estoque atualizado e pedidos recalculados',
     );
   };
 
@@ -384,6 +424,16 @@ export default function AdminSubmissaoDetailPage() {
               </span>
             )}
 
+            {submissao.status === 'PENDENTE' && !submissao.arquivada && (
+              <Button
+                variant="outline-primary"
+                size="sm"
+                onClick={abrirEdicao}
+                disabled={!!actionLoading || carregandoEdicao}
+              >
+                {carregandoEdicao ? <Spinner animation="border" size="sm" /> : 'Editar estoque e recalcular'}
+              </Button>
+            )}
             <Button
               variant="outline-warning"
               size="sm"
@@ -581,6 +631,26 @@ export default function AdminSubmissaoDetailPage() {
           </div>
         </div>
       </div>
+
+      <Modal show={showEditar} onHide={() => setShowEditar(false)} size="lg">
+        <Modal.Header closeButton><Modal.Title>Editar estoque da submissão</Modal.Title></Modal.Header>
+        <Modal.Body>
+          <p className="text-muted">Altere a quantidade atual. Os pedidos pendentes serão recalculados pela regra mínimo − atual.</p>
+          <Table responsive striped>
+            <thead><tr><th>Item</th><th>Mínimo</th><th>Atual</th><th>Unidade</th></tr></thead>
+            <tbody>{itensEdicao.map((ref, index) => (
+              <tr key={ref.id}><td>{ref.item.nome}</td><td>{ref.quantidadeMinima}</td><td>
+                <Form.Control type="number" min="0" step="any" value={ref.quantidadeAtual}
+                  aria-label={`Quantidade atual ${ref.item.nome}`}
+                  onChange={(event) => setItensEdicao((prev) => prev.map((item, i) => i === index ? { ...item, quantidadeAtual: Number(event.target.value) } : item))} />
+              </td><td>{ref.item.unidadeMedida}</td></tr>
+            ))}</tbody>
+          </Table>
+        </Modal.Body>
+        <Modal.Footer><Button variant="secondary" onClick={() => setShowEditar(false)} disabled={!!actionLoading}>Cancelar</Button>
+          <Button variant="primary" onClick={salvarEdicao} disabled={!!actionLoading}>{isLoading('editar-submissao') ? <Spinner animation="border" size="sm" /> : 'Salvar e recalcular'}</Button>
+        </Modal.Footer>
+      </Modal>
 
       <Modal show={showClipboard} onHide={() => setShowClipboard(false)}>
         <Modal.Header closeButton>

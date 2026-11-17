@@ -17,6 +17,7 @@ import { FilterSubmissoesDto } from './dto/filter-submissoes.dto';
 import { UpdatePedidoStatusDto } from './dto/update-pedido-status.dto';
 import { MergePreviewDto } from './dto/merge-preview.dto';
 import { ConfirmarRecebimentoDto } from './dto/confirmar-recebimento.dto';
+import { EditarSubmissaoDto } from './dto/editar-submissao.dto';
 import { AprovarLoteConsolidadoDto } from './dto/aprovar-lote-consolidado.dto';
 import { CurrentUser, Roles, TenantId } from '../../common/decorators';
 import { RolesGuard, TenantGuard } from '../../common/guards';
@@ -134,6 +135,17 @@ export class AdminSubmissoesController {
       restauranteId,
       dto,
     );
+  }
+
+  @Put('submissoes/:id/editar')
+  @Roles('ADMIN' as any, 'SUPER_ADMIN' as any)
+  @ApiOperation({ summary: 'Editar quantidades atuais de submissão PENDENTE e recalcular pedidos' })
+  editar(
+    @Param('id', ParseIntPipe) id: number,
+    @TenantId() restauranteId: number,
+    @Body() dto: EditarSubmissaoDto,
+  ) {
+    return this.submissoesService.editarSubmissao(id, restauranteId, dto);
   }
 
   @Put('submissoes/:id/reverter')
