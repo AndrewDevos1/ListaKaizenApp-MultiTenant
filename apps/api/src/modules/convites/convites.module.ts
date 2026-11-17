@@ -4,8 +4,10 @@ import {
   PublicConvitesController,
 } from './convites.controller';
 import { ConvitesService } from './convites.service';
+import { RestaurantesModule } from '../restaurantes/restaurantes.module';
 
 @Module({
+  imports: [RestaurantesModule],
   controllers: [AdminConvitesController, PublicConvitesController],
   providers: [ConvitesService],
   exports: [ConvitesService],
