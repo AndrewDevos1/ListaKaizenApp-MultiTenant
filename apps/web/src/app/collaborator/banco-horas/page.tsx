@@ -1,5 +1,6 @@
 'use client';
 
+import SeletorMes from '@/components/SeletorMes';
 import { useEffect, useState } from 'react';
 import { Alert, Card, Form, Spinner, Table } from 'react-bootstrap';
 import api from '@/lib/api';
@@ -34,7 +35,7 @@ export default function BancoHorasColaboradorPage() {
         <strong>Meu Banco de Horas</strong>
         <Form.Group controlId="competencia-banco">
           <Form.Label className="mb-1">Mês de referência</Form.Label>
-          <Form.Control type="month" lang="pt-BR" value={competencia} onChange={(e) => setCompetencia(e.target.value)} required />
+          <SeletorMes value={competencia} onChange={setCompetencia} />
         </Form.Group>
       </Card.Header>
       <Card.Body>
