@@ -14,6 +14,7 @@ export class EspelhoService {
       this.prisma.classificacaoAusencia.findMany({ where: { restauranteId, usuarioId, data: { gte: inicio, lte: fim } }, select: { data: true, tipo: true, motivo: true } }),
       this.prisma.lancamentoBancoHoras.findMany({ where: { restauranteId, usuarioId, dataReferencia: { gte: inicio, lte: fim } }, select: { dataReferencia: true, tipo: true, minutosDelta: true, motivo: true } }),
     ]);
+    const hoje = new Date(Date.now()).toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' });
     const porDia = new Map<string, typeof registros>();
     for (const registro of registros) { const data = dataCivil(registro.dataOperacional); porDia.set(data, [...(porDia.get(data) ?? []), registro]); }
     const dias = diasDoMes(inicio, fim).map((data) => {
@@ -23,12 +24,14 @@ export class EspelhoService {
       const minutosPrevistos = diaEscala?.trabalha ? minutos(diaEscala.entradaPrevista!, diaEscala.saidaPrevista!) : 0;
       const apuracao = apurar(batidas);
       const pendente = batidas.length > 0 && apuracao.pendente;
-      const minutosAbonados = minutosPrevistos ? Math.min(minutosPrevistos, cobertura(atestados, data, diaEscala!.entradaPrevista!, diaEscala!.saidaPrevista!)) : 0;
+      const minutosAbonados = minutosPrevistos ? Math.min(Math.max(0, minutosPrevistos - apuracao.minutos), cobertura(atestados, data, diaEscala!.entradaPrevista!, diaEscala!.saidaPrevista!)) : 0;
       const classificacao = ausencias.find((item) => dataCivil(item.data) === data) ?? null;
       const lancamentos = bancoHoras.filter((item) => dataCivil(item.dataReferencia) === data);
       const minutosBancoHoras = lancamentos.reduce((total, item) => total + item.minutosDelta, 0);
       const saldoBruto = apuracao.minutos + minutosAbonados - minutosPrevistos + minutosBancoHoras;
-      const saldoOperacionalMinutos = pendente ? null : Math.abs(saldoBruto) <= (diaEscala?.toleranciaMinutos ?? 0) ? 0 : saldoBruto;
+      // Dia não encerrado (futuro ou hoje sem jornada concluída) não gera saldo/dívida.
+      const naoEncerrado = data > hoje || (data === hoje && (batidas.length === 0 || pendente));
+      const saldoOperacionalMinutos = pendente || naoEncerrado ? null : Math.abs(saldoBruto) <= (diaEscala?.toleranciaMinutos ?? 0) ? 0 : saldoBruto;
       return { data, batidas, minutosPrevistos, minutosAbonados, minutosRealizados: apuracao.minutos, minutosBancoHoras, classificacao, lancamentos, pendente, saldoOperacionalMinutos };
     });
     const concluidos = dias.filter((dia) => !dia.pendente && (dia.batidas.length > 0 || dia.minutosAbonados > 0 || dia.minutosBancoHoras !== 0 || dia.classificacao));
