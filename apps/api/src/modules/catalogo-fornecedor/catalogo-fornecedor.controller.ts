@@ -54,8 +54,19 @@ export class CatalogoFornecedorController {
   atualizar(
     @Param('fornecedorId', ParseIntPipe) fornecedorId: number, @Param('id', ParseIntPipe) id: number,
     @TenantId() rid: number, @Body() dto: UpdateCatalogoItemDto,
+    @CurrentUser('id') autorId: number, @CurrentUser('nome') autorNome: string,
   ) {
-    return this.service.atualizar(fornecedorId, id, dto, rid);
+    return this.service.atualizar(fornecedorId, id, dto, rid, { id: autorId, nome: autorNome ?? 'Usuário' });
+  }
+
+  @Get(':id/historico-precos')
+  @Roles('ADMIN' as any, 'SUPER_ADMIN' as any)
+  @ApiOperation({ summary: 'Histórico paginado de preços do item (somente leitura)' })
+  historico(
+    @Param('fornecedorId', ParseIntPipe) fornecedorId: number, @Param('id', ParseIntPipe) id: number,
+    @TenantId() rid: number, @Query('pagina') pagina?: string, @Query('tamanho') tamanho?: string,
+  ) {
+    return this.service.historicoPrecos(fornecedorId, id, rid, Number(pagina) || 1, Number(tamanho) || 20);
   }
 
   @Delete(':id')
