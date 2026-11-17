@@ -23,6 +23,7 @@ import { PontoModule } from './modules/ponto/ponto.module';
 import { AusenciasModule } from './modules/ausencias/ausencias.module';
 import { AtestadosModule } from './modules/atestados/atestados.module';
 import { ContadorModule } from './modules/contador/contador.module';
+import { AlmoxarifadoModule } from './modules/almoxarifado/almoxarifado.module';
 
 @Module({
   imports: [
@@ -50,6 +51,7 @@ import { ContadorModule } from './modules/contador/contador.module';
     AusenciasModule,
     AtestadosModule,
     ContadorModule,
+    AlmoxarifadoModule,
   ],
 })
 export class AppModule {}
