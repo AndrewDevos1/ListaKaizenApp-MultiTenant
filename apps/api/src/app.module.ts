@@ -23,6 +23,7 @@ import { PontoModule } from './modules/ponto/ponto.module';
 import { AusenciasModule } from './modules/ausencias/ausencias.module';
 import { AtestadosModule } from './modules/atestados/atestados.module';
 import { ContadorModule } from './modules/contador/contador.module';
+import { CatalogoFornecedorModule } from './modules/catalogo-fornecedor/catalogo-fornecedor.module';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { ContadorModule } from './modules/contador/contador.module';
     SubmissoesModule,
     UsuariosModule,
     FornecedoresModule,
+    CatalogoFornecedorModule,
     CotacoesModule,
     ChecklistsModule,
     ListasRapidasModule,
