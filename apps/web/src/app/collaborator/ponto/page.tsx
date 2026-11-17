@@ -1,5 +1,6 @@
 'use client';
 
+import { rotuloPonto } from '@/lib/rotulos';
 import { useCallback, useEffect, useState } from 'react';
 import { Alert, Badge, Button, Card, Container, Spinner, Table } from 'react-bootstrap';
 import { FaClock, FaPause, FaPlay, FaSignOutAlt } from 'react-icons/fa';
@@ -85,7 +86,7 @@ export default function PontoPage() {
         <Card className="mb-4"><Card.Body>
           <div className="d-flex justify-content-between align-items-center mb-3">
             <span>Último registro</span>
-            {status?.ultimoRegistro ? <Badge bg={status.jornadaEncerrada ? 'secondary' : 'success'}>{status.ultimoRegistro.tipo}</Badge> : <Badge bg="secondary">Sem registros</Badge>}
+            {status?.ultimoRegistro ? <Badge bg={status.jornadaEncerrada ? 'secondary' : 'success'}>{rotuloPonto(status.ultimoRegistro.tipo)}</Badge> : <Badge bg="secondary">Sem registros</Badge>}
           </div>
           {status?.ultimoRegistro && <p className="mb-3 text-muted">{formatarHora(status.ultimoRegistro.registradoEm)}</p>}
           <div className="d-flex flex-wrap gap-2">
@@ -97,7 +98,7 @@ export default function PontoPage() {
         </Card.Body></Card>
         <Card><Card.Header>Batidas de hoje</Card.Header><Card.Body className="p-0">
           <Table responsive className="mb-0"><thead><tr><th>Tipo</th><th>Horário</th></tr></thead><tbody>
-            {status?.registrosHoje.map((registro) => <tr key={registro.id}><td>{registro.tipo}</td><td>{formatarHora(registro.registradoEm)}</td></tr>)}
+            {status?.registrosHoje.map((registro) => <tr key={registro.id}><td>{rotuloPonto(registro.tipo)}</td><td>{formatarHora(registro.registradoEm)}</td></tr>)}
             {!status?.registrosHoje.length && <tr><td colSpan={2} className="text-center text-muted py-4">Nenhuma batida registrada.</td></tr>}
           </tbody></Table>
         </Card.Body></Card>

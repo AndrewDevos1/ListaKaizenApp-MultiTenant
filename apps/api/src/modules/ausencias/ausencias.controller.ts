@@ -11,7 +11,7 @@ import { ListarAusenciasDto } from './dto/listar-ausencias.dto';
 @Controller('v1/admin/ausencias')
 @Modulo('moduloFuncionarios')
 @UseGuards(AuthGuard('jwt'), RolesGuard, TenantGuard, ModuloGuard)
-@Roles('ADMIN' as any)
+@Roles('ADMIN' as any, 'SUPER_ADMIN' as any)
 @ApiBearerAuth()
 export class AusenciasController {
   constructor(private readonly service: AusenciasService) {}

@@ -10,7 +10,7 @@ import { EscalaService } from './escala.service';
 @Controller('v1/admin/escalas-trabalho')
 @Modulo('moduloPonto')
 @UseGuards(AuthGuard('jwt'), RolesGuard, TenantGuard, ModuloGuard)
-@Roles('ADMIN' as any)
+@Roles('ADMIN' as any, 'SUPER_ADMIN' as any)
 @ApiBearerAuth()
 export class EscalaController {
   constructor(private readonly service: EscalaService) {}

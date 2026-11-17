@@ -1,5 +1,8 @@
 'use client';
 
+import { rotuloPonto } from '@/lib/rotulos';
+import SeletorMes from '@/components/SeletorMes';
+import { dataBR } from '@/lib/formatar';
 import { useEffect, useState } from 'react';
 import { Alert, Card, Form, Spinner, Table } from 'react-bootstrap';
 import api from '@/lib/api';
@@ -78,7 +81,7 @@ export default function EspelhoPontoPage() {
         <strong>Meu Espelho Mensal / Banco de Horas</strong>
         <Form.Group controlId="competencia-espelho">
           <Form.Label className="mb-1">Mês de referência</Form.Label>
-          <Form.Control type="month" value={competencia} onChange={(e) => setCompetencia(e.target.value)} required />
+          <SeletorMes value={competencia} onChange={setCompetencia} />
         </Form.Group>
       </Card.Header>
       <Card.Body>
@@ -93,12 +96,12 @@ export default function EspelhoPontoPage() {
               </tr></thead>
               <tbody>
                 {espelho.dias.map((dia) => <tr key={dia.data}>
-                  <td>{dia.data}</td>
+                  <td>{dataBR(dia.data)}</td>
                   <td>
                     {dia.batidas.length ? (
                       <div className="d-flex flex-column gap-1">
                         {dia.batidas.map((batida) => (
-                          <span key={batida.id}>{batida.tipo}: {horaBatida(batida.registradoEm, dia.data)}</span>
+                          <span key={batida.id}>{rotuloPonto(batida.tipo)}: {horaBatida(batida.registradoEm, dia.data)}</span>
                         ))}
                       </div>
                     ) : '—'}

@@ -1,5 +1,6 @@
 'use client';
 
+import { dataBR } from '@/lib/formatar';
 import { FormEvent, useCallback, useEffect, useState } from 'react';
 import { Alert, Button, Card, Col, Form, Row, Spinner, Table } from 'react-bootstrap';
 import api from '@/lib/api';
@@ -244,8 +245,8 @@ export default function AdminPontoPage() {
             {escalas.map((escala) => (
               <tr key={escala.id}>
                 <td>{escala.usuario.nome}</td><td>{escala.nome}</td>
-                <td>{escala.vigenciaInicio.slice(0, 10)}</td>
-                <td>{escala.vigenciaFim?.slice(0, 10) || 'Aberta'}</td>
+                <td>{dataBR(escala.vigenciaInicio)}</td>
+                <td>{escala.vigenciaFim ? dataBR(escala.vigenciaFim) : "Aberta"}</td>
               </tr>
             ))}
           </tbody>
@@ -259,7 +260,7 @@ export default function AdminPontoPage() {
             {lancamentos.map((lancamento) => (
               <tr key={lancamento.id}>
                 <td>{lancamento.usuario.nome}</td><td>{lancamento.tipo}</td>
-                <td>{lancamento.dataReferencia.slice(0, 10)}</td>
+                <td>{dataBR(lancamento.dataReferencia)}</td>
                 <td>{horas(lancamento.minutosDelta)}</td><td>{lancamento.motivo}</td>
               </tr>
             ))}

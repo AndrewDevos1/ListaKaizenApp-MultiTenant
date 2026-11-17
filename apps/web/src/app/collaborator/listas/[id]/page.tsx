@@ -46,7 +46,7 @@ function parseQtd(raw: string): number | null {
   const s = raw.replace(',', '.').trim();
   if (/^[\d\s+\-*/. ]+$/.test(s)) {
     try {
-      // eslint-disable-next-line no-new-func
+       
       const result = Function('"use strict"; return (' + s + ')')();
       if (typeof result === 'number' && isFinite(result) && result >= 0)
         return result;

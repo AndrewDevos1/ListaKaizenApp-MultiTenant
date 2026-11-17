@@ -3,6 +3,12 @@ import { IsEnum, IsInt, IsOptional } from 'class-validator';
 import { TipoClassificacaoAusencia } from '@prisma/client';
 
 export class ListarAusenciasDto {
+  // Seletor de restaurante (SUPER_ADMIN/CONTADOR); resolvido por @TenantId, não é filtro.
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  restauranteId?: number;
+
   @IsOptional()
   @Type(() => Number)
   @IsInt()

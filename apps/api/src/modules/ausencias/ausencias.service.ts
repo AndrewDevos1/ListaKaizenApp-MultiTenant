@@ -25,7 +25,7 @@ export class AusenciasService {
 
     const data = parseData(dto.data);
     return this.prisma.$transaction(async (tx) => {
-      await tx.$executeRaw`SELECT pg_advisory_xact_lock(${usuario.id}, ${restauranteId})`;
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(${usuario.id}::int, ${restauranteId}::int)`;
       const anterior = await tx.classificacaoAusencia.findUnique({
         where: { usuarioId_restauranteId_data: { usuarioId: usuario.id, restauranteId, data } },
         select: { tipo: true },

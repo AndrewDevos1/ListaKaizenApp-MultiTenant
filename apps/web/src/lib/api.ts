@@ -28,6 +28,14 @@ api.interceptors.request.use((config) => {
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    // SUPER_ADMIN não tem restaurante próprio: o backend exige ?restauranteId nas rotas /v1/admin.
+    // Informe ?restauranteId=N em qualquer URL do painel; fica salvo na aba (sessionStorage).
+    const q = new URLSearchParams(window.location.search).get('restauranteId');
+    if (q && /^\d+$/.test(q)) sessionStorage.setItem('restauranteId', q);
+    const rid = sessionStorage.getItem('restauranteId');
+    if (rid && config.url?.startsWith('/v1/admin/') && !config.params?.restauranteId) {
+      config.params = { ...config.params, restauranteId: rid };
+    }
   }
   return config;
 });

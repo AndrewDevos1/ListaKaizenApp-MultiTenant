@@ -1,0 +1,5 @@
+colabB nov {'competencia': '2026-11', 'lancamentos': [], 'minutosMes': 0, 'minutosTotalLancado': 0}
+colab nov (200, {'competencia': '2026-11', 'lancamentos': [{'id': 1, 'tipo': 'AJUSTE_MANUAL', 'minutosDelta': 120, 'dataReferencia': '2026-11-16T00:00:00.000Z', 'motivo': 'Crédito fictício homologação', 'criadoEm': '2026-11-16T19:16:42.621Z'}], 'minutosMes': 120, 'minutosTotalLancado': 120})
+colab bad 400
+colab noauth 401
+colab -> admin endpoint 403
