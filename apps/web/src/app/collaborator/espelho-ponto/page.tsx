@@ -79,7 +79,7 @@ export default function EspelhoPontoPage() {
         <strong>Meu Espelho Mensal / Banco de Horas</strong>
         <Form.Group controlId="competencia-espelho">
           <Form.Label className="mb-1">Mês de referência</Form.Label>
-          <Form.Control type="month" value={competencia} onChange={(e) => setCompetencia(e.target.value)} required />
+          <Form.Control type="month" lang="pt-BR" value={competencia} onChange={(e) => setCompetencia(e.target.value)} required />
         </Form.Group>
       </Card.Header>
       <Card.Body>
