@@ -54,14 +54,29 @@ export class CatalogoFornecedorService {
   }
 
   /**
-   * Ponto único de alteração do preço atual (contrato com a #36: o histórico de preços
-   * deve ser gravado AQUI, na mesma transação `db`). Nunca atualizar precoAtual em outro lugar.
+   * Ponto único de alteração do preço atual (contrato #35/#36). Grava o evento de histórico
+   * na MESMA transação `db`; preço idêntico não gera evento nem escrita.
    */
-  async atualizarPrecoItem(db: Prisma.TransactionClient, itemId: number, restauranteId: number, preco: number) {
-    return db.item.update({ where: { id: itemId }, data: { precoAtual: preco } });
+  async atualizarPrecoItem(
+    db: Prisma.TransactionClient, itemId: number, restauranteId: number, preco: number,
+    autor: { id: number; nome: string }, origem: 'CATALOGO' = 'CATALOGO',
+  ) {
+    const item = await db.item.findFirst({ where: { id: itemId, restauranteId } });
+    if (!item) throw new NotFoundException('Item não encontrado');
+    const anterior = item.precoAtual === null || item.precoAtual === undefined ? null : new Prisma.Decimal(item.precoAtual as any);
+    const novo = new Prisma.Decimal(preco);
+    if (anterior && anterior.equals(novo)) return item;
+    const atualizado = await db.item.update({ where: { id: itemId }, data: { precoAtual: preco } });
+    await db.historicoPrecoItem.create({
+      data: {
+        itemId, restauranteId, fornecedorId: item.fornecedorId, precoAnterior: item.precoAtual as any, precoNovo: preco,
+        autorId: autor.id, autorNome: autor.nome, origem,
+      },
+    });
+    return atualizado;
   }
 
-  async atualizar(fornecedorId: number, id: number, dto: UpdateCatalogoItemDto, restauranteId: number) {
+  async atualizar(fornecedorId: number, id: number, dto: UpdateCatalogoItemDto, restauranteId: number, autor: { id: number; nome: string }) {
     await this.fornecedor(fornecedorId, restauranteId);
     await this.item(fornecedorId, id, restauranteId);
     const { precoAtual, ...resto } = dto;
@@ -69,12 +84,25 @@ export class CatalogoFornecedorService {
       if (precoAtual === undefined) return await this.prisma.item.update({ where: { id }, data: resto });
       return await this.prisma.$transaction(async (tx) => {
         if (Object.keys(resto).length) await tx.item.update({ where: { id }, data: resto });
-        return this.atualizarPrecoItem(tx, id, restauranteId, precoAtual);
+        return this.atualizarPrecoItem(tx, id, restauranteId, precoAtual, autor);
       });
     } catch (e) {
       if (dup(e)) throw new ConflictException('Já existe item com este código para o fornecedor');
       throw e;
     }
+  }
+
+  async historicoPrecos(fornecedorId: number, id: number, restauranteId: number, pagina = 1, tamanho = 20) {
+    await this.fornecedor(fornecedorId, restauranteId);
+    await this.item(fornecedorId, id, restauranteId);
+    const take = Math.min(Math.max(tamanho, 1), 100);
+    const skip = (Math.max(pagina, 1) - 1) * take;
+    const where = { itemId: id, restauranteId };
+    const [total, eventos] = await Promise.all([
+      this.prisma.historicoPrecoItem.count({ where }),
+      this.prisma.historicoPrecoItem.findMany({ where, orderBy: [{ criadoEm: 'desc' }, { id: 'desc' }], skip, take }),
+    ]);
+    return { total, pagina: Math.max(pagina, 1), tamanho: take, eventos };
   }
 
   async inativar(fornecedorId: number, id: number, restauranteId: number) {

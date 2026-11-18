@@ -9,7 +9,7 @@ function setup(existentes: any[] = []) {
     item: {
       findMany: jest.fn(async () => existentes),
       count: jest.fn(async () => existentes.length),
-      findFirst: jest.fn(async ({ where }: any) => existentes.find((i) => i.id === where.id && where.restauranteId === 1 && where.fornecedorId === 3) ?? null),
+      findFirst: jest.fn(async ({ where }: any) => existentes.find((i) => i.id === where.id && where.restauranteId === 1 && (where.fornecedorId === undefined || where.fornecedorId === 3)) ?? null),
       create: jest.fn(async ({ data }: any) => ({ id: 100, ...data })),
       update: jest.fn(async ({ data }: any) => ({ id: 1, ...data })),
     },
@@ -51,16 +51,17 @@ describe('CatalogoFornecedorService – CRUD', () => {
 
   it('atualiza só item do fornecedor/tenant; outro => 404', async () => {
     const { prisma, service } = setup([{ id: 1, restauranteId: 1, fornecedorId: 3 }]);
-    await service.atualizar(3, 1, { marca: 'X', ativo: true }, 1);
+    await service.atualizar(3, 1, { marca: 'X', ativo: true }, 1, { id: 9, nome: 'Admin' });
     expect(prisma.item.update).toHaveBeenCalledWith({ where: { id: 1 }, data: { marca: 'X', ativo: true } });
-    await expect(service.atualizar(3, 99, { marca: 'X' }, 1)).rejects.toBeInstanceOf(NotFoundException);
+    await expect(service.atualizar(3, 99, { marca: 'X' }, 1, { id: 9, nome: 'Admin' })).rejects.toBeInstanceOf(NotFoundException);
   });
 
   it('preço só muda via atualizarPrecoItem (ponto único) dentro de transação', async () => {
-    const { prisma, service } = setup([{ id: 1, restauranteId: 1, fornecedorId: 3 }]);
+    const { prisma, service } = setup([{ id: 1, restauranteId: 1, fornecedorId: 3, precoAtual: null }]);
     const spy = jest.spyOn(service, 'atualizarPrecoItem');
-    await service.atualizar(3, 1, { marca: 'X', precoAtual: 9.9 }, 1);
-    expect(spy).toHaveBeenCalledWith(prisma, 1, 1, 9.9);
+    prisma.historicoPrecoItem = { create: jest.fn() };
+    await service.atualizar(3, 1, { marca: 'X', precoAtual: 9.9 }, 1, { id: 9, nome: 'Admin' });
+    expect(spy).toHaveBeenCalledWith(prisma, 1, 1, 9.9, { id: 9, nome: 'Admin' });
     expect(prisma.item.update).toHaveBeenCalledWith({ where: { id: 1 }, data: { marca: 'X' } });
     expect(prisma.$transaction).toHaveBeenCalled();
     expect(prisma.item.update.mock.calls.every((c: any) => !('precoAtual' in c[0].data) || c[0].where.id === 1)).toBe(true);

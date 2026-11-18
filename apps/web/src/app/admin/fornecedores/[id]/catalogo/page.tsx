@@ -12,6 +12,8 @@ interface CatalogoItem {
 }
 interface LinhaPreview { linha: number; acao: 'NOVO' | 'IGNORAR' | 'REVISAO' | 'INVALIDO'; nome?: string; unidadeMedida?: string; codigoFornecedor?: string; precoAtual?: number; motivo?: string; erros: string[] }
 interface Preview { token: string; resumo: { total: number; novos: number; ignorados: number; revisao: number; invalidos: number }; linhas: LinhaPreview[] }
+interface EventoPreco { id: number; precoAnterior: string | null; precoNovo: string; autorNome: string; origem: string; criadoEm: string }
+interface HistoricoPage { total: number; pagina: number; tamanho: number; eventos: EventoPreco[] }
 const VAZIO = { nome: '', unidadeMedida: '', codigoFornecedor: '', marca: '', descricao: '', precoAtual: '' };
 const msg = (e: unknown) => ((e as { response?: { data?: { message?: string | string[] } } })?.response?.data?.message ?? 'Erro inesperado').toString();
 const brl = (v: string | null) => (v == null ? '—' : Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }));
@@ -28,6 +30,7 @@ export default function CatalogoFornecedorPage() {
   const [edit, setEdit] = useState<{ id?: number; f: typeof VAZIO } | null>(null);
   const [imp, setImp] = useState<{ formato: 'csv' | 'texto'; conteudo: string; preview?: Preview } | null>(null);
   const [busy, setBusy] = useState(false);
+  const [hist, setHist] = useState<{ item: CatalogoItem; pagina: number; dados?: HistoricoPage } | null>(null);
 
   const carregar = useCallback(async () => {
     setLoading(true);
@@ -47,6 +50,11 @@ export default function CatalogoFornecedorPage() {
       if (edit.id) await api.put(`${base}/${edit.id}`, body); else await api.post(base, body);
       setEdit(null); setOk('Item salvo'); await carregar();
     } catch (e) { setError(msg(e)); } finally { setBusy(false); }
+  };
+  const abrirHistorico = async (item: CatalogoItem, pagina = 1) => {
+    setHist({ item, pagina });
+    try { const { data } = await api.get<HistoricoPage>(`${base}/${item.id}/historico-precos`, { params: { pagina, tamanho: 10 } }); setHist({ item, pagina, dados: data }); }
+    catch (e) { setError(msg(e)); setHist(null); }
   };
   const inativar = async (i: CatalogoItem) => {
     if (!window.confirm(`Inativar "${i.nome}"?`)) return;
@@ -104,6 +112,7 @@ export default function CatalogoFornecedorPage() {
                 <td>{i.codigoFornecedor ?? '—'}</td><td>{i.nome}</td><td>{i.unidadeMedida}</td><td>{i.marca ?? '—'}</td><td>{brl(i.precoAtual)}</td>
                 <td><Badge bg={i.ativo ? 'success' : 'secondary'}>{i.ativo ? 'Ativo' : 'Inativo'}</Badge></td>
                 <td className="text-nowrap">
+                  <Button size="sm" variant="outline-secondary" className="me-1" onClick={() => abrirHistorico(i)}>Histórico</Button>
                   <Button size="sm" variant="outline-secondary" className="me-1" onClick={() => setEdit({ id: i.id, f: { nome: i.nome, unidadeMedida: i.unidadeMedida, codigoFornecedor: i.codigoFornecedor ?? '', marca: i.marca ?? '', descricao: i.descricao ?? '', precoAtual: i.precoAtual ? i.precoAtual.replace('.', ',') : '' } })}>Editar</Button>
                   {i.ativo && <Button size="sm" variant="outline-danger" onClick={() => inativar(i)}>Inativar</Button>}
                 </td>
@@ -146,6 +155,24 @@ export default function CatalogoFornecedorPage() {
           <Button variant="secondary" onClick={() => setImp(null)}>Cancelar</Button>
           <Button variant="outline-primary" disabled={busy || !imp?.conteudo.trim()} onClick={previa}>Pré-visualizar</Button>
           <Button disabled={busy || !imp?.preview || imp.preview.resumo.novos === 0} onClick={confirmar}>Confirmar importação</Button>
+        </Modal.Footer>
+      </Modal>
+      <Modal show={!!hist} onHide={() => setHist(null)} size="lg">
+        <Modal.Header closeButton><Modal.Title>Histórico de preços — {hist?.item.nome}</Modal.Title></Modal.Header>
+        <Modal.Body>
+          {!hist?.dados ? <Spinner animation="border" size="sm" /> : hist.dados.eventos.length === 0 ? <p className="text-muted mb-0">Nenhuma alteração de preço registrada.</p> : (
+            <Table size="sm" responsive>
+              <thead><tr><th>Data</th><th>Anterior</th><th>Novo</th><th>Autor</th></tr></thead>
+              <tbody>{hist.dados.eventos.map((e) => (
+                <tr key={e.id}><td>{new Date(e.criadoEm).toLocaleString('pt-BR')}</td><td>{brl(e.precoAnterior)}</td><td>{brl(e.precoNovo)}</td><td>{e.autorNome}</td></tr>
+              ))}</tbody>
+            </Table>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          {hist?.dados && <span className="me-auto small text-muted">{hist.dados.total} evento(s)</span>}
+          <Button variant="outline-secondary" size="sm" disabled={!hist || hist.pagina <= 1} onClick={() => hist && abrirHistorico(hist.item, hist.pagina - 1)}>Anterior</Button>
+          <Button variant="outline-secondary" size="sm" disabled={!hist?.dados || hist.pagina * hist.dados.tamanho >= hist.dados.total} onClick={() => hist && abrirHistorico(hist.item, hist.pagina + 1)}>Próxima</Button>
         </Modal.Footer>
       </Modal>
     </div>
