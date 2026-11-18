@@ -7,16 +7,6 @@ export function invalidateTokenCache() {
   _cachedToken = undefined;
 }
 
-export function clearStoredSession() {
-  invalidateTokenCache();
-  localStorage.removeItem('accessToken');
-  localStorage.removeItem('user');
-  localStorage.removeItem('sessionExpiry');
-  sessionStorage.removeItem('accessToken');
-  sessionStorage.removeItem('user');
-  sessionStorage.removeItem('sessionExpirySession');
-}
-
 function readToken(): string | null {
   if (_cachedToken !== undefined) return _cachedToken;
   _cachedToken =
@@ -46,7 +36,11 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401 && typeof window !== 'undefined') {
-      clearStoredSession();
+      invalidateTokenCache();
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('user');
+      sessionStorage.removeItem('accessToken');
+      sessionStorage.removeItem('user');
       window.location.href = '/login';
     }
     return Promise.reject(error);

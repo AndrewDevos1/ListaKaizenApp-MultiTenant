@@ -40,21 +40,14 @@ export default function ConfiguracoesColaborador() {
   const [navbarStyle, setNavbarStyle] = useState<NavbarStyle>('current');
   const [savingNavbarStyle, setSavingNavbarStyle] = useState(false);
   const [sessionTimeout, setSessionTimeout] = useState(30);
-  const [sessionTimeoutSource, setSessionTimeoutSource] = useState('global');
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     const theme = localStorage.getItem('theme') || 'light';
     setIsDarkMode(theme === 'dark');
 
-    api.get('/v1/auth/session-timeout')
-      .then((response) => {
-        setSessionTimeout(response.data.timeoutMinutes);
-        setSessionTimeoutSource(response.data.userTimeoutMinutes === null
-          ? (response.data.restauranteTimeoutMinutes === null ? 'global' : 'restaurante')
-          : 'usuário');
-      })
-      .catch(() => undefined);
+    const saved = localStorage.getItem('configSessionTimeout');
+    if (saved) setSessionTimeout(parseInt(saved, 10));
   }, []);
 
   useEffect(() => {
@@ -107,13 +100,8 @@ export default function ConfiguracoesColaborador() {
     }
   };
 
-  const handleSaveSession = async () => {
-    if (!user) return;
-    const { data } = await api.put('/v1/auth/session-timeout', { timeoutMinutes: sessionTimeout, usuarioId: user.id });
-    setSessionTimeout(data.timeoutMinutes);
-    setSessionTimeoutSource(data.userTimeoutMinutes === null
-      ? (data.restauranteTimeoutMinutes === null ? 'global' : 'restaurante')
-      : 'usuário');
+  const handleSaveSession = () => {
+    localStorage.setItem('configSessionTimeout', sessionTimeout.toString());
     success('Configuração salva', `Timeout de sessão definido para ${sessionTimeout} minutos`);
   };
 
@@ -216,14 +204,14 @@ export default function ConfiguracoesColaborador() {
               ))}
             </Form.Select>
             <Form.Text className="text-muted">
-              Valor efetivo: {sessionTimeout} minuto{sessionTimeout !== 1 ? 's' : ''} ({sessionTimeoutSource === 'usuário' ? 'usuário' : `herdado de ${sessionTimeoutSource}`}). O override deste usuário tem precedência.
+              Após {sessionTimeout} minuto{sessionTimeout !== 1 ? 's' : ''} sem atividade, o login será encerrado.
             </Form.Text>
           </Form.Group>
           <div className="d-flex gap-2">
             <Button variant="primary" size="sm" onClick={handleSaveSession}>
               Salvar
             </Button>
-            <Button variant="outline-secondary" size="sm" onClick={async () => { if (user) { const { data } = await api.put('/v1/auth/session-timeout', { timeoutMinutes: null, usuarioId: user.id }); setSessionTimeout(data.timeoutMinutes); setSessionTimeoutSource(data.userTimeoutMinutes === null ? (data.restauranteTimeoutMinutes === null ? 'global' : 'restaurante') : 'usuário'); } success('Padrão restaurado', 'Timeout herdado restaurado. Sessões atuais usam o prazo anterior; próximo login aplica o novo prazo.'); }}>
+            <Button variant="outline-secondary" size="sm" onClick={() => { setSessionTimeout(30); localStorage.setItem('configSessionTimeout', '30'); success('Padrão restaurado', 'Timeout resetado para 30 minutos'); }}>
               Resetar Padrão
             </Button>
           </div>

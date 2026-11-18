@@ -14,7 +14,9 @@ import { ConvitesModule } from '../convites/convites.module';
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
         secret: config.get<string>('JWT_SECRET', 'dev-secret-change-me'),
-        signOptions: { expiresIn: '30m' },
+        signOptions: {
+          expiresIn: config.get('JWT_EXPIRATION', '7d') as any,
+        },
       }),
     }),
     ConvitesModule,
