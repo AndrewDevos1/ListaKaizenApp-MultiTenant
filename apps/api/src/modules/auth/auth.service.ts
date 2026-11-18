@@ -15,6 +15,7 @@ import { ChangePasswordDto } from './dto/change-password.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { SaveNavbarLayoutDto } from './dto/save-navbar-layout.dto';
 import { SaveNavbarStyleDto } from './dto/save-navbar-style.dto';
+import { resolveSessionTimeout } from './session-timeout';
 
 type NavbarLayout = {
   hiddenGroupIds: string[];
@@ -217,6 +218,22 @@ export class AuthService {
       throw new UnauthorizedException('Credenciais inválidas');
     }
 
+    const restaurante = user.restauranteId
+      ? await this.prisma.restaurante.findUnique({
+          where: { id: user.restauranteId },
+          select: {
+            moduloPonto: true,
+            moduloFuncionarios: true,
+            moduloAlmoxarifadoEpi: true,
+            sessionTimeoutMinutos: true,
+          },
+        })
+      : null;
+    const sessionTimeoutMinutos = resolveSessionTimeout(
+      user.sessionTimeoutMinutos,
+      restaurante?.sessionTimeoutMinutos,
+    );
+
     const payload = {
       sub: user.id,
       email: user.email,
@@ -233,15 +250,13 @@ export class AuthService {
         role: user.role,
         restauranteId: user.restauranteId,
         avatarUrl: user.avatarUrl ?? null,
-        modulos: user.restauranteId
-          ? await this.prisma.restaurante.findUnique({
-              where: { id: user.restauranteId },
-              select: {
-                moduloPonto: true,
-                moduloFuncionarios: true,
-                moduloAlmoxarifadoEpi: true,
-              },
-            })
+        sessionTimeoutMinutos,
+        modulos: restaurante
+          ? {
+              moduloPonto: restaurante.moduloPonto,
+              moduloFuncionarios: restaurante.moduloFuncionarios,
+              moduloAlmoxarifadoEpi: restaurante.moduloAlmoxarifadoEpi,
+            }
           : null,
       },
     };
@@ -266,6 +281,10 @@ export class AuthService {
       aprovado: user.aprovado,
       avatarUrl: user.avatarUrl ?? null,
       restauranteId: user.restauranteId,
+      sessionTimeoutMinutos: resolveSessionTimeout(
+        user.sessionTimeoutMinutos,
+        user.restaurante?.sessionTimeoutMinutos,
+      ),
       restaurante: user.restaurante
         ? { id: user.restaurante.id, nome: user.restaurante.nome }
         : null,

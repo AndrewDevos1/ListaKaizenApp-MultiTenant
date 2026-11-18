@@ -90,6 +90,7 @@ export class UsuariosService {
     if (dto.email !== undefined) data.email = dto.email;
     if (dto.username !== undefined) data.username = dto.username;
     if (dto.role !== undefined) data.role = dto.role;
+    if (dto.sessionTimeoutMinutos !== undefined) data.sessionTimeoutMinutos = dto.sessionTimeoutMinutos;
 
     return this.prisma.usuario.update({
       where: { id },
@@ -100,6 +101,7 @@ export class UsuariosService {
         email: true,
         username: true,
         role: true,
+        sessionTimeoutMinutos: true,
         aprovado: true,
         ativo: true,
       },
