@@ -116,6 +116,7 @@ model Restaurante {
   moduloPonto           Boolean  @default(false) @map("modulo_ponto")
   moduloFuncionarios    Boolean  @default(true) @map("modulo_funcionarios")
   moduloAlmoxarifadoEpi Boolean  @default(true) @map("modulo_almoxarifado_epi")
+  sessionTimeoutMinutos Int      @default(30) @map("session_timeout_minutos")
   criadoEm              DateTime @default(now()) @map("criado_em")
 
   // ponytail: ponto starts opt-in; enable per tenant during rollout.
@@ -164,6 +165,7 @@ model Usuario {
   restauranteId Int?      @map("restaurante_id")
   sessionToken  String?   @map("session_token")
   avatarUrl     String?   @map("avatar_url")
+  sessionTimeoutMinutos Int? @map("session_timeout_minutos")
   criadoEm      DateTime  @default(now()) @map("criado_em")
 
   restaurante       Restaurante?       @relation(fields: [restauranteId], references: [id])

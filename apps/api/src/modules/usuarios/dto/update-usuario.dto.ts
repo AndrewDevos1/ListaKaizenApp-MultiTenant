@@ -1,4 +1,4 @@
-import { IsEmail, IsEnum, IsOptional, IsString, MinLength } from 'class-validator';
+import { IsEmail, IsEnum, IsInt, IsOptional, IsString, Max, Min, MinLength } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { UserRole } from '@prisma/client';
 
@@ -23,4 +23,11 @@ export class UpdateUsuarioDto {
   @IsOptional()
   @IsEnum(UserRole)
   role?: UserRole;
+
+  @ApiPropertyOptional({ nullable: true, minimum: 5, maximum: 480, description: 'null = herda do restaurante' })
+  @IsOptional()
+  @IsInt()
+  @Min(5)
+  @Max(480)
+  sessionTimeoutMinutos?: number | null;
 }

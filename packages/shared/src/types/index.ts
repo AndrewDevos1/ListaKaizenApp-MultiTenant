@@ -8,6 +8,8 @@ export interface AuthUser {
   restauranteId: number | null;
   avatarUrl?: string | null;
   modulos?: RestauranteModulos | null;
+  /** Timeout de inatividade em minutos (usuário > restaurante > 30). */
+  sessionTimeoutMinutos?: number;
 }
 
 export interface RestauranteModulos {

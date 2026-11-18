@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Container, Card, Button, Form, Badge, Alert } from 'react-bootstrap';
+import { Container, Card, Button, Badge, Alert } from 'react-bootstrap';
 import {
   FaCog, FaUser, FaSignOutAlt, FaMoon, FaSun, FaClock,
   FaSyncAlt, FaBell, FaBellSlash, FaMobileAlt, FaUserEdit,
@@ -20,16 +20,6 @@ import {
   setNavbarStyle as persistNavbarStyle,
 } from '@/lib/navbarStyle';
 
-const SESSION_TIMEOUTS = [
-  { value: 5, label: '5 minutos — Alta segurança' },
-  { value: 10, label: '10 minutos — Alta segurança' },
-  { value: 15, label: '15 minutos — Alta segurança' },
-  { value: 30, label: '30 minutos — Padrão (recomendado)' },
-  { value: 45, label: '45 minutos — Balanceado' },
-  { value: 60, label: '60 minutos — Conveniência' },
-  { value: 90, label: '90 minutos — Conveniência' },
-  { value: 120, label: '120 minutos — Máximo' },
-];
 
 export default function ConfiguracoesColaborador() {
   const { logout, user } = useAuth();
@@ -46,8 +36,6 @@ export default function ConfiguracoesColaborador() {
     const theme = localStorage.getItem('theme') || 'light';
     setIsDarkMode(theme === 'dark');
 
-    const saved = localStorage.getItem('configSessionTimeout');
-    if (saved) setSessionTimeout(parseInt(saved, 10));
   }, []);
 
   useEffect(() => {
@@ -100,10 +88,9 @@ export default function ConfiguracoesColaborador() {
     }
   };
 
-  const handleSaveSession = () => {
-    localStorage.setItem('configSessionTimeout', sessionTimeout.toString());
-    success('Configuração salva', `Timeout de sessão definido para ${sessionTimeout} minutos`);
-  };
+  useEffect(() => {
+    if (user?.sessionTimeoutMinutos) setSessionTimeout(user.sessionTimeoutMinutos);
+  }, [user?.sessionTimeoutMinutos]);
 
   const handleHardRefresh = async () => {
     if (refreshing) return;
@@ -192,29 +179,9 @@ export default function ConfiguracoesColaborador() {
           <p className="text-muted mb-3">
             Define o tempo de inatividade antes de solicitar novo login.
           </p>
-          <Form.Group className="mb-3">
-            <Form.Label>Tempo de sessão</Form.Label>
-            <Form.Select
-              value={sessionTimeout}
-              onChange={(e) => setSessionTimeout(parseInt(e.target.value, 10))}
-              style={{ maxWidth: 360 }}
-            >
-              {SESSION_TIMEOUTS.map((opt) => (
-                <option key={opt.value} value={opt.value}>{opt.label}</option>
-              ))}
-            </Form.Select>
-            <Form.Text className="text-muted">
-              Após {sessionTimeout} minuto{sessionTimeout !== 1 ? 's' : ''} sem atividade, o login será encerrado.
-            </Form.Text>
-          </Form.Group>
-          <div className="d-flex gap-2">
-            <Button variant="primary" size="sm" onClick={handleSaveSession}>
-              Salvar
-            </Button>
-            <Button variant="outline-secondary" size="sm" onClick={() => { setSessionTimeout(30); localStorage.setItem('configSessionTimeout', '30'); success('Padrão restaurado', 'Timeout resetado para 30 minutos'); }}>
-              Resetar Padrão
-            </Button>
-          </div>
+          <p className="mb-0">
+            Após <strong>{sessionTimeout} minuto{sessionTimeout !== 1 ? 's' : ''}</strong> sem atividade, o login será encerrado. Definido pelo administrador do restaurante.
+          </p>
         </Card.Body>
       </Card>
 

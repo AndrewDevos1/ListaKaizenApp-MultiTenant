@@ -13,6 +13,7 @@ import {
   UseInterceptors,
   UploadedFile,
   BadRequestException,
+  ForbiddenException,
   StreamableFile,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -23,6 +24,7 @@ import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagg
 import { RestaurantesService } from './restaurantes.service';
 import { CreateRestauranteDto } from './dto/create-restaurante.dto';
 import { UpdateRestauranteDto } from './dto/update-restaurante.dto';
+import { UpdateSessionTimeoutDto } from './dto/update-session-timeout.dto';
 import { UpdateRestauranteModulosDto } from './dto/update-restaurante-modulos.dto';
 import { CurrentUser, Roles } from '../../common/decorators';
 import { RolesGuard } from '../../common/guards';
@@ -172,6 +174,21 @@ export class RestaurantesController {
     @Body() dto: UpdateRestauranteModulosDto,
   ) {
     return this.restaurantesService.updateModulos(id, dto);
+  }
+
+  @Put(':id/session-timeout')
+  @Roles('SUPER_ADMIN' as any, 'ADMIN' as any)
+  @ApiOperation({ summary: 'Timeout de sessão do restaurante (ADMIN só o próprio)' })
+  updateSessionTimeout(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser('role') role: string,
+    @CurrentUser('restauranteId') meuRestauranteId: number | null,
+    @Body() dto: UpdateSessionTimeoutDto,
+  ) {
+    if (role !== 'SUPER_ADMIN' && id !== meuRestauranteId) {
+      throw new ForbiddenException('Restaurante não autorizado');
+    }
+    return this.restaurantesService.update(id, dto);
   }
 
   @Get(':id')

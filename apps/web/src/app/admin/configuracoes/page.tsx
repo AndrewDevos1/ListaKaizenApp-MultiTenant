@@ -48,7 +48,7 @@ interface ListaCsvResult {
 }
 
 export default function ConfiguracoesAdmin() {
-  const { logout, user } = useAuth();
+  const { logout, user, refreshUser } = useAuth();
   const { success, error } = useToast();
   const { state: pushState, subscribe, unsubscribe } = usePushNotifications();
 
@@ -75,8 +75,6 @@ export default function ConfiguracoesAdmin() {
   useEffect(() => {
     const theme = localStorage.getItem('theme') || 'light';
     setIsDarkMode(theme === 'dark');
-    const saved = localStorage.getItem('configSessionTimeout');
-    if (saved) setSessionTimeout(parseInt(saved, 10));
     // Load listas for phase 2 dropdown
     api.get('/v1/admin/import/listas')
       .then((r) => setListas(r.data))
@@ -113,10 +111,22 @@ export default function ConfiguracoesAdmin() {
     else document.documentElement.removeAttribute('data-theme');
   };
 
-  const handleSaveSession = () => {
-    localStorage.setItem('configSessionTimeout', sessionTimeout.toString());
-    success('Configuração salva', `Timeout de sessão definido para ${sessionTimeout} minutos`);
+  useEffect(() => {
+    if (user?.sessionTimeoutMinutos) setSessionTimeout(user.sessionTimeoutMinutos);
+  }, [user?.sessionTimeoutMinutos]);
+
+  const saveSession = async (minutos: number) => {
+    if (!user?.restauranteId) return;
+    try {
+      await api.put(`/restaurantes/${user.restauranteId}/session-timeout`, { sessionTimeoutMinutos: minutos });
+      setSessionTimeout(minutos);
+      await refreshUser();
+      success('Configuração salva', `Timeout de sessão do restaurante: ${minutos} minutos`);
+    } catch {
+      error('Falha ao salvar', 'Não foi possível salvar o timeout de sessão.');
+    }
   };
+  const handleSaveSession = () => saveSession(sessionTimeout);
 
   const handleNavbarStyleChange = async (style: NavbarStyle) => {
     if (!user || savingNavbarStyle) return;
@@ -440,7 +450,7 @@ export default function ConfiguracoesAdmin() {
           <Form.Group className="mb-3">
             <Form.Label>Tempo de sessão</Form.Label>
             <Form.Select value={sessionTimeout} onChange={(e) => setSessionTimeout(parseInt(e.target.value, 10))} style={{ maxWidth: 360 }}>
-              {SESSION_TIMEOUTS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+              {[...SESSION_TIMEOUTS, ...(SESSION_TIMEOUTS.some((o) => o.value === sessionTimeout) ? [] : [{ value: sessionTimeout, label: `${sessionTimeout} minutos` }])].map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
             </Form.Select>
             <Form.Text className="text-muted">
               Após {sessionTimeout} minuto{sessionTimeout !== 1 ? 's' : ''} sem atividade, o login será encerrado.
@@ -448,7 +458,7 @@ export default function ConfiguracoesAdmin() {
           </Form.Group>
           <div className="d-flex gap-2">
             <Button variant="primary" size="sm" onClick={handleSaveSession}>Salvar</Button>
-            <Button variant="outline-secondary" size="sm" onClick={() => { setSessionTimeout(30); localStorage.setItem('configSessionTimeout', '30'); success('Padrão restaurado', 'Timeout resetado para 30 minutos'); }}>
+            <Button variant="outline-secondary" size="sm" onClick={() => saveSession(30)}>
               Resetar Padrão
             </Button>
           </div>

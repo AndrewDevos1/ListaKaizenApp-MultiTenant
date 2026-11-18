@@ -87,6 +87,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     invalidateTokenCache();
     localStorage.removeItem('accessToken');
     localStorage.removeItem('user');
+    localStorage.removeItem('lastActivity');
     sessionStorage.removeItem('accessToken');
     sessionStorage.removeItem('user');
     setUser(null);
@@ -120,6 +121,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           restauranteId: data.restaurante?.id ?? prev.restauranteId,
           avatarUrl: data.avatarUrl ?? prev.avatarUrl,
           modulos: data.modulos ?? prev.modulos,
+          sessionTimeoutMinutos: data.sessionTimeoutMinutos ?? prev.sessionTimeoutMinutos,
         };
         if (localStorage.getItem('user')) {
           localStorage.setItem('user', JSON.stringify(updated));
@@ -132,6 +134,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // silencioso se falhar
     }
   }, []);
+
+  // Expira por inatividade usando o timeout do servidor; atividade renova.
+  const timeoutMin = user?.sessionTimeoutMinutos;
+  const uid = user?.id;
+  useEffect(() => {
+    if (!uid || !timeoutMin) return;
+    const KEY = 'lastActivity';
+    const ms = timeoutMin * 60_000;
+    const last = Number(localStorage.getItem(KEY));
+    if (last && Date.now() - last > ms) { logout(); return; }
+    let timer: ReturnType<typeof setTimeout>;
+    let lastWrite = 0;
+    const arm = () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        const l = Number(localStorage.getItem(KEY)) || 0;
+        if (Date.now() - l >= ms) logout(); else arm();
+      }, ms);
+    };
+    const touch = () => {
+      const now = Date.now();
+      if (now - lastWrite < 1000) return; // throttle
+      lastWrite = now;
+      localStorage.setItem(KEY, String(now));
+      arm();
+    };
+    touch();
+    const events = ['mousedown', 'keydown', 'touchstart', 'scroll'] as const;
+    events.forEach((e) => window.addEventListener(e, touch, { passive: true }));
+    return () => { clearTimeout(timer); events.forEach((e) => window.removeEventListener(e, touch)); };
+  }, [uid, timeoutMin, logout]);
 
   const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
   const isSuperAdmin = user?.role === 'SUPER_ADMIN';
