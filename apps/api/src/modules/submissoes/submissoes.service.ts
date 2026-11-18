@@ -10,6 +10,7 @@ import {
   StatusLoteConsolidado,
   TipoNotificacao,
   UserRole,
+  Prisma,
 } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import {
@@ -565,16 +566,35 @@ export class SubmissoesService {
   }
 
   async aprovarSubmissao(id: number, restauranteId: number) {
-    await this.findSubmissaoOrFail(id, restauranteId);
+    await this.prisma.$transaction(async (tx) => {
+      const [submissao] = await tx.$queryRaw<{ id: number }[]>(Prisma.sql`
+        SELECT id FROM submissoes
+        WHERE id = ${id} AND restaurante_id = ${restauranteId}
+        FOR UPDATE
+      `);
+      if (!submissao) {
+        throw new NotFoundException('Submissão não encontrada');
+      }
 
-    await this.prisma.pedido.updateMany({
-      where: { submissaoId: id, status: StatusPedido.PENDENTE },
-      data: { status: StatusPedido.APROVADO },
+      await tx.pedido.updateMany({
+        where: { submissaoId: id, status: StatusPedido.PENDENTE },
+        data: { status: StatusPedido.APROVADO },
+      });
+
+      const pedidos = await tx.pedido.findMany({ where: { submissaoId: id } });
+      const aprovados = pedidos.filter((p) => p.status === StatusPedido.APROVADO).length;
+      const rejeitados = pedidos.filter((p) => p.status === StatusPedido.REJEITADO).length;
+      const status = aprovados === pedidos.length
+        ? StatusSubmissao.APROVADO
+        : rejeitados === pedidos.length
+          ? StatusSubmissao.REJEITADO
+          : aprovados + rejeitados === pedidos.length
+            ? StatusSubmissao.PARCIAL
+            : StatusSubmissao.PENDENTE;
+      await tx.submissao.update({ where: { id }, data: { status } });
     });
 
-    await this.recalcularStatusSubmissao(id);
     await recalcularLotesPorSubmissao(this.prisma, id);
-
     return this.findOneAdmin(id, restauranteId);
   }
 
@@ -637,17 +657,33 @@ export class SubmissoesService {
   // quantidades ATUAIS de uma submissão PENDENTE e os pedidos são recalculados
   // com a mesma regra de submeterLista (listas.service.ts).
   async editarSubmissao(id: number, restauranteId: number, dto: EditarSubmissaoDto) {
-    const submissao = await this.findSubmissaoOrFail(id, restauranteId);
-    if (submissao.status !== StatusSubmissao.PENDENTE) {
-      throw new BadRequestException('Apenas submissões PENDENTES podem ser editadas');
-    }
     const ids = dto.itens.map((i) => i.itemId);
     if (new Set(ids).size !== ids.length) {
       throw new BadRequestException('Itens duplicados na edição');
     }
 
     await this.prisma.$transaction(async (tx) => {
-      const refs = await tx.listaItemRef.findMany({ where: { listaId: submissao.listaId } });
+      const [submissao] = await tx.$queryRaw<
+        { id: number; lista_id: number; status: StatusSubmissao }[]
+      >(Prisma.sql`
+        SELECT id, lista_id, status
+        FROM submissoes
+        WHERE id = ${id} AND restaurante_id = ${restauranteId}
+        FOR UPDATE
+      `);
+      if (!submissao) {
+        throw new NotFoundException('Submissão não encontrada');
+      }
+      if (submissao.status !== StatusSubmissao.PENDENTE) {
+        throw new BadRequestException('Apenas submissões PENDENTES podem ser editadas');
+      }
+
+      await tx.$queryRaw(Prisma.sql`
+        SELECT id FROM lista_item_ref
+        WHERE lista_id = ${submissao.lista_id}
+        FOR UPDATE
+      `);
+      const refs = await tx.listaItemRef.findMany({ where: { listaId: submissao.lista_id } });
       const porItem = new Map(refs.map((r) => [r.itemId, r]));
       for (const { itemId, quantidadeAtual } of dto.itens) {
         const ref = porItem.get(itemId);
@@ -658,7 +694,7 @@ export class SubmissoesService {
         await tx.listaItemRef.update({ where: { id: ref.id }, data: { quantidadeAtual } });
       }
 
-      // Só recria pedidos se nenhum já foi decidido (evita perder aprovação/recebimento).
+      // A submissão bloqueada impede uma aprovação concorrente de perder pedidos decididos.
       const decididos = await tx.pedido.count({
         where: { submissaoId: id, status: { not: StatusPedido.PENDENTE } },
       });

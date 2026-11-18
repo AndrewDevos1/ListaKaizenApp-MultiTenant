@@ -11,6 +11,11 @@ describe('SubmissoesService.editarSubmissao', () => {
 
   function setup(opts: { status?: StatusSubmissao; refs?: any[]; decididos?: number; submissao?: any } = {}) {
     const tx = {
+      $queryRaw: jest.fn().mockResolvedValue(
+        opts.submissao === null
+          ? []
+          : [{ id: 1, lista_id: 5, status: opts.status ?? StatusSubmissao.PENDENTE }],
+      ),
       listaItemRef: { findMany: jest.fn().mockResolvedValue(opts.refs ?? []), update: jest.fn() },
       pedido: { count: jest.fn().mockResolvedValue(opts.decididos ?? 0), deleteMany: jest.fn(), createMany: jest.fn() },
     };
@@ -31,6 +36,7 @@ describe('SubmissoesService.editarSubmissao', () => {
   it('recalcula pedidos pela quantidade atual (min - atual) e ignora itens acima do mínimo', async () => {
     const { service, tx } = setup({ refs: [ref(1, 10, 10), ref(2, 8, 8), ref(3, 5, 5)] });
     await service.editarSubmissao(1, 9, { itens: [{ itemId: 1, quantidadeAtual: 4 }, { itemId: 2, quantidadeAtual: 9 }] });
+    expect(tx.$queryRaw).toHaveBeenCalled();
     expect(tx.listaItemRef.update).toHaveBeenCalledWith({ where: { id: 10 }, data: { quantidadeAtual: 4 } });
     expect(tx.pedido.deleteMany).toHaveBeenCalledWith({ where: { submissaoId: 1 } });
     expect(tx.pedido.createMany).toHaveBeenCalledWith({ data: [{ submissaoId: 1, itemId: 1, qtdSolicitada: 6 }] });
@@ -45,15 +51,14 @@ describe('SubmissoesService.editarSubmissao', () => {
   it('404 quando submissao nao existe no restaurante (isolamento tenant)', async () => {
     const { service, prisma } = setup({ submissao: null });
     await expect(service.editarSubmissao(1, 9, { itens: [{ itemId: 1, quantidadeAtual: 1 }] })).rejects.toBeInstanceOf(NotFoundException);
-    expect(prisma.submissao.findFirst).toHaveBeenCalledWith({ where: { id: 1, restauranteId: 9 } });
-    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
   });
 
   it.each([StatusSubmissao.APROVADO, StatusSubmissao.REJEITADO, StatusSubmissao.PARCIAL, StatusSubmissao.ARQUIVADO])(
     'recusa submissao %s', async (status) => {
       const { service, prisma } = setup({ status });
       await expect(service.editarSubmissao(1, 9, { itens: [{ itemId: 1, quantidadeAtual: 1 }] })).rejects.toBeInstanceOf(BadRequestException);
-      expect(prisma.$transaction).not.toHaveBeenCalled();
+      expect(prisma.$transaction).toHaveBeenCalledTimes(1);
     });
 
   it('recusa item que nao pertence a lista', async () => {
