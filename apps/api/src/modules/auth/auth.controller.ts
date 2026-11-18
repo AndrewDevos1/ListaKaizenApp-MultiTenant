@@ -9,9 +9,7 @@ import { ChangePasswordDto } from './dto/change-password.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { SaveNavbarLayoutDto } from './dto/save-navbar-layout.dto';
 import { SaveNavbarStyleDto } from './dto/save-navbar-style.dto';
-import { CurrentUser, Roles } from '../../common/decorators';
-import { RolesGuard, TenantGuard } from '../../common/guards';
-import { UpdateSessionTimeoutDto } from './dto/update-session-timeout.dto';
+import { CurrentUser } from '../../common/decorators';
 
 @ApiTags('Auth')
 @Controller('v1/auth')
@@ -28,25 +26,6 @@ export class AuthController {
   @ApiOperation({ summary: 'Login' })
   login(@Body() dto: LoginDto) {
     return this.authService.login(dto);
-  }
-
-  @Get('session-timeout')
-  @UseGuards(AuthGuard('jwt'), TenantGuard)
-  @ApiBearerAuth()
-  getSessionTimeout(@CurrentUser('id') userId: number) {
-    return this.authService.getSessionTimeout(userId);
-  }
-
-  @Put('session-timeout')
-  @UseGuards(AuthGuard('jwt'), RolesGuard, TenantGuard)
-  @Roles(UserRole.COLLABORATOR, UserRole.ADMIN, UserRole.SUPER_ADMIN)
-  @ApiBearerAuth()
-  updateSessionTimeout(
-    @CurrentUser('id') userId: number,
-    @CurrentUser('role') role: UserRole,
-    @Body() dto: UpdateSessionTimeoutDto,
-  ) {
-    return this.authService.updateSessionTimeout(userId, role, dto);
   }
 
   @Get('profile')
