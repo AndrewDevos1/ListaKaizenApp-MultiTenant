@@ -70,8 +70,13 @@ d('Almoxarifado (PostgreSQL real)', () => {
     expect(src).not.toContain('SUPER_ADMIN deve');
   });
 
-  it('flag desligada => 403', async () => {
+  it('módulo desligado bloqueia ADMIN e SUPER_ADMIN selecionando o tenant', async () => {
     expect((await api('adminOff', 'get', '')).status).toBe(403);
+    expect((await api('super', 'get', `?restauranteId=${rOff}`)).status).toBe(403);
+  });
+
+  it('SUPER_ADMIN seleciona tenant com módulo habilitado', async () => {
+    expect((await api('super', 'get', `?restauranteId=${rA}`)).status).toBe(200);
   });
 
   it('isolamento A/B: item de outro tenant 404; posição e movimentação invisíveis', async () => {

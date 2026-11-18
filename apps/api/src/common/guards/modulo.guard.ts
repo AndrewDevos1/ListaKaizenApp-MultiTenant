@@ -24,10 +24,10 @@ export class ModuloGuard implements CanActivate {
 
     const request = context.switchToHttp().getRequest();
     const { user } = request;
-    if (user?.role === 'SUPER_ADMIN') return true;
-    const selected = ['CONTADOR'].includes(user?.role)
+    const selected = ['CONTADOR', 'SUPER_ADMIN'].includes(user?.role)
       ? request.query?.restauranteId
       : user?.restauranteId;
+    if (user?.role === 'SUPER_ADMIN' && !selected) return true;
     const restauranteId = Number(selected);
     if (!Number.isInteger(restauranteId) || restauranteId <= 0) {
       throw new ForbiddenException('Usuário não está vinculado a nenhum restaurante');

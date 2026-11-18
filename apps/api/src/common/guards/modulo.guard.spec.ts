@@ -20,10 +20,28 @@ describe('ModuloGuard', () => {
       .rejects.toBeInstanceOf(ForbiddenException);
   });
 
-  it('libera SUPER_ADMIN sem consultar módulo de restaurante', async () => {
+  it('bloqueia SUPER_ADMIN quando o módulo do restaurante selecionado está desabilitado', async () => {
+    const { guard, restaurantes } = guardFor('moduloPonto', { moduloPonto: false });
+    const request = { user: { role: 'SUPER_ADMIN' }, query: { restauranteId: '9' } };
+    await expect(guard.canActivate({
+      getHandler: () => ({}), getClass: () => ({}), switchToHttp: () => ({ getRequest: () => request }),
+    } as any)).rejects.toBeInstanceOf(ForbiddenException);
+    expect(restaurantes.findEnabled).toHaveBeenCalledWith(9);
+  });
+
+  it('libera SUPER_ADMIN sem restauranteId sem consultar módulo', async () => {
     const { guard, restaurantes } = guardFor('moduloPonto', { moduloPonto: false });
     await expect(guard.canActivate(context({ role: 'SUPER_ADMIN' }))).resolves.toBe(true);
     expect(restaurantes.findEnabled).not.toHaveBeenCalled();
+  });
+
+  it('ignora restauranteId arbitrário de ADMIN', async () => {
+    const { guard, restaurantes } = guardFor('moduloPonto');
+    const request = { user: { role: 'ADMIN', restauranteId: 4 }, query: { restauranteId: '9' } };
+    await expect(guard.canActivate({
+      getHandler: () => ({}), getClass: () => ({}), switchToHttp: () => ({ getRequest: () => request }),
+    } as any)).resolves.toBe(true);
+    expect(restaurantes.findEnabled).toHaveBeenCalledWith(4);
   });
 
   it('usa restaurante selecionado pelo CONTADOR', async () => {
