@@ -23,7 +23,8 @@ export function usePWAInstall(): PWAInstallResult {
 
   const isIOS =
     typeof navigator !== 'undefined' &&
-    /iphone|ipad|ipod/i.test(navigator.userAgent);
+    (/iphone|ipad|ipod/i.test(navigator.userAgent) ||
+      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1));
 
   const isSafari =
     typeof navigator !== 'undefined' &&
