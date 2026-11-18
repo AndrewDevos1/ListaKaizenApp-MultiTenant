@@ -9,6 +9,7 @@ import { ListasModule } from './modules/listas/listas.module';
 import { SubmissoesModule } from './modules/submissoes/submissoes.module';
 import { UsuariosModule } from './modules/usuarios/usuarios.module';
 import { FornecedoresModule } from './modules/fornecedores/fornecedores.module';
+import { CatalogoFornecedorModule } from './modules/catalogo-fornecedor/catalogo-fornecedor.module';
 import { CotacoesModule } from './modules/cotacoes/cotacoes.module';
 import { ChecklistsModule } from './modules/checklists/checklists.module';
 import { ListasRapidasModule } from './modules/listas-rapidas/listas-rapidas.module';
@@ -36,6 +37,7 @@ import { ContadorModule } from './modules/contador/contador.module';
     SubmissoesModule,
     UsuariosModule,
     FornecedoresModule,
+    CatalogoFornecedorModule,
     CotacoesModule,
     ChecklistsModule,
     ListasRapidasModule,
