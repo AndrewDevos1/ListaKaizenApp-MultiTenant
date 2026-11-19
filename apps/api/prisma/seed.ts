@@ -526,6 +526,24 @@ async function main() {
   }
 
   // ============================================================
+  // 15. ALMOXARIFADO EPI — domínio próprio, sem Item/listas de compras
+  // ============================================================
+  const materiaisEpi = [
+    { nome: 'Camisa uniforme', categoria: 'UNIFORME' as const, retornavel: true, valorReferencia: 45 },
+    { nome: 'Avental', categoria: 'UNIFORME' as const, retornavel: true, valorReferencia: 30 },
+    { nome: 'Crocs de trabalho', categoria: 'CALCADO' as const, retornavel: true, valorReferencia: 110 },
+    { nome: 'Luva de proteção', categoria: 'EPI' as const, retornavel: false, valorReferencia: 12 },
+    { nome: 'Faca profissional', categoria: 'FERRAMENTA' as const, retornavel: true, valorReferencia: 85 },
+  ];
+  for (const data of materiaisEpi) {
+    const material = await prisma.materialAlmoxarifado.upsert({ where: { restauranteId_nome: { restauranteId: restaurante.id, nome: data.nome } }, update: {}, create: { ...data, restauranteId: restaurante.id } });
+    const variante = data.nome === 'Camisa uniforme' ? await prisma.varianteMaterialAlmoxarifado.findFirst({ where: { materialId: material.id, tamanho: 'M' } }) ?? await prisma.varianteMaterialAlmoxarifado.create({ data: { materialId: material.id, tamanho: 'M' } }) : null;
+    const posicao = await prisma.posicaoMaterialAlmoxarifado.findFirst({ where: { restauranteId: restaurante.id, materialId: material.id, varianteId: variante?.id ?? null } });
+    if (!posicao) await prisma.posicaoMaterialAlmoxarifado.create({ data: { restauranteId: restaurante.id, materialId: material.id, varianteId: variante?.id, saldo: 0 } });
+  }
+  console.log('Materiais EPI/uniforme configurados:', materiaisEpi.length);
+
+  // ============================================================
   // RESUMO FINAL
   // ============================================================
   console.log('\n=== SEED CONCLUÍDO COM SUCESSO ===');
