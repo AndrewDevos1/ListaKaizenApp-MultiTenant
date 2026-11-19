@@ -1016,6 +1016,7 @@ model MaterialAlmoxarifado {
   variantes       VarianteMaterialAlmoxarifado[]
   posicoes        PosicaoMaterialAlmoxarifado[]
   movimentacoes   MovimentoMaterialAlmoxarifado[]
+  entregasEpiItens EntregaEpiItem[]
   @@unique([restauranteId, nome])
   @@map("materiais_almoxarifado")
 }
@@ -1029,6 +1030,7 @@ model VarianteMaterialAlmoxarifado {
   material    MaterialAlmoxarifado @relation(fields: [materialId], references: [id], onDelete: Restrict)
   posicoes    PosicaoMaterialAlmoxarifado[]
   movimentacoes MovimentoMaterialAlmoxarifado[]
+  entregasEpiItens EntregaEpiItem[]
   @@map("variantes_material_almoxarifado")
 }
 
@@ -1048,6 +1050,7 @@ model PosicaoMaterialAlmoxarifado {
   material      MaterialAlmoxarifado @relation(fields: [materialId], references: [id])
   variante      VarianteMaterialAlmoxarifado? @relation(fields: [varianteId], references: [id])
   movimentacoes MovimentoMaterialAlmoxarifado[]
+  entregasEpiItens EntregaEpiItem[]
   @@unique([restauranteId, materialId, varianteId])
   @@map("posicoes_material_almoxarifado")
 }
@@ -1084,6 +1087,9 @@ model EntregaEpiItem {
   categoriaSnapshot CategoriaMaterialAlmoxarifado @map("categoria_snapshot")
   varianteSnapshot String? @map("variante_snapshot")
   entrega EntregaEpi @relation(fields: [entregaId], references: [id], onDelete: Cascade)
+  posicao PosicaoMaterialAlmoxarifado @relation(fields: [posicaoId], references: [id], onDelete: Restrict)
+  material MaterialAlmoxarifado @relation(fields: [materialId], references: [id], onDelete: Restrict)
+  variante VarianteMaterialAlmoxarifado? @relation(fields: [varianteId], references: [id], onDelete: SetNull)
   @@map("entregas_epi_itens")
 }
 
