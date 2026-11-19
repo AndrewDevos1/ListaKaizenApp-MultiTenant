@@ -607,7 +607,7 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
       id: 'listas-estoque',
       label: 'LISTAS & ESTOQUE',
       items: [
-        ...(almoxarifadoEnabled ? [{ label: 'Almoxarifado', href: '/admin/almoxarifado', icon: <FaArchive />, status: 'available' as const }] : []),
+        ...(almoxarifadoEnabled ? [{ label: 'Almoxarifado', href: '/admin/almoxarifado', icon: <FaArchive />, status: 'available' as const }, { label: 'Entregas EPI', href: '/admin/entregas-epi', icon: <FaTruck />, status: 'available' as const }] : []),
         {
           label: 'Listas Rápidas',
           href: '/admin/listas-rapidas',
@@ -756,6 +756,11 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
 
    
   const collaboratorMenuGroups = useMemo<MenuGroup[]>(() => [
+    ...(user?.modulos?.moduloAlmoxarifadoEpi ? [{
+      id: 'entregas-epi',
+      label: 'ENTREGAS EPI',
+      items: [{ label: 'Minhas entregas', href: '/collaborator/entregas-epi', icon: <FaTruck />, status: 'available' as const }],
+    }] : []),
     ...(user?.modulos?.moduloPonto ? [{
       id: 'ponto',
       label: 'PONTO',
