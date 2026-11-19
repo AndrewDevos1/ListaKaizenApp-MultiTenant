@@ -25,6 +25,7 @@ import { AusenciasModule } from './modules/ausencias/ausencias.module';
 import { AtestadosModule } from './modules/atestados/atestados.module';
 import { ContadorModule } from './modules/contador/contador.module';
 import { AlmoxarifadoModule } from './modules/almoxarifado/almoxarifado.module';
+import { EntregasEpiModule } from './modules/entregas-epi/entregas-epi.module';
 
 @Module({
   imports: [
@@ -54,6 +55,7 @@ import { AlmoxarifadoModule } from './modules/almoxarifado/almoxarifado.module';
     AtestadosModule,
     ContadorModule,
     AlmoxarifadoModule,
+    EntregasEpiModule,
   ],
 })
 export class AppModule {}

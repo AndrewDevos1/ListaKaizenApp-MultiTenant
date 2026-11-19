@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { Spinner } from 'react-bootstrap';
 import { FaBell } from 'react-icons/fa';
 import { createPortal } from 'react-dom';
+import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
 import styles from './NotificationBell.module.css';
 
@@ -13,6 +14,7 @@ interface Notificacao {
   mensagem: string;
   lida: boolean;
   criadoEm: string;
+  deepLink?: string | null;
 }
 
 function formatarData(isoString: string): string {
@@ -35,6 +37,7 @@ function formatarData(isoString: string): string {
 }
 
 export default function NotificationBell() {
+  const router = useRouter();
   const [count, setCount] = useState(0);
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -238,7 +241,7 @@ export default function NotificationBell() {
                   <div
                     key={n.id}
                     className={`${styles.notificationItem} ${!n.lida ? styles.unread : ''}`}
-                    onClick={() => !n.lida && handleMarcarLida(n.id)}
+                    onClick={() => { if (!n.lida) void handleMarcarLida(n.id); if (n.deepLink) { router.push(n.deepLink); setOpen(false); } }}
                     role={!n.lida ? 'button' : undefined}
                     tabIndex={!n.lida ? 0 : undefined}
                     onKeyDown={(e) => {

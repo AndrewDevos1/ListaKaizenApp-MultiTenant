@@ -22,6 +22,10 @@ export class NotificacoesService {
     private push: PushService,
   ) {}
 
+  async criarNaTransacao(tx: any, input: { usuarioId: number; restauranteId: number; tipo: TipoNotificacao; mensagem: string; referenciaId?: number; deepLink?: string }) {
+    return tx.notificacao.create({ data: { usuarioId: input.usuarioId, restauranteId: input.restauranteId, tipo: input.tipo, mensagem: input.mensagem, referenciaId: input.referenciaId, deepLink: input.deepLink, lida: false } });
+  }
+
   async criar(
     usuarioId: number,
     restauranteId: number,

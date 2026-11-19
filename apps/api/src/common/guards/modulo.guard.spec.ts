@@ -20,10 +20,17 @@ describe('ModuloGuard', () => {
       .rejects.toBeInstanceOf(ForbiddenException);
   });
 
-  it('libera SUPER_ADMIN sem consultar módulo de restaurante', async () => {
+  it('bloqueia SUPER_ADMIN com restaurante explícito cujo módulo está desabilitado', async () => {
     const { guard, restaurantes } = guardFor('moduloPonto', { moduloPonto: false });
-    await expect(guard.canActivate(context({ role: 'SUPER_ADMIN' }))).resolves.toBe(true);
-    expect(restaurantes.findEnabled).not.toHaveBeenCalled();
+    const request = { user: { role: 'SUPER_ADMIN', restauranteId: 4 }, query: { restauranteId: '9' } };
+    await expect(guard.canActivate({ getHandler: () => ({}), getClass: () => ({}), switchToHttp: () => ({ getRequest: () => request }) } as any)).rejects.toBeInstanceOf(ForbiddenException);
+    expect(restaurantes.findEnabled).toHaveBeenCalledWith(9);
+  });
+
+  it('mantém ADMIN no restaurante próprio', async () => {
+    const { guard, restaurantes } = guardFor('moduloPonto');
+    await expect(guard.canActivate(context({ role: 'ADMIN', restauranteId: 4 }))).resolves.toBe(true);
+    expect(restaurantes.findEnabled).toHaveBeenCalledWith(4);
   });
 
   it('usa restaurante selecionado pelo CONTADOR', async () => {
