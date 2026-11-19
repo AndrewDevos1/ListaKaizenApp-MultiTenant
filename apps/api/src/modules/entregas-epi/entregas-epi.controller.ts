@@ -15,6 +15,8 @@ export class EntregasEpiController {
   @Post('admin/entregas-epi') @Roles('ADMIN' as any, 'SUPER_ADMIN' as any) criar(@TenantId() t: number, @CurrentUser() u: any, @Body() d: CriarEntregaEpiDto) { return this.service.criar(t, u, d); }
   @Get('admin/entregas-epi') @Roles('ADMIN' as any, 'SUPER_ADMIN' as any) listarAdmin(@TenantId() t: number) { return this.service.listar(t); }
   @Get('admin/entregas-epi/:id') @Roles('ADMIN' as any, 'SUPER_ADMIN' as any) detalheAdmin(@TenantId() t: number, @Param('id', ParseIntPipe) id: number) { return this.service.detalhe(t, id); }
+  @Get('admin/custodias-epi') @Roles('ADMIN' as any, 'SUPER_ADMIN' as any) listarCustodiasAdmin(@TenantId() t: number) { return this.service.listarCustodias(t); }
+  @Get('collaborator/custodias-epi') @Roles('COLLABORATOR' as any) listarMinhasCustodias(@TenantId() t: number, @CurrentUser('id') u: number) { return this.service.listarCustodias(t, u); }
   @Post('admin/entregas-epi/:id/confirmar-entrega-fisica') @Roles('ADMIN' as any, 'SUPER_ADMIN' as any) confirmarFisica(@TenantId() t: number, @CurrentUser() u: any, @Param('id', ParseIntPipe) id: number, @Headers('idempotency-key') chave: string, @Body('chaveIdempotencia') bodyChave?: string) { return this.service.confirmarEntregaFisica(t, id, u, chave ?? bodyChave); }
   @Post('admin/entregas-epi/:id/cancelar') @Roles('ADMIN' as any, 'SUPER_ADMIN' as any) cancelar(@TenantId() t: number, @CurrentUser() u: any, @Param('id', ParseIntPipe) id: number, @Body('chaveIdempotencia') chave: string) { return this.service.cancelar(t, id, u, chave); }
   @Get('collaborator/entregas-epi') @Roles('COLLABORATOR' as any) listar(@TenantId() t: number, @CurrentUser('id') u: number) { return this.service.listar(t, u); }

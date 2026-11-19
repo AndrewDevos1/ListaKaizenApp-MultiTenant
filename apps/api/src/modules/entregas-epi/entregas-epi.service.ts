@@ -42,6 +42,16 @@ export class EntregasEpiService {
   }
 
   listar(restauranteId: number, funcionarioId?: number) { return this.prisma.entregaEpi.findMany({ where: { restauranteId, ...(funcionarioId ? { funcionarioId } : {}) }, include: { itens: true, eventos: { orderBy: { criadoEm: 'asc' } }, custodias: true }, orderBy: { criadoEm: 'desc' } }); }
+  listarCustodias(restauranteId: number, funcionarioId?: number) {
+    return this.prisma.custodiaEpiItem.findMany({
+      where: { restauranteId, ...(funcionarioId ? { funcionarioId } : {}) },
+      include: {
+        funcionario: { select: { id: true, nome: true } }, material: { select: { nome: true } },
+        entregaItem: { select: { materialNomeSnapshot: true, varianteSnapshot: true } },
+        devolucoes: { orderBy: { criadoEm: 'desc' } }, ocorrencias: { orderBy: { criadoEm: 'desc' } },
+      }, orderBy: { iniciadaEm: 'desc' },
+    });
+  }
   async detalhe(restauranteId: number, id: number, funcionarioId?: number) { const entrega = await this.prisma.entregaEpi.findFirst({ where: { id, restauranteId, ...(funcionarioId ? { funcionarioId } : {}) }, include: { itens: true, eventos: { orderBy: { criadoEm: 'asc' } }, custodias: true } }); if (!entrega) throw new NotFoundException('Entrega não encontrada'); return entrega; }
 
   async confirmarEntregaFisica(restauranteId: number, id: number, ator: { id: number; nome?: string; role: string }, chave: string) {

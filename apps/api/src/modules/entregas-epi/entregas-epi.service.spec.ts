@@ -10,8 +10,9 @@ describe('EntregasEpiService', () => {
     notificacao: { create: jest.fn() },
     $transaction: jest.fn(),
     $queryRaw: jest.fn(),
-    custodiaEpiItem: { findFirst: jest.fn(), update: jest.fn(), create: jest.fn() },
+    custodiaEpiItem: { findFirst: jest.fn(), findMany: jest.fn(), update: jest.fn(), create: jest.fn() },
     devolucaoEpi: { findUnique: jest.fn(), create: jest.fn() },
+    ocorrenciaEpi: { findUnique: jest.fn(), create: jest.fn() },
     entregaEpiItem: { findUnique: jest.fn() },
     movimentoMaterialAlmoxarifado: { create: jest.fn() },
   } as any;
@@ -88,5 +89,14 @@ describe('EntregasEpiService', () => {
     prisma.custodiaEpiItem = { findFirst: jest.fn().mockResolvedValue({ id: 12, quantidadeEmPosse: 1, retornavel: true }) };
     prisma.$queryRaw.mockResolvedValueOnce([{ id: 12, quantidade_em_posse: 1 }]);
     await expect(service.devolver(3, { id: 8, role: 'ADMIN' }, 12, { quantidade: 2, condicao: 'DANIFICADO', chaveIdempotencia: 'return-2' })).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('lista custódias com saldo e histórico restritos ao colaborador', async () => {
+    prisma.custodiaEpiItem = { findMany: jest.fn().mockResolvedValue([]) };
+    await service.listarCustodias(3, 7);
+    expect(prisma.custodiaEpiItem.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: { restauranteId: 3, funcionarioId: 7 },
+      include: expect.objectContaining({ devolucoes: expect.any(Object), ocorrencias: expect.any(Object) }),
+    }));
   });
 });
