@@ -4,7 +4,8 @@ import { EntregasEpiService } from './entregas-epi.service';
 describe('EntregasEpiService', () => {
   const prisma = {
     usuario: { findFirst: jest.fn() },
-    entregaEpi: { create: jest.fn(), findMany: jest.fn(), findFirst: jest.fn(), updateMany: jest.fn() },
+    entregaEpi: { create: jest.fn(), findMany: jest.fn(), findFirst: jest.fn(), findFirstOrThrow: jest.fn(), updateMany: jest.fn() },
+    entregaEpiEvento: { create: jest.fn() },
     posicaoMaterialAlmoxarifado: { findFirst: jest.fn() },
     notificacao: { create: jest.fn() },
     $transaction: jest.fn(),
@@ -35,9 +36,11 @@ describe('EntregasEpiService', () => {
 
   it('aceita somente o próprio destinatário e transiciona condicionalmente', async () => {
     prisma.entregaEpi.updateMany.mockResolvedValue({ count: 1 });
-    prisma.entregaEpi.findFirst.mockResolvedValueOnce({ id: 99, funcionarioId: 7, status: 'PENDENTE' }).mockResolvedValueOnce({ id: 99, funcionarioId: 7, status: 'ACEITO' });
+    prisma.entregaEpi.findFirst.mockResolvedValueOnce({ id: 99, funcionarioId: 7, status: 'PENDENTE' });
+    prisma.entregaEpi.findFirstOrThrow.mockResolvedValue({ id: 99, funcionarioId: 7, status: 'ACEITO', statusFisico: 'PREPARADA', itens: [], eventos: [], custodias: [] });
+    prisma.entregaEpi.findFirst.mockResolvedValueOnce({ id: 99, funcionarioId: 7, status: 'ACEITO' });
     await expect(service.aceitar(3, 7, 99, 'accept-1')).resolves.toEqual(expect.objectContaining({ status: 'ACEITO' }));
-    expect(prisma.entregaEpi.updateMany).toHaveBeenCalledWith(expect.objectContaining({ where: { id: 99, restauranteId: 3, funcionarioId: 7, status: 'PENDENTE' } }));
+    expect(prisma.entregaEpi.updateMany).toHaveBeenCalledWith(expect.objectContaining({ where: expect.objectContaining({ id: 99, restauranteId: 3, funcionarioId: 7, status: 'PENDENTE' }) }));
   });
 
   it('exige justificativa na recusa', async () => {

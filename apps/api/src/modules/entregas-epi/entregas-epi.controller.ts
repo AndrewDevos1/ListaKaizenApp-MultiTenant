@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, ParseIntPipe, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Headers, Param, ParseIntPipe, Post, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { CurrentUser, Modulo, Roles, TenantId } from '../../common/decorators';
 import { ModuloGuard, RolesGuard, TenantGuard } from '../../common/guards';
@@ -13,7 +13,8 @@ export class EntregasEpiController {
   @Post('admin/entregas-epi') @Roles('ADMIN' as any, 'SUPER_ADMIN' as any) criar(@TenantId() t: number, @CurrentUser() u: any, @Body() d: CriarEntregaEpiDto) { return this.service.criar(t, u, d); }
   @Get('admin/entregas-epi') @Roles('ADMIN' as any, 'SUPER_ADMIN' as any) listarAdmin(@TenantId() t: number) { return this.service.listar(t); }
   @Get('admin/entregas-epi/:id') @Roles('ADMIN' as any, 'SUPER_ADMIN' as any) detalheAdmin(@TenantId() t: number, @Param('id', ParseIntPipe) id: number) { return this.service.detalhe(t, id); }
-  @Post('admin/entregas-epi/:id/cancelar') @Roles('ADMIN' as any, 'SUPER_ADMIN' as any) cancelar(@TenantId() t: number, @Param('id', ParseIntPipe) id: number, @Body('chaveIdempotencia') chave: string) { return this.service.cancelar(t, id, chave); }
+  @Post('admin/entregas-epi/:id/confirmar-entrega-fisica') @Roles('ADMIN' as any, 'SUPER_ADMIN' as any) confirmarFisica(@TenantId() t: number, @CurrentUser() u: any, @Param('id', ParseIntPipe) id: number, @Headers('idempotency-key') chave: string, @Body('chaveIdempotencia') bodyChave?: string) { return this.service.confirmarEntregaFisica(t, id, u, chave ?? bodyChave); }
+  @Post('admin/entregas-epi/:id/cancelar') @Roles('ADMIN' as any, 'SUPER_ADMIN' as any) cancelar(@TenantId() t: number, @CurrentUser() u: any, @Param('id', ParseIntPipe) id: number, @Body('chaveIdempotencia') chave: string) { return this.service.cancelar(t, id, u, chave); }
   @Get('collaborator/entregas-epi') @Roles('COLLABORATOR' as any) listar(@TenantId() t: number, @CurrentUser('id') u: number) { return this.service.listar(t, u); }
   @Get('collaborator/entregas-epi/:id') @Roles('COLLABORATOR' as any) detalhe(@TenantId() t: number, @CurrentUser('id') u: number, @Param('id', ParseIntPipe) id: number) { return this.service.detalhe(t, id, u); }
   @Post('collaborator/entregas-epi/:id/aceitar') @Roles('COLLABORATOR' as any) aceitar(@TenantId() t: number, @CurrentUser('id') u: number, @Param('id', ParseIntPipe) id: number, @Body('chaveIdempotencia') chave: string) { return this.service.aceitar(t, u, id, chave); }

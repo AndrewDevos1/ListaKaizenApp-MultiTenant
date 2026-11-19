@@ -148,6 +148,8 @@ model Restaurante {
   contadorVinculos          ContadorFuncionario[]
   materiaisAlmoxarifado    MaterialAlmoxarifado[]
   entregasEpi EntregaEpi[]
+  custodiasEpi CustodiaEpiItem[]
+  eventosEntregaEpi EntregaEpiEvento[]
   posicoesMaterialAlmoxarifado PosicaoMaterialAlmoxarifado[]
   movimentosMaterialAlmoxarifado MovimentoMaterialAlmoxarifado[]
   almoxarifadoPosicoesLegadas AlmoxarifadoPosicaoLegada[]
@@ -180,6 +182,9 @@ model Usuario {
   notificacoes      Notificacao[]
   entregasEpiRecebidas EntregaEpi[] @relation("EntregaEpiFuncionario")
   entregasEpiCriadas EntregaEpi[] @relation("EntregaEpiCriador")
+  entregasEpiFisicas EntregaEpi[] @relation("EntregaEpiEntregador")
+  custodiasEpi CustodiaEpiItem[] @relation("CustodiaEpiFuncionario")
+  eventosEntregaEpi EntregaEpiEvento[] @relation("EntregaEpiEventoAtor")
   pushSubscriptions PushSubscription[]
   navbarStyle       UsuarioNavbarEstilo?
   recebimentosConfirmados      Recebimento[] @relation("RecebimentoConfirmadoPor")
@@ -874,6 +879,27 @@ enum StatusEntregaEpi {
   CANCELADO
 }
 
+enum StatusFisicoEntregaEpi {
+  PREPARADA
+  ENTREGUE
+  NAO_ENTREGUE
+}
+
+enum StatusAceiteEntregaEpi {
+  PENDENTE
+  ACEITO
+  RECUSADO
+}
+
+enum TipoEventoEntregaEpi {
+  CRIADA
+  ENTREGA_FISICA_CONFIRMADA
+  ACEITE_ELETRONICO
+  RECUSA
+  CANCELADA
+  DIVERGENCIA
+}
+
 enum TipoNotificacao {
   SUBMISSAO_PENDENTE
   SUBMISSAO_APROVADA
@@ -1017,6 +1043,7 @@ model MaterialAlmoxarifado {
   posicoes        PosicaoMaterialAlmoxarifado[]
   movimentacoes   MovimentoMaterialAlmoxarifado[]
   entregasEpiItens EntregaEpiItem[]
+  custodiasEpi CustodiaEpiItem[]
   @@unique([restauranteId, nome])
   @@map("materiais_almoxarifado")
 }
@@ -1060,7 +1087,12 @@ model EntregaEpi {
   restauranteId Int @map("restaurante_id")
   funcionarioId Int @map("funcionario_id")
   criadoPorId Int @map("criado_por_id")
-  status StatusEntregaEpi @default(PENDENTE)
+  status StatusEntregaEpi @default(PENDENTE) // compatibilidade: espelha o aceite/cancelamento legado
+  statusFisico StatusFisicoEntregaEpi @default(PREPARADA) @map("status_fisico")
+  statusAceite StatusAceiteEntregaEpi @default(PENDENTE) @map("status_aceite")
+  entregueFisicamenteEm DateTime? @map("entregue_fisicamente_em")
+  entreguePorId Int? @map("entregue_por_id")
+  chaveEntregaFisica String? @map("chave_entrega_fisica")
   chaveIdempotencia String @map("chave_idempotencia")
   chaveUltimaTransicao String? @map("chave_ultima_transicao")
   observacoes String?
@@ -1072,8 +1104,12 @@ model EntregaEpi {
   restaurante Restaurante @relation(fields: [restauranteId], references: [id])
   funcionario Usuario @relation("EntregaEpiFuncionario", fields: [funcionarioId], references: [id])
   criadoPor Usuario @relation("EntregaEpiCriador", fields: [criadoPorId], references: [id])
+  entreguePor Usuario? @relation("EntregaEpiEntregador", fields: [entreguePorId], references: [id])
   itens EntregaEpiItem[]
+  eventos EntregaEpiEvento[]
+  custodias CustodiaEpiItem[]
   @@unique([restauranteId, chaveIdempotencia])
+  @@unique([restauranteId, chaveEntregaFisica])
   @@map("entregas_epi")
 }
 model EntregaEpiItem {
@@ -1085,12 +1121,51 @@ model EntregaEpiItem {
   quantidade Decimal @db.Decimal(14,3)
   materialNomeSnapshot String @map("material_nome_snapshot")
   categoriaSnapshot CategoriaMaterialAlmoxarifado @map("categoria_snapshot")
+  retornavelSnapshot Boolean @map("retornavel_snapshot")
   varianteSnapshot String? @map("variante_snapshot")
   entrega EntregaEpi @relation(fields: [entregaId], references: [id], onDelete: Cascade)
   posicao PosicaoMaterialAlmoxarifado @relation(fields: [posicaoId], references: [id], onDelete: Restrict)
   material MaterialAlmoxarifado @relation(fields: [materialId], references: [id], onDelete: Restrict)
   variante VarianteMaterialAlmoxarifado? @relation(fields: [varianteId], references: [id], onDelete: SetNull)
+  custodia CustodiaEpiItem?
   @@map("entregas_epi_itens")
+}
+
+// Contrato mínimo consumido por #51: material comprovadamente entregue fica em posse do funcionário.
+model CustodiaEpiItem {
+  id Int @id @default(autoincrement())
+  restauranteId Int @map("restaurante_id")
+  entregaId Int @map("entrega_id")
+  entregaItemId Int @unique @map("entrega_item_id")
+  funcionarioId Int @map("funcionario_id")
+  materialId Int @map("material_id")
+  varianteId Int? @map("variante_id")
+  quantidadeEmPosse Decimal @map("quantidade_em_posse") @db.Decimal(14, 3)
+  retornavel Boolean
+  iniciadaEm DateTime @map("iniciada_em")
+  restaurante Restaurante @relation(fields: [restauranteId], references: [id], onDelete: Restrict)
+  entrega EntregaEpi @relation(fields: [entregaId], references: [id], onDelete: Restrict)
+  entregaItem EntregaEpiItem @relation(fields: [entregaItemId], references: [id], onDelete: Restrict)
+  funcionario Usuario @relation("CustodiaEpiFuncionario", fields: [funcionarioId], references: [id], onDelete: Restrict)
+  material MaterialAlmoxarifado @relation(fields: [materialId], references: [id], onDelete: Restrict)
+  @@index([restauranteId, funcionarioId])
+  @@map("custodias_epi_itens")
+}
+
+// Trilha append-only (trigger bloqueia UPDATE/DELETE).
+model EntregaEpiEvento {
+  id Int @id @default(autoincrement())
+  restauranteId Int @map("restaurante_id")
+  entregaId Int @map("entrega_id")
+  tipo TipoEventoEntregaEpi
+  atorId Int @map("ator_id")
+  metadados Json?
+  criadoEm DateTime @default(now()) @map("criado_em")
+  restaurante Restaurante @relation(fields: [restauranteId], references: [id], onDelete: Restrict)
+  entrega EntregaEpi @relation(fields: [entregaId], references: [id], onDelete: Restrict)
+  ator Usuario @relation("EntregaEpiEventoAtor", fields: [atorId], references: [id], onDelete: Restrict)
+  @@index([entregaId, criadoEm])
+  @@map("entregas_epi_eventos")
 }
 
 // Append-only. #49 consome somente material/variante/posição, nunca Item.

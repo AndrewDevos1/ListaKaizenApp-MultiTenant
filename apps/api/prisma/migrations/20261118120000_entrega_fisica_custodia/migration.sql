@@ -1,0 +1,32 @@
+-- Aditiva. Rollback manual (apenas se nenhuma entrega fisica foi confirmada): DROP TABLE custodias_epi_itens, entregas_epi_eventos;
+-- DROP FUNCTION bloquear_mutacao_entrega_epi_evento; remover colunas novas de entregas_epi/entregas_epi_itens; DROP TYPE dos 3 enums;
+-- restaurar CHECK tipo IN ('ENTRADA','AJUSTE') somente se nao houver movimentos SAIDA (nao reversivel semanticamente depois disso).
+CREATE TYPE "StatusFisicoEntregaEpi" AS ENUM ('PREPARADA','ENTREGUE','NAO_ENTREGUE');
+CREATE TYPE "StatusAceiteEntregaEpi" AS ENUM ('PENDENTE','ACEITO','RECUSADO');
+CREATE TYPE "TipoEventoEntregaEpi" AS ENUM ('CRIADA','ENTREGA_FISICA_CONFIRMADA','ACEITE_ELETRONICO','RECUSA','CANCELADA','DIVERGENCIA');
+ALTER TABLE "entregas_epi" ADD COLUMN "status_fisico" "StatusFisicoEntregaEpi" NOT NULL DEFAULT 'PREPARADA', ADD COLUMN "status_aceite" "StatusAceiteEntregaEpi" NOT NULL DEFAULT 'PENDENTE', ADD COLUMN "entregue_fisicamente_em" TIMESTAMP(3), ADD COLUMN "entregue_por_id" INTEGER, ADD COLUMN "chave_entrega_fisica" TEXT;
+ALTER TABLE "entregas_epi_itens" ADD COLUMN "retornavel_snapshot" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "entregas_epi_itens" ALTER COLUMN "retornavel_snapshot" DROP DEFAULT;
+UPDATE "entregas_epi_itens" i SET "retornavel_snapshot" = m."retornavel" FROM "materiais_almoxarifado" m WHERE m."id" = i."material_id";
+-- Backfill de entregas legadas: aceite espelha status; canceladas nunca foram entregues. Entregas legadas nao baixaram saldo (PREPARADA).
+UPDATE "entregas_epi" SET "status_aceite" = 'ACEITO' WHERE "status" = 'ACEITO';
+UPDATE "entregas_epi" SET "status_aceite" = 'RECUSADO' WHERE "status" = 'RECUSADO';
+UPDATE "entregas_epi" SET "status_fisico" = 'NAO_ENTREGUE' WHERE "status" = 'CANCELADO';
+CREATE UNIQUE INDEX "entregas_epi_restaurante_id_chave_entrega_fisica_key" ON "entregas_epi"("restaurante_id", "chave_entrega_fisica");
+CREATE TABLE "custodias_epi_itens" ("id" SERIAL PRIMARY KEY,"restaurante_id" INTEGER NOT NULL,"entrega_id" INTEGER NOT NULL,"entrega_item_id" INTEGER NOT NULL UNIQUE,"funcionario_id" INTEGER NOT NULL,"material_id" INTEGER NOT NULL,"variante_id" INTEGER,"quantidade_em_posse" DECIMAL(14,3) NOT NULL,"retornavel" BOOLEAN NOT NULL,"iniciada_em" TIMESTAMP(3) NOT NULL);
+CREATE INDEX "custodias_epi_itens_restaurante_id_funcionario_id_idx" ON "custodias_epi_itens"("restaurante_id","funcionario_id");
+CREATE TABLE "entregas_epi_eventos" ("id" SERIAL PRIMARY KEY,"restaurante_id" INTEGER NOT NULL,"entrega_id" INTEGER NOT NULL,"tipo" "TipoEventoEntregaEpi" NOT NULL,"ator_id" INTEGER NOT NULL,"metadados" JSONB,"criado_em" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP);
+CREATE INDEX "entregas_epi_eventos_entrega_id_criado_em_idx" ON "entregas_epi_eventos"("entrega_id","criado_em");
+CREATE FUNCTION bloquear_mutacao_entrega_epi_evento() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'entregas_epi_eventos é append-only'; END; $$;
+CREATE TRIGGER entregas_epi_eventos_append_only BEFORE UPDATE OR DELETE ON "entregas_epi_eventos" FOR EACH ROW EXECUTE FUNCTION bloquear_mutacao_entrega_epi_evento();
+ALTER TABLE "custodias_epi_itens" ADD CONSTRAINT "custodias_epi_itens_restaurante_id_fkey" FOREIGN KEY ("restaurante_id") REFERENCES "restaurantes"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "custodias_epi_itens" ADD CONSTRAINT "custodias_epi_itens_entrega_id_fkey" FOREIGN KEY ("entrega_id") REFERENCES "entregas_epi"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "custodias_epi_itens" ADD CONSTRAINT "custodias_epi_itens_entrega_item_id_fkey" FOREIGN KEY ("entrega_item_id") REFERENCES "entregas_epi_itens"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "custodias_epi_itens" ADD CONSTRAINT "custodias_epi_itens_funcionario_id_fkey" FOREIGN KEY ("funcionario_id") REFERENCES "usuarios"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "custodias_epi_itens" ADD CONSTRAINT "custodias_epi_itens_material_id_fkey" FOREIGN KEY ("material_id") REFERENCES "materiais_almoxarifado"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "entregas_epi_eventos" ADD CONSTRAINT "entregas_epi_eventos_restaurante_id_fkey" FOREIGN KEY ("restaurante_id") REFERENCES "restaurantes"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "entregas_epi_eventos" ADD CONSTRAINT "entregas_epi_eventos_entrega_id_fkey" FOREIGN KEY ("entrega_id") REFERENCES "entregas_epi"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "entregas_epi_eventos" ADD CONSTRAINT "entregas_epi_eventos_ator_id_fkey" FOREIGN KEY ("ator_id") REFERENCES "usuarios"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "entregas_epi" ADD CONSTRAINT "entregas_epi_entregue_por_id_fkey" FOREIGN KEY ("entregue_por_id") REFERENCES "usuarios"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "movimentos_material_almoxarifado" DROP CONSTRAINT IF EXISTS "movimentos_material_almoxarifado_tipo_check";
+ALTER TABLE "movimentos_material_almoxarifado" ADD CONSTRAINT "movimentos_material_almoxarifado_tipo_check" CHECK ("tipo" IN ('ENTRADA','SAIDA','AJUSTE'));
