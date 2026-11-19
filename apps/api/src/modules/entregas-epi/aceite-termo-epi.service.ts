@@ -19,13 +19,16 @@ export class AceiteTermoEpiService {
 
   listarTermos(restauranteId: number) { return this.prisma.termoResponsabilidade.findMany({ where: { restauranteId }, orderBy: { criadoEm: 'desc' } }); }
 
-  async aceitar(restauranteId: number, funcionarioId: number, entregaId: number, input: { termoId: number; assinatura: string }) {
+  async aceitar(restauranteId: number, funcionarioId: number, entregaId: number, input: { termoId: number; assinatura: string; hashTermo: string; lido: boolean }) {
     if (!input?.termoId || !input.assinatura?.trim()) throw new BadRequestException('Termo e assinatura são obrigatórios');
+    if (input.lido !== true) throw new BadRequestException('Confirme a leitura do termo');
+    if (!/^[a-f0-9]{64}$/i.test(input.hashTermo ?? '')) throw new BadRequestException('Hash do termo inválido');
     const entrega = await this.prisma.entregaEpi.findFirst({ where: { id: entregaId, restauranteId, funcionarioId }, include: { funcionario: true, itens: true } });
     if (!entrega) throw new ForbiddenException('Entrega não pertence ao colaborador ou tenant');
     const termo = await this.prisma.termoResponsabilidade.findFirst({ where: { id: input.termoId, restauranteId } });
     if (!termo) throw new NotFoundException('Termo não encontrado');
-    const payloadHash = this.hash({ termoId: termo.id, assinatura: input.assinatura.trim() });
+    if (termo.hashTermo !== input.hashTermo) throw new ConflictException('O termo foi alterado; releia a versão atual');
+    const payloadHash = this.hash({ termoId: termo.id, hashTermo: termo.hashTermo, lido: true, assinatura: input.assinatura.trim() });
     const existing = await this.prisma.aceiteTermoEpi.findFirst({ where: { entregaId, restauranteId, funcionarioId } });
     if (existing) {
       if (existing.hashPayload === payloadHash) return existing;
