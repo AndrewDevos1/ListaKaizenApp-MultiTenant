@@ -2,11 +2,12 @@ import { Body, Controller, Get, Headers, Param, ParseIntPipe, Post, UseGuards } 
 import { AuthGuard } from '@nestjs/passport';
 import { CurrentUser, Modulo, Roles, TenantId } from '../../common/decorators';
 import { ModuloGuard, RolesGuard, TenantGuard } from '../../common/guards';
+import { SuperAdminTenantGuard } from '../almoxarifado/super-admin-tenant.guard';
 import { CriarEntregaEpiDto, RecusarEntregaEpiDto } from './dto/criar-entrega-epi.dto';
 import { EntregasEpiService } from './entregas-epi.service';
 
 @Controller('v1')
-@UseGuards(AuthGuard('jwt'), RolesGuard, TenantGuard, ModuloGuard)
+@UseGuards(AuthGuard('jwt'), RolesGuard, TenantGuard, SuperAdminTenantGuard, ModuloGuard)
 @Modulo('moduloAlmoxarifadoEpi')
 export class EntregasEpiController {
   constructor(private readonly service: EntregasEpiService) {}

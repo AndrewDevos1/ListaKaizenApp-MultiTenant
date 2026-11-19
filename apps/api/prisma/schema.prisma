@@ -1095,6 +1095,8 @@ model EntregaEpi {
   chaveEntregaFisica String? @map("chave_entrega_fisica")
   chaveIdempotencia String @map("chave_idempotencia")
   chaveUltimaTransicao String? @map("chave_ultima_transicao")
+  hashCriacao String @map("hash_criacao")
+  hashUltimaTransicao String? @map("hash_ultima_transicao")
   observacoes String?
   justificativaRecusa String? @map("justificativa_recusa")
   criadoEm DateTime @default(now()) @map("criado_em")

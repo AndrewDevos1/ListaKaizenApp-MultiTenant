@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsInt, IsNotEmpty, IsNumber, IsOptional, IsString, Min, ValidateNested } from 'class-validator';
+import { ArrayUnique, IsInt, IsNotEmpty, IsNumber, IsOptional, IsString, Min, ValidateNested } from 'class-validator';
 
 export class EntregaEpiItemDto {
   @IsInt() @Min(1) posicaoId: number;
@@ -10,7 +10,7 @@ export class CriarEntregaEpiDto {
   @IsInt() @Min(1) funcionarioId: number;
   @IsString() @IsNotEmpty() chaveIdempotencia: string;
   @IsOptional() @IsString() observacoes?: string;
-  @ValidateNested({ each: true }) @Type(() => EntregaEpiItemDto) itens: EntregaEpiItemDto[];
+  @ArrayUnique((item: EntregaEpiItemDto) => item.posicaoId, { message: 'posicaoId não pode repetir' }) @ValidateNested({ each: true }) @Type(() => EntregaEpiItemDto) itens: EntregaEpiItemDto[];
 }
 
 export class RecusarEntregaEpiDto {

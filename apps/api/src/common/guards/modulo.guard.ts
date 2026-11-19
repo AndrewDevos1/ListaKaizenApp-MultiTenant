@@ -24,8 +24,7 @@ export class ModuloGuard implements CanActivate {
 
     const request = context.switchToHttp().getRequest();
     const { user } = request;
-    if (user?.role === 'SUPER_ADMIN') return true;
-    const selected = ['CONTADOR'].includes(user?.role)
+    const selected = ['CONTADOR', 'SUPER_ADMIN'].includes(user?.role)
       ? request.query?.restauranteId
       : user?.restauranteId;
     const restauranteId = Number(selected);

@@ -55,7 +55,8 @@ d('entrega física + custódia + aceite eletrônico (HTTP + PostgreSQL real)', (
       ids[k] = (await prisma.usuario.create({ data: { nome: k, email: `${k}${sfx}@t.io`, senha: 'x', role, aprovado: true, restauranteId: rid } })).id;
       tk[k] = jwt.sign({ sub: ids[k], email: `${k}@t.io`, role, restauranteId: rid });
     };
-    await mk('adminA', 'ADMIN', A); await mk('adminB', 'ADMIN', B); await mk('colabA', 'COLLABORATOR', A); await mk('outroColabA', 'COLLABORATOR', A);
+    await mk('adminA', 'ADMIN', A); await mk('adminB', 'ADMIN', B); await mk('colabA', 'COLLABORATOR', A); await mk('outroColabA', 'COLLABORATOR', A); await mk('superAdmin', 'SUPER_ADMIN' as any, A); await mk('contador', 'CONTADOR' as any, A);
+    await prisma.contadorRestaurante.create({ data: { contadorId: ids.contador, restauranteId: A } });
   });
   afterAll(async () => { await app?.close(); });
 
@@ -215,5 +216,68 @@ d('entrega física + custódia + aceite eletrônico (HTTP + PostgreSQL real)', (
     expect(await saldo(p.id)).toBe(4); expect(await movs(p.id)).toBe(0);
     expect(await tipos(id)).toEqual(['CRIADA']);
     expect((await prisma.entregaEpi.findUniqueOrThrow({ where: { id } })).statusFisico).toBe('PREPARADA');
+  });
+
+  const payload = (p: number, extra: any = {}) => ({ funcionarioId: ids.colabA, itens: [{ posicaoId: p, quantidade: 1 }], ...extra });
+  const criarRaw = (body: any, token = tk.adminA, qs = '') => http().post(`/api/v1/admin/entregas-epi${qs}`).set(auth(token)).send(body);
+
+  it('criação: mesma chave e payload canônico (itens em outra ordem, observação com espaços) retorna original; payload diferente => 409', async () => {
+    const p1 = await posicao(A, 5); const p2 = await posicao(A, 5); const k = key();
+    const body = { funcionarioId: ids.colabA, chaveIdempotencia: k, observacoes: ' uso   imediato ', itens: [{ posicaoId: p1.id, quantidade: 1 }, { posicaoId: p2.id, quantidade: 2 }] };
+    const a = await criarRaw(body).expect(201);
+    const b = await criarRaw({ ...body, observacoes: 'uso imediato', itens: [...body.itens].reverse() }).expect((r) => expect([200, 201]).toContain(r.status));
+    expect(b.body.id).toBe(a.body.id);
+    await criarRaw({ ...body, itens: [{ posicaoId: p1.id, quantidade: 3 }, { posicaoId: p2.id, quantidade: 2 }] }).expect(409);
+    await criarRaw({ ...body, observacoes: 'outra' }).expect(409);
+    expect(await prisma.entregaEpi.count({ where: { restauranteId: A, chaveIdempotencia: k } })).toBe(1);
+    expect(await tipos(a.body.id)).toEqual(['CRIADA']);
+  });
+
+  it('criação: posicaoId duplicada => 400', async () => {
+    const p = await posicao(A, 5);
+    await criarRaw({ funcionarioId: ids.colabA, chaveIdempotencia: key(), itens: [{ posicaoId: p.id, quantidade: 1 }, { posicaoId: p.id, quantidade: 2 }] }).expect(400);
+  });
+
+  it('transição: retry idêntico retorna original sem novo evento; chave diferente 409; mesma chave payload diferente 409', async () => {
+    const p = await posicao(A, 5); const id = await entrega([{ id: p.id, q: 1 }]); const k = key();
+    const go = (kk: string, rota = 'aceitar', body: any = {}) => http().post(`/api/v1/collaborator/entregas-epi/${id}/${rota}`).set(auth(tk.colabA)).send({ chaveIdempotencia: kk, ...body });
+    await go(k).expect(201);
+    await go(k).expect((r) => expect([200, 201]).toContain(r.status));
+    expect(await tipos(id)).toEqual(['CRIADA', 'ACEITE_ELETRONICO']);
+    await go(key()).expect(409);
+    await go(k, 'recusar', { justificativa: 'x' }).expect(409);
+    await go('   ').expect(400);
+    expect(await tipos(id)).toEqual(['CRIADA', 'ACEITE_ELETRONICO']);
+  });
+
+  it('transição: corrida com mesma chave => um evento, todos retornam o resultado original', async () => {
+    const p = await posicao(A, 5); const id = await entrega([{ id: p.id, q: 1 }]); const k = key();
+    const rs = await Promise.all(Array.from({ length: 5 }, () => http().post(`/api/v1/collaborator/entregas-epi/${id}/aceitar`).set(auth(tk.colabA)).send({ chaveIdempotencia: k })));
+    expect(rs.map((r) => r.status).every((s) => [200, 201].includes(s))).toBe(true);
+    expect(await tipos(id)).toEqual(['CRIADA', 'ACEITE_ELETRONICO']);
+  });
+
+  it('cancelamento: chave obrigatória; retry idêntico ok; chave diferente 409', async () => {
+    const p = await posicao(A, 5); const id = await entrega([{ id: p.id, q: 1 }]); const k = key();
+    const go = (body: any) => http().post(`/api/v1/admin/entregas-epi/${id}/cancelar`).set(auth(tk.adminA)).send(body);
+    await go({}).expect(400);
+    await go({ chaveIdempotencia: k }).expect(201);
+    await go({ chaveIdempotencia: k }).expect((r) => expect([200, 201]).toContain(r.status));
+    await go({ chaveIdempotencia: key() }).expect(409);
+    expect(await tipos(id)).toEqual(['CRIADA', 'CANCELADA']);
+  });
+
+  it('módulo/tenant: SUPER_ADMIN exige restauranteId e respeita flag; CONTADOR e ADMIN preservados', async () => {
+    const p = await posicao(A, 5);
+    const body = (k = key()) => ({ ...payload(p.id), chaveIdempotencia: k });
+    await criarRaw(body(), tk.superAdmin).expect(400);
+    await criarRaw(body(), tk.superAdmin, `?restauranteId=${A}`).expect(201);
+    await prisma.restaurante.update({ where: { id: A }, data: { moduloAlmoxarifadoEpi: false } });
+    try {
+      await criarRaw(body(), tk.superAdmin, `?restauranteId=${A}`).expect(403);
+      await criarRaw(body(), tk.adminA).expect(403);
+    } finally { await prisma.restaurante.update({ where: { id: A }, data: { moduloAlmoxarifadoEpi: true } }); }
+    await http().get(`/api/v1/admin/entregas-epi?restauranteId=${A}`).set(auth(tk.contador)).expect(403); // role não permitida na rota
+    await http().get('/api/v1/admin/entregas-epi').set(auth(tk.adminA)).expect(200);
   });
 });
