@@ -20,6 +20,9 @@ CREATE TABLE "aceites_termos_epi" (
   "hash_documento" TEXT NOT NULL,
   "hash_pdf" TEXT NOT NULL,
   "storage_key" TEXT NOT NULL,
+  "hash_payload" TEXT NOT NULL,
   "aceito_em" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+ALTER TABLE "entregas_epi_itens" ADD COLUMN "valor_referencia_snapshot" DECIMAL(14,2) NOT NULL DEFAULT 0;
+ALTER TABLE "entregas_epi_itens" ADD COLUMN "condicao_snapshot" TEXT NOT NULL DEFAULT 'Conforme entregue';
 CREATE INDEX "aceites_termos_epi_restaurante_funcionario_idx" ON "aceites_termos_epi"("restaurante_id", "funcionario_id");

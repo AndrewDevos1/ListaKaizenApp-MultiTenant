@@ -3,7 +3,7 @@ import { mkdir, writeFile } from 'fs/promises';
 import { join } from 'path';
 import PDFDocument = require('pdfkit');
 
-export type TermoItem = { nome: string; categoria: string; quantidade: string; valorReferencia: string; variante?: string | null; retornavel: boolean };
+export type TermoItem = { nome: string; categoria: string; quantidade: string; valorReferencia: string; condicao?: string; variante?: string | null; retornavel: boolean };
 export type TermoInput = { termoTexto: string; termoVersao: string; colaboradorNome: string; aceitoEm: Date; itens: TermoItem[]; signature: string };
 
 export class TermoPdfService {
@@ -32,7 +32,7 @@ export class TermoPdfService {
       doc.text(`Aceite registrado em: ${input.aceitoEm.toISOString()}`).moveDown();
       doc.fontSize(11).text(input.termoTexto, { align: 'justify' }).moveDown();
       doc.fontSize(12).text('Materiais registrados', { underline: true }).moveDown(0.4);
-      for (const item of input.itens) doc.fontSize(10).text(`${item.nome} | ${item.categoria} | qtd. ${item.quantidade} | referência R$ ${item.valorReferencia} | variante: ${item.variante ?? '-'} | ${item.retornavel ? 'retornável' : 'não retornável'}`);
+      for (const item of input.itens) doc.fontSize(10).text(`${item.nome} | ${item.categoria} | qtd. ${item.quantidade} | referência R$ ${item.valorReferencia} | condição: ${item.condicao ?? '-'} | variante: ${item.variante ?? '-'} | ${item.retornavel ? 'retornável' : 'não retornável'}`);
       doc.moveDown().text('Assinatura eletrônica desenhada:');
       doc.image(signature, 48, doc.y, { fit: [220, 100] });
       doc.moveDown().fontSize(8).text('Documento gerado a partir do termo e do snapshot imutáveis. Minuta sujeita a revisão jurídica e administrativa.');

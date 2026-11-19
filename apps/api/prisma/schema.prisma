@@ -1128,6 +1128,8 @@ model EntregaEpiItem {
   quantidade Decimal @db.Decimal(14,3)
   materialNomeSnapshot String @map("material_nome_snapshot")
   categoriaSnapshot CategoriaMaterialAlmoxarifado @map("categoria_snapshot")
+  valorReferenciaSnapshot Decimal @map("valor_referencia_snapshot") @db.Decimal(14, 2)
+  condicaoSnapshot String @default("Conforme entregue") @map("condicao_snapshot")
   retornavelSnapshot Boolean @map("retornavel_snapshot")
   varianteSnapshot String? @map("variante_snapshot")
   entrega EntregaEpi @relation(fields: [entregaId], references: [id], onDelete: Cascade)
@@ -1197,6 +1199,7 @@ model AceiteTermoEpi {
   termoId Int @map("termo_id")
   funcionarioId Int @map("funcionario_id")
   snapshot Json
+  hashPayload String @map("hash_payload")
   hashSnapshot String @map("hash_snapshot")
   hashAssinatura String @map("hash_assinatura")
   hashDocumento String @map("hash_documento")
