@@ -1,0 +1,42 @@
+import { ConflictException, ForbiddenException } from '@nestjs/common';
+import { createHash } from 'crypto';
+import { AceiteTermoEpiService } from './aceite-termo-epi.service';
+
+describe('AceiteTermoEpiService', () => {
+  const prisma = { entregaEpi: { findFirst: jest.fn(), updateMany: jest.fn() }, termoResponsabilidade: { findFirst: jest.fn() }, aceiteTermoEpi: { findFirst: jest.fn(), create: jest.fn() }, entregaEpiEvento: { create: jest.fn() }, $transaction: jest.fn() } as any;
+  const pdf = { generate: jest.fn(), stage: jest.fn(), promote: jest.fn(), discard: jest.fn() } as any;
+  const service = new AceiteTermoEpiService(prisma, pdf);
+  const entrega = { id: 9, funcionarioId: 7, status: 'PENDENTE', statusAceite: 'PENDENTE', statusFisico: 'ENTREGUE', funcionario: { nome: 'Ana' }, itens: [{ materialNomeSnapshot: 'Capacete', categoriaSnapshot: 'EPI', quantidade: '1', valorReferenciaSnapshot: '37.00', retornavelSnapshot: true, varianteSnapshot: '{"tamanho":"M"}' }] };
+  const generated = { storageKey: 'termos/a.pdf', snapshot: '{}', snapshotHash: 'b', signatureHash: 'c', documentHash: 'd', pdfHash: 'e', pdf: Buffer.from('pdf') };
+  const staged = { ...generated, stagingKey: '.staging/a.pdf' };
+  const termoHash = 'a'.repeat(64);
+  const input = { termoId: 2, assinatura: 'png', lido: true, hashTermo: termoHash };
+  const payloadHash = createHash('sha256').update(JSON.stringify({ termoId: 2, hashTermo: termoHash, lido: true, assinatura: 'png' })).digest('hex');
+  beforeEach(() => { jest.resetAllMocks(); prisma.$transaction.mockImplementation((fn: any) => fn(prisma)); prisma.entregaEpi.findFirst.mockResolvedValue(entrega); prisma.termoResponsabilidade.findFirst.mockResolvedValue({ id: 2, versao: '1', texto: 'Texto', hashTermo: termoHash }); pdf.generate.mockResolvedValue(generated); pdf.stage.mockResolvedValue(staged); prisma.entregaEpi.updateMany.mockResolvedValue({ count: 1 }); prisma.aceiteTermoEpi.create.mockResolvedValue({ id: 1, hashPayload: payloadHash }); });
+  it('vincula aceite ao destinatário e usa valor snapshot, sem alterar custódia', async () => {
+    await expect(service.aceitar(3, 7, 9, input)).resolves.toMatchObject({ id: 1 });
+    expect(pdf.generate).toHaveBeenCalledWith(expect.objectContaining({ itens: [expect.objectContaining({ valorReferencia: '37.00' })] }));
+    expect(prisma.aceiteTermoEpi.create).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ restauranteId: 3, entregaId: 9, funcionarioId: 7, hashPayload: payloadHash }) }));
+    expect(pdf.promote).toHaveBeenCalledWith(staged);
+  });
+  it('descarta staging quando a transação falha, sem promover PDF órfão', async () => {
+    prisma.$transaction.mockRejectedValue({ code: 'P2002' });
+    prisma.aceiteTermoEpi.findFirst.mockResolvedValue(null);
+    await expect(service.aceitar(3, 7, 9, input)).rejects.toBeInstanceOf(ConflictException);
+    expect(pdf.discard).toHaveBeenCalledWith(staged);
+    expect(pdf.promote).not.toHaveBeenCalled();
+  });
+  it('descarta staging quando perde corrida para aceite diferente', async () => {
+    prisma.$transaction.mockRejectedValue({ code: 'P2002' });
+    prisma.aceiteTermoEpi.findFirst.mockResolvedValueOnce(null).mockResolvedValue({ id: 2, hashPayload: 'outro' });
+    await expect(service.aceitar(3, 7, 9, input)).rejects.toBeInstanceOf(ConflictException);
+    expect(pdf.discard).toHaveBeenCalledWith(staged);
+    expect(pdf.promote).not.toHaveBeenCalled();
+  });
+  it('rejeita outra pessoa', async () => { prisma.entregaEpi.findFirst.mockResolvedValue(null); await expect(service.aceitar(3, 8, 9, input)).rejects.toBeInstanceOf(ForbiddenException); });
+  it('reexecuta somente payload idêntico', async () => { prisma.aceiteTermoEpi.findFirst.mockResolvedValue({ id: 1, hashPayload: payloadHash }); await expect(service.aceitar(3, 7, 9, input)).resolves.toEqual({ id: 1, hashPayload: payloadHash }); prisma.aceiteTermoEpi.findFirst.mockResolvedValue({ id: 1, hashPayload: 'outro' }); await expect(service.aceitar(3, 7, 9, input)).rejects.toBeInstanceOf(ConflictException); });
+  it('rejeita ciência ausente e hash de termo divergente', async () => {
+    await expect(service.aceitar(3, 7, 9, { ...input, lido: false })).rejects.toMatchObject({ status: 400 });
+    await expect(service.aceitar(3, 7, 9, { ...input, hashTermo: 'b'.repeat(64) })).rejects.toMatchObject({ status: 409 });
+  });
+});

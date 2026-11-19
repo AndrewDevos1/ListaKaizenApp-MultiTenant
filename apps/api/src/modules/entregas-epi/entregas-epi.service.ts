@@ -27,7 +27,7 @@ export class EntregasEpiService {
       for (const item of dto.itens) {
         const posicao = await tx.posicaoMaterialAlmoxarifado.findFirst({ where: { id: item.posicaoId, restauranteId, ativo: true }, include: { material: true, variante: true } });
         if (!posicao) throw new NotFoundException('Posição não encontrada');
-        itens.push({ posicaoId: posicao.id, materialId: posicao.materialId, varianteId: posicao.varianteId, quantidade: item.quantidade, materialNomeSnapshot: posicao.material.nome, categoriaSnapshot: posicao.material.categoria, retornavelSnapshot: posicao.material.retornavel, varianteSnapshot: posicao.variante ? JSON.stringify(posicao.variante) : null });
+        itens.push({ posicaoId: posicao.id, materialId: posicao.materialId, varianteId: posicao.varianteId, quantidade: item.quantidade, materialNomeSnapshot: posicao.material.nome, categoriaSnapshot: posicao.material.categoria, valorReferenciaSnapshot: posicao.material.valorReferencia, condicaoSnapshot: 'Conforme entregue', retornavelSnapshot: posicao.material.retornavel, varianteSnapshot: posicao.variante ? JSON.stringify(posicao.variante) : null });
       }
       const entrega = await tx.entregaEpi.create({ data: { restauranteId, funcionarioId: dto.funcionarioId, criadoPorId: criador.id, chaveIdempotencia: dto.chaveIdempotencia, hashCriacao, observacoes: this.normalized(dto.observacoes) || null, itens: { create: itens } } });
       await tx.entregaEpiEvento.create({ data: { restauranteId, entregaId: entrega.id, tipo: 'CRIADA', atorId: criador.id, metadados: { chave: dto.chaveIdempotencia } } });
@@ -41,8 +41,8 @@ export class EntregasEpiService {
     }
   }
 
-  listar(restauranteId: number, funcionarioId?: number) { return this.prisma.entregaEpi.findMany({ where: { restauranteId, ...(funcionarioId ? { funcionarioId } : {}) }, include: { itens: true, eventos: { orderBy: { criadoEm: 'asc' } }, custodias: true }, orderBy: { criadoEm: 'desc' } }); }
-  async detalhe(restauranteId: number, id: number, funcionarioId?: number) { const entrega = await this.prisma.entregaEpi.findFirst({ where: { id, restauranteId, ...(funcionarioId ? { funcionarioId } : {}) }, include: { itens: true, eventos: { orderBy: { criadoEm: 'asc' } }, custodias: true } }); if (!entrega) throw new NotFoundException('Entrega não encontrada'); return entrega; }
+  listar(restauranteId: number, funcionarioId?: number) { return this.prisma.entregaEpi.findMany({ where: { restauranteId, ...(funcionarioId ? { funcionarioId } : {}) }, include: { itens: true, eventos: { orderBy: { criadoEm: 'asc' } }, custodias: true, aceiteTermo: { select: { id: true, termoId: true, aceitoEm: true, hashPdf: true } } }, orderBy: { criadoEm: 'desc' } }); }
+  async detalhe(restauranteId: number, id: number, funcionarioId?: number) { const entrega = await this.prisma.entregaEpi.findFirst({ where: { id, restauranteId, ...(funcionarioId ? { funcionarioId } : {}) }, include: { itens: true, eventos: { orderBy: { criadoEm: 'asc' } }, custodias: true, aceiteTermo: { select: { id: true, termoId: true, aceitoEm: true, hashPdf: true } } } }); if (!entrega) throw new NotFoundException('Entrega não encontrada'); return entrega; }
 
   async confirmarEntregaFisica(restauranteId: number, id: number, ator: { id: number; nome?: string; role: string }, chave: string) {
     if (!['ADMIN', 'SUPER_ADMIN'].includes(ator.role)) throw new ForbiddenException();
