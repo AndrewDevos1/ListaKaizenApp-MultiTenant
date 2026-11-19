@@ -27,7 +27,7 @@ export class EntregasEpiService {
       for (const item of dto.itens) {
         const posicao = await tx.posicaoMaterialAlmoxarifado.findFirst({ where: { id: item.posicaoId, restauranteId, ativo: true }, include: { material: true, variante: true } });
         if (!posicao) throw new NotFoundException('Posição não encontrada');
-        itens.push({ posicaoId: posicao.id, materialId: posicao.materialId, varianteId: posicao.varianteId, quantidade: item.quantidade, materialNomeSnapshot: posicao.material.nome, categoriaSnapshot: posicao.material.categoria, retornavelSnapshot: posicao.material.retornavel, varianteSnapshot: posicao.variante ? JSON.stringify(posicao.variante) : null });
+        itens.push({ posicaoId: posicao.id, materialId: posicao.materialId, varianteId: posicao.varianteId, quantidade: item.quantidade, materialNomeSnapshot: posicao.material.nome, categoriaSnapshot: posicao.material.categoria, retornavelSnapshot: posicao.material.retornavel, valorReferenciaSnapshot: posicao.material.valorReferencia, varianteSnapshot: posicao.variante ? JSON.stringify(posicao.variante) : null });
       }
       const entrega = await tx.entregaEpi.create({ data: { restauranteId, funcionarioId: dto.funcionarioId, criadoPorId: criador.id, chaveIdempotencia: dto.chaveIdempotencia, hashCriacao, observacoes: this.normalized(dto.observacoes) || null, itens: { create: itens } } });
       await tx.entregaEpiEvento.create({ data: { restauranteId, entregaId: entrega.id, tipo: 'CRIADA', atorId: criador.id, metadados: { chave: dto.chaveIdempotencia } } });
@@ -42,6 +42,16 @@ export class EntregasEpiService {
   }
 
   listar(restauranteId: number, funcionarioId?: number) { return this.prisma.entregaEpi.findMany({ where: { restauranteId, ...(funcionarioId ? { funcionarioId } : {}) }, include: { itens: true, eventos: { orderBy: { criadoEm: 'asc' } }, custodias: true }, orderBy: { criadoEm: 'desc' } }); }
+  listarCustodias(restauranteId: number, funcionarioId?: number) {
+    return this.prisma.custodiaEpiItem.findMany({
+      where: { restauranteId, ...(funcionarioId ? { funcionarioId } : {}) },
+      include: {
+        funcionario: { select: { id: true, nome: true } }, material: { select: { nome: true } },
+        entregaItem: { select: { materialNomeSnapshot: true, varianteSnapshot: true } },
+        devolucoes: { orderBy: { criadoEm: 'desc' } }, ocorrencias: { orderBy: { criadoEm: 'desc' } },
+      }, orderBy: { iniciadaEm: 'desc' },
+    });
+  }
   async detalhe(restauranteId: number, id: number, funcionarioId?: number) { const entrega = await this.prisma.entregaEpi.findFirst({ where: { id, restauranteId, ...(funcionarioId ? { funcionarioId } : {}) }, include: { itens: true, eventos: { orderBy: { criadoEm: 'asc' } }, custodias: true } }); if (!entrega) throw new NotFoundException('Entrega não encontrada'); return entrega; }
 
   async confirmarEntregaFisica(restauranteId: number, id: number, ator: { id: number; nome?: string; role: string }, chave: string) {
@@ -70,7 +80,7 @@ export class EntregasEpiService {
         const p = locked[item.id]; const novo = p.saldo.minus(item.quantidade);
         await tx.posicaoMaterialAlmoxarifado.update({ where: { id: item.posicaoId }, data: { saldo: novo } });
         await tx.movimentoMaterialAlmoxarifado.create({ data: { restauranteId, posicaoId: item.posicaoId, materialId: item.materialId, varianteId: item.varianteId, tipo: 'SAIDA', quantidade: item.quantidade, saldoAnterior: p.saldo, saldoNovo: novo, motivo: `Entrega EPI #${id}`, responsavelId: ator.id, responsavelNome: ator.nome ?? String(ator.id), chaveIdempotencia: `${chave}:${item.id}` } });
-        await tx.custodiaEpiItem.create({ data: { restauranteId, entregaId: id, entregaItemId: item.id, funcionarioId: entrega.funcionarioId, materialId: item.materialId, varianteId: item.varianteId, quantidadeEmPosse: item.quantidade, retornavel: item.retornavelSnapshot, iniciadaEm: agora } });
+        await tx.custodiaEpiItem.create({ data: { restauranteId, entregaId: id, entregaItemId: item.id, funcionarioId: entrega.funcionarioId, materialId: item.materialId, varianteId: item.varianteId, quantidadeEmPosse: item.quantidade, retornavel: item.retornavelSnapshot, valorReferenciaSnapshot: item.valorReferenciaSnapshot, iniciadaEm: agora } });
       }
       const atualizada = await tx.entregaEpi.update({ where: { id }, data: { statusFisico: 'ENTREGUE', entregueFisicamenteEm: agora, entreguePorId: ator.id, chaveEntregaFisica: chave } });
       await tx.entregaEpiEvento.create({ data: { restauranteId, entregaId: id, tipo: 'ENTREGA_FISICA_CONFIRMADA', atorId: ator.id, metadados: { chave } } });
@@ -101,6 +111,67 @@ export class EntregasEpiService {
   private async detalheTx(tx: Prisma.TransactionClient, restauranteId: number, id: number, funcionarioId?: number) { return tx.entregaEpi.findFirstOrThrow({ where: { id, restauranteId, ...(funcionarioId ? { funcionarioId } : {}) }, include: { itens: true, eventos: { orderBy: { criadoEm: 'asc' } }, custodias: true } }); }
   aceitar(restauranteId: number, funcionarioId: number, id: number, chave: string) { return this.transicionar(restauranteId, funcionarioId, id, 'ACEITO', chave); }
   recusar(restauranteId: number, funcionarioId: number, id: number, dto: RecusarEntregaEpiDto) { return this.transicionar(restauranteId, funcionarioId, id, 'RECUSADO', dto.chaveIdempotencia, dto.justificativa); }
+
+  async devolver(restauranteId: number, ator: { id: number; nome?: string; role: string }, custodiaId: number, dto: { quantidade: number; condicao: 'REUTILIZAVEL' | 'DANIFICADO' | 'INUTILIZADO' | 'OUTRA'; chaveIdempotencia: string; observacao?: string }) {
+    if (!['ADMIN', 'SUPER_ADMIN', 'COLLABORATOR'].includes(ator.role)) throw new ForbiddenException();
+    if (!dto.chaveIdempotencia?.trim()) throw new BadRequestException('Idempotency-Key obrigatório');
+    if (dto.quantidade <= 0) throw new BadRequestException('Quantidade inválida');
+    const hashPayload = this.hash({ quantidade: String(dto.quantidade), condicao: dto.condicao, observacao: this.normalized(dto.observacao) });
+    try { return await this.prisma.$transaction(async (tx) => {
+      const rows = await tx.$queryRaw<any[]>(Prisma.sql`SELECT id, entrega_id, entrega_item_id, funcionario_id, material_id, variante_id, quantidade_em_posse, retornavel FROM custodias_epi_itens WHERE id=${custodiaId} AND restaurante_id=${restauranteId} FOR UPDATE`);
+      const c = rows[0]; if (!c) throw new NotFoundException('Custódia não encontrada');
+      const previous = await tx.devolucaoEpi.findUnique({ where: { restauranteId_chaveIdempotencia: { restauranteId, chaveIdempotencia: dto.chaveIdempotencia } } });
+      if (previous) { if (previous.hashPayload === hashPayload) return previous; throw new ConflictException('Chave de idempotência já usada com payload diferente'); }
+      if (ator.role === 'COLLABORATOR' && c.funcionario_id !== ator.id) throw new ForbiddenException();
+      const posse = new Prisma.Decimal(c.quantidade_em_posse), quantidade = new Prisma.Decimal(dto.quantidade);
+      if (!c.retornavel) throw new BadRequestException('Item não retornável');
+      if (quantidade.greaterThan(posse)) throw new BadRequestException('Quantidade maior que a posse');
+      const item = await tx.entregaEpiItem.findUnique({ where: { id: c.entrega_item_id } });
+      if (!item) throw new NotFoundException('Item da entrega não encontrado');
+      await tx.custodiaEpiItem.update({ where: { id: custodiaId }, data: { quantidadeEmPosse: posse.minus(quantidade) } });
+      if (dto.condicao === 'REUTILIZAVEL') {
+        const p = (await tx.$queryRaw<any[]>(Prisma.sql`SELECT id, saldo FROM posicoes_material_almoxarifado WHERE id=${item.posicaoId} AND restaurante_id=${restauranteId} FOR UPDATE`))[0];
+        if (!p) throw new NotFoundException('Posição não encontrada');
+        const anterior = new Prisma.Decimal(p.saldo), novo = anterior.plus(quantidade);
+        await tx.posicaoMaterialAlmoxarifado.update({ where: { id: p.id }, data: { saldo: novo } });
+        await tx.movimentoMaterialAlmoxarifado.create({ data: { restauranteId, posicaoId: p.id, materialId: c.material_id, varianteId: c.variante_id, tipo: 'ENTRADA', quantidade, saldoAnterior: anterior, saldoNovo: novo, motivo: `Devolução EPI #${c.entrega_id}`, responsavelId: ator.id, responsavelNome: ator.nome ?? String(ator.id), chaveIdempotencia: `${dto.chaveIdempotencia}:entrada` } });
+      }
+      const result = await tx.devolucaoEpi.create({ data: { restauranteId, custodiaId, entregaId: c.entrega_id, quantidade, condicao: dto.condicao, observacao: this.normalized(dto.observacao) || null, chaveIdempotencia: dto.chaveIdempotencia, hashPayload, criadoPorId: ator.id } });
+      await tx.entregaEpiEvento.create({ data: { restauranteId, entregaId: c.entrega_id, tipo: 'DEVOLUCAO', atorId: ator.id, metadados: { custodiaId, quantidade: String(quantidade), condicao: dto.condicao, chaveIdempotencia: dto.chaveIdempotencia } } });
+      return result;
+    }); } catch (error) {
+      if ((error as any)?.code !== 'P2002') throw error;
+      const previous = await this.prisma.devolucaoEpi.findUnique({ where: { restauranteId_chaveIdempotencia: { restauranteId, chaveIdempotencia: dto.chaveIdempotencia } } });
+      if (previous?.hashPayload === hashPayload) return previous;
+      throw new ConflictException('Chave de idempotência já usada com payload diferente');
+    }
+  }
+
+  async registrarOcorrencia(restauranteId: number, ator: { id: number; nome?: string; role: string }, custodiaId: number, dto: { quantidade: number; tipo: 'PERDA' | 'DANO' | 'BAIXA_ADMINISTRATIVA'; descricao: string; chaveIdempotencia: string }) {
+    if (!['ADMIN', 'SUPER_ADMIN', 'COLLABORATOR'].includes(ator.role)) throw new ForbiddenException();
+    if (!dto.chaveIdempotencia?.trim() || !dto.descricao?.trim()) throw new BadRequestException('Chave e descrição obrigatórias');
+    if (dto.quantidade <= 0) throw new BadRequestException('Quantidade inválida');
+    const hashPayload = this.hash({ quantidade: String(dto.quantidade), tipo: dto.tipo, descricao: this.normalized(dto.descricao) });
+    try { return await this.prisma.$transaction(async (tx) => {
+      const rows = await tx.$queryRaw<any[]>(Prisma.sql`SELECT id, entrega_id, funcionario_id, material_id, variante_id, quantidade_em_posse, valor_referencia_snapshot FROM custodias_epi_itens WHERE id=${custodiaId} AND restaurante_id=${restauranteId} FOR UPDATE`);
+      const c = rows[0]; if (!c) throw new NotFoundException('Custódia não encontrada');
+      const previous = await tx.ocorrenciaEpi.findUnique({ where: { restauranteId_chaveIdempotencia: { restauranteId, chaveIdempotencia: dto.chaveIdempotencia } } });
+      if (previous) { if (previous.hashPayload === hashPayload) return previous; throw new ConflictException('Chave de idempotência já usada com payload diferente'); }
+      if (ator.role === 'COLLABORATOR' && c.funcionario_id !== ator.id) throw new ForbiddenException();
+      const posse = new Prisma.Decimal(c.quantidade_em_posse), quantidade = new Prisma.Decimal(dto.quantidade);
+      if (quantidade.greaterThan(posse)) throw new BadRequestException('Quantidade maior que a posse');
+      const custoReferencia = new Prisma.Decimal(c.valor_referencia_snapshot).mul(quantidade);
+      const result = await tx.ocorrenciaEpi.create({ data: { restauranteId, custodiaId, entregaId: c.entrega_id, tipo: dto.tipo, quantidade, descricao: this.normalized(dto.descricao), chaveIdempotencia: dto.chaveIdempotencia, hashPayload, custoReferencia, criadoPorId: ator.id } });
+      await tx.custodiaEpiItem.update({ where: { id: custodiaId }, data: { quantidadeEmPosse: posse.minus(quantidade) } });
+      await tx.entregaEpiEvento.create({ data: { restauranteId, entregaId: c.entrega_id, tipo: dto.tipo === 'BAIXA_ADMINISTRATIVA' ? 'BAIXA_ADMINISTRATIVA' : 'OCORRENCIA_PERDA_DANO', atorId: ator.id, metadados: { custodiaId, quantidade: String(quantidade), tipo: dto.tipo, chaveIdempotencia: dto.chaveIdempotencia } } });
+      return result;
+    }); } catch (error) {
+      if ((error as any)?.code !== 'P2002') throw error;
+      const previous = await this.prisma.ocorrenciaEpi.findUnique({ where: { restauranteId_chaveIdempotencia: { restauranteId, chaveIdempotencia: dto.chaveIdempotencia } } });
+      if (previous?.hashPayload === hashPayload) return previous;
+      throw new ConflictException('Chave de idempotência já usada com payload diferente');
+    }
+  }
 
   // Cancelamento só antes da entrega física (NAO_ENTREGUE); depois, 409.
   async cancelar(restauranteId: number, id: number, ator: { id: number }, chaveIdempotencia: string) {

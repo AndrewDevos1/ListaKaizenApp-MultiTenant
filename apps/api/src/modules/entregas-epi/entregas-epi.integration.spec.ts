@@ -34,6 +34,8 @@ d('entrega física + custódia + aceite eletrônico (HTTP + PostgreSQL real)', (
   const aceitar = (id: number) => http().post(`/api/v1/collaborator/entregas-epi/${id}/aceitar`).set(auth(tk.colabA)).send({ chaveIdempotencia: key() });
   const recusar = (id: number) => http().post(`/api/v1/collaborator/entregas-epi/${id}/recusar`).set(auth(tk.colabA)).send({ chaveIdempotencia: key(), justificativa: 'não recebi' });
   const cancelar = (id: number) => http().post(`/api/v1/admin/entregas-epi/${id}/cancelar`).set(auth(tk.adminA)).send({ chaveIdempotencia: key() });
+  const devolver = (id: number, body: any, token = tk.adminA) => http().post(`/api/v1/admin/custodias-epi/${id}/devolucoes`).set(auth(token)).send(body);
+  const ocorrencia = (id: number, body: any, token = tk.adminA) => http().post(`/api/v1/admin/custodias-epi/${id}/ocorrencias`).set(auth(token)).send(body);
   const saldo = async (id: number) => Number((await prisma.posicaoMaterialAlmoxarifado.findUniqueOrThrow({ where: { id } })).saldo);
   const movs = (posicaoId: number) => prisma.movimentoMaterialAlmoxarifado.count({ where: { posicaoId } });
   const tipos = async (id: number) => (await prisma.entregaEpiEvento.findMany({ where: { entregaId: id }, orderBy: { id: 'asc' } })).map((e) => e.tipo);
@@ -221,7 +223,7 @@ d('entrega física + custódia + aceite eletrônico (HTTP + PostgreSQL real)', (
     const id = await entrega([{ id: p.id, q: 1 }]);
     const item = await prisma.entregaEpiItem.findFirstOrThrow({ where: { entregaId: id } });
     // pré-existência de custódia viola UNIQUE(entrega_item_id) dentro da transação
-    await prisma.custodiaEpiItem.create({ data: { restauranteId: A, entregaId: id, entregaItemId: item.id, funcionarioId: ids.colabA, materialId: item.materialId, quantidadeEmPosse: 1, retornavel: false, iniciadaEm: new Date() } });
+    await prisma.custodiaEpiItem.create({ data: { restauranteId: A, entregaId: id, entregaItemId: item.id, funcionarioId: ids.colabA, materialId: item.materialId, quantidadeEmPosse: 1, retornavel: false, valorReferenciaSnapshot: item.valorReferenciaSnapshot, iniciadaEm: new Date() } });
     await fisica(id).expect((r) => expect(r.status).toBeGreaterThanOrEqual(500));
     expect(await saldo(p.id)).toBe(4); expect(await movs(p.id)).toBe(0);
     expect(await tipos(id)).toEqual(['CRIADA']);
@@ -275,6 +277,49 @@ d('entrega física + custódia + aceite eletrônico (HTTP + PostgreSQL real)', (
     await go({ chaveIdempotencia: k }).expect((r) => expect([200, 201]).toContain(r.status));
     await go({ chaveIdempotencia: key() }).expect(409);
     expect(await tipos(id)).toEqual(['CRIADA', 'CANCELADA']);
+  });
+
+  it('devolução parcial e total: condição reutilizável repõe saldo; dano não; ocorrência usa snapshot e não cobra', async () => {
+    const p = await posicao(A, 10, true);
+    const material = await prisma.materialAlmoxarifado.findUniqueOrThrow({ where: { id: p.materialId } });
+    const id = await entrega([{ id: p.id, q: 3 }]); await fisica(id).expect(201);
+    const custodia = await prisma.custodiaEpiItem.findFirstOrThrow({ where: { entregaId: id } });
+    await prisma.materialAlmoxarifado.update({ where: { id: material.id }, data: { valorReferencia: 99 } });
+    expect(Number(custodia.valorReferenciaSnapshot)).toBe(1);
+    await devolver(custodia.id, { quantidade: 1, condicao: 'REUTILIZAVEL', chaveIdempotencia: key() }).expect(201);
+    await devolver(custodia.id, { quantidade: 2, condicao: 'DANIFICADO', chaveIdempotencia: key() }).expect(201);
+    expect(await saldo(p.id)).toBe(8);
+    expect(Number((await prisma.custodiaEpiItem.findUniqueOrThrow({ where: { id: custodia.id } })).quantidadeEmPosse)).toBe(0);
+    const p2 = await posicao(A, 5, true); const id2 = await entrega([{ id: p2.id, q: 2 }]); await fisica(id2).expect(201);
+    const c2 = await prisma.custodiaEpiItem.findFirstOrThrow({ where: { entregaId: id2 } });
+    await ocorrencia(c2.id, { quantidade: 2, tipo: 'PERDA', descricao: 'extravio', chaveIdempotencia: key() }).expect(201);
+    const o = await prisma.ocorrenciaEpi.findFirstOrThrow({ where: { custodiaId: c2.id } });
+    expect(Number(o.custoReferencia)).toBe(2);
+    expect(await saldo(p2.id)).toBe(3);
+  });
+
+  it('devolução concorrente: mesma chave retorna resultado original; chaves distintas não excedem posse', async () => {
+    const p = await posicao(A, 10, true); const id = await entrega([{ id: p.id, q: 2 }]); await fisica(id).expect(201);
+    const c = await prisma.custodiaEpiItem.findFirstOrThrow({ where: { entregaId: id } }); const k = key();
+    const body = { quantidade: 1, condicao: 'DANIFICADO', chaveIdempotencia: k };
+    const same = await Promise.all([devolver(c.id, body), devolver(c.id, body)]);
+    expect(same.map((r) => r.status).sort()).toEqual([201, 201]);
+    expect(await prisma.devolucaoEpi.count({ where: { restauranteId: A, chaveIdempotencia: k } })).toBe(1);
+    const different = await Promise.all([devolver(c.id, { ...body, chaveIdempotencia: key() }), devolver(c.id, { ...body, chaveIdempotencia: key() })]);
+    expect(different.map((r) => r.status).sort()).toEqual([201, 400]);
+    expect(Number((await prisma.custodiaEpiItem.findUniqueOrThrow({ where: { id: c.id } })).quantidadeEmPosse)).toBe(0);
+  });
+
+  it('devoluções e ocorrências são append-only no banco', async () => {
+    const p = await posicao(A, 5, true); const id = await entrega([{ id: p.id, q: 2 }]); await fisica(id).expect(201);
+    const c = await prisma.custodiaEpiItem.findFirstOrThrow({ where: { entregaId: id } });
+    await devolver(c.id, { quantidade: 1, condicao: 'DANIFICADO', chaveIdempotencia: key() }).expect(201);
+    await ocorrencia(c.id, { quantidade: 1, tipo: 'DANO', descricao: 'rasgo', chaveIdempotencia: key() }).expect(201);
+    const d = await prisma.devolucaoEpi.findFirstOrThrow({ where: { custodiaId: c.id } }); const o = await prisma.ocorrenciaEpi.findFirstOrThrow({ where: { custodiaId: c.id } });
+    await expect(prisma.devolucaoEpi.update({ where: { id: d.id }, data: { observacao: 'x' } })).rejects.toThrow(/append-only/);
+    await expect(prisma.devolucaoEpi.delete({ where: { id: d.id } })).rejects.toThrow(/append-only/);
+    await expect(prisma.ocorrenciaEpi.update({ where: { id: o.id }, data: { descricao: 'x' } })).rejects.toThrow(/append-only/);
+    await expect(prisma.ocorrenciaEpi.delete({ where: { id: o.id } })).rejects.toThrow(/append-only/);
   });
 
   it('módulo/tenant: SUPER_ADMIN exige restauranteId e respeita flag; CONTADOR e ADMIN preservados', async () => {
