@@ -13,3 +13,21 @@ export class DevolverEpiDto {
   @IsString() @IsNotEmpty() chaveIdempotencia: string;
   @IsOptional() @IsString() observacao?: string;
 }
+
+export enum TipoOcorrenciaInput {
+  PERDA = 'PERDA',
+  DANO = 'DANO',
+}
+
+export class RegistrarOcorrenciaEpiDto {
+  @IsNumber() @Min(0.001) quantidade: number;
+  @IsEnum(TipoOcorrenciaInput) tipo: TipoOcorrenciaInput;
+  @IsString() @IsNotEmpty() descricao: string;
+  @IsString() @IsNotEmpty() chaveIdempotencia: string;
+}
+
+export class BaixaAdministrativaEpiDto {
+  @IsNumber() @Min(0.001) quantidade: number;
+  @IsString() @IsNotEmpty() descricao: string;
+  @IsString() @IsNotEmpty() chaveIdempotencia: string;
+}

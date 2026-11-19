@@ -129,6 +129,26 @@ export class EntregasEpiService {
     });
   }
 
+  async registrarOcorrencia(restauranteId: number, ator: { id: number; nome?: string; role: string }, custodiaId: number, dto: { quantidade: number; tipo: 'PERDA' | 'DANO' | 'BAIXA_ADMINISTRATIVA'; descricao: string; chaveIdempotencia: string }) {
+    if (!['ADMIN', 'SUPER_ADMIN', 'COLLABORATOR'].includes(ator.role)) throw new ForbiddenException();
+    if (!dto.chaveIdempotencia?.trim() || !dto.descricao?.trim()) throw new BadRequestException('Chave e descrição obrigatórias');
+    if (dto.quantidade <= 0) throw new BadRequestException('Quantidade inválida');
+    const hashPayload = this.hash({ quantidade: String(dto.quantidade), tipo: dto.tipo, descricao: this.normalized(dto.descricao) });
+    return this.prisma.$transaction(async (tx) => {
+      const previous = await tx.ocorrenciaEpi.findUnique({ where: { restauranteId_chaveIdempotencia: { restauranteId, chaveIdempotencia: dto.chaveIdempotencia } } });
+      if (previous) { if (previous.hashPayload === hashPayload) return previous; throw new ConflictException('Chave de idempotência já usada com payload diferente'); }
+      const rows = await tx.$queryRaw<any[]>(Prisma.sql`SELECT id, entrega_id, funcionario_id, material_id, variante_id, quantidade_em_posse FROM custodias_epi_itens WHERE id=${custodiaId} AND restaurante_id=${restauranteId} FOR UPDATE`);
+      const c = rows[0]; if (!c) throw new NotFoundException('Custódia não encontrada');
+      if (ator.role === 'COLLABORATOR' && c.funcionario_id !== ator.id) throw new ForbiddenException();
+      const posse = new Prisma.Decimal(c.quantidade_em_posse), quantidade = new Prisma.Decimal(dto.quantidade);
+      if (quantidade.greaterThan(posse)) throw new BadRequestException('Quantidade maior que a posse');
+      const result = await tx.ocorrenciaEpi.create({ data: { restauranteId, custodiaId, entregaId: c.entrega_id, tipo: dto.tipo, quantidade, descricao: this.normalized(dto.descricao), chaveIdempotencia: dto.chaveIdempotencia, hashPayload, criadoPorId: ator.id } });
+      await tx.custodiaEpiItem.update({ where: { id: custodiaId }, data: { quantidadeEmPosse: posse.minus(quantidade) } });
+      await tx.entregaEpiEvento.create({ data: { restauranteId, entregaId: c.entrega_id, tipo: dto.tipo === 'BAIXA_ADMINISTRATIVA' ? 'BAIXA_ADMINISTRATIVA' : 'OCORRENCIA_PERDA_DANO', atorId: ator.id, metadados: { custodiaId, quantidade: String(quantidade), tipo: dto.tipo, chaveIdempotencia: dto.chaveIdempotencia } } });
+      return result;
+    });
+  }
+
   // Cancelamento só antes da entrega física (NAO_ENTREGUE); depois, 409.
   async cancelar(restauranteId: number, id: number, ator: { id: number }, chaveIdempotencia: string) {
     if (!chaveIdempotencia?.trim()) throw new BadRequestException('Idempotency-Key obrigatório');

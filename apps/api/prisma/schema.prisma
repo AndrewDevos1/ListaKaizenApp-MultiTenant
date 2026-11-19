@@ -917,6 +917,7 @@ enum CondicaoDevolucaoEpi {
 enum TipoOcorrenciaEpi {
   PERDA
   DANO
+  BAIXA_ADMINISTRATIVA
 }
 
 enum TipoNotificacao {
@@ -1206,6 +1207,8 @@ model OcorrenciaEpi {
   tipo TipoOcorrenciaEpi
   quantidade Decimal @db.Decimal(14,3)
   descricao String
+  chaveIdempotencia String @map("chave_idempotencia")
+  hashPayload String @map("hash_payload")
   custoReferencia Decimal? @db.Decimal(14,2) @map("custo_referencia")
   avaliadoEm DateTime? @map("avaliado_em")
   criadoPorId Int @map("criado_por_id")
@@ -1214,6 +1217,7 @@ model OcorrenciaEpi {
   restaurante Restaurante @relation(fields: [restauranteId], references: [id], onDelete: Restrict)
   entrega EntregaEpi @relation(fields: [entregaId], references: [id], onDelete: Restrict)
   custodia CustodiaEpiItem @relation(fields: [custodiaId], references: [id], onDelete: Restrict)
+  @@unique([restauranteId, chaveIdempotencia])
   @@map("ocorrencias_epi")
 }
 
