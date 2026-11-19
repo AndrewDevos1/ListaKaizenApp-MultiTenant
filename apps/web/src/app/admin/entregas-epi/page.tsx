@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, useEffect, useRef, useState } from 'react';
 import { Alert, Badge, Button, Form, Table } from 'react-bootstrap';
 import api from '@/lib/api';
 
@@ -27,6 +27,7 @@ export default function EntregasEpiAdminPage() {
   const [erro, setErro] = useState('');
   const [ok, setOk] = useState('');
   const [detalhe, setDetalhe] = useState<Entrega | null>(null);
+  const chavesAcao = useRef<Record<string, string>>({});
   const carregar = async () => {
     try {
       const params = restauranteParams();
@@ -36,8 +37,8 @@ export default function EntregasEpiAdminPage() {
   };
   useEffect(() => { void carregar(); }, []);
   const abrir = async (id: number) => { try { const { data } = await api.get(`/v1/admin/entregas-epi/${id}`, { params: restauranteParams() }); setDetalhe(data); } catch { setErro('Não foi possível carregar o detalhe.'); } };
-  const confirmarFisica = async () => { if (!detalhe) return; try { await api.post(`/v1/admin/entregas-epi/${detalhe.id}/confirmar-entrega-fisica`, {}, { params: restauranteParams(), headers: { 'Idempotency-Key': `entrega-fisica-${detalhe.id}` } }); await carregar(); await abrir(detalhe.id); } catch { setErro('Não foi possível confirmar a entrega física. Verifique saldo e estado.'); } };
-  const cancelar = async () => { if (!detalhe) return; try { await api.post(`/v1/admin/entregas-epi/${detalhe.id}/cancelar`, { chaveIdempotencia: `cancelamento-${detalhe.id}` }, { params: restauranteParams() }); await carregar(); await abrir(detalhe.id); } catch { setErro('A entrega não está mais pendente.'); } };
+  const confirmarFisica = async () => { if (!detalhe) return; const acao = `${detalhe.id}:confirmar`; const chave = chavesAcao.current[acao] ??= crypto.randomUUID(); try { await api.post(`/v1/admin/entregas-epi/${detalhe.id}/confirmar-entrega-fisica`, {}, { params: restauranteParams(), headers: { 'Idempotency-Key': chave } }); delete chavesAcao.current[acao]; await carregar(); await abrir(detalhe.id); } catch { setErro('Não foi possível confirmar a entrega física. Verifique saldo e estado.'); } };
+  const cancelar = async () => { if (!detalhe) return; const acao = `${detalhe.id}:cancelar`; const chaveIdempotencia = chavesAcao.current[acao] ??= crypto.randomUUID(); try { await api.post(`/v1/admin/entregas-epi/${detalhe.id}/cancelar`, { chaveIdempotencia }, { params: restauranteParams() }); delete chavesAcao.current[acao]; await carregar(); await abrir(detalhe.id); } catch { setErro('A entrega não está mais pendente.'); } };
   const criar = async (event: FormEvent) => {
     event.preventDefault(); setErro(''); setOk('');
     try {

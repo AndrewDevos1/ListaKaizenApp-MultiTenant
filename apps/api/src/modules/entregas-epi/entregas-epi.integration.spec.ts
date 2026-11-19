@@ -153,12 +153,14 @@ d('entrega física + custódia + aceite eletrônico (HTTP + PostgreSQL real)', (
     expect(await prisma.custodiaEpiItem.findMany({ where: { entregaId: id } })).toEqual(antes);
   });
 
-  it('recusa ANTES da física: sem movimento/custódia, evento RECUSA; física posterior ainda possível? não — recusada não confunde saldo', async () => {
+  it('recusa ANTES da física bloqueia confirmação com 409 sem movimento ou custódia', async () => {
     const p = await posicao(A, 4);
     const id = await entrega([{ id: p.id, q: 1 }]);
     const r = await recusar(id).expect(201);
     expect(r.body).toMatchObject({ statusAceite: 'RECUSADO', statusFisico: 'PREPARADA' });
+    await fisica(id).expect(409);
     expect(await saldo(p.id)).toBe(4); expect(await movs(p.id)).toBe(0);
+    expect(await prisma.custodiaEpiItem.count({ where: { entregaId: id } })).toBe(0);
     expect(await tipos(id)).toEqual(['CRIADA', 'RECUSA']);
   });
 

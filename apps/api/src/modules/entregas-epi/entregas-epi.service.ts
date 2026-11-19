@@ -57,6 +57,7 @@ export class EntregasEpiService {
         throw new ConflictException('Chave de idempotência já usada com outra confirmação');
       }
       if (entrega.statusFisico !== 'PREPARADA') throw new ConflictException('Entrega não está preparada');
+      if (entrega.statusAceite === 'RECUSADO') throw new ConflictException('Entrega recusada eletronicamente; não pode ser confirmada fisicamente');
       const itens = [...entrega.itens].sort((a, b) => a.posicaoId - b.posicaoId);
       const locked: Record<number, any> = {};
       for (const item of itens) {
