@@ -34,7 +34,7 @@ export class AceiteTermoEpiService {
       if (existing.hashPayload === payloadHash) return existing;
       throw new ConflictException('Entrega já possui aceite com outro payload');
     }
-    if (entrega.status === 'CANCELADO' || entrega.statusAceite !== 'PENDENTE') throw new ConflictException('Entrega não está pendente');
+    if (entrega.status === 'CANCELADO' || entrega.statusAceite !== 'PENDENTE' || entrega.statusFisico !== 'ENTREGUE') throw new ConflictException('Entrega física confirmada e aceite pendente são obrigatórios');
     const aceitoEm = new Date();
     const itens = entrega.itens.map((item) => ({ nome: item.materialNomeSnapshot, categoria: String(item.categoriaSnapshot), quantidade: item.quantidade.toString(), valorReferencia: item.valorReferenciaSnapshot.toString(), condicao: item.condicaoSnapshot, variante: item.varianteSnapshot, retornavel: item.retornavelSnapshot }));
     const staged = await this.pdf.stage(await this.pdf.generate({ termoTexto: termo.texto, termoVersao: termo.versao, colaboradorNome: entrega.funcionario.nome, aceitoEm, itens, signature: input.assinatura }));

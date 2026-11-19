@@ -1,7 +1,12 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { readdir, rm } from 'fs/promises';
+import { tmpdir } from 'os';
+import { join } from 'path';
 import { Test } from '@nestjs/testing';
 import * as request from 'supertest';
+import { createHash } from 'crypto';
+import { randomUUID } from 'crypto';
 import { AppModule } from '../../app.module';
 import { PrismaService } from '../../prisma/prisma.service';
 
@@ -31,7 +36,14 @@ d('entrega física + custódia + aceite eletrônico (HTTP + PostgreSQL real)', (
     return res.body.id as number;
   }
   const fisica = (id: number, k = key(), token = tk.adminA) => http().post(`/api/v1/admin/entregas-epi/${id}/confirmar-entrega-fisica`).set(auth(token)).set('Idempotency-Key', k);
-  const aceitar = (id: number) => http().post(`/api/v1/collaborator/entregas-epi/${id}/aceitar`).set(auth(tk.colabA)).send({ chaveIdempotencia: key() });
+  const aceitar = (id: number, chave = key()) => http().post(`/api/v1/collaborator/entregas-epi/${id}/aceitar`).set(auth(tk.colabA)).send({ chaveIdempotencia: chave });
+  const criarTermo = async () => {
+    const texto = `Termo ${Date.now()}-${++seq}`;
+    const res = await http().post('/api/v1/admin/termos-responsabilidade').set(auth(tk.adminA)).send({ versao: `v-${seq}`, texto }).expect(201);
+    return { ...res.body, texto };
+  };
+  const assinaturaPng = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=';
+  const aceitarTermo = (id: number, termo: { id: number; hashTermo: string }, body: Record<string, unknown> = {}) => http().post(`/api/v1/collaborator/entregas-epi/${id}/aceitar-termo`).set(auth(tk.colabA)).send({ termoId: termo.id, hashTermo: termo.hashTermo, lido: true, assinatura: assinaturaPng, ...body });
   const recusar = (id: number) => http().post(`/api/v1/collaborator/entregas-epi/${id}/recusar`).set(auth(tk.colabA)).send({ chaveIdempotencia: key(), justificativa: 'não recebi' });
   const cancelar = (id: number) => http().post(`/api/v1/admin/entregas-epi/${id}/cancelar`).set(auth(tk.adminA)).send({ chaveIdempotencia: key() });
   const saldo = async (id: number) => Number((await prisma.posicaoMaterialAlmoxarifado.findUniqueOrThrow({ where: { id } })).saldo);
@@ -128,17 +140,26 @@ d('entrega física + custódia + aceite eletrônico (HTTP + PostgreSQL real)', (
     await http().post(`/api/v1/admin/entregas-epi/${id}/confirmar-entrega-fisica`).set(auth(tk.adminA)).expect(400);
   });
 
-  it('aceite eletrônico antes da física é independente: não baixa saldo nem cria custódia; física depois cria custódia mesmo ACEITO', async () => {
+  it('aceite eletrônico legado exige entrega física e preserva chaveIdempotencia', async () => {
     const p = await posicao(A, 4);
     const id = await entrega([{ id: p.id, q: 1 }]);
-    const a = await aceitar(id).expect(201);
-    expect(a.body).toMatchObject({ statusAceite: 'ACEITO', statusFisico: 'PREPARADA' });
-    expect(await saldo(p.id)).toBe(4);
-    expect(await prisma.custodiaEpiItem.count({ where: { entregaId: id } })).toBe(0);
+    await aceitar(id).expect(409);
     await fisica(id).expect(201);
-    expect(await saldo(p.id)).toBe(3);
-    expect(await prisma.custodiaEpiItem.count({ where: { entregaId: id } })).toBe(1);
-    expect(await tipos(id)).toEqual(['CRIADA', 'ACEITE_ELETRONICO', 'ENTREGA_FISICA_CONFIRMADA']);
+    const k = key();
+    await aceitar(id, k).expect(201);
+    await aceitar(id, k).expect((r) => expect([200, 201]).toContain(r.status));
+    expect(await tipos(id)).toEqual(['CRIADA', 'ENTREGA_FISICA_CONFIRMADA', 'ACEITE_ELETRONICO']);
+  });
+
+  it('termo é rota distinta e exige payload completo', async () => {
+    const p = await posicao(A, 4);
+    const id = await entrega([{ id: p.id, q: 1 }]);
+    const termo = await criarTermo();
+    await http().post(`/api/v1/collaborator/entregas-epi/${id}/aceitar-termo`).set(auth(tk.colabA)).send({ chaveIdempotencia: key() }).expect(400);
+    await aceitarTermo(id, termo).expect(409);
+    await fisica(id).expect(201);
+    const aceite = await aceitarTermo(id, termo).expect(201);
+    expect(aceite.body).toMatchObject({ entregaId: id, termoId: termo.id });
   });
 
   it('aceite após física não altera saldo/custódia; custódia existe com aceite PENDENTE', async () => {
@@ -251,7 +272,7 @@ d('entrega física + custódia + aceite eletrônico (HTTP + PostgreSQL real)', (
   });
 
   it('transição: retry idêntico retorna original sem novo evento; chave diferente 409; mesma chave payload diferente 409', async () => {
-    const p = await posicao(A, 5); const id = await entrega([{ id: p.id, q: 1 }]); const k = key();
+    const p = await posicao(A, 5); const id = await entrega([{ id: p.id, q: 1 }]); await fisica(id); const k = key();
     const go = (kk: string, rota = 'aceitar', body: any = {}) => http().post(`/api/v1/collaborator/entregas-epi/${id}/${rota}`).set(auth(tk.colabA)).send({ chaveIdempotencia: kk, ...body });
     await go(k).expect(201);
     await go(k).expect((r) => expect([200, 201]).toContain(r.status));
@@ -263,7 +284,7 @@ d('entrega física + custódia + aceite eletrônico (HTTP + PostgreSQL real)', (
   });
 
   it('transição: corrida com mesma chave => um evento, todos retornam o resultado original', async () => {
-    const p = await posicao(A, 5); const id = await entrega([{ id: p.id, q: 1 }]); const k = key();
+    const p = await posicao(A, 5); const id = await entrega([{ id: p.id, q: 1 }]); await fisica(id); const k = key();
     const rs = await Promise.all(Array.from({ length: 5 }, () => http().post(`/api/v1/collaborator/entregas-epi/${id}/aceitar`).set(auth(tk.colabA)).send({ chaveIdempotencia: k })));
     expect(rs.map((r) => r.status).every((s) => [200, 201].includes(s))).toBe(true);
     expect(await tipos(id)).toEqual(['CRIADA', 'ACEITE_ELETRONICO']);
