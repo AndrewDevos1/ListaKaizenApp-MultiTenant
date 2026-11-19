@@ -42,7 +42,7 @@ export default function EntregasEpiAdminPage() {
     try {
       await api.post('/v1/admin/entregas-epi', { funcionarioId: Number(destinatario), chaveIdempotencia, observacoes, itens: linhas.map((l) => ({ posicaoId: Number(l.posicaoId), quantidade: Number(l.quantidade) })) }, { params: restauranteParams() });
       delete chavesAcao.current[acao]; setOk('Entrega criada e notificação enviada.'); setDestinatario(''); setObservacoes(''); setLinhas([{ posicaoId: '', quantidade: '1' }]); await carregar();
-    } catch (error: any) { if (error.response) delete chavesAcao.current[acao]; setErro('Não foi possível criar a entrega. Verifique destinatário, itens e saldo.'); }
+    } catch (error: unknown) { if (typeof error === 'object' && error !== null && 'response' in error) delete chavesAcao.current[acao]; setErro('Não foi possível criar a entrega. Verifique destinatário, itens e saldo.'); }
   };
   return <main className="p-3"><h1>Entregas EPI</h1><p className="text-muted">Materiais de uso do funcionário; não mistura itens de compras.</p>{erro && <Alert variant="danger">{erro}</Alert>}{ok && <Alert variant="success">{ok}</Alert>}
     <Form onSubmit={criar} className="border rounded p-3 mb-4"><h2 className="h5">Nova entrega</h2><Form.Select required value={destinatario} onChange={(e) => setDestinatario(e.target.value)} aria-label="Destinatário"><option value="">Selecione o destinatário</option>{usuarios.map((u) => <option key={u.id} value={u.id}>{u.nome}</option>)}</Form.Select>
