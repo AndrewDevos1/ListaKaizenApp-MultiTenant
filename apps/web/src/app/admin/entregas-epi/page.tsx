@@ -11,6 +11,12 @@ type Entrega = { id: number; status: string; statusFisico: string; statusAceite:
 
 const key = () => `epi-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
+function restauranteParams() {
+  if (typeof window === 'undefined') return {};
+  const id = new URLSearchParams(window.location.search).get('restauranteId') ?? sessionStorage.getItem('restauranteId');
+  return id && /^\d+$/.test(id) ? { restauranteId: id } : {};
+}
+
 export default function EntregasEpiAdminPage() {
   const [entregas, setEntregas] = useState<Entrega[]>([]);
   const [posicoes, setPosicoes] = useState<Posicao[]>([]);
@@ -23,18 +29,19 @@ export default function EntregasEpiAdminPage() {
   const [detalhe, setDetalhe] = useState<Entrega | null>(null);
   const carregar = async () => {
     try {
-      const [e, p, u] = await Promise.all([api.get('/v1/admin/entregas-epi'), api.get('/v1/admin/almoxarifado'), api.get('/v1/admin/usuarios', { params: { role: 'COLLABORATOR', ativo: 'true' } })]);
+      const params = restauranteParams();
+      const [e, p, u] = await Promise.all([api.get('/v1/admin/entregas-epi', { params }), api.get('/v1/admin/almoxarifado', { params }), api.get('/v1/admin/usuarios', { params: { ...params, role: 'COLLABORATOR', ativo: 'true' } })]);
       setEntregas(e.data); setPosicoes(p.data); setUsuarios(Array.isArray(u.data) ? u.data : u.data.usuarios ?? []);
     } catch { setErro('Não foi possível carregar entregas, estoque ou colaboradores.'); }
   };
   useEffect(() => { void carregar(); }, []);
-  const abrir = async (id: number) => { try { const { data } = await api.get(`/v1/admin/entregas-epi/${id}`); setDetalhe(data); } catch { setErro('Não foi possível carregar o detalhe.'); } };
-  const confirmarFisica = async () => { if (!detalhe) return; try { await api.post(`/v1/admin/entregas-epi/${detalhe.id}/confirmar-entrega-fisica`, {}, { headers: { 'Idempotency-Key': `entrega-fisica-${detalhe.id}` } }); await carregar(); await abrir(detalhe.id); } catch { setErro('Não foi possível confirmar a entrega física. Verifique saldo e estado.'); } };
-  const cancelar = async () => { if (!detalhe) return; try { await api.post(`/v1/admin/entregas-epi/${detalhe.id}/cancelar`, { chaveIdempotencia: `cancelamento-${detalhe.id}` }); await carregar(); await abrir(detalhe.id); } catch { setErro('A entrega não está mais pendente.'); } };
+  const abrir = async (id: number) => { try { const { data } = await api.get(`/v1/admin/entregas-epi/${id}`, { params: restauranteParams() }); setDetalhe(data); } catch { setErro('Não foi possível carregar o detalhe.'); } };
+  const confirmarFisica = async () => { if (!detalhe) return; try { await api.post(`/v1/admin/entregas-epi/${detalhe.id}/confirmar-entrega-fisica`, {}, { params: restauranteParams(), headers: { 'Idempotency-Key': `entrega-fisica-${detalhe.id}` } }); await carregar(); await abrir(detalhe.id); } catch { setErro('Não foi possível confirmar a entrega física. Verifique saldo e estado.'); } };
+  const cancelar = async () => { if (!detalhe) return; try { await api.post(`/v1/admin/entregas-epi/${detalhe.id}/cancelar`, { chaveIdempotencia: `cancelamento-${detalhe.id}` }, { params: restauranteParams() }); await carregar(); await abrir(detalhe.id); } catch { setErro('A entrega não está mais pendente.'); } };
   const criar = async (event: FormEvent) => {
     event.preventDefault(); setErro(''); setOk('');
     try {
-      await api.post('/v1/admin/entregas-epi', { funcionarioId: Number(destinatario), chaveIdempotencia: key(), observacoes, itens: linhas.map((l) => ({ posicaoId: Number(l.posicaoId), quantidade: Number(l.quantidade) })) });
+      await api.post('/v1/admin/entregas-epi', { funcionarioId: Number(destinatario), chaveIdempotencia: key(), observacoes, itens: linhas.map((l) => ({ posicaoId: Number(l.posicaoId), quantidade: Number(l.quantidade) })) }, { params: restauranteParams() });
       setOk('Entrega criada e notificação enviada.'); setDestinatario(''); setObservacoes(''); setLinhas([{ posicaoId: '', quantidade: '1' }]); await carregar();
     } catch { setErro('Não foi possível criar a entrega. Verifique destinatário, itens e saldo.'); }
   };
