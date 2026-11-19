@@ -146,8 +146,11 @@ model Restaurante {
   atestados               Atestado[]
   contadores               ContadorRestaurante[]
   contadorVinculos          ContadorFuncionario[]
-  almoxarifadoPosicoes      AlmoxarifadoPosicao[]
-  almoxarifadoMovimentacoes AlmoxarifadoMovimentacao[]
+  materiaisAlmoxarifado    MaterialAlmoxarifado[]
+  posicoesMaterialAlmoxarifado PosicaoMaterialAlmoxarifado[]
+  movimentosMaterialAlmoxarifado MovimentoMaterialAlmoxarifado[]
+  almoxarifadoPosicoesLegadas AlmoxarifadoPosicaoLegada[]
+  almoxarifadoMovimentacoesLegadas AlmoxarifadoMovimentacaoLegada[]
 
   @@map("restaurantes")
 }
@@ -392,9 +395,8 @@ model Item {
   checklistItens  ChecklistItem[]
   listaRapidaItens ListaRapidaItem[]
   sugestoesCriadas SugestaoItem[]
-  almoxarifadoPosicoes AlmoxarifadoPosicao[]
-  almoxarifadoMovimentacoes AlmoxarifadoMovimentacao[]
-
+  almoxarifadoPosicoesLegadas AlmoxarifadoPosicaoLegada[]
+  almoxarifadoMovimentacoesLegadas AlmoxarifadoMovimentacaoLegada[]
   historicoPrecos HistoricoPrecoItem[]
   // NULLs são distintos no Postgres: só códigos informados são únicos por fornecedor.
   @@unique([restauranteId, fornecedorId, codigoFornecedor])
@@ -938,10 +940,90 @@ enum TipoMovimentacaoAlmoxarifado {
   AJUSTE
 }
 
-model AlmoxarifadoPosicao {
+// Estruturas #37 preservadas somente para compatibilidade histórica; a API #48 não as usa.
+model AlmoxarifadoPosicaoLegada {
+  id Int @id @default(autoincrement())
+  restauranteId Int @map("restaurante_id")
+  itemId Int @map("item_id")
+  saldo Decimal @default(0) @db.Decimal(14, 3)
+  minimo Decimal? @db.Decimal(14, 3)
+  localizacao String?
+  observacao String?
+  ativo Boolean @default(true)
+  criadoEm DateTime @default(now()) @map("criado_em")
+  atualizadoEm DateTime @updatedAt @map("atualizado_em")
+  restaurante Restaurante @relation(fields: [restauranteId], references: [id])
+  item Item @relation(fields: [itemId], references: [id])
+  movimentacoes AlmoxarifadoMovimentacaoLegada[]
+  @@unique([restauranteId, itemId])
+  @@map("almoxarifado_posicoes")
+}
+model AlmoxarifadoMovimentacaoLegada {
+  id Int @id @default(autoincrement())
+  restauranteId Int @map("restaurante_id")
+  posicaoId Int @map("posicao_id")
+  itemId Int @map("item_id")
+  tipo TipoMovimentacaoAlmoxarifado
+  quantidade Decimal @db.Decimal(14, 3)
+  saldoAnterior Decimal @map("saldo_anterior") @db.Decimal(14, 3)
+  saldoNovo Decimal @map("saldo_novo") @db.Decimal(14, 3)
+  motivo String
+  responsavelId Int @map("responsavel_id")
+  responsavelNome String @map("responsavel_nome")
+  chaveIdempotencia String @map("chave_idempotencia")
+  criadoEm DateTime @default(now()) @map("criado_em")
+  restaurante Restaurante @relation(fields: [restauranteId], references: [id])
+  posicao AlmoxarifadoPosicaoLegada @relation(fields: [posicaoId], references: [id])
+  item Item @relation(fields: [itemId], references: [id])
+  @@unique([restauranteId, chaveIdempotencia])
+  @@index([posicaoId, criadoEm])
+  @@map("almoxarifado_movimentacoes")
+}
+
+enum CategoriaMaterialAlmoxarifado {
+  UNIFORME
+  CALCADO
+  EPI
+  FERRAMENTA
+  OUTRO
+}
+
+// Domínio isolado de EPI/uniforme/ferramenta. Não referencia Item, Pedido ou listas de compra.
+model MaterialAlmoxarifado {
+  id              Int                          @id @default(autoincrement())
+  restauranteId   Int                          @map("restaurante_id")
+  nome            String
+  categoria       CategoriaMaterialAlmoxarifado
+  retornavel      Boolean
+  valorReferencia Decimal                      @map("valor_referencia") @db.Decimal(14, 2)
+  ativo           Boolean                      @default(true)
+  criadoEm        DateTime                     @default(now()) @map("criado_em")
+  atualizadoEm    DateTime                     @updatedAt @map("atualizado_em")
+  restaurante     Restaurante                  @relation(fields: [restauranteId], references: [id])
+  variantes       VarianteMaterialAlmoxarifado[]
+  posicoes        PosicaoMaterialAlmoxarifado[]
+  movimentacoes   MovimentoMaterialAlmoxarifado[]
+  @@unique([restauranteId, nome])
+  @@map("materiais_almoxarifado")
+}
+
+model VarianteMaterialAlmoxarifado {
+  id          Int      @id @default(autoincrement())
+  materialId  Int      @map("material_id")
+  tamanho     String?
+  descricao   String?
+  criadoEm    DateTime @default(now()) @map("criado_em")
+  material    MaterialAlmoxarifado @relation(fields: [materialId], references: [id], onDelete: Restrict)
+  posicoes    PosicaoMaterialAlmoxarifado[]
+  movimentacoes MovimentoMaterialAlmoxarifado[]
+  @@map("variantes_material_almoxarifado")
+}
+
+model PosicaoMaterialAlmoxarifado {
   id            Int      @id @default(autoincrement())
   restauranteId Int      @map("restaurante_id")
-  itemId        Int      @map("item_id")
+  materialId    Int      @map("material_id")
+  varianteId    Int?     @map("variante_id")
   saldo         Decimal  @default(0) @db.Decimal(14, 3)
   minimo        Decimal? @db.Decimal(14, 3)
   localizacao   String?
@@ -949,21 +1031,21 @@ model AlmoxarifadoPosicao {
   ativo         Boolean  @default(true)
   criadoEm      DateTime @default(now()) @map("criado_em")
   atualizadoEm  DateTime @updatedAt @map("atualizado_em")
-
   restaurante   Restaurante @relation(fields: [restauranteId], references: [id])
-  item          Item        @relation(fields: [itemId], references: [id])
-  movimentacoes AlmoxarifadoMovimentacao[]
-
-  @@unique([restauranteId, itemId])
-  @@map("almoxarifado_posicoes")
+  material      MaterialAlmoxarifado @relation(fields: [materialId], references: [id])
+  variante      VarianteMaterialAlmoxarifado? @relation(fields: [varianteId], references: [id])
+  movimentacoes MovimentoMaterialAlmoxarifado[]
+  @@unique([restauranteId, materialId, varianteId])
+  @@map("posicoes_material_almoxarifado")
 }
 
-// Append-only: sem update/delete na API.
-model AlmoxarifadoMovimentacao {
+// Append-only. #49 consome somente material/variante/posição, nunca Item.
+model MovimentoMaterialAlmoxarifado {
   id                Int                          @id @default(autoincrement())
   restauranteId     Int                          @map("restaurante_id")
   posicaoId         Int                          @map("posicao_id")
-  itemId            Int                          @map("item_id")
+  materialId        Int                          @map("material_id")
+  varianteId        Int?                         @map("variante_id")
   tipo              TipoMovimentacaoAlmoxarifado
   quantidade        Decimal                      @db.Decimal(14, 3)
   saldoAnterior     Decimal                      @map("saldo_anterior") @db.Decimal(14, 3)
@@ -973,12 +1055,11 @@ model AlmoxarifadoMovimentacao {
   responsavelNome   String                       @map("responsavel_nome")
   chaveIdempotencia String                       @map("chave_idempotencia")
   criadoEm          DateTime                     @default(now()) @map("criado_em")
-
-  restaurante Restaurante         @relation(fields: [restauranteId], references: [id])
-  posicao     AlmoxarifadoPosicao @relation(fields: [posicaoId], references: [id])
-  item        Item                @relation(fields: [itemId], references: [id])
-
+  restaurante Restaurante                  @relation(fields: [restauranteId], references: [id])
+  posicao     PosicaoMaterialAlmoxarifado  @relation(fields: [posicaoId], references: [id])
+  material    MaterialAlmoxarifado         @relation(fields: [materialId], references: [id])
+  variante    VarianteMaterialAlmoxarifado? @relation(fields: [varianteId], references: [id])
   @@unique([restauranteId, chaveIdempotencia])
   @@index([posicaoId, criadoEm])
-  @@map("almoxarifado_movimentacoes")
+  @@map("movimentos_material_almoxarifado")
 }

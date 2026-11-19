@@ -1,110 +1,32 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { Alert, Badge, Button, Form, Modal, Table } from 'react-bootstrap';
+import { FormEvent, useEffect, useState } from 'react';
+import { Alert, Badge, Button, Form, Nav, Table } from 'react-bootstrap';
 import api from '@/lib/api';
 
-type Movimentacao = {
-  id: number;
-  tipo: string;
-  quantidade: string;
-  saldoAnterior: string;
-  saldoNovo: string;
-  motivo: string;
-  responsavelNome: string;
-  criadoEm: string;
-};
-
-type Posicao = {
-  id: number;
-  saldo: string;
-  minimo: string | null;
-  ativo: boolean;
-  item: { nome: string; unidadeMedida: string };
-  movimentacoes?: Movimentacao[];
-};
-
-const formatDate = (value: string) => new Date(value).toLocaleString('pt-BR');
+type Material = { id: number; nome: string; categoria: string; retornavel: boolean; valorReferencia: string; ativo: boolean; variantes: { id: number; tamanho?: string | null; descricao?: string | null }[] };
+type Posicao = { id: number; saldo: string; minimo: string | null; ativo: boolean; material: Material; variante?: { tamanho?: string | null; descricao?: string | null } | null };
 
 export default function AlmoxarifadoPage() {
-  const [rows, setRows] = useState<Posicao[]>([]);
+  const [tab, setTab] = useState('itens');
+  const [materiais, setMateriais] = useState<Material[]>([]);
+  const [posicoes, setPosicoes] = useState<Posicao[]>([]);
   const [error, setError] = useState('');
-  const [query, setQuery] = useState('');
-  const [selected, setSelected] = useState<Posicao | null>(null);
-  const [tipo, setTipo] = useState('ENTRADA');
-  const [quantidade, setQuantidade] = useState('');
-  const [motivo, setMotivo] = useState('');
-  const [loadingHistory, setLoadingHistory] = useState(false);
+  const [nome, setNome] = useState('');
+  const [categoria, setCategoria] = useState('UNIFORME');
+  const [retornavel, setRetornavel] = useState(true);
+  const [valorReferencia, setValorReferencia] = useState('');
 
-  const load = async () => {
-    try {
-      setRows((await api.get('/v1/admin/almoxarifado', { params: { busca: query } })).data);
-    } catch {
-      setError('Erro ao carregar almoxarifado');
-    }
-  };
-
-  useEffect(() => {
-    void load();
-    // A consulta deve acompanhar apenas a busca digitada.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [query]);
-
-  const openPosition = async (position: Posicao) => {
-    setSelected(position);
-    setLoadingHistory(true);
-    try {
-      const detail = (await api.get(`/v1/admin/almoxarifado/${position.id}`)).data;
-      setSelected(detail);
-    } catch {
-      setError('Não foi possível carregar o histórico de movimentações');
-    } finally {
-      setLoadingHistory(false);
-    }
-  };
-
-  const move = async () => {
-    if (!selected) return;
-    try {
-      await api.post(`/v1/admin/almoxarifado/${selected.id}/movimentacoes`, {
-        tipo, quantidade: Number(quantidade), motivo, chaveIdempotencia: crypto.randomUUID(),
-      });
-      setSelected(null);
-      setQuantidade('');
-      setMotivo('');
-      await load();
-    } catch {
-      setError('Não foi possível registrar a movimentação');
-    }
-  };
+  const load = async () => { try { const [m, p] = await Promise.all([api.get('/v1/admin/almoxarifado/materiais'), api.get('/v1/admin/almoxarifado')]); setMateriais(m.data); setPosicoes(p.data); } catch { setError('Não foi possível carregar o almoxarifado EPI.'); } };
+  useEffect(() => { void load(); }, []);
+  const createMaterial = async (event: FormEvent) => { event.preventDefault(); try { await api.post('/v1/admin/almoxarifado/materiais', { nome, categoria, retornavel, valorReferencia: Number(valorReferencia) }); setNome(''); setValorReferencia(''); await load(); } catch { setError('Não foi possível cadastrar o material.'); } };
 
   return <main className="p-3">
-    <h1>Almoxarifado</h1>
+    <h1>Almoxarifado EPI</h1>
+    <p className="text-muted">Materiais de uso do funcionário. Não integra compras, ingredientes ou listas.</p>
     {error && <Alert variant="danger" dismissible onClose={() => setError('')}>{error}</Alert>}
-    <Form.Control aria-label="Buscar item" placeholder="Buscar item" value={query} onChange={e => setQuery(e.target.value)} />
-    <Table responsive hover className="mt-3">
-      <thead><tr><th>Item</th><th>Saldo</th><th>Status</th><th /></tr></thead>
-      <tbody>{rows.map(r => <tr key={r.id}>
-        <td>{r.item.nome}</td><td>{r.saldo} {r.item.unidadeMedida}</td>
-        <td>{r.minimo !== null && Number(r.saldo) < Number(r.minimo) ? <Badge bg="warning" text="dark">Abaixo do mínimo</Badge> : <Badge bg="success">OK</Badge>}</td>
-        <td><Button size="sm" onClick={() => void openPosition(r)}>Movimentar</Button></td>
-      </tr>)}</tbody>
-    </Table>
-    <Modal size="xl" show={!!selected} onHide={() => setSelected(null)}>
-      <Modal.Header closeButton><Modal.Title>Movimentação: {selected?.item.nome}</Modal.Title></Modal.Header>
-      <Modal.Body>
-        <h2 className="h5">Histórico de movimentações</h2>
-        {loadingHistory ? <p>Carregando histórico...</p> : selected?.movimentacoes?.length ? <Table responsive size="sm">
-          <thead><tr><th>Tipo</th><th>Quantidade</th><th>Saldo anterior</th><th>Saldo novo</th><th>Motivo</th><th>Responsável</th><th>Data</th></tr></thead>
-          <tbody>{selected.movimentacoes.map(m => <tr key={m.id}><td>{m.tipo}</td><td>{m.quantidade}</td><td>{m.saldoAnterior}</td><td>{m.saldoNovo}</td><td>{m.motivo}</td><td>{m.responsavelNome}</td><td>{formatDate(m.criadoEm)}</td></tr>)}</tbody>
-        </Table> : <p className="text-muted">Nenhuma movimentação registrada.</p>}
-        <hr />
-        <h2 className="h5">Nova movimentação</h2>
-        <Form.Select aria-label="Tipo de movimentação" value={tipo} onChange={e => setTipo(e.target.value)}><option>ENTRADA</option><option>SAIDA</option><option>AJUSTE</option></Form.Select>
-        <Form.Control className="mt-2" type="number" min="0.001" placeholder="Quantidade" value={quantidade} onChange={e => setQuantidade(e.target.value)} />
-        <Form.Control className="mt-2" placeholder="Motivo" value={motivo} onChange={e => setMotivo(e.target.value)} />
-      </Modal.Body>
-      <Modal.Footer><Button onClick={() => void move()} disabled={!quantidade || !motivo}>Salvar</Button></Modal.Footer>
-    </Modal>
+    <Nav variant="tabs" activeKey={tab} onSelect={(key) => setTab(key || 'itens')}><Nav.Item><Nav.Link eventKey="itens">Itens</Nav.Link></Nav.Item><Nav.Item><Nav.Link eventKey="estoque">Estoque</Nav.Link></Nav.Item></Nav>
+    {tab === 'itens' && <section className="mt-3"><Form onSubmit={createMaterial} className="row g-2" aria-label="Cadastrar material EPI"><div className="col-md-3"><Form.Control required placeholder="Nome do material" value={nome} onChange={e => setNome(e.target.value)} /></div><div className="col-md-2"><Form.Select aria-label="Categoria" value={categoria} onChange={e => setCategoria(e.target.value)}>{['UNIFORME', 'CALCADO', 'EPI', 'FERRAMENTA', 'OUTRO'].map(x => <option key={x}>{x}</option>)}</Form.Select></div><div className="col-md-2"><Form.Control required type="number" min="0" step="0.01" placeholder="Valor referência" value={valorReferencia} onChange={e => setValorReferencia(e.target.value)} /></div><div className="col-md-2"><Form.Check label="Retornável" checked={retornavel} onChange={e => setRetornavel(e.target.checked)} /></div><div className="col-md-2"><Button type="submit">Cadastrar</Button></div></Form><Table responsive hover className="mt-3"><thead><tr><th>Material</th><th>Categoria</th><th>Retornável</th><th>Valor referência</th><th>Variantes</th></tr></thead><tbody>{materiais.map(m => <tr key={m.id}><td>{m.nome}</td><td><Badge bg="secondary">{m.categoria}</Badge></td><td>{m.retornavel ? 'Sim' : 'Não'}</td><td>R$ {m.valorReferencia}</td><td>{m.variantes.map(v => v.tamanho || v.descricao).filter(Boolean).join(', ') || '—'}</td></tr>)}</tbody></Table></section>}
+    {tab === 'estoque' && <section className="mt-3"><Table responsive hover><thead><tr><th>Material</th><th>Variante</th><th>Saldo disponível</th><th>Status</th></tr></thead><tbody>{posicoes.map(p => <tr key={p.id}><td>{p.material.nome}</td><td>{p.variante?.tamanho || p.variante?.descricao || '—'}</td><td>{p.saldo}</td><td>{p.ativo ? 'Ativo' : 'Inativo'}</td></tr>)}</tbody></Table></section>}
   </main>;
 }
