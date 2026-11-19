@@ -1146,6 +1146,7 @@ model EntregaEpiItem {
   materialNomeSnapshot String @map("material_nome_snapshot")
   categoriaSnapshot CategoriaMaterialAlmoxarifado @map("categoria_snapshot")
   retornavelSnapshot Boolean @map("retornavel_snapshot")
+  valorReferenciaSnapshot Decimal @map("valor_referencia_snapshot") @db.Decimal(14,2)
   varianteSnapshot String? @map("variante_snapshot")
   entrega EntregaEpi @relation(fields: [entregaId], references: [id], onDelete: Cascade)
   posicao PosicaoMaterialAlmoxarifado @relation(fields: [posicaoId], references: [id], onDelete: Restrict)
@@ -1166,6 +1167,7 @@ model CustodiaEpiItem {
   varianteId Int? @map("variante_id")
   quantidadeEmPosse Decimal @map("quantidade_em_posse") @db.Decimal(14, 3)
   retornavel Boolean
+  valorReferenciaSnapshot Decimal @map("valor_referencia_snapshot") @db.Decimal(14,2)
   iniciadaEm DateTime @map("iniciada_em")
   restaurante Restaurante @relation(fields: [restauranteId], references: [id], onDelete: Restrict)
   entrega EntregaEpi @relation(fields: [entregaId], references: [id], onDelete: Restrict)
