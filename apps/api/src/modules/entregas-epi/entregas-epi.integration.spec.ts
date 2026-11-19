@@ -128,17 +128,24 @@ d('entrega física + custódia + aceite eletrônico (HTTP + PostgreSQL real)', (
     await http().post(`/api/v1/admin/entregas-epi/${id}/confirmar-entrega-fisica`).set(auth(tk.adminA)).expect(400);
   });
 
-  it('aceite eletrônico antes da física é independente: não baixa saldo nem cria custódia; física depois cria custódia mesmo ACEITO', async () => {
+  it('aceite eletrônico antes da física retorna 409 sem alterar estado ou trilha', async () => {
     const p = await posicao(A, 4);
     const id = await entrega([{ id: p.id, q: 1 }]);
-    const a = await aceitar(id).expect(201);
-    expect(a.body).toMatchObject({ statusAceite: 'ACEITO', statusFisico: 'PREPARADA' });
+    await aceitar(id).expect(409);
     expect(await saldo(p.id)).toBe(4);
     expect(await prisma.custodiaEpiItem.count({ where: { entregaId: id } })).toBe(0);
-    await fisica(id).expect(201);
-    expect(await saldo(p.id)).toBe(3);
-    expect(await prisma.custodiaEpiItem.count({ where: { entregaId: id } })).toBe(1);
-    expect(await tipos(id)).toEqual(['CRIADA', 'ACEITE_ELETRONICO', 'ENTREGA_FISICA_CONFIRMADA']);
+    expect(await prisma.entregaEpi.findUniqueOrThrow({ where: { id } })).toMatchObject({ status: 'PENDENTE', statusAceite: 'PENDENTE', statusFisico: 'PREPARADA' });
+    expect(await tipos(id)).toEqual(['CRIADA']);
+  });
+
+  it('recusa eletrônica antes da física retorna 409 sem alterar estado ou trilha', async () => {
+    const p = await posicao(A, 4);
+    const id = await entrega([{ id: p.id, q: 1 }]);
+    await recusar(id).expect(409);
+    expect(await saldo(p.id)).toBe(4);
+    expect(await prisma.custodiaEpiItem.count({ where: { entregaId: id } })).toBe(0);
+    expect(await prisma.entregaEpi.findUniqueOrThrow({ where: { id } })).toMatchObject({ status: 'PENDENTE', statusAceite: 'PENDENTE', statusFisico: 'PREPARADA' });
+    expect(await tipos(id)).toEqual(['CRIADA']);
   });
 
   it('aceite após física não altera saldo/custódia; custódia existe com aceite PENDENTE', async () => {
@@ -151,17 +158,6 @@ d('entrega física + custódia + aceite eletrônico (HTTP + PostgreSQL real)', (
     await aceitar(id).expect(201);
     expect(await saldo(p.id)).toBe(3); expect(await movs(p.id)).toBe(1);
     expect(await prisma.custodiaEpiItem.findMany({ where: { entregaId: id } })).toEqual(antes);
-  });
-
-  it('recusa ANTES da física bloqueia confirmação com 409 sem movimento ou custódia', async () => {
-    const p = await posicao(A, 4);
-    const id = await entrega([{ id: p.id, q: 1 }]);
-    const r = await recusar(id).expect(201);
-    expect(r.body).toMatchObject({ statusAceite: 'RECUSADO', statusFisico: 'PREPARADA' });
-    await fisica(id).expect(409);
-    expect(await saldo(p.id)).toBe(4); expect(await movs(p.id)).toBe(0);
-    expect(await prisma.custodiaEpiItem.count({ where: { entregaId: id } })).toBe(0);
-    expect(await tipos(id)).toEqual(['CRIADA', 'RECUSA']);
   });
 
   it('recusa DEPOIS da física: DIVERGENCIA registrada, custódia e saldo intactos, sem devolução fictícia', async () => {
@@ -253,22 +249,22 @@ d('entrega física + custódia + aceite eletrônico (HTTP + PostgreSQL real)', (
   });
 
   it('transição: retry idêntico retorna original sem novo evento; chave diferente 409; mesma chave payload diferente 409', async () => {
-    const p = await posicao(A, 5); const id = await entrega([{ id: p.id, q: 1 }]); const k = key();
+    const p = await posicao(A, 5); const id = await entrega([{ id: p.id, q: 1 }]); await fisica(id); const k = key();
     const go = (kk: string, rota = 'aceitar', body: any = {}) => http().post(`/api/v1/collaborator/entregas-epi/${id}/${rota}`).set(auth(tk.colabA)).send({ chaveIdempotencia: kk, ...body });
     await go(k).expect(201);
     await go(k).expect((r) => expect([200, 201]).toContain(r.status));
-    expect(await tipos(id)).toEqual(['CRIADA', 'ACEITE_ELETRONICO']);
+    expect(await tipos(id)).toEqual(['CRIADA', 'ENTREGA_FISICA_CONFIRMADA', 'ACEITE_ELETRONICO']);
     await go(key()).expect(409);
     await go(k, 'recusar', { justificativa: 'x' }).expect(409);
     await go('   ').expect(400);
-    expect(await tipos(id)).toEqual(['CRIADA', 'ACEITE_ELETRONICO']);
+    expect(await tipos(id)).toEqual(['CRIADA', 'ENTREGA_FISICA_CONFIRMADA', 'ACEITE_ELETRONICO']);
   });
 
   it('transição: corrida com mesma chave => um evento, todos retornam o resultado original', async () => {
-    const p = await posicao(A, 5); const id = await entrega([{ id: p.id, q: 1 }]); const k = key();
+    const p = await posicao(A, 5); const id = await entrega([{ id: p.id, q: 1 }]); await fisica(id); const k = key();
     const rs = await Promise.all(Array.from({ length: 5 }, () => http().post(`/api/v1/collaborator/entregas-epi/${id}/aceitar`).set(auth(tk.colabA)).send({ chaveIdempotencia: k })));
     expect(rs.map((r) => r.status).every((s) => [200, 201].includes(s))).toBe(true);
-    expect(await tipos(id)).toEqual(['CRIADA', 'ACEITE_ELETRONICO']);
+    expect(await tipos(id)).toEqual(['CRIADA', 'ENTREGA_FISICA_CONFIRMADA', 'ACEITE_ELETRONICO']);
   });
 
   it('cancelamento: chave obrigatória; retry idêntico ok; chave diferente 409', async () => {

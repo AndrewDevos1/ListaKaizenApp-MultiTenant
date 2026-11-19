@@ -9,8 +9,6 @@ type Usuario = { id: number; nome: string; role: string; ativo: boolean };
 type Evento = { id: number; tipo: string; criadoEm: string };
 type Entrega = { id: number; status: string; statusFisico: string; statusAceite: string; entregueFisicamenteEm?: string | null; criadoEm: string; funcionarioId: number; eventos?: Evento[]; itens: { materialNomeSnapshot: string; varianteSnapshot?: string | null; quantidade: string }[] };
 
-const key = () => `epi-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-
 function restauranteParams() {
   if (typeof window === 'undefined') return {};
   const id = new URLSearchParams(window.location.search).get('restauranteId') ?? sessionStorage.getItem('restauranteId');
@@ -40,11 +38,11 @@ export default function EntregasEpiAdminPage() {
   const confirmarFisica = async () => { if (!detalhe) return; const acao = `${detalhe.id}:confirmar`; const chave = chavesAcao.current[acao] ??= crypto.randomUUID(); try { await api.post(`/v1/admin/entregas-epi/${detalhe.id}/confirmar-entrega-fisica`, {}, { params: restauranteParams(), headers: { 'Idempotency-Key': chave } }); delete chavesAcao.current[acao]; await carregar(); await abrir(detalhe.id); } catch { setErro('Não foi possível confirmar a entrega física. Verifique saldo e estado.'); } };
   const cancelar = async () => { if (!detalhe) return; const acao = `${detalhe.id}:cancelar`; const chaveIdempotencia = chavesAcao.current[acao] ??= crypto.randomUUID(); try { await api.post(`/v1/admin/entregas-epi/${detalhe.id}/cancelar`, { chaveIdempotencia }, { params: restauranteParams() }); delete chavesAcao.current[acao]; await carregar(); await abrir(detalhe.id); } catch { setErro('A entrega não está mais pendente.'); } };
   const criar = async (event: FormEvent) => {
-    event.preventDefault(); setErro(''); setOk('');
+    event.preventDefault(); setErro(''); setOk(''); const acao = 'criar'; const chaveIdempotencia = chavesAcao.current[acao] ??= crypto.randomUUID();
     try {
-      await api.post('/v1/admin/entregas-epi', { funcionarioId: Number(destinatario), chaveIdempotencia: key(), observacoes, itens: linhas.map((l) => ({ posicaoId: Number(l.posicaoId), quantidade: Number(l.quantidade) })) }, { params: restauranteParams() });
-      setOk('Entrega criada e notificação enviada.'); setDestinatario(''); setObservacoes(''); setLinhas([{ posicaoId: '', quantidade: '1' }]); await carregar();
-    } catch { setErro('Não foi possível criar a entrega. Verifique destinatário, itens e saldo.'); }
+      await api.post('/v1/admin/entregas-epi', { funcionarioId: Number(destinatario), chaveIdempotencia, observacoes, itens: linhas.map((l) => ({ posicaoId: Number(l.posicaoId), quantidade: Number(l.quantidade) })) }, { params: restauranteParams() });
+      delete chavesAcao.current[acao]; setOk('Entrega criada e notificação enviada.'); setDestinatario(''); setObservacoes(''); setLinhas([{ posicaoId: '', quantidade: '1' }]); await carregar();
+    } catch (error: any) { if (error.response) delete chavesAcao.current[acao]; setErro('Não foi possível criar a entrega. Verifique destinatário, itens e saldo.'); }
   };
   return <main className="p-3"><h1>Entregas EPI</h1><p className="text-muted">Materiais de uso do funcionário; não mistura itens de compras.</p>{erro && <Alert variant="danger">{erro}</Alert>}{ok && <Alert variant="success">{ok}</Alert>}
     <Form onSubmit={criar} className="border rounded p-3 mb-4"><h2 className="h5">Nova entrega</h2><Form.Select required value={destinatario} onChange={(e) => setDestinatario(e.target.value)} aria-label="Destinatário"><option value="">Selecione o destinatário</option>{usuarios.map((u) => <option key={u.id} value={u.id}>{u.nome}</option>)}</Form.Select>

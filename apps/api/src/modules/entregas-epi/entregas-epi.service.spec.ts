@@ -55,11 +55,21 @@ describe('EntregasEpiService', () => {
 
   it('aceita somente o próprio destinatário e transiciona condicionalmente', async () => {
     prisma.entregaEpi.updateMany.mockResolvedValue({ count: 1 });
-    prisma.entregaEpi.findFirst.mockResolvedValueOnce({ id: 99, funcionarioId: 7, status: 'PENDENTE' });
-    prisma.entregaEpi.findFirstOrThrow.mockResolvedValue({ id: 99, funcionarioId: 7, status: 'ACEITO', statusFisico: 'PREPARADA', itens: [], eventos: [], custodias: [] });
-    prisma.entregaEpi.findFirst.mockResolvedValueOnce({ id: 99, funcionarioId: 7, status: 'ACEITO' });
+    prisma.entregaEpi.findFirst.mockResolvedValueOnce({ id: 99, funcionarioId: 7, status: 'PENDENTE', statusFisico: 'ENTREGUE' });
+    prisma.entregaEpi.findFirstOrThrow.mockResolvedValue({ id: 99, funcionarioId: 7, status: 'ACEITO', statusFisico: 'ENTREGUE', itens: [], eventos: [], custodias: [] });
+    prisma.entregaEpi.findFirst.mockResolvedValueOnce({ id: 99, funcionarioId: 7, status: 'ACEITO', statusFisico: 'ENTREGUE' });
     await expect(service.aceitar(3, 7, 99, 'accept-1')).resolves.toEqual(expect.objectContaining({ status: 'ACEITO' }));
     expect(prisma.entregaEpi.updateMany).toHaveBeenCalledWith(expect.objectContaining({ where: expect.objectContaining({ id: 99, restauranteId: 3, funcionarioId: 7, status: 'PENDENTE' }) }));
+  });
+
+  it('bloqueia aceite e recusa antes da entrega física sem atualizar ou criar evento', async () => {
+    prisma.entregaEpi.updateMany.mockResolvedValue({ count: 0 });
+    prisma.entregaEpi.findFirst.mockResolvedValue({ id: 99, status: 'PENDENTE', statusAceite: 'PENDENTE', statusFisico: 'PREPARADA', itens: [], eventos: [], custodias: [] });
+
+    await expect(service.aceitar(3, 7, 99, 'a-1')).rejects.toBeInstanceOf(ConflictException);
+    await expect(service.recusar(3, 7, 99, { chaveIdempotencia: 'r-1', justificativa: 'não recebi' })).rejects.toBeInstanceOf(ConflictException);
+    expect(prisma.entregaEpi.updateMany).not.toHaveBeenCalled();
+    expect(prisma.entregaEpiEvento.create).not.toHaveBeenCalled();
   });
 
   it('exige justificativa na recusa', async () => {
