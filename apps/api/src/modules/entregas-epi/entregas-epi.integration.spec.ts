@@ -98,13 +98,25 @@ d('entrega física + custódia + aceite eletrônico (HTTP + PostgreSQL real)', (
     expect(await movs(p.id)).toBe(1);
   });
 
-  it('idempotência: repetir/concorrer confirmação não duplica baixa, custódia nem evento', async () => {
+  it('idempotência: mesma chave repete; chave diferente retorna 409 sem duplicar efeitos', async () => {
     const p = await posicao(A, 10);
     const id = await entrega([{ id: p.id, q: 2 }]);
     const k = key();
-    const r = await Promise.all([fisica(id, k), fisica(id, k), fisica(id, key())]);
-    expect(r.every((x) => [200, 201].includes(x.status))).toBe(true);
-    await fisica(id, k).expect((x) => expect([200, 201]).toContain(x.status));
+    await fisica(id, k).expect(201);
+    await fisica(id, k).expect(201);
+    await fisica(id, key()).expect(409);
+    expect(await saldo(p.id)).toBe(8);
+    expect(await movs(p.id)).toBe(1);
+    expect(await prisma.custodiaEpiItem.count({ where: { entregaId: id } })).toBe(1);
+    expect((await tipos(id)).filter((t) => t === 'ENTREGA_FISICA_CONFIRMADA')).toHaveLength(1);
+  });
+
+  it('corrida da mesma chave: uma confirmação efetiva, demais respostas idempotentes', async () => {
+    const p = await posicao(A, 10);
+    const id = await entrega([{ id: p.id, q: 2 }]);
+    const k = key();
+    const r = await Promise.all([fisica(id, k), fisica(id, k), fisica(id, k)]);
+    expect(r.map((x) => x.status)).toEqual([201, 201, 201]);
     expect(await saldo(p.id)).toBe(8);
     expect(await movs(p.id)).toBe(1);
     expect(await prisma.custodiaEpiItem.count({ where: { entregaId: id } })).toBe(1);

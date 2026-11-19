@@ -52,7 +52,10 @@ export class EntregasEpiService {
       await tx.$queryRaw(Prisma.sql`SELECT id FROM entregas_epi WHERE id=${id} AND restaurante_id=${restauranteId} FOR UPDATE`);
       const entrega = await tx.entregaEpi.findFirst({ where: { id, restauranteId }, include: { itens: true } });
       if (!entrega) throw new NotFoundException('Entrega não encontrada');
-      if (entrega.statusFisico === 'ENTREGUE') return entrega;
+      if (entrega.statusFisico === 'ENTREGUE') {
+        if (entrega.chaveEntregaFisica === chave) return entrega;
+        throw new ConflictException('Chave de idempotência já usada com outra confirmação');
+      }
       if (entrega.statusFisico !== 'PREPARADA') throw new ConflictException('Entrega não está preparada');
       const itens = [...entrega.itens].sort((a, b) => a.posicaoId - b.posicaoId);
       const locked: Record<number, any> = {};
