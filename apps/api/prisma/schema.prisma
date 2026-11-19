@@ -149,6 +149,8 @@ model Restaurante {
   materiaisAlmoxarifado    MaterialAlmoxarifado[]
   entregasEpi EntregaEpi[]
   custodiasEpi CustodiaEpiItem[]
+  devolucoesEpi DevolucaoEpi[]
+  ocorrenciasEpi OcorrenciaEpi[]
   eventosEntregaEpi EntregaEpiEvento[]
   posicoesMaterialAlmoxarifado PosicaoMaterialAlmoxarifado[]
   movimentosMaterialAlmoxarifado MovimentoMaterialAlmoxarifado[]
@@ -184,6 +186,8 @@ model Usuario {
   entregasEpiCriadas EntregaEpi[] @relation("EntregaEpiCriador")
   entregasEpiFisicas EntregaEpi[] @relation("EntregaEpiEntregador")
   custodiasEpi CustodiaEpiItem[] @relation("CustodiaEpiFuncionario")
+  devolucoesEpi DevolucaoEpi[] @relation("DevolucaoEpiCriadoPor")
+  ocorrenciasEpi OcorrenciaEpi[] @relation("OcorrenciaEpiCriadoPor")
   eventosEntregaEpi EntregaEpiEvento[] @relation("EntregaEpiEventoAtor")
   pushSubscriptions PushSubscription[]
   navbarStyle       UsuarioNavbarEstilo?
@@ -898,6 +902,21 @@ enum TipoEventoEntregaEpi {
   RECUSA
   CANCELADA
   DIVERGENCIA
+  DEVOLUCAO
+  OCORRENCIA_PERDA_DANO
+  BAIXA_ADMINISTRATIVA
+}
+
+enum CondicaoDevolucaoEpi {
+  REUTILIZAVEL
+  DANIFICADO
+  INUTILIZADO
+  OUTRA
+}
+
+enum TipoOcorrenciaEpi {
+  PERDA
+  DANO
 }
 
 enum TipoNotificacao {
@@ -1110,6 +1129,8 @@ model EntregaEpi {
   itens EntregaEpiItem[]
   eventos EntregaEpiEvento[]
   custodias CustodiaEpiItem[]
+  devolucoes DevolucaoEpi[]
+  ocorrencias OcorrenciaEpi[]
   @@unique([restauranteId, chaveIdempotencia])
   @@unique([restauranteId, chaveEntregaFisica])
   @@map("entregas_epi")
@@ -1150,11 +1171,52 @@ model CustodiaEpiItem {
   entregaItem EntregaEpiItem @relation(fields: [entregaItemId], references: [id], onDelete: Restrict)
   funcionario Usuario @relation("CustodiaEpiFuncionario", fields: [funcionarioId], references: [id], onDelete: Restrict)
   material MaterialAlmoxarifado @relation(fields: [materialId], references: [id], onDelete: Restrict)
+  devolucoes DevolucaoEpi[]
+  ocorrencias OcorrenciaEpi[]
   @@index([restauranteId, funcionarioId])
   @@map("custodias_epi_itens")
 }
 
 // Trilha append-only (trigger bloqueia UPDATE/DELETE).
+model DevolucaoEpi {
+  id Int @id @default(autoincrement())
+  restauranteId Int @map("restaurante_id")
+  custodiaId Int @map("custodia_id")
+  entregaId Int @map("entrega_id")
+  quantidade Decimal @db.Decimal(14,3)
+  condicao CondicaoDevolucaoEpi
+  observacao String?
+  chaveIdempotencia String @map("chave_idempotencia")
+  hashPayload String @map("hash_payload")
+  criadoPorId Int @map("criado_por_id")
+  criadoEm DateTime @default(now()) @map("criado_em")
+  criadoPor Usuario @relation("DevolucaoEpiCriadoPor", fields: [criadoPorId], references: [id], onDelete: Restrict)
+  restaurante Restaurante @relation(fields: [restauranteId], references: [id], onDelete: Restrict)
+  entrega EntregaEpi @relation(fields: [entregaId], references: [id], onDelete: Restrict)
+  custodia CustodiaEpiItem @relation(fields: [custodiaId], references: [id], onDelete: Restrict)
+  @@unique([restauranteId, chaveIdempotencia])
+  @@map("devolucoes_epi")
+}
+
+model OcorrenciaEpi {
+  id Int @id @default(autoincrement())
+  restauranteId Int @map("restaurante_id")
+  custodiaId Int @map("custodia_id")
+  entregaId Int @map("entrega_id")
+  tipo TipoOcorrenciaEpi
+  quantidade Decimal @db.Decimal(14,3)
+  descricao String
+  custoReferencia Decimal? @db.Decimal(14,2) @map("custo_referencia")
+  avaliadoEm DateTime? @map("avaliado_em")
+  criadoPorId Int @map("criado_por_id")
+  criadoEm DateTime @default(now()) @map("criado_em")
+  criadoPor Usuario @relation("OcorrenciaEpiCriadoPor", fields: [criadoPorId], references: [id], onDelete: Restrict)
+  restaurante Restaurante @relation(fields: [restauranteId], references: [id], onDelete: Restrict)
+  entrega EntregaEpi @relation(fields: [entregaId], references: [id], onDelete: Restrict)
+  custodia CustodiaEpiItem @relation(fields: [custodiaId], references: [id], onDelete: Restrict)
+  @@map("ocorrencias_epi")
+}
+
 model EntregaEpiEvento {
   id Int @id @default(autoincrement())
   restauranteId Int @map("restaurante_id")

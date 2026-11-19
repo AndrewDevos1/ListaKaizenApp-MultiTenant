@@ -99,6 +99,36 @@ export class EntregasEpiService {
   aceitar(restauranteId: number, funcionarioId: number, id: number, chave: string) { return this.transicionar(restauranteId, funcionarioId, id, 'ACEITO', chave); }
   recusar(restauranteId: number, funcionarioId: number, id: number, dto: RecusarEntregaEpiDto) { return this.transicionar(restauranteId, funcionarioId, id, 'RECUSADO', dto.chaveIdempotencia, dto.justificativa); }
 
+  async devolver(restauranteId: number, ator: { id: number; nome?: string; role: string }, custodiaId: number, dto: { quantidade: number; condicao: 'REUTILIZAVEL' | 'DANIFICADO' | 'INUTILIZADO' | 'OUTRA'; chaveIdempotencia: string; observacao?: string }) {
+    if (!['ADMIN', 'SUPER_ADMIN', 'COLLABORATOR'].includes(ator.role)) throw new ForbiddenException();
+    if (!dto.chaveIdempotencia?.trim()) throw new BadRequestException('Idempotency-Key obrigatório');
+    if (dto.quantidade <= 0) throw new BadRequestException('Quantidade inválida');
+    const hashPayload = this.hash({ quantidade: String(dto.quantidade), condicao: dto.condicao, observacao: this.normalized(dto.observacao) });
+    return this.prisma.$transaction(async (tx) => {
+      const previous = await tx.devolucaoEpi?.findUnique?.({ where: { restauranteId_chaveIdempotencia: { restauranteId, chaveIdempotencia: dto.chaveIdempotencia } } });
+      if (previous) { if (previous.hashPayload === hashPayload) return previous; throw new ConflictException('Chave de idempotência já usada com payload diferente'); }
+      const rows = await tx.$queryRaw<any[]>(Prisma.sql`SELECT id, entrega_id, entrega_item_id, funcionario_id, material_id, variante_id, quantidade_em_posse, retornavel FROM custodias_epi_itens WHERE id=${custodiaId} AND restaurante_id=${restauranteId} FOR UPDATE`);
+      const c = rows[0]; if (!c) throw new NotFoundException('Custódia não encontrada');
+      if (ator.role === 'COLLABORATOR' && c.funcionario_id !== ator.id) throw new ForbiddenException();
+      const posse = new Prisma.Decimal(c.quantidade_em_posse), quantidade = new Prisma.Decimal(dto.quantidade);
+      if (!c.retornavel) throw new BadRequestException('Item não retornável');
+      if (quantidade.greaterThan(posse)) throw new BadRequestException('Quantidade maior que a posse');
+      const item = await tx.entregaEpiItem.findUnique({ where: { id: c.entrega_item_id } });
+      if (!item) throw new NotFoundException('Item da entrega não encontrado');
+      await tx.custodiaEpiItem.update({ where: { id: custodiaId }, data: { quantidadeEmPosse: posse.minus(quantidade) } });
+      if (dto.condicao === 'REUTILIZAVEL') {
+        const p = (await tx.$queryRaw<any[]>(Prisma.sql`SELECT id, saldo FROM posicoes_material_almoxarifado WHERE id=${c.posicao_id ?? item.posicaoId} AND restaurante_id=${restauranteId} FOR UPDATE`))[0];
+        if (!p) throw new NotFoundException('Posição não encontrada');
+        const anterior = new Prisma.Decimal(p.saldo), novo = anterior.plus(quantidade);
+        await tx.posicaoMaterialAlmoxarifado.update({ where: { id: p.id }, data: { saldo: novo } });
+        await tx.movimentoMaterialAlmoxarifado.create({ data: { restauranteId, posicaoId: p.id, materialId: c.material_id, varianteId: c.variante_id, tipo: 'ENTRADA', quantidade, saldoAnterior: anterior, saldoNovo: novo, motivo: `Devolução EPI #${c.entrega_id}`, responsavelId: ator.id, responsavelNome: ator.nome ?? String(ator.id), chaveIdempotencia: `${dto.chaveIdempotencia}:entrada` } });
+      }
+      const result = await tx.devolucaoEpi.create({ data: { restauranteId, custodiaId, entregaId: c.entrega_id, quantidade, condicao: dto.condicao, observacao: this.normalized(dto.observacao) || null, chaveIdempotencia: dto.chaveIdempotencia, hashPayload, criadoPorId: ator.id } });
+      await tx.entregaEpiEvento.create({ data: { restauranteId, entregaId: c.entrega_id, tipo: 'DEVOLUCAO', atorId: ator.id, metadados: { custodiaId, quantidade: String(quantidade), condicao: dto.condicao, chaveIdempotencia: dto.chaveIdempotencia } } });
+      return result;
+    });
+  }
+
   // Cancelamento só antes da entrega física (NAO_ENTREGUE); depois, 409.
   async cancelar(restauranteId: number, id: number, ator: { id: number }, chaveIdempotencia: string) {
     if (!chaveIdempotencia?.trim()) throw new BadRequestException('Idempotency-Key obrigatório');

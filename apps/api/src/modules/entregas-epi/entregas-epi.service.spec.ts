@@ -10,6 +10,10 @@ describe('EntregasEpiService', () => {
     notificacao: { create: jest.fn() },
     $transaction: jest.fn(),
     $queryRaw: jest.fn(),
+    custodiaEpiItem: { findFirst: jest.fn(), update: jest.fn(), create: jest.fn() },
+    devolucaoEpi: { findUnique: jest.fn(), create: jest.fn() },
+    entregaEpiItem: { findUnique: jest.fn() },
+    movimentoMaterialAlmoxarifado: { create: jest.fn() },
   } as any;
   const notifications = { criarNaTransacao: jest.fn() } as any;
   const service = new EntregasEpiService(prisma, notifications);
@@ -64,5 +68,25 @@ describe('EntregasEpiService', () => {
 
   it('exige justificativa na recusa', async () => {
     await expect(service.recusar(3, 7, 99, { chaveIdempotencia: 'r-1', justificativa: '' })).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('devolve parcialmente item retornável, reduz posse e só repõe condição reutilizável', async () => {
+    prisma.custodiaEpiItem = { findFirst: jest.fn().mockResolvedValue({ id: 12, entregaId: 99, entregaItemId: 33, funcionarioId: 7, materialId: 2, varianteId: null, quantidadeEmPosse: 2, retornavel: true, entregaItem: { posicaoId: 10 } }), update: jest.fn() };
+    prisma.posicaoMaterialAlmoxarifado.update = jest.fn();
+    prisma.movimentoMaterialAlmoxarifado.create = jest.fn();
+    prisma.$queryRaw.mockResolvedValueOnce([{ id: 12, entrega_id: 99, entrega_item_id: 33, funcionario_id: 7, material_id: 2, variante_id: null, quantidade_em_posse: 2, retornavel: true }]).mockResolvedValueOnce([{ id: 10, saldo: 4, material_id: 2, variante_id: null }]);
+    prisma.entregaEpiEvento.create.mockResolvedValue({ id: 1 });
+    prisma.entregaEpiItem.findUnique.mockResolvedValue({ id: 33, posicaoId: 10 });
+    prisma.devolucaoEpi.create.mockResolvedValue({ id: 44 });
+    await service.devolver(3, { id: 8, nome: 'Admin', role: 'ADMIN' }, 12, { quantidade: 1, condicao: 'REUTILIZAVEL', chaveIdempotencia: 'return-1' });
+    expect(String(prisma.custodiaEpiItem.update.mock.calls[0][0].data.quantidadeEmPosse)).toBe('1');
+    expect(String(prisma.posicaoMaterialAlmoxarifado.update.mock.calls[0][0].data.saldo)).toBe('5');
+    expect(prisma.entregaEpiEvento.create).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ tipo: 'DEVOLUCAO' }) }));
+  });
+
+  it('rejeita devolução acima da posse', async () => {
+    prisma.custodiaEpiItem = { findFirst: jest.fn().mockResolvedValue({ id: 12, quantidadeEmPosse: 1, retornavel: true }) };
+    prisma.$queryRaw.mockResolvedValueOnce([{ id: 12, quantidade_em_posse: 1 }]);
+    await expect(service.devolver(3, { id: 8, role: 'ADMIN' }, 12, { quantidade: 2, condicao: 'DANIFICADO', chaveIdempotencia: 'return-2' })).rejects.toBeInstanceOf(BadRequestException);
   });
 });
