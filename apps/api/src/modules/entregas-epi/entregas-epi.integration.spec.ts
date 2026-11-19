@@ -1,12 +1,12 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { readdir, rm } from 'fs/promises';
+import { mkdtemp, readdir, rm } from 'fs/promises';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { Test } from '@nestjs/testing';
 import * as request from 'supertest';
 import { createHash } from 'crypto';
-import { randomUUID } from 'crypto';
+import { TermoPdfService } from './termo-pdf.service';
 import { AppModule } from '../../app.module';
 import { PrismaService } from '../../prisma/prisma.service';
 
@@ -23,6 +23,7 @@ d('entrega física + custódia + aceite eletrônico (HTTP + PostgreSQL real)', (
   const ids: Record<string, number> = {};
   const tk: Record<string, string> = {};
   let seq = 0;
+  let storage: string;
   const key = () => `k-${Date.now()}-${++seq}`;
   const auth = (t: string) => ({ Authorization: `Bearer ${t}` });
   const http = () => request(app.getHttpServer());
@@ -53,6 +54,8 @@ d('entrega física + custódia + aceite eletrônico (HTTP + PostgreSQL real)', (
   beforeAll(async () => {
     process.env.DATABASE_URL = url;
     process.env.JWT_SECRET = 'int-test-secret';
+    storage = await mkdtemp(join(tmpdir(), 'kaizen-termos-'));
+    process.env.PRIVATE_DOCUMENT_STORAGE = storage;
     const mod = await Test.createTestingModule({ imports: [AppModule] }).compile();
     app = mod.createNestApplication();
     app.setGlobalPrefix('api');
@@ -70,7 +73,8 @@ d('entrega física + custódia + aceite eletrônico (HTTP + PostgreSQL real)', (
     await mk('adminA', 'ADMIN', A); await mk('adminB', 'ADMIN', B); await mk('colabA', 'COLLABORATOR', A); await mk('outroColabA', 'COLLABORATOR', A); await mk('superAdmin', 'SUPER_ADMIN' as any, A); await mk('contador', 'CONTADOR' as any, A);
     await prisma.contadorRestaurante.create({ data: { contadorId: ids.contador, restauranteId: A } });
   });
-  afterAll(async () => { await app?.close(); });
+  afterAll(async () => { await app?.close(); await rm(storage, { recursive: true, force: true }); });
+  const arquivos = async (dir: string) => readdir(join(storage, dir)).catch(() => [] as string[]);
 
   it('entrega física baixa saldo, cria movimento SAIDA, custódia e evento; criação não baixa saldo', async () => {
     const p = await posicao(A, 10, true);
@@ -162,6 +166,60 @@ d('entrega física + custódia + aceite eletrônico (HTTP + PostgreSQL real)', (
     expect(aceite.body).toMatchObject({ entregaId: id, termoId: termo.id });
   });
 
+  it('falha entre staging e commit: rollback sem PDF final órfão e staging removido', async () => {
+    const p = await posicao(A, 4); const id = await entrega([{ id: p.id, q: 1 }]); await fisica(id).expect(201);
+    const termo = await criarTermo();
+    const finaisAntes = await arquivos('termos');
+    const spy = jest.spyOn(app.get(TermoPdfService), 'promote').mockRejectedValueOnce(new Error('falha antes do commit'));
+    try { await aceitarTermo(id, termo).expect(500); } finally { spy.mockRestore(); }
+    expect(await prisma.aceiteTermoEpi.count({ where: { entregaId: id } })).toBe(0);
+    expect(await prisma.entregaEpi.findUniqueOrThrow({ where: { id } })).toMatchObject({ status: 'PENDENTE', statusAceite: 'PENDENTE' });
+    expect(await tipos(id)).toEqual(['CRIADA', 'ENTREGA_FISICA_CONFIRMADA']);
+    expect(await arquivos('termos')).toEqual(finaisAntes);
+    expect(await arquivos('.staging')).toEqual([]);
+  });
+
+  it('corrida P2002 com assinaturas diferentes: um aceite, um PDF final, staging vazio, perdedor 409', async () => {
+    const p = await posicao(A, 4); const id = await entrega([{ id: p.id, q: 1 }]); await fisica(id).expect(201);
+    const termo = await criarTermo();
+    const outraAssinatura = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg==';
+    const finaisAntes = (await arquivos('termos')).length;
+    const rs = await Promise.all([aceitarTermo(id, termo), aceitarTermo(id, termo, { assinatura: outraAssinatura })]);
+    expect(rs.map((r) => r.status).sort()).toEqual([201, 409]);
+    expect(await prisma.aceiteTermoEpi.count({ where: { entregaId: id } })).toBe(1);
+    expect((await arquivos('termos')).length).toBe(finaisAntes + 1);
+    expect(await arquivos('.staging')).toEqual([]);
+  });
+
+  it('assinatura PNG malformada ou acima de 64 KiB => 400 sem aceite nem arquivos', async () => {
+    const p = await posicao(A, 4); const id = await entrega([{ id: p.id, q: 1 }]); await fisica(id).expect(201);
+    const termo = await criarTermo();
+    const png = Buffer.from('\x89PNG\r\n\x1a\n', 'binary');
+    const grande = `data:image/png;base64,${Buffer.concat([png, Buffer.alloc(64 * 1024)]).toString('base64')}`;
+    const corrompido = `data:image/png;base64,${Buffer.concat([png, Buffer.from('corrompido')]).toString('base64')}`;
+    for (const assinatura of ['data:image/png;base64,@@@', 'data:image/png;base64,AAAA', 'data:image/jpeg;base64,/9j/', grande, corrompido]) await aceitarTermo(id, termo, { assinatura }).expect(400);
+    expect(await prisma.aceiteTermoEpi.count({ where: { entregaId: id } })).toBe(0);
+    expect(await arquivos('.staging')).toEqual([]);
+  });
+
+  it('GET do PDF após reload da aplicação: dono e admin autorizados; outro colaborador e outro tenant negados', async () => {
+    const p = await posicao(A, 4); const id = await entrega([{ id: p.id, q: 1 }]); await fisica(id).expect(201);
+    const termo = await criarTermo();
+    const aceite = (await aceitarTermo(id, termo).expect(201)).body;
+    const mod = await Test.createTestingModule({ imports: [AppModule] }).compile();
+    const novo = mod.createNestApplication(); novo.setGlobalPrefix('api'); await novo.init();
+    try {
+      const get = (rota: string, token: string) => request(novo.getHttpServer()).get(`/api/v1/${rota}/termos-responsabilidade/aceites/${aceite.id}/pdf`).set(auth(token));
+      const dono = await get('collaborator', tk.colabA).buffer().expect(200);
+      expect(dono.headers['content-type']).toMatch(/application\/pdf/);
+      expect(createHash('sha256').update(dono.body).digest('hex')).toBe(aceite.hashPdf);
+      expect(dono.headers['x-document-hash']).toBe(aceite.hashPdf);
+      await get('admin', tk.adminA).expect(200);
+      await get('collaborator', tk.outroColabA).expect(404);
+      await get('admin', tk.adminB).expect(404);
+    } finally { await novo.close(); }
+  });
+
   it('aceite após física não altera saldo/custódia; custódia existe com aceite PENDENTE', async () => {
     const p = await posicao(A, 4);
     const id = await entrega([{ id: p.id, q: 1 }]);
@@ -174,13 +232,12 @@ d('entrega física + custódia + aceite eletrônico (HTTP + PostgreSQL real)', (
     expect(await prisma.custodiaEpiItem.findMany({ where: { entregaId: id } })).toEqual(antes);
   });
 
-  it('recusa ANTES da física: sem movimento/custódia, evento RECUSA; física posterior ainda possível? não — recusada não confunde saldo', async () => {
+  it('recusa eletrônica exige entrega física', async () => {
     const p = await posicao(A, 4);
     const id = await entrega([{ id: p.id, q: 1 }]);
-    const r = await recusar(id).expect(201);
-    expect(r.body).toMatchObject({ statusAceite: 'RECUSADO', statusFisico: 'PREPARADA' });
+    await recusar(id).expect(409);
     expect(await saldo(p.id)).toBe(4); expect(await movs(p.id)).toBe(0);
-    expect(await tipos(id)).toEqual(['CRIADA', 'RECUSA']);
+    expect(await tipos(id)).toEqual(['CRIADA']);
   });
 
   it('recusa DEPOIS da física: DIVERGENCIA registrada, custódia e saldo intactos, sem devolução fictícia', async () => {
@@ -276,18 +333,18 @@ d('entrega física + custódia + aceite eletrônico (HTTP + PostgreSQL real)', (
     const go = (kk: string, rota = 'aceitar', body: any = {}) => http().post(`/api/v1/collaborator/entregas-epi/${id}/${rota}`).set(auth(tk.colabA)).send({ chaveIdempotencia: kk, ...body });
     await go(k).expect(201);
     await go(k).expect((r) => expect([200, 201]).toContain(r.status));
-    expect(await tipos(id)).toEqual(['CRIADA', 'ACEITE_ELETRONICO']);
+    expect(await tipos(id)).toEqual(['CRIADA', 'ENTREGA_FISICA_CONFIRMADA', 'ACEITE_ELETRONICO']);
     await go(key()).expect(409);
     await go(k, 'recusar', { justificativa: 'x' }).expect(409);
     await go('   ').expect(400);
-    expect(await tipos(id)).toEqual(['CRIADA', 'ACEITE_ELETRONICO']);
+    expect(await tipos(id)).toEqual(['CRIADA', 'ENTREGA_FISICA_CONFIRMADA', 'ACEITE_ELETRONICO']);
   });
 
   it('transição: corrida com mesma chave => um evento, todos retornam o resultado original', async () => {
     const p = await posicao(A, 5); const id = await entrega([{ id: p.id, q: 1 }]); await fisica(id); const k = key();
     const rs = await Promise.all(Array.from({ length: 5 }, () => http().post(`/api/v1/collaborator/entregas-epi/${id}/aceitar`).set(auth(tk.colabA)).send({ chaveIdempotencia: k })));
     expect(rs.map((r) => r.status).every((s) => [200, 201].includes(s))).toBe(true);
-    expect(await tipos(id)).toEqual(['CRIADA', 'ACEITE_ELETRONICO']);
+    expect(await tipos(id)).toEqual(['CRIADA', 'ENTREGA_FISICA_CONFIRMADA', 'ACEITE_ELETRONICO']);
   });
 
   it('cancelamento: chave obrigatória; retry idêntico ok; chave diferente 409', async () => {

@@ -41,7 +41,7 @@ export class AceiteTermoEpiService {
     let promoted = false;
     try {
       return await this.prisma.$transaction(async (tx) => {
-        const result = await tx.entregaEpi.updateMany({ where: { id: entregaId, restauranteId, funcionarioId, status: 'PENDENTE', statusAceite: 'PENDENTE' }, data: { status: 'ACEITO', statusAceite: 'ACEITO', aceitoEm } });
+        const result = await tx.entregaEpi.updateMany({ where: { id: entregaId, restauranteId, funcionarioId, status: 'PENDENTE', statusAceite: 'PENDENTE', statusFisico: 'ENTREGUE' }, data: { status: 'ACEITO', statusAceite: 'ACEITO', aceitoEm } });
         if (!result.count) {
           const replay = await tx.aceiteTermoEpi.findFirst({ where: { entregaId, restauranteId, funcionarioId } });
           if (replay?.hashPayload === payloadHash) return replay;

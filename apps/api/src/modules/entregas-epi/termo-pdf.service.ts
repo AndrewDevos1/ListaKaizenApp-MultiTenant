@@ -1,3 +1,4 @@
+import { BadRequestException } from '@nestjs/common';
 import { createHash } from 'crypto';
 import { mkdir, rename, rm, writeFile } from 'fs/promises';
 import { join } from 'path';
@@ -15,9 +16,9 @@ export class TermoPdfService {
 
   private signatureBytes(value: string) {
     const match = /^data:image\/png;base64,([A-Za-z0-9+/=]+)$/.exec(value.trim());
-    if (!match) throw new Error('Assinatura PNG inválida');
+    if (!match) throw new BadRequestException('Assinatura PNG inválida');
     const bytes = Buffer.from(match[1], 'base64');
-    if (bytes.length < 8 || bytes.subarray(0, 8).compare(Buffer.from('\x89PNG\r\n\x1a\n', 'binary')) !== 0) throw new Error('Assinatura PNG inválida');
+    if (bytes.length < 8 || bytes.subarray(0, 8).compare(Buffer.from('\x89PNG\r\n\x1a\n', 'binary')) !== 0) throw new BadRequestException('Assinatura PNG inválida');
     return bytes;
   }
 
@@ -45,7 +46,8 @@ export class TermoPdfService {
   async generate(input: TermoInput): Promise<GeneratedTermo> {
     const signature = this.signatureBytes(input.signature);
     const snapshot = JSON.stringify({ termoTexto: input.termoTexto, termoVersao: input.termoVersao, colaboradorNome: input.colaboradorNome, aceitoEm: input.aceitoEm.toISOString(), itens: input.itens });
-    const pdf = await this.pdf(input, signature);
+    let pdf: Buffer;
+    try { pdf = await this.pdf(input, signature); } catch { throw new BadRequestException('Assinatura PNG inválida'); }
     const documentHash = this.sha(snapshot + this.sha(signature));
     return { pdf, storageKey: `termos/termo-${documentHash}.pdf`, snapshot, snapshotHash: this.sha(snapshot), signatureHash: this.sha(signature), documentHash, pdfHash: this.sha(pdf) };
   }
