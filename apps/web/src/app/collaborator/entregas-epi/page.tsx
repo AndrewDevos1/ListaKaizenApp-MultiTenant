@@ -7,7 +7,7 @@ import api from '@/lib/api';
 import SignaturePad from './SignaturePad';
 
 type Item = { materialNomeSnapshot: string; categoriaSnapshot: string; varianteSnapshot?: string | null; quantidade: string; valorReferenciaSnapshot: string; condicaoSnapshot: string; retornavelSnapshot: boolean };
-type Entrega = { id: number; status: string; statusFisico: string; statusAceite: string; entregueFisicamenteEm?: string | null; criadoEm: string; aceitoEm?: string | null; recusadoEm?: string | null; justificativaRecusa?: string | null; observacoes?: string | null; itens: Item[] };
+type Entrega = { id: number; status: string; statusFisico: string; statusAceite: string; entregueFisicamenteEm?: string | null; criadoEm: string; aceitoEm?: string | null; recusadoEm?: string | null; justificativaRecusa?: string | null; observacoes?: string | null; itens: Item[]; aceiteTermo?: { id: number; aceitoEm: string; hashPdf: string } | null };
 type Termo = { id: number; versao: string; texto: string; hashTermo: string };
 
 export default function MinhasEntregasEpiPage() {
@@ -17,7 +17,7 @@ export default function MinhasEntregasEpiPage() {
   const termo = termos.find((t) => t.id === Number(termoId));
   const carregar = async () => { try { const [entregasResponse, termosResponse] = await Promise.all([api.get('/v1/collaborator/entregas-epi'), api.get('/v1/collaborator/termos-responsabilidade')]); setEntregas(entregasResponse.data); setTermos(termosResponse.data); } catch { setErro('Não foi possível carregar suas entregas e termos.'); } };
   useEffect(() => { void carregar(); }, []);
-  const abrir = async (id: number) => { try { const { data } = await api.get(`/v1/collaborator/entregas-epi/${id}`); setSelecionada(data); setAssinatura(''); setLido(false); setAceiteId(null); } catch { setErro('Entrega não encontrada.'); } };
+  const abrir = async (id: number) => { try { const { data } = await api.get(`/v1/collaborator/entregas-epi/${id}`); setSelecionada(data); setAssinatura(''); setLido(false); setAceiteId(data.aceiteTermo?.id ?? null); } catch { setErro('Entrega não encontrada.'); } };
   const recusar = async () => { if (!selecionada) return; try { await api.post(`/v1/collaborator/entregas-epi/${selecionada.id}/recusar`, { justificativa, chaveIdempotencia: `recusa-${selecionada.id}-${Date.now()}` }); await carregar(); await abrir(selecionada.id); } catch { setErro('Informe uma justificativa para recusar.'); } };
   const aceitar = async () => { if (!selecionada || !termo || !lido || !assinatura) { setErro('Leia o termo, marque a ciência e desenhe sua assinatura antes de confirmar.'); return; } try { const { data } = await api.post(`/v1/collaborator/entregas-epi/${selecionada.id}/aceitar`, { termoId: termo.id, hashTermo: termo.hashTermo, lido, assinatura }); setAceiteId(data.id); await carregar(); } catch { setErro('Não foi possível registrar o aceite. Atualize o termo, confira a entrega e tente novamente.'); } };
   const baixar = async () => { if (!aceiteId) return; try { const { data } = await api.get(`/v1/collaborator/termos-responsabilidade/aceites/${aceiteId}/pdf`, { responseType: 'blob' }); const url = URL.createObjectURL(data); const link = document.createElement('a'); link.href = url; link.download = `termo-${aceiteId}.pdf`; link.click(); URL.revokeObjectURL(url); } catch { setErro('Não foi possível baixar o comprovante.'); } };

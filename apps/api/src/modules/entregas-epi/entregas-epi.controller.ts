@@ -5,6 +5,7 @@ import { CurrentUser, Modulo, Roles, TenantId } from '../../common/decorators';
 import { ModuloGuard, RolesGuard, TenantGuard } from '../../common/guards';
 import { SuperAdminTenantGuard } from '../almoxarifado/super-admin-tenant.guard';
 import { CriarEntregaEpiDto, RecusarEntregaEpiDto } from './dto/criar-entrega-epi.dto';
+import { AceitarTermoEpiDto } from './dto/aceitar-termo-epi.dto';
 import { AceiteTermoEpiService } from './aceite-termo-epi.service';
 import { EntregasEpiService } from './entregas-epi.service';
 
@@ -23,7 +24,7 @@ export class EntregasEpiController {
   @Get('collaborator/entregas-epi') @Roles('COLLABORATOR' as any) listar(@TenantId() t: number, @CurrentUser('id') u: number) { return this.service.listar(t, u); }
   @Get('collaborator/entregas-epi/:id') @Roles('COLLABORATOR' as any) detalhe(@TenantId() t: number, @CurrentUser('id') u: number, @Param('id', ParseIntPipe) id: number) { return this.service.detalhe(t, id, u); }
   @Get('collaborator/termos-responsabilidade') @Roles('COLLABORATOR' as any) listarTermos(@TenantId() t: number) { return this.termos.listarTermos(t); }
-  @Post('collaborator/entregas-epi/:id/aceitar') @Roles('COLLABORATOR' as any) aceitar(@TenantId() t: number, @CurrentUser('id') u: number, @Param('id', ParseIntPipe) id: number, @Body() d: { termoId?: number; assinatura?: string; hashTermo?: string; lido?: boolean; chaveIdempotencia?: string }) { return d.termoId && d.assinatura ? this.termos.aceitar(t, u, id, d as { termoId: number; assinatura: string; hashTermo: string; lido: boolean }) : this.service.aceitar(t, u, id, d.chaveIdempotencia ?? ''); }
+  @Post('collaborator/entregas-epi/:id/aceitar') @Roles('COLLABORATOR' as any) aceitar(@TenantId() t: number, @CurrentUser('id') u: number, @Param('id', ParseIntPipe) id: number, @Body() d: AceitarTermoEpiDto) { return this.termos.aceitar(t, u, id, d); }
   @Get('collaborator/termos-responsabilidade/aceites/:id/pdf') @Roles('COLLABORATOR' as any) async pdfProprio(@TenantId() t: number, @CurrentUser('id') u: number, @Param('id', ParseIntPipe) id: number, @Res() res: Response) { const pdf = await this.termos.obterPdf(t, id, u); res.set({ 'Content-Type': 'application/pdf', 'Content-Disposition': `attachment; filename="termo-${id}.pdf"`, 'X-Document-Hash': pdf.hash }); res.send(pdf.bytes); }
   @Get('admin/termos-responsabilidade/aceites/:id/pdf') @Roles('ADMIN' as any, 'SUPER_ADMIN' as any) async pdfAdmin(@TenantId() t: number, @Param('id', ParseIntPipe) id: number, @Res() res: Response) { const pdf = await this.termos.obterPdf(t, id); res.set({ 'Content-Type': 'application/pdf', 'Content-Disposition': `attachment; filename="termo-${id}.pdf"`, 'X-Document-Hash': pdf.hash }); res.send(pdf.bytes); }
   @Post('collaborator/entregas-epi/:id/recusar') @Roles('COLLABORATOR' as any) recusar(@TenantId() t: number, @CurrentUser('id') u: number, @Param('id', ParseIntPipe) id: number, @Body() d: RecusarEntregaEpiDto) { return this.service.recusar(t, u, id, d); }

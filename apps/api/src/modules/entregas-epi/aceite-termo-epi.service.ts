@@ -37,7 +37,8 @@ export class AceiteTermoEpiService {
     if (entrega.status === 'CANCELADO' || entrega.statusAceite !== 'PENDENTE') throw new ConflictException('Entrega não está pendente');
     const aceitoEm = new Date();
     const itens = entrega.itens.map((item) => ({ nome: item.materialNomeSnapshot, categoria: String(item.categoriaSnapshot), quantidade: item.quantidade.toString(), valorReferencia: item.valorReferenciaSnapshot.toString(), condicao: item.condicaoSnapshot, variante: item.varianteSnapshot, retornavel: item.retornavelSnapshot }));
-    const generated = await this.pdf.generate({ termoTexto: termo.texto, termoVersao: termo.versao, colaboradorNome: entrega.funcionario.nome, aceitoEm, itens, signature: input.assinatura });
+    const staged = await this.pdf.stage(await this.pdf.generate({ termoTexto: termo.texto, termoVersao: termo.versao, colaboradorNome: entrega.funcionario.nome, aceitoEm, itens, signature: input.assinatura }));
+    let promoted = false;
     try {
       return await this.prisma.$transaction(async (tx) => {
         const result = await tx.entregaEpi.updateMany({ where: { id: entregaId, restauranteId, funcionarioId, status: 'PENDENTE', statusAceite: 'PENDENTE' }, data: { status: 'ACEITO', statusAceite: 'ACEITO', aceitoEm } });
@@ -46,11 +47,15 @@ export class AceiteTermoEpiService {
           if (replay?.hashPayload === payloadHash) return replay;
           throw new ConflictException('Entrega já decidida');
         }
-        const aceite = await tx.aceiteTermoEpi.create({ data: { restauranteId, entregaId, termoId: termo.id, funcionarioId, snapshot: JSON.parse(generated.snapshot), hashPayload: payloadHash, hashSnapshot: generated.snapshotHash, hashAssinatura: generated.signatureHash, hashDocumento: generated.documentHash, hashPdf: generated.pdfHash, storageKey: generated.storageKey, aceitoEm } });
-        await tx.entregaEpiEvento.create({ data: { restauranteId, entregaId, tipo: 'ACEITE_ELETRONICO', atorId: funcionarioId, metadados: { termoId: termo.id, aceiteId: aceite.id, hashPdf: generated.pdfHash } } });
+        const aceite = await tx.aceiteTermoEpi.create({ data: { restauranteId, entregaId, termoId: termo.id, funcionarioId, snapshot: JSON.parse(staged.snapshot), hashPayload: payloadHash, hashSnapshot: staged.snapshotHash, hashAssinatura: staged.signatureHash, hashDocumento: staged.documentHash, hashPdf: staged.pdfHash, storageKey: staged.storageKey, aceitoEm } });
+        await tx.entregaEpiEvento.create({ data: { restauranteId, entregaId, tipo: 'ACEITE_ELETRONICO', atorId: funcionarioId, metadados: { termoId: termo.id, aceiteId: aceite.id, hashPdf: staged.pdfHash } } });
+        await this.pdf.promote(staged);
+        promoted = true;
         return aceite;
       });
     } catch (error) {
+      if (promoted) await this.pdf.remove(staged);
+      else await this.pdf.discard(staged);
       if ((error as any)?.code !== 'P2002') throw error;
       const replay = await this.prisma.aceiteTermoEpi.findFirst({ where: { entregaId, restauranteId, funcionarioId } });
       if (replay?.hashPayload === payloadHash) return replay;

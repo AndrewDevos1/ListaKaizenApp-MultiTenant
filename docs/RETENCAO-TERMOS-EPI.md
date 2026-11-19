@@ -4,6 +4,6 @@
 
 - Comprovante PDF e hashes: armazenamento privado substituível (`PRIVATE_DOCUMENT_STORAGE`); acesso somente pelo colaborador titular ou ADMIN/SUPER_ADMIN do mesmo tenant.
 - Imutabilidade: arquivo criado com chave derivada do hash do documento; banco conserva snapshot, hashes e vínculo à entrega. Divergência de hash bloqueia download.
-- Retenção: definir prazo e base legal antes de produção. Até aprovação, ambiente local descartável; não importar documentos reais.
-- Descarte/exportação: implementar política aprovada com exportação auditada ao titular e exclusão coordenada de metadados/arquivo ao final do prazo, salvo guarda obrigatória.
+- Retenção: prazo, base legal e responsável devem ser definidos antes de produção. Não há prazo legal presumido neste projeto.
+- Política técnica futura: configuração explícita aprovada poderá orientar exportação auditada e descarte coordenado de metadados/arquivo. Não existe job, purge ou exclusão automática nesta entrega.
 - Revisão: termo é minuta, sujeito a revisão jurídica/administrativa. Aceite não autoriza desconto salarial automático; eventual cobrança exige avaliação humana/jurídica e condições aplicáveis.

@@ -41,8 +41,8 @@ export class EntregasEpiService {
     }
   }
 
-  listar(restauranteId: number, funcionarioId?: number) { return this.prisma.entregaEpi.findMany({ where: { restauranteId, ...(funcionarioId ? { funcionarioId } : {}) }, include: { itens: true, eventos: { orderBy: { criadoEm: 'asc' } }, custodias: true }, orderBy: { criadoEm: 'desc' } }); }
-  async detalhe(restauranteId: number, id: number, funcionarioId?: number) { const entrega = await this.prisma.entregaEpi.findFirst({ where: { id, restauranteId, ...(funcionarioId ? { funcionarioId } : {}) }, include: { itens: true, eventos: { orderBy: { criadoEm: 'asc' } }, custodias: true } }); if (!entrega) throw new NotFoundException('Entrega não encontrada'); return entrega; }
+  listar(restauranteId: number, funcionarioId?: number) { return this.prisma.entregaEpi.findMany({ where: { restauranteId, ...(funcionarioId ? { funcionarioId } : {}) }, include: { itens: true, eventos: { orderBy: { criadoEm: 'asc' } }, custodias: true, aceiteTermo: { select: { id: true, termoId: true, aceitoEm: true, hashPdf: true } } }, orderBy: { criadoEm: 'desc' } }); }
+  async detalhe(restauranteId: number, id: number, funcionarioId?: number) { const entrega = await this.prisma.entregaEpi.findFirst({ where: { id, restauranteId, ...(funcionarioId ? { funcionarioId } : {}) }, include: { itens: true, eventos: { orderBy: { criadoEm: 'asc' } }, custodias: true, aceiteTermo: { select: { id: true, termoId: true, aceitoEm: true, hashPdf: true } } } }); if (!entrega) throw new NotFoundException('Entrega não encontrada'); return entrega; }
 
   async confirmarEntregaFisica(restauranteId: number, id: number, ator: { id: number; nome?: string; role: string }, chave: string) {
     if (!['ADMIN', 'SUPER_ADMIN'].includes(ator.role)) throw new ForbiddenException();

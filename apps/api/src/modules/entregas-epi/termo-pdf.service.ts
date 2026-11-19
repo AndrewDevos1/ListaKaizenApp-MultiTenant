@@ -1,10 +1,12 @@
 import { createHash } from 'crypto';
-import { mkdir, writeFile } from 'fs/promises';
+import { mkdir, rename, rm, writeFile } from 'fs/promises';
 import { join } from 'path';
 import PDFDocument = require('pdfkit');
 
 export type TermoItem = { nome: string; categoria: string; quantidade: string; valorReferencia: string; condicao?: string; variante?: string | null; retornavel: boolean };
 export type TermoInput = { termoTexto: string; termoVersao: string; colaboradorNome: string; aceitoEm: Date; itens: TermoItem[]; signature: string };
+export type GeneratedTermo = { pdf: Buffer; storageKey: string; snapshot: string; snapshotHash: string; signatureHash: string; documentHash: string; pdfHash: string };
+export type StagedTermo = GeneratedTermo & { stagingKey: string };
 
 export class TermoPdfService {
   constructor(private readonly storageRoot = process.env.PRIVATE_DOCUMENT_STORAGE ?? join(process.cwd(), 'private-storage')) {}
@@ -40,17 +42,29 @@ export class TermoPdfService {
     });
   }
 
-  async generate(input: TermoInput) {
+  async generate(input: TermoInput): Promise<GeneratedTermo> {
     const signature = this.signatureBytes(input.signature);
     const snapshot = JSON.stringify({ termoTexto: input.termoTexto, termoVersao: input.termoVersao, colaboradorNome: input.colaboradorNome, aceitoEm: input.aceitoEm.toISOString(), itens: input.itens });
     const pdf = await this.pdf(input, signature);
     const documentHash = this.sha(snapshot + this.sha(signature));
-    const pdfHash = this.sha(pdf);
-    const signatureHash = this.sha(signature);
-    const directory = join(this.storageRoot, 'termos');
-    await mkdir(directory, { recursive: true });
-    const storageKey = `termo-${documentHash}.pdf`;
-    await writeFile(join(directory, storageKey), pdf, { flag: 'wx' }).catch((error: NodeJS.ErrnoException) => { if (error.code !== 'EEXIST') throw error; });
-    return { pdf, storageKey: `termos/${storageKey}`, snapshot, termHash: this.sha(input.termoTexto), snapshotHash: this.sha(snapshot), signatureHash, documentHash, pdfHash };
+    return { pdf, storageKey: `termos/termo-${documentHash}.pdf`, snapshot, snapshotHash: this.sha(snapshot), signatureHash: this.sha(signature), documentHash, pdfHash: this.sha(pdf) };
   }
+
+  async stage(generated: GeneratedTermo): Promise<StagedTermo> {
+    const stagingKey = `.staging/${generated.documentHash}-${Date.now()}-${process.pid}.pdf`;
+    const path = join(this.storageRoot, stagingKey);
+    await mkdir(join(this.storageRoot, '.staging'), { recursive: true });
+    await writeFile(path, generated.pdf, { flag: 'wx' });
+    return { ...generated, stagingKey };
+  }
+
+  async promote(staged: StagedTermo) {
+    const destination = join(this.storageRoot, staged.storageKey);
+    await mkdir(join(this.storageRoot, 'termos'), { recursive: true });
+    try { await rename(join(this.storageRoot, staged.stagingKey), destination); }
+    catch (error: any) { if (error?.code !== 'EEXIST') throw error; await this.discard(staged); }
+  }
+
+  async discard(staged: Pick<StagedTermo, 'stagingKey'>) { await rm(join(this.storageRoot, staged.stagingKey), { force: true }); }
+  async remove(stored: Pick<GeneratedTermo, 'storageKey'>) { await rm(join(this.storageRoot, stored.storageKey), { force: true }); }
 }
