@@ -67,6 +67,7 @@ export class EntregasEpiService {
         throw new ConflictException('Chave de idempotência já usada com outra confirmação');
       }
       if (entrega.statusFisico !== 'PREPARADA') throw new ConflictException('Entrega não está preparada');
+      if (entrega.statusAceite === 'RECUSADO') throw new ConflictException('Entrega recusada eletronicamente; não pode ser confirmada fisicamente');
       const itens = [...entrega.itens].sort((a, b) => a.posicaoId - b.posicaoId);
       const locked: Record<number, any> = {};
       for (const item of itens) {
@@ -87,14 +88,16 @@ export class EntregasEpiService {
     });
   }
 
-  // Aceite/recusa eletrônicos são eventos do funcionário, independentes da entrega física.
-  // Nunca tocam saldo nem custódia. Recusa após ENTREGUE vira DIVERGENCIA (reconciliação fica para #51).
+  // Aceite/recusa são eventos eletrônicos posteriores à entrega física; nunca tocam saldo ou custódia.
   private async transicionar(restauranteId: number, funcionarioId: number, id: number, status: 'ACEITO' | 'RECUSADO', chaveIdempotencia: string, justificativa?: string) {
     if (!chaveIdempotencia?.trim()) throw new BadRequestException('Idempotency-Key obrigatório');
     if (status === 'RECUSADO' && !justificativa?.trim()) throw new BadRequestException('Justificativa obrigatória');
     const hashTransicao = this.hash({ status, justificativa: this.normalized(justificativa) });
     return this.prisma.$transaction(async (tx) => {
       await tx.$queryRaw(Prisma.sql`SELECT id FROM entregas_epi WHERE id=${id} AND restaurante_id=${restauranteId} FOR UPDATE`);
+      const entrega = await tx.entregaEpi.findFirst({ where: { id, restauranteId, funcionarioId } });
+      if (!entrega) throw new NotFoundException('Entrega não encontrada');
+      if (entrega.statusFisico !== 'ENTREGUE') throw new ConflictException('Entrega física ainda não foi confirmada');
       const agora = new Date();
       const result = await tx.entregaEpi.updateMany({ where: { id, restauranteId, funcionarioId, status: 'PENDENTE', statusAceite: 'PENDENTE' }, data: { status, statusAceite: status, ...(status === 'ACEITO' ? { aceitoEm: agora } : { recusadoEm: agora, justificativaRecusa: justificativa }), chaveUltimaTransicao: chaveIdempotencia, hashUltimaTransicao: hashTransicao } });
       const atual = await tx.entregaEpi.findFirst({ where: { id, restauranteId, funcionarioId }, include: { itens: true, eventos: { orderBy: { criadoEm: 'asc' } }, custodias: true } });
