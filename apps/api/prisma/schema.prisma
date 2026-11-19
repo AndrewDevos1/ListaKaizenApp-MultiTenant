@@ -150,6 +150,8 @@ model Restaurante {
   entregasEpi EntregaEpi[]
   custodiasEpi CustodiaEpiItem[]
   eventosEntregaEpi EntregaEpiEvento[]
+  termosResponsabilidade TermoResponsabilidade[]
+  aceitesTermosEpi AceiteTermoEpi[]
   posicoesMaterialAlmoxarifado PosicaoMaterialAlmoxarifado[]
   movimentosMaterialAlmoxarifado MovimentoMaterialAlmoxarifado[]
   almoxarifadoPosicoesLegadas AlmoxarifadoPosicaoLegada[]
@@ -185,6 +187,8 @@ model Usuario {
   entregasEpiFisicas EntregaEpi[] @relation("EntregaEpiEntregador")
   custodiasEpi CustodiaEpiItem[] @relation("CustodiaEpiFuncionario")
   eventosEntregaEpi EntregaEpiEvento[] @relation("EntregaEpiEventoAtor")
+  termosResponsabilidadeCriados TermoResponsabilidade[] @relation("TermoCriadoPor")
+  aceitesTermosEpi AceiteTermoEpi[]
   pushSubscriptions PushSubscription[]
   navbarStyle       UsuarioNavbarEstilo?
   recebimentosConfirmados      Recebimento[] @relation("RecebimentoConfirmadoPor")
@@ -1110,6 +1114,7 @@ model EntregaEpi {
   itens EntregaEpiItem[]
   eventos EntregaEpiEvento[]
   custodias CustodiaEpiItem[]
+  aceiteTermo AceiteTermoEpi?
   @@unique([restauranteId, chaveIdempotencia])
   @@unique([restauranteId, chaveEntregaFisica])
   @@map("entregas_epi")
@@ -1168,6 +1173,42 @@ model EntregaEpiEvento {
   ator Usuario @relation("EntregaEpiEventoAtor", fields: [atorId], references: [id], onDelete: Restrict)
   @@index([entregaId, criadoEm])
   @@map("entregas_epi_eventos")
+}
+
+model TermoResponsabilidade {
+  id Int @id @default(autoincrement())
+  restauranteId Int @map("restaurante_id")
+  versao String
+  texto String
+  hashTermo String @map("hash_termo")
+  criadoPorId Int @map("criado_por_id")
+  criadoEm DateTime @default(now()) @map("criado_em")
+  restaurante Restaurante @relation(fields: [restauranteId], references: [id], onDelete: Restrict)
+  criadoPor Usuario @relation("TermoCriadoPor", fields: [criadoPorId], references: [id], onDelete: Restrict)
+  aceites AceiteTermoEpi[]
+  @@unique([restauranteId, versao])
+  @@map("termos_responsabilidade")
+}
+
+model AceiteTermoEpi {
+  id Int @id @default(autoincrement())
+  restauranteId Int @map("restaurante_id")
+  entregaId Int @unique @map("entrega_id")
+  termoId Int @map("termo_id")
+  funcionarioId Int @map("funcionario_id")
+  snapshot Json
+  hashSnapshot String @map("hash_snapshot")
+  hashAssinatura String @map("hash_assinatura")
+  hashDocumento String @map("hash_documento")
+  hashPdf String @map("hash_pdf")
+  storageKey String @map("storage_key")
+  aceitoEm DateTime @default(now()) @map("aceito_em")
+  restaurante Restaurante @relation(fields: [restauranteId], references: [id], onDelete: Restrict)
+  entrega EntregaEpi @relation(fields: [entregaId], references: [id], onDelete: Restrict)
+  termo TermoResponsabilidade @relation(fields: [termoId], references: [id], onDelete: Restrict)
+  funcionario Usuario @relation(fields: [funcionarioId], references: [id], onDelete: Restrict)
+  @@index([restauranteId, funcionarioId])
+  @@map("aceites_termos_epi")
 }
 
 // Append-only. #49 consome somente material/variante/posição, nunca Item.

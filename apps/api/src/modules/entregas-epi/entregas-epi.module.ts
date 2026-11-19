@@ -4,6 +4,8 @@ import { RestaurantesModule } from '../restaurantes/restaurantes.module';
 import { SuperAdminTenantGuard } from '../almoxarifado/super-admin-tenant.guard';
 import { EntregasEpiController } from './entregas-epi.controller';
 import { EntregasEpiService } from './entregas-epi.service';
+import { AceiteTermoEpiService } from './aceite-termo-epi.service';
+import { TermoPdfService } from './termo-pdf.service';
 
-@Module({ imports: [NotificacoesModule, RestaurantesModule], controllers: [EntregasEpiController], providers: [EntregasEpiService, SuperAdminTenantGuard] })
+@Module({ imports: [NotificacoesModule, RestaurantesModule], controllers: [EntregasEpiController], providers: [EntregasEpiService, AceiteTermoEpiService, TermoPdfService, SuperAdminTenantGuard] })
 export class EntregasEpiModule {}
