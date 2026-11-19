@@ -44,3 +44,4 @@ __pycache__/
 .venv/
 *.db
 *.tsbuildinfo
+apps/api/private-storage/
