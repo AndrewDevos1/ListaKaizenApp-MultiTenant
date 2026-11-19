@@ -147,6 +147,7 @@ model Restaurante {
   contadores               ContadorRestaurante[]
   contadorVinculos          ContadorFuncionario[]
   materiaisAlmoxarifado    MaterialAlmoxarifado[]
+  entregasEpi EntregaEpi[]
   posicoesMaterialAlmoxarifado PosicaoMaterialAlmoxarifado[]
   movimentosMaterialAlmoxarifado MovimentoMaterialAlmoxarifado[]
   almoxarifadoPosicoesLegadas AlmoxarifadoPosicaoLegada[]
@@ -177,6 +178,8 @@ model Usuario {
   sugestoes         SugestaoItem[]
   popExecucoes      POPExecucao[]
   notificacoes      Notificacao[]
+  entregasEpiRecebidas EntregaEpi[] @relation("EntregaEpiFuncionario")
+  entregasEpiCriadas EntregaEpi[] @relation("EntregaEpiCriador")
   pushSubscriptions PushSubscription[]
   navbarStyle       UsuarioNavbarEstilo?
   recebimentosConfirmados      Recebimento[] @relation("RecebimentoConfirmadoPor")
@@ -864,6 +867,13 @@ model POPExecucaoItem {
 // FASE 5 — Notificações, Convites, Auditoria
 // ============================================================
 
+enum StatusEntregaEpi {
+  PENDENTE
+  ACEITO
+  RECUSADO
+  CANCELADO
+}
+
 enum TipoNotificacao {
   SUBMISSAO_PENDENTE
   SUBMISSAO_APROVADA
@@ -875,6 +885,7 @@ enum TipoNotificacao {
   SUGESTAO_APROVADA
   SUGESTAO_REJEITADA
   CLASSIFICACAO_FALTA
+  ENTREGA_EPI
 }
 
 model Notificacao {
@@ -888,6 +899,8 @@ model Notificacao {
 
   usuario     Usuario     @relation(fields: [usuarioId], references: [id])
   restaurante Restaurante @relation(fields: [restauranteId], references: [id])
+  referenciaId Int? @map("referencia_id")
+  deepLink String? @map("deep_link")
 
   @@map("notificacoes")
 }
@@ -1037,6 +1050,41 @@ model PosicaoMaterialAlmoxarifado {
   movimentacoes MovimentoMaterialAlmoxarifado[]
   @@unique([restauranteId, materialId, varianteId])
   @@map("posicoes_material_almoxarifado")
+}
+
+model EntregaEpi {
+  id Int @id @default(autoincrement())
+  restauranteId Int @map("restaurante_id")
+  funcionarioId Int @map("funcionario_id")
+  criadoPorId Int @map("criado_por_id")
+  status StatusEntregaEpi @default(PENDENTE)
+  chaveIdempotencia String @map("chave_idempotencia")
+  chaveUltimaTransicao String? @map("chave_ultima_transicao")
+  observacoes String?
+  justificativaRecusa String? @map("justificativa_recusa")
+  criadoEm DateTime @default(now()) @map("criado_em")
+  aceitoEm DateTime? @map("aceito_em")
+  recusadoEm DateTime? @map("recusado_em")
+  canceladoEm DateTime? @map("cancelado_em")
+  restaurante Restaurante @relation(fields: [restauranteId], references: [id])
+  funcionario Usuario @relation("EntregaEpiFuncionario", fields: [funcionarioId], references: [id])
+  criadoPor Usuario @relation("EntregaEpiCriador", fields: [criadoPorId], references: [id])
+  itens EntregaEpiItem[]
+  @@unique([restauranteId, chaveIdempotencia])
+  @@map("entregas_epi")
+}
+model EntregaEpiItem {
+  id Int @id @default(autoincrement())
+  entregaId Int @map("entrega_id")
+  posicaoId Int @map("posicao_id")
+  materialId Int @map("material_id")
+  varianteId Int? @map("variante_id")
+  quantidade Decimal @db.Decimal(14,3)
+  materialNomeSnapshot String @map("material_nome_snapshot")
+  categoriaSnapshot CategoriaMaterialAlmoxarifado @map("categoria_snapshot")
+  varianteSnapshot String? @map("variante_snapshot")
+  entrega EntregaEpi @relation(fields: [entregaId], references: [id], onDelete: Cascade)
+  @@map("entregas_epi_itens")
 }
 
 // Append-only. #49 consome somente material/variante/posição, nunca Item.
