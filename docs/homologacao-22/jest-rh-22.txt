@@ -1,0 +1,31 @@
+
+> api@0.1.0 test
+> jest --runInBand
+
+PASS src/modules/ponto/ponto-noturno.integration.spec.ts
+PASS src/app.module.di.spec.ts
+PASS src/modules/submissoes/submissoes.service.spec.ts
+PASS src/modules/atestados/atestados.controller.spec.ts
+PASS src/modules/ponto/espelho.service.spec.ts
+PASS src/modules/areas/areas.service.spec.ts
+PASS src/modules/ausencias/ausencias.service.spec.ts
+PASS src/modules/atestados/atestados.service.spec.ts
+PASS src/modules/ausencias/dto/listar-dto.spec.ts
+PASS src/common/guards/modulo.guard.spec.ts
+PASS src/modules/listas/listas.service.spec.ts
+PASS src/modules/auth/auth.service.spec.ts
+PASS src/modules/restaurantes/restaurantes.service.spec.ts
+PASS src/modules/listas-rapidas/listas-rapidas.service.spec.ts
+PASS src/modules/contador/contador.service.spec.ts
+PASS src/modules/ponto/ponto.service.spec.ts
+PASS src/modules/cotacoes/cotacoes.service.spec.ts
+PASS src/modules/ponto/banco-horas.service.spec.ts
+PASS src/modules/restaurantes/restaurante-modulos.service.spec.ts
+PASS src/modules/ponto/escala.service.spec.ts
+PASS src/common/decorators/tenant-id.decorator.spec.ts
+
+Test Suites: 21 passed, 21 total
+Tests:       97 passed, 97 total
+Snapshots:   0 total
+Time:        12.673 s
+Ran all test suites.

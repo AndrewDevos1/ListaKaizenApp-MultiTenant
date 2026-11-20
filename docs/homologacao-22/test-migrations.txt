@@ -1,0 +1,15 @@
+    └─ migration.sql
+  └─ 20261019120000_contador_links/
+    └─ migration.sql
+  └─ 20261020000000_fix_schema_drift/
+    └─ migration.sql
+  └─ 20261117000000_escala_permite_jornada_noturna/
+    └─ migration.sql
+      
+All migrations have been successfully applied.
+warn The configuration property `package.json#prisma` is deprecated and will be removed in Prisma 7. Please migrate to a Prisma config file (e.g., `prisma.config.ts`).
+For more information, see: https://pris.ly/prisma-config
+
+No difference detected.
+
+OK: migrate deploy do zero sem drift
