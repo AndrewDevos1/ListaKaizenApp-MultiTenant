@@ -38,6 +38,7 @@ export class AuthService {
       [UserRole.ADMIN]: { hiddenGroupIds: [], hiddenItemKeys: [] },
       [UserRole.COLLABORATOR]: { hiddenGroupIds: [], hiddenItemKeys: [] },
       [UserRole.SUPPLIER]: { hiddenGroupIds: [], hiddenItemKeys: [] },
+      [UserRole.CONTADOR]: { hiddenGroupIds: [], hiddenItemKeys: [] },
     };
   }
 
@@ -232,6 +233,16 @@ export class AuthService {
         role: user.role,
         restauranteId: user.restauranteId,
         avatarUrl: user.avatarUrl ?? null,
+        modulos: user.restauranteId
+          ? await this.prisma.restaurante.findUnique({
+              where: { id: user.restauranteId },
+              select: {
+                moduloPonto: true,
+                moduloFuncionarios: true,
+                moduloAlmoxarifadoEpi: true,
+              },
+            })
+          : null,
       },
     };
   }
@@ -254,8 +265,16 @@ export class AuthService {
       role: user.role,
       aprovado: user.aprovado,
       avatarUrl: user.avatarUrl ?? null,
+      restauranteId: user.restauranteId,
       restaurante: user.restaurante
         ? { id: user.restaurante.id, nome: user.restaurante.nome }
+        : null,
+      modulos: user.restaurante
+        ? {
+            moduloPonto: user.restaurante.moduloPonto,
+            moduloFuncionarios: user.restaurante.moduloFuncionarios,
+            moduloAlmoxarifadoEpi: user.restaurante.moduloAlmoxarifadoEpi,
+          }
         : null,
     };
   }

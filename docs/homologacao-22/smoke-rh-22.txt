@@ -1,0 +1,119 @@
+warn The configuration property `package.json#prisma` is deprecated and will be removed in Prisma 7. Please migrate to a Prisma config file (e.g., `prisma.config.ts`).
+For more information, see: https://pris.ly/prisma-config
+
+┌─────────────────────────────────────────────────────────┐
+│  Update available 6.19.2 -> 8.0.0-rc.34                 │
+│                                                         │
+│  This is a major update - please follow the guide at    │
+│  https://pris.ly/d/major-version-upgrade                │
+│                                                         │
+│  Run the following to update                            │
+│    npm i --save-dev prisma@latest                       │
+│    npm i @prisma/client@latest                          │
+└─────────────────────────────────────────────────────────┘
+=== rodada 1 (banco limpo)
+PASS A cria escala noturna 18-02 201
+PASS A lanca banco de horas 201
+PASS A classifica folga (criar/atualizar) 201
+PASS A ve a folga 
+PASS A registra atestado (201 ou 409 duplicado) 201
+PASS A ve o atestado 
+PASS A aprova atestado 200
+PASS C registra ENTRADA 201
+PASS C status coerente (jornada aberta ou encerrada) 
+PASS C historico com registros 
+PASS A GET escalas-trabalho (200, 1)
+PASS AdminB GET escalas-trabalho isolado (200, 0)
+PASS Colab GET admin/escalas-trabalho 403 403
+PASS SUPER_ADMIN GET admin/escalas-trabalho sem tenant (<500) 400
+PASS SUPER_ADMIN GET admin/escalas-trabalho?restauranteId=1 200
+PASS A GET banco-horas/lancamentos (200, 1)
+PASS AdminB GET banco-horas/lancamentos isolado (200, 0)
+PASS Colab GET admin/banco-horas/lancamentos 403 403
+PASS SUPER_ADMIN GET admin/banco-horas/lancamentos sem tenant (<500) 400
+PASS SUPER_ADMIN GET admin/banco-horas/lancamentos?restauranteId=1 200
+PASS A GET ausencias (200, 1)
+PASS AdminB GET ausencias isolado (200, 0)
+PASS Colab GET admin/ausencias 403 403
+PASS SUPER_ADMIN GET admin/ausencias sem tenant (<500) 400
+PASS SUPER_ADMIN GET admin/ausencias?restauranteId=1 200
+PASS A GET atestados (200, 1)
+PASS AdminB GET atestados isolado (200, 0)
+PASS Colab GET admin/atestados 403 403
+PASS SUPER_ADMIN GET admin/atestados sem tenant (<500) 400
+PASS SUPER_ADMIN GET admin/atestados?restauranteId=1 200
+PASS A GET usuarios (200, 3)
+PASS AdminB GET usuarios isolado (200, 2)
+PASS Colab GET admin/usuarios 403 403
+PASS SUPER_ADMIN GET admin/usuarios sem tenant (<500) 400
+PASS SUPER_ADMIN GET admin/usuarios?restauranteId=1 200
+PASS C GET espelho-ponto?competencia=2026-11 200
+PASS ColabB GET espelho-ponto?competencia=2026-11 sem dados de A 200
+PASS C sem competencia -> 400 (espelho-ponto) 400
+PASS C GET banco-horas?competencia=2026-11 200
+PASS ColabB GET banco-horas?competencia=2026-11 sem dados de A 200
+PASS C sem competencia -> 400 (banco-horas) 400
+PASS C banco: +120 min no mes 120
+PASS espelho: folga 12/11 classificada 
+PASS espelho: lancamento 10/11 = 120 
+PASS espelho: atestado 11/11 abona sem exceder previsto 
+PASS espelho: dias futuros nao geram divida 10
+PASS AdminB nao lanca banco p/ usuario de A 404
+PASS AdminB nao cria escala p/ usuario de A 404
+PASS ADMIN nao acessa /contador (403) 403
+PASS POST admin/contador/vinculos valida corpo (400) 400
+PASS sem token -> 401 401
+
+TOTAL 51/51 PASS
+=== rodada 2 (mesmo banco, idempotencia)
+PASS A escala noturna ja existe 
+PASS A lancamento ja existe 
+PASS A classifica folga (criar/atualizar) 201
+PASS A ve a folga 
+PASS A registra atestado (201 ou 409 duplicado) 409
+PASS A ve o atestado 
+PASS C status coerente (jornada aberta ou encerrada) 
+PASS C historico com registros 
+PASS A GET escalas-trabalho (200, 1)
+PASS AdminB GET escalas-trabalho isolado (200, 0)
+PASS Colab GET admin/escalas-trabalho 403 403
+PASS SUPER_ADMIN GET admin/escalas-trabalho sem tenant (<500) 400
+PASS SUPER_ADMIN GET admin/escalas-trabalho?restauranteId=1 200
+PASS A GET banco-horas/lancamentos (200, 1)
+PASS AdminB GET banco-horas/lancamentos isolado (200, 0)
+PASS Colab GET admin/banco-horas/lancamentos 403 403
+PASS SUPER_ADMIN GET admin/banco-horas/lancamentos sem tenant (<500) 400
+PASS SUPER_ADMIN GET admin/banco-horas/lancamentos?restauranteId=1 200
+PASS A GET ausencias (200, 1)
+PASS AdminB GET ausencias isolado (200, 0)
+PASS Colab GET admin/ausencias 403 403
+PASS SUPER_ADMIN GET admin/ausencias sem tenant (<500) 400
+PASS SUPER_ADMIN GET admin/ausencias?restauranteId=1 200
+PASS A GET atestados (200, 1)
+PASS AdminB GET atestados isolado (200, 0)
+PASS Colab GET admin/atestados 403 403
+PASS SUPER_ADMIN GET admin/atestados sem tenant (<500) 400
+PASS SUPER_ADMIN GET admin/atestados?restauranteId=1 200
+PASS A GET usuarios (200, 3)
+PASS AdminB GET usuarios isolado (200, 2)
+PASS Colab GET admin/usuarios 403 403
+PASS SUPER_ADMIN GET admin/usuarios sem tenant (<500) 400
+PASS SUPER_ADMIN GET admin/usuarios?restauranteId=1 200
+PASS C GET espelho-ponto?competencia=2026-11 200
+PASS ColabB GET espelho-ponto?competencia=2026-11 sem dados de A 200
+PASS C sem competencia -> 400 (espelho-ponto) 400
+PASS C GET banco-horas?competencia=2026-11 200
+PASS ColabB GET banco-horas?competencia=2026-11 sem dados de A 200
+PASS C sem competencia -> 400 (banco-horas) 400
+PASS C banco: +120 min no mes 120
+PASS espelho: folga 12/11 classificada 
+PASS espelho: lancamento 10/11 = 120 
+PASS espelho: atestado 11/11 abona sem exceder previsto 
+PASS espelho: dias futuros nao geram divida 10
+PASS AdminB nao lanca banco p/ usuario de A 404
+PASS AdminB nao cria escala p/ usuario de A 404
+PASS ADMIN nao acessa /contador (403) 403
+PASS POST admin/contador/vinculos valida corpo (400) 400
+PASS sem token -> 401 401
+
+TOTAL 49/49 PASS

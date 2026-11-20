@@ -12,6 +12,14 @@ enum UserRole {
   ADMIN
   COLLABORATOR
   SUPPLIER
+  CONTADOR
+}
+
+enum ContadorPermissao {
+  PONTO
+  DOCUMENTOS
+  EPI
+  ALMOXARIFADO
 }
 
 enum StatusListaRapida {
@@ -47,6 +55,13 @@ enum StatusCotacao {
   FECHADA
 }
 
+enum TipoLancamentoBancoHoras {
+  AJUSTE_MANUAL
+  FOLGA_COMPENSATORIA
+  PAGAMENTO_HORAS
+  ATESTADO
+}
+
 enum StatusChecklist {
   ABERTO
   FINALIZADO
@@ -73,12 +88,37 @@ enum StatusPedido {
   REJEITADO
 }
 
+enum TipoPonto {
+  ENTRADA
+  PAUSA
+  RETORNO
+  SAIDA
+}
+
+enum TipoClassificacaoAusencia {
+  FALTA
+  FOLGA
+}
+
+enum SituacaoAtestado {
+  ATIVO
+  PENDENTE
+  APROVADO
+  REJEITADO
+  CANCELADO
+}
+
 model Restaurante {
   id       Int      @id @default(autoincrement())
   nome     String
   cnpj     String?  @unique
-  ativo    Boolean  @default(true)
-  criadoEm DateTime @default(now()) @map("criado_em")
+  ativo                 Boolean  @default(true)
+  moduloPonto           Boolean  @default(false) @map("modulo_ponto")
+  moduloFuncionarios    Boolean  @default(true) @map("modulo_funcionarios")
+  moduloAlmoxarifadoEpi Boolean  @default(true) @map("modulo_almoxarifado_epi")
+  criadoEm              DateTime @default(now()) @map("criado_em")
+
+  // ponytail: ponto starts opt-in; enable per tenant during rollout.
 
   usuarios       Usuario[]
   items          Item[]
@@ -97,6 +137,13 @@ model Restaurante {
   popExecucoes   POPExecucao[]
   notificacoes   Notificacao[]
   conviteTokens  ConviteToken[]
+  registrosPonto           RegistroPonto[]
+  escalasTrabalho          EscalaTrabalho[]
+  lancamentosBancoHoras    LancamentoBancoHoras[]
+  classificacoesAusencia   ClassificacaoAusencia[]
+  atestados               Atestado[]
+  contadores               ContadorRestaurante[]
+  contadorVinculos          ContadorFuncionario[]
 
   @@map("restaurantes")
 }
@@ -128,8 +175,174 @@ model Usuario {
   recebimentosConfirmados      Recebimento[] @relation("RecebimentoConfirmadoPor")
   recebimentosAdministrativos  Recebimento[] @relation("RecebimentoConfirmadoAdmin")
   lotesConsolidadosAprovados   SubmissaoConsolidadaLote[] @relation("LoteConsolidadoAprovadoPor")
+  registrosPonto               RegistroPonto[]
+  escalasTrabalho              EscalaTrabalho[]
+  escalasTrabalhoCriadas       EscalaTrabalho[] @relation("EscalaTrabalhoCriadaPor")
+  lancamentosBancoHoras        LancamentoBancoHoras[] @relation("LancamentoBancoHorasUsuario")
+  lancamentosBancoHorasFeitos  LancamentoBancoHoras[] @relation("LancamentoBancoHorasCriadoPor")
+  classificacoesAusencia       ClassificacaoAusencia[] @relation("AusenciaUsuario")
+  classificacoesAusenciaFeitas ClassificacaoAusencia[] @relation("AusenciaClassificadaPor")
+  atestados                    Atestado[] @relation("AtestadoUsuario")
+  atestadosCriados             Atestado[] @relation("AtestadoCriadoPor")
+  atestadosDecididos           Atestado[] @relation("AtestadoDecididoPor")
+  contadoresRestaurantes       ContadorRestaurante[] @relation("ContadorUsuario")
+  contadorVinculosFuncionarios ContadorFuncionario[] @relation("ContadorVinculo")
+  funcionariosVinculados       ContadorFuncionario[] @relation("FuncionarioVinculo")
 
   @@map("usuarios")
+}
+
+model RegistroPonto {
+  id              Int       @id @default(autoincrement())
+  usuarioId       Int       @map("usuario_id")
+  restauranteId   Int       @map("restaurante_id")
+  tipo            TipoPonto
+  registradoEm    DateTime  @default(now()) @map("registrado_em")
+  dataOperacional DateTime  @map("data_operacional") @db.Date
+  observacoes     String?
+  criadoEm        DateTime  @default(now()) @map("criado_em")
+
+  usuario     Usuario     @relation(fields: [usuarioId], references: [id])
+  restaurante Restaurante @relation(fields: [restauranteId], references: [id])
+
+  @@index([restauranteId, registradoEm])
+  @@index([usuarioId, registradoEm])
+  @@index([restauranteId, dataOperacional])
+  @@index([usuarioId, dataOperacional])
+  @@map("registros_ponto")
+}
+
+model EscalaTrabalho {
+  id             Int      @id @default(autoincrement())
+  usuarioId      Int      @map("usuario_id")
+  restauranteId  Int      @map("restaurante_id")
+  nome           String   @db.VarChar(120)
+  vigenciaInicio DateTime @map("vigencia_inicio") @db.Date
+  vigenciaFim    DateTime? @map("vigencia_fim") @db.Date
+  criadoPorId    Int      @map("criado_por_id")
+  criadoEm       DateTime @default(now()) @map("criado_em")
+  atualizadoEm   DateTime @updatedAt @map("atualizado_em")
+  dias           DiaEscalaTrabalho[]
+  usuario        Usuario @relation(fields: [usuarioId], references: [id])
+  restaurante    Restaurante @relation(fields: [restauranteId], references: [id])
+  criadoPor      Usuario @relation("EscalaTrabalhoCriadaPor", fields: [criadoPorId], references: [id])
+
+  @@index([restauranteId, usuarioId, vigenciaInicio])
+  @@map("escalas_trabalho")
+}
+
+model DiaEscalaTrabalho {
+  id                Int      @id @default(autoincrement())
+  escalaId          Int      @map("escala_id")
+  diaSemana         Int      @map("dia_semana")
+  trabalha          Boolean  @default(false)
+  entradaPrevista   String?  @map("entrada_prevista") @db.VarChar(5)
+  saidaPrevista     String?  @map("saida_prevista") @db.VarChar(5)
+  toleranciaMinutos Int      @default(0) @map("tolerancia_minutos")
+  escala            EscalaTrabalho @relation(fields: [escalaId], references: [id], onDelete: Cascade)
+
+  @@unique([escalaId, diaSemana])
+  @@map("dias_escala_trabalho")
+}
+
+model LancamentoBancoHoras {
+  id             Int                       @id @default(autoincrement())
+  usuarioId      Int                       @map("usuario_id")
+  restauranteId  Int                       @map("restaurante_id")
+  tipo           TipoLancamentoBancoHoras
+  minutosDelta   Int                       @map("minutos_delta")
+  dataReferencia DateTime                  @map("data_referencia") @db.Date
+  periodoInicio  DateTime?                 @map("periodo_inicio") @db.Date
+  periodoFim     DateTime?                 @map("periodo_fim") @db.Date
+  motivo         String
+  criadoPorId    Int                       @map("criado_por_id")
+  criadoEm       DateTime                  @default(now()) @map("criado_em")
+  usuario        Usuario                   @relation("LancamentoBancoHorasUsuario", fields: [usuarioId], references: [id])
+  restaurante    Restaurante                @relation(fields: [restauranteId], references: [id])
+  criadoPor      Usuario                   @relation("LancamentoBancoHorasCriadoPor", fields: [criadoPorId], references: [id])
+
+  @@index([usuarioId, dataReferencia])
+  @@index([restauranteId, dataReferencia])
+  @@map("lancamentos_banco_horas")
+}
+
+model ClassificacaoAusencia {
+  id                Int                      @id @default(autoincrement())
+  usuarioId         Int                      @map("usuario_id")
+  restauranteId     Int                      @map("restaurante_id")
+  data              DateTime                 @db.Date
+  tipo              TipoClassificacaoAusencia
+  motivo            String?
+  classificadoPorId Int                      @map("classificado_por_id")
+  criadoEm          DateTime                 @default(now()) @map("criado_em")
+  atualizadoEm      DateTime                 @updatedAt @map("atualizado_em")
+
+  usuario         Usuario     @relation("AusenciaUsuario", fields: [usuarioId], references: [id])
+  restaurante     Restaurante @relation(fields: [restauranteId], references: [id])
+  classificadoPor Usuario     @relation("AusenciaClassificadaPor", fields: [classificadoPorId], references: [id])
+
+  @@unique([usuarioId, restauranteId, data])
+  @@index([restauranteId, data])
+  @@map("classificacoes_ausencia")
+}
+
+model Atestado {
+  id            Int             @id @default(autoincrement())
+  usuarioId     Int             @map("usuario_id")
+  restauranteId Int             @map("restaurante_id")
+  inicio          DateTime         @db.Date
+  fim             DateTime         @db.Date
+  horaInicio      String?          @map("hora_inicio") @db.VarChar(5)
+  horaFim         String?          @map("hora_fim") @db.VarChar(5)
+  motivo          String           @db.VarChar(500)
+  situacao        SituacaoAtestado @default(PENDENTE)
+  criadoPorId     Int              @map("criado_por_id")
+  decididoPorId   Int?             @map("decidido_por_id")
+  decididoEm      DateTime?        @map("decidido_em")
+  observacaoDecisao String?        @map("observacao_decisao") @db.VarChar(500)
+  solicitacaoHash  String          @unique @map("solicitacao_hash") @db.VarChar(64)
+  criadoEm         DateTime         @default(now()) @map("criado_em")
+  atualizadoEm    DateTime         @updatedAt @map("atualizado_em")
+
+  usuario     Usuario     @relation("AtestadoUsuario", fields: [usuarioId], references: [id])
+  restaurante Restaurante @relation(fields: [restauranteId], references: [id])
+  criadoPor   Usuario     @relation("AtestadoCriadoPor", fields: [criadoPorId], references: [id])
+  decididoPor Usuario?    @relation("AtestadoDecididoPor", fields: [decididoPorId], references: [id])
+
+  @@index([restauranteId, inicio])
+  @@index([usuarioId, inicio])
+  @@map("atestados")
+}
+
+model ContadorRestaurante {
+  id           Int              @id @default(autoincrement())
+  contadorId   Int              @map("contador_id")
+  restauranteId Int             @map("restaurante_id")
+  permissoes   ContadorPermissao[] @default([])
+  criadoEm     DateTime         @default(now()) @map("criado_em")
+
+  contador     Usuario          @relation("ContadorUsuario", fields: [contadorId], references: [id], onDelete: Cascade)
+  restaurante  Restaurante      @relation(fields: [restauranteId], references: [id], onDelete: Cascade)
+  @@unique([contadorId, restauranteId])
+  @@index([restauranteId])
+  @@map("contadores_restaurantes")
+}
+
+model ContadorFuncionario {
+  id             Int                @id @default(autoincrement())
+  contadorId     Int                @map("contador_id")
+  restauranteId  Int                @map("restaurante_id")
+  funcionarioId  Int                @map("funcionario_id")
+  criadoEm       DateTime           @default(now()) @map("criado_em")
+
+  contador       Usuario            @relation("ContadorVinculo", fields: [contadorId], references: [id], onDelete: Cascade)
+  restaurante    Restaurante        @relation(fields: [restauranteId], references: [id], onDelete: Cascade)
+  funcionario    Usuario            @relation("FuncionarioVinculo", fields: [funcionarioId], references: [id], onDelete: Cascade)
+
+  @@unique([contadorId, restauranteId, funcionarioId])
+  @@index([contadorId, restauranteId])
+  @@index([funcionarioId, restauranteId])
+  @@map("contador_funcionarios")
 }
 
 model NavbarLayout {
@@ -589,6 +802,7 @@ enum TipoNotificacao {
   LISTA_RAPIDA_REJEITADA
   SUGESTAO_APROVADA
   SUGESTAO_REJEITADA
+  CLASSIFICACAO_FALTA
 }
 
 model Notificacao {

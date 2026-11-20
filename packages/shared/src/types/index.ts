@@ -7,6 +7,13 @@ export interface AuthUser {
   role: UserRole;
   restauranteId: number | null;
   avatarUrl?: string | null;
+  modulos?: RestauranteModulos | null;
+}
+
+export interface RestauranteModulos {
+  moduloPonto: boolean;
+  moduloFuncionarios: boolean;
+  moduloAlmoxarifadoEpi: boolean;
 }
 
 export interface LoginResponse {
