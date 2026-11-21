@@ -19,7 +19,7 @@ export class FilterUsuariosDto {
   })
   aprovado?: boolean;
 
-  // Seletor de restaurante (SUPER_ADMIN/CONTADOR); resolvido por @TenantId.
+  // Seletor de restaurante (SUPER_ADMIN); resolvido por @TenantId.
   @ApiPropertyOptional()
   @IsOptional()
   @Type(() => Number)

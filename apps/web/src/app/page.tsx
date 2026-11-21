@@ -14,8 +14,6 @@ export default function Home() {
         router.replace('/login');
       } else if (user.role === 'SUPER_ADMIN' || user.role === 'ADMIN') {
         router.replace('/admin/dashboard');
-      } else if (user.role === 'CONTADOR') {
-        router.replace('/contador');
       } else {
         router.replace('/collaborator/dashboard');
       }

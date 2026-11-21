@@ -93,9 +93,29 @@ export class RestaurantesService {
     return this.prisma.restaurante.update({ where: { id }, data: dto });
   }
 
-  async updateModulos(id: number, dto: UpdateRestauranteModulosDto) {
-    await this.findOne(id);
-    return this.prisma.restaurante.update({ where: { id }, data: dto });
+  async updateModulos(id: number, dto: UpdateRestauranteModulosDto, actorId: number) {
+    return this.prisma.$transaction(async (tx) => {
+      const atual = await tx.restaurante.findUnique({
+        where: { id },
+        select: {
+          moduloPonto: true,
+          moduloFuncionarios: true,
+          moduloAlmoxarifadoEpi: true,
+        },
+      });
+      if (!atual) throw new NotFoundException('Restaurante não encontrado');
+      const alteracoes = Object.fromEntries(
+        Object.entries(dto)
+          .filter(([chave, depois]) => depois !== undefined && atual[chave as keyof typeof atual] !== depois)
+          .map(([chave, depois]) => [chave, { antes: atual[chave as keyof typeof atual], depois }]),
+      );
+      if (!Object.keys(alteracoes).length) return { id, ...atual };
+      const restaurante = await tx.restaurante.update({ where: { id }, data: dto });
+      await tx.appLog.create({
+        data: { acao: 'ATUALIZAR_MODULOS_RESTAURANTE', entidade: 'Restaurante', entidadeId: id, restauranteId: id, usuarioId: actorId, detalhes: { alteracoes } },
+      });
+      return restaurante;
+    });
   }
 
   async remove(id: number) {

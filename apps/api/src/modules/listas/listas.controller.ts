@@ -351,7 +351,8 @@ export class ListasController {
 
 @ApiTags('Admin — Grupos de Listas')
 @Controller('v1/admin/grupos-listas')
-@UseGuards(AuthGuard('jwt'), RolesGuard, TenantGuard)
+@Modulo('moduloFuncionarios')
+@UseGuards(AuthGuard('jwt'), RolesGuard, TenantGuard, ModuloGuard)
 @ApiBearerAuth()
 export class AdminGruposListasController {
   constructor(private listasService: ListasService) {}
@@ -435,7 +436,8 @@ export class AdminGruposListasController {
 
 @ApiTags('Colaborador')
 @Controller('v1/collaborator')
-@UseGuards(AuthGuard('jwt'), RolesGuard, TenantGuard)
+@Modulo('moduloFuncionarios')
+@UseGuards(AuthGuard('jwt'), RolesGuard, TenantGuard, ModuloGuard)
 @ApiBearerAuth()
 export class CollaboratorListasController {
   constructor(private listasService: ListasService) {}

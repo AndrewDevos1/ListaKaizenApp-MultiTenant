@@ -19,14 +19,15 @@ import { MergePreviewDto } from './dto/merge-preview.dto';
 import { ConfirmarRecebimentoDto } from './dto/confirmar-recebimento.dto';
 import { EditarSubmissaoDto } from './dto/editar-submissao.dto';
 import { AprovarLoteConsolidadoDto } from './dto/aprovar-lote-consolidado.dto';
-import { CurrentUser, Roles, TenantId } from '../../common/decorators';
-import { RolesGuard, TenantGuard } from '../../common/guards';
+import { CurrentUser, Modulo, Roles, TenantId } from '../../common/decorators';
+import { ModuloGuard, RolesGuard, TenantGuard } from '../../common/guards';
 
 // ─── Admin Controller ────────────────────────────────────────────────────────
 
 @ApiTags('Admin — Submissoes')
 @Controller('v1/admin')
-@UseGuards(AuthGuard('jwt'), RolesGuard, TenantGuard)
+@Modulo('moduloFuncionarios')
+@UseGuards(AuthGuard('jwt'), RolesGuard, TenantGuard, ModuloGuard)
 @ApiBearerAuth()
 export class AdminSubmissoesController {
   constructor(private submissoesService: SubmissoesService) {}
@@ -220,7 +221,8 @@ export class AdminSubmissoesController {
 
 @ApiTags('Colaborador — Submissoes')
 @Controller('v1/collaborator/submissoes')
-@UseGuards(AuthGuard('jwt'), RolesGuard, TenantGuard)
+@Modulo('moduloFuncionarios')
+@UseGuards(AuthGuard('jwt'), RolesGuard, TenantGuard, ModuloGuard)
 @ApiBearerAuth()
 export class CollaboratorSubmissoesController {
   constructor(private submissoesService: SubmissoesService) {}

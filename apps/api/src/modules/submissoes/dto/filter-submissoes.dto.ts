@@ -32,7 +32,7 @@ export class FilterSubmissoesDto {
   })
   arquivada?: boolean;
 
-  // Seletor de tenant de SUPER_ADMIN/CONTADOR; @TenantId ignora para ADMIN/COLLABORATOR
+  // Seletor de tenant de SUPER_ADMIN; @TenantId ignora para ADMIN/COLLABORATOR
   @ApiPropertyOptional({ example: 1 })
   @IsOptional()
   @Type(() => Number)

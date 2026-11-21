@@ -170,8 +170,9 @@ export class RestaurantesController {
   updateModulos(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateRestauranteModulosDto,
+    @CurrentUser('id') actorId: number,
   ) {
-    return this.restaurantesService.updateModulos(id, dto);
+    return this.restaurantesService.updateModulos(id, dto, actorId);
   }
 
   @Get(':id')

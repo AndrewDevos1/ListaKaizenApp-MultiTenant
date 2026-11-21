@@ -17,7 +17,6 @@ import {
   FaSearch,
   FaUserShield,
   FaUser,
-  FaUsers,
   FaUserEdit,
 
   FaQuestionCircle,
@@ -851,17 +850,6 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
     },
   ], []);
 
-  const contadorMenuGroups = useMemo<MenuGroup[]>(() => [{
-    id: 'contador',
-    label: 'CONTADOR',
-    items: [{
-      label: 'Funcionários',
-      href: '/contador',
-      icon: <FaUsers />,
-      status: 'available',
-    }],
-  }], []);
-
    
   const profileMenuGroup = useMemo<MenuGroup>(() => ({
     id: 'perfil',
@@ -890,9 +878,7 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
           ? adminMenuGroups
           : effectiveRole === UserRole.SUPPLIER
             ? supplierMenuGroups
-            : effectiveRole === UserRole.CONTADOR
-              ? contadorMenuGroups
-              : collaboratorMenuGroups
+            : collaboratorMenuGroups
       ),
       profileMenuGroup,
     ],
@@ -1001,9 +987,7 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
         ? 'Administrador'
         : effectiveRole === UserRole.SUPPLIER
           ? 'Fornecedor'
-          : effectiveRole === UserRole.CONTADOR
-            ? 'Contador'
-            : 'Colaborador';
+          : 'Colaborador';
 
   if (!user) return null;
 

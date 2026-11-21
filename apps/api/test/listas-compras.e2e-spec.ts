@@ -412,7 +412,11 @@ describeDb('E2E Listas de Compras (API + PostgreSQL descartável)', () => {
       const a = await get(adm2, '/listas');
       const b = await post(adm2, '/listas', { nome: 'Bloqueada' });
       const c = await get(sup, `/listas?restauranteId=${L2.id}`);
-      expect([a.status, b.status, c.status]).toEqual([403, 403, 403]);
+      const d = await get(col3, '/collaborator/minhas-listas');
+      const e = await get(adm2, '/admin/grupos-listas');
+      const f = await get(adm2, '/admin/submissoes');
+      const g = await get(col3, '/collaborator/submissoes');
+      expect([a.status, b.status, c.status, d.status, e.status, f.status, g.status]).toEqual([403, 403, 403, 403, 403, 403, 403]);
       expect(await prisma.lista.count({ where: { restauranteId: L2.id } })).toBe(antes);
       const log = await prisma.appLog.findFirstOrThrow({ where: { restauranteId: L2.id, acao: 'ATUALIZAR_MODULOS_RESTAURANTE' } });
       expect(log.detalhes).toEqual({ alteracoes: { moduloFuncionarios: { antes: true, depois: false } } });
