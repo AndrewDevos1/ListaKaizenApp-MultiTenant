@@ -16,7 +16,9 @@ Não é autorização de cutover de runtime, migração de banco local existente
 - Listas de compras, submissões, edição administrativa de pendentes, RBAC, isolamento tenant e guardas de módulos.
 - Dependências API necessárias a Listas: Items e Areas.
 
-Fora do MVP: EPI/almoxarifado, fornecedores, cotações, POP, checklists, sugestões, listas rápidas, importação/logs de domínios excluídos, Contador runtime e cancelamento `dcba71d6f098096f92e1334fd5dccd7778ae1b0e`.
+Fora do MVP runtime: EPI/almoxarifado, fornecedores, cotações, POP, checklists, sugestões, listas rápidas, importação/logs de domínios excluídos, Contador runtime e cancelamento `dcba71d6f098096f92e1334fd5dccd7778ae1b0e`.
+
+Compatibilidade de schema: as 13 migrations históricas preservam `modulo_almoxarifado_epi` e permissões EPI/ALMOXARIFADO em lineage anterior; não há migration nova desses domínios nem import, controlador, rota ou UI runtime promovidos. Removê-las alteraria histórico/checksum Prisma e não é permitido.
 
 ## Estado remoto e rollback
 
