@@ -279,16 +279,10 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const defaultGroups: Record<string, boolean> = {
-      'visao-geral': true,
       'recursos-humanos': true,
       'listas-estoque': true,
-      pop: true,
-      itens: true,
       gestao: true,
       configuracoes: true,
-      dashboard: true,
-      atividades: true,
-      supplier: true,
       perfil: true,
     };
 

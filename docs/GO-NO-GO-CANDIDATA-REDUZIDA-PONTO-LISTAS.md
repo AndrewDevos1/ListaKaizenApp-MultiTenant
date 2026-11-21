@@ -3,15 +3,16 @@
 Data: 2026-11-21
 Base de integração: `b1456a8728a53fda6ba6c2c4577f39954b71b0ae`
 Referência homologada: `48b062e95545658abd12ca2ce843d72a4b377d0b`
-Código auditado: `d7bdcc95c4096f06129ff7d4ed5710b6e840e77d`; `3234e3119d75b772be34b1d667e39dfdadb41432` é checkpoint histórico anterior.
-Decisão desta etapa: GO técnico para homologação local isolada. Não autoriza cutover.
+SHA de código auditado: `470835c76ffcad2bc4a07953d38f2058eeafcb64`; `d7bdcc95c4096f06129ff7d4ed5710b6e840e77d` e `3234e3119d75b772be34b1d667e39dfdadb41432` são checkpoints históricos.
+Decisão desta etapa: NO-GO para cutover. Candidata limitada a homologação local isolada; não autoriza troca, merge, push ou produção.
 
 ## Escopo
 
 Inclui:
 
 - Ponto, escalas, espelho, banco de horas, ausências e atestados.
-- Listas de compras, submissões e edição administrativa de submissão PENDENTE.
+- Listas de compras, submissões e edição administrativa de submissão PENDENTE; `ItemsModule` e `AreasModule` permanecem como dependências API das listas.
+- Páginas administrativas de catálogo e áreas colaborador de estoque ficam fora da onda; não são dependências da jornada de Listas.
 - Isolamento tenant, RBAC e flag `moduloFuncionarios` em listas, grupos e submissões.
 - Correções de segurança: SUPER_ADMIN precisa de `restauranteId` em recursos guardados por módulo; alteração de flag é auditada na mesma transação.
 
