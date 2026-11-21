@@ -1,6 +1,6 @@
 # Relatório E2E — Listas de Compras
 
-Passos verificados: 30/30 PASS. Banco: PostgreSQL descartável (_test). Cada passo confere resposta da API, estado persistido e permissões.
+Passos verificados: 38/38 PASS. Banco: PostgreSQL descartável (_test). Cada passo confere resposta da API, estado persistido e permissões.
 
 | Jornada | Ação | HTTP | Efeito verificado | Resultado |
 |---|---|---|---|---|
@@ -8,6 +8,7 @@ Passos verificados: 30/30 PASS. Banco: PostgreSQL descartável (_test). Cada pas
 | L1 montagem | ADMIN cria lista com colaborador; colaborador de outro restaurante => 404 e nada criado | 404/201 | lista no banco com 1 colaborador; lista inválida não persistida | PASS |
 | L1 montagem | ADMIN adiciona itens com mínimos 10/5/8; duplicado => 409 | 201x3/409 | 3 refs com mínimos corretos; duplicata barrada | PASS |
 | L1 montagem | ADMIN configura fardo de 12 com threshold na alface | 200 | qtdFardo=12 persistido | PASS |
+| L1 montagem | quantidadeMinima negativa em addItemRef => 400 e nada criado | 400/201/200 | mínimo -1 recusado; 0 aceito; ref removida (3 itens na lista) | PASS |
 | L1 montagem | item de outro restaurante não entra na lista => 404 e nada criado | 404 | nenhum ListaItemRef cross-tenant | PASS |
 | L2 colaborador | minhas-listas: col1 vê a lista; col2 (não atribuído) não vê | 200/200 | col1: 1 lista com 3 itens; col2: 0 | PASS |
 | L2 colaborador | detalhe da lista: atribuído 200; não atribuído e outro restaurante 404 | 200/404/404 | isolamento por atribuição e por restaurante | PASS |
@@ -30,7 +31,14 @@ Passos verificados: 30/30 PASS. Banco: PostgreSQL descartável (_test). Cada pas
 | L4 idempotência | novo envio enquanto há PENDENTE => 409; após decisão, novo envio é permitido | 409/201/201 | 2 submissões ao todo (1 aprovada + 1 nova pendente) | PASS |
 | L4 idempotência | lista excluída (soft delete) some do colaborador e não aceita envio | 200/404 | deletado=true; sem novas submissões | PASS |
 | L5 isolamento | ADMIN do restaurante 2 não enxerga nem altera lista/submissão do restaurante 1 | 404x12 | lista, pedidos e status do restaurante 1 inalterados | PASS |
+| L5 isolamento | addItemRef cross-tenant: ADMIN 2 não vincula item do restaurante 1 à sua lista nem altera lista do 1 | 404x3/201 | nenhum ListaItemRef cross-tenant; vínculo legítimo do tenant 2 funciona | PASS |
 | L5 isolamento | listagens do ADMIN 2 contêm só dados do restaurante 2, mesmo com restauranteId=1 na query | 200x3 | filtro vem do token; restauranteId forjado por ADMIN é ignorado | PASS |
 | L5 isolamento | colaborador do restaurante 2 não acessa submissão/lista do restaurante 1 | 404x3 | estoque do restaurante 1 inalterado | PASS |
 | L5 governança | SUPER_ADMIN exige tenant explícito e respeita o selecionado | 403/200/200/200 | sem tenant => 403; com tenant => só dados dele | PASS |
 | L5 governança | flag moduloFuncionarios desligada bloqueia as listas admin e gera AppLog; dados preservados | 200/403x3/200 | AppLog {moduloFuncionarios:true->false}; restaurante 1 segue ativo | PASS |
+| L6 correção | colaborador envia; segundo envio => 409 e nada muda | 201/409 | 1 submissão PENDENTE, pedido {8} | PASS |
+| L6 correção | colaborador não tem rota para editar a submissão (404/403) e nada muda | 404/403/403 | LACUNA registrada: colaborador não corrige PENDENTE; só ADMIN | PASS |
+| L6 correção | colaborador atualiza estoque durante PENDENTE: pedidos da PENDENTE não mudam e não há nova submissão | 200 | estoque da lista=6; pedido da submissão segue 8 (divergência até ADMIN editar/rejeitar) | PASS |
+| L6 correção | ADMIN edita a PENDENTE (itens 6 -> pedido 4) sem criar submissão | 200 | mesma submissão, pedido {4}, status PENDENTE | PASS |
+| L6 correção | ADMIN rejeita => colaborador pode reenviar (nova submissão) e a rejeitada fica intacta | 201/201 | 2 submissões: REJEITADO (intacta) + PENDENTE nova {4} | PASS |
+| L6 correção | aprovada não é alterada: ADMIN aprova a nova; editar => 400; reenvio permitido sem tocar na aprovada | 201/400/201 | aprovada preservada; 3 submissões [REJEITADO, APROVADO, PENDENTE] | PASS |

@@ -81,6 +81,17 @@ describeDb('E2E Listas de Compras (API + PostgreSQL descartável)', () => {
       expect(await prisma.listaItemRef.findUnique({ where: { id: refIds.alface } })).toMatchObject({ usaThreshold: true, qtdFardo: 12 });
       return { http: r.status, efeito: 'qtdFardo=12 persistido' };
     });
+    await rep.step('L1 montagem', 'quantidadeMinima negativa em addItemRef => 400 e nada criado', async () => {
+      const novo = await post(adm1, '/items', { nome: 'Item Negativo E2E', unidadeMedida: 'kg' });
+      const r = await post(adm1, `/listas/${listaId}/itens`, { itemId: novo.body.id, quantidadeMinima: -1 });
+      expect(r.status).toBe(400);
+      expect(await prisma.listaItemRef.count({ where: { listaId, itemId: novo.body.id } })).toBe(0);
+      const ok = await post(adm1, `/listas/${listaId}/itens`, { itemId: novo.body.id, quantidadeMinima: 0 });
+      expect(ok.status).toBe(201);
+      await del(adm1, `/listas/${listaId}/itens/${novo.body.id}`).expect(200);
+      expect(await prisma.listaItemRef.count({ where: { listaId, itemId: novo.body.id } })).toBe(0);
+      return { http: '400/201/200', efeito: 'mínimo -1 recusado; 0 aceito; ref removida (3 itens na lista)' };
+    });
     await rep.step('L1 montagem', 'item de outro restaurante não entra na lista => 404 e nada criado', async () => {
       const outro = await prisma.item.create({ data: { nome: `Item L2 ${Date.now()}`, unidadeMedida: 'kg', restauranteId: L2.id } });
       const r = await post(adm1, `/listas/${listaId}/itens`, { itemId: outro.id, quantidadeMinima: 3 });
@@ -348,6 +359,21 @@ describeDb('E2E Listas de Compras (API + PostgreSQL descartável)', () => {
       expect((await prisma.lista.findUniqueOrThrow({ where: { id: listaId } })).nome).toBe('Compras Semanais E2E');
       return { http: '404x12', efeito: 'lista, pedidos e status do restaurante 1 inalterados' };
     });
+    await rep.step('L5 isolamento', 'addItemRef cross-tenant: ADMIN 2 não vincula item do restaurante 1 à sua lista nem altera lista do 1', async () => {
+      const proprio = await post(adm2, '/listas', { nome: 'Lista L2 cross-tenant' });
+      expect(proprio.status).toBe(201);
+      const itemL2 = await post(adm2, '/items', { nome: 'Item próprio L2', unidadeMedida: 'kg' });
+      const a = await post(adm2, `/listas/${proprio.body.id}/itens`, { itemId: itemIds.tomate, quantidadeMinima: 5 }); // item do tenant 1
+      const b = await post(adm2, `/listas/${listaId}/itens`, { itemId: itemL2.body.id, quantidadeMinima: 5 }); // lista do tenant 1
+      const c = await post(adm1, `/listas/${listaId}/itens`, { itemId: itemL2.body.id, quantidadeMinima: 5 }); // item do tenant 2 na lista do 1
+      expect([a.status, b.status, c.status]).toEqual([404, 404, 404]);
+      expect(await prisma.listaItemRef.count({ where: { listaId: proprio.body.id } })).toBe(0);
+      expect(await prisma.listaItemRef.count({ where: { listaId, itemId: itemL2.body.id } })).toBe(0);
+      expect(await prisma.listaItemRef.count({ where: { listaId } })).toBe(3);
+      const ok = await post(adm2, `/listas/${proprio.body.id}/itens`, { itemId: itemL2.body.id, quantidadeMinima: 5 });
+      expect(ok.status).toBe(201);
+      return { http: '404x3/201', efeito: 'nenhum ListaItemRef cross-tenant; vínculo legítimo do tenant 2 funciona' };
+    });
     await rep.step('L5 isolamento', 'listagens do ADMIN 2 contêm só dados do restaurante 2, mesmo com restauranteId=1 na query', async () => {
       const l = await get(adm2, `/listas?restauranteId=${L1.id}`);
       const forjada = await get(adm2, `/admin/submissoes?restauranteId=${L1.id}`);
@@ -393,6 +419,80 @@ describeDb('E2E Listas de Compras (API + PostgreSQL descartável)', () => {
       const l1 = await get(adm1, '/listas');
       expect(l1.status).toBe(200); // restaurante 1 não é afetado
       return { http: '200/403x3/200', efeito: 'AppLog {moduloFuncionarios:true->false}; restaurante 1 segue ativo' };
+    });
+  });
+
+  it('L6 correção de submissão PENDENTE: colaborador não duplica; ADMIN corrige; estados decididos preservados', async () => {
+    const lista = await post(adm1, '/listas', { nome: 'Lista Correção PENDENTE E2E', colaboradorIds: [col1Id] });
+    const lid = lista.body.id as number;
+    const item = await post(adm1, '/items', { nome: 'Sal E2E', unidadeMedida: 'kg' });
+    const ref = await post(adm1, `/listas/${lid}/itens`, { itemId: item.body.id, quantidadeMinima: 10 });
+    const itemId = item.body.id as number;
+    let sid = 0;
+    const subs = () => prisma.submissao.findMany({ where: { listaId: lid }, orderBy: { id: 'asc' } });
+    await put(col1, `/collaborator/listas/${lid}/estoque`, { itens: [{ itemRefId: ref.body.id, quantidadeAtual: 2 }] }).expect(200);
+
+    await rep.step('L6 correção', 'colaborador envia; segundo envio => 409 e nada muda', async () => {
+      const s = await post(col1, `/collaborator/listas/${lid}/submeter`);
+      expect(s.status).toBe(201);
+      sid = s.body.id;
+      expect(await qtd(sid)).toEqual({ [itemId]: 8 });
+      const dup = await post(col1, `/collaborator/listas/${lid}/submeter`);
+      expect(dup.status).toBe(409);
+      expect(await subs()).toHaveLength(1);
+      expect(await qtd(sid)).toEqual({ [itemId]: 8 });
+      return { http: '201/409', efeito: '1 submissão PENDENTE, pedido {8}' };
+    });
+    await rep.step('L6 correção', 'colaborador não tem rota para editar a submissão (404/403) e nada muda', async () => {
+      const a = await put(col1, `/collaborator/submissoes/${sid}`, { itens: [{ itemId, quantidadeAtual: 9 }] });
+      const b = await put(col1, `/admin/submissoes/${sid}/editar`, { itens: [{ itemId, quantidadeAtual: 9 }] });
+      const c = await post(col1, `/admin/submissoes/${sid}/rejeitar`);
+      expect([a.status, b.status, c.status]).toEqual([404, 403, 403]);
+      expect(await qtd(sid)).toEqual({ [itemId]: 8 });
+      expect((await subs())[0].status).toBe('PENDENTE');
+      return { http: '404/403/403', efeito: 'LACUNA registrada: colaborador não corrige PENDENTE; só ADMIN' };
+    });
+    await rep.step('L6 correção', 'colaborador atualiza estoque durante PENDENTE: pedidos da PENDENTE não mudam e não há nova submissão', async () => {
+      const e = await put(col1, `/collaborator/listas/${lid}/estoque`, { itens: [{ itemRefId: ref.body.id, quantidadeAtual: 6 }] });
+      expect(e.status).toBe(200);
+      expect((await prisma.listaItemRef.findUniqueOrThrow({ where: { id: ref.body.id } })).quantidadeAtual).toBe(6);
+      expect(await qtd(sid)).toEqual({ [itemId]: 8 }); // snapshot da submissão preservado
+      expect(await subs()).toHaveLength(1);
+      return { http: e.status, efeito: 'estoque da lista=6; pedido da submissão segue 8 (divergência até ADMIN editar/rejeitar)' };
+    });
+    await rep.step('L6 correção', 'ADMIN edita a PENDENTE (itens 6 -> pedido 4) sem criar submissão', async () => {
+      const r = await put(adm1, `/admin/submissoes/${sid}/editar`, { itens: [{ itemId, quantidadeAtual: 6 }] });
+      expect(r.status).toBe(200);
+      expect(await qtd(sid)).toEqual({ [itemId]: 4 });
+      expect(await subs()).toHaveLength(1);
+      expect((await subs())[0]).toMatchObject({ id: sid, status: 'PENDENTE', usuarioId: col1Id });
+      return { http: r.status, efeito: 'mesma submissão, pedido {4}, status PENDENTE' };
+    });
+    await rep.step('L6 correção', 'ADMIN rejeita => colaborador pode reenviar (nova submissão) e a rejeitada fica intacta', async () => {
+      await post(adm1, `/admin/submissoes/${sid}/rejeitar`).expect(201);
+      const antes = await pedidosDb(sid);
+      const novo = await post(col1, `/collaborator/listas/${lid}/submeter`);
+      expect(novo.status).toBe(201);
+      expect(novo.body.id).not.toBe(sid);
+      const todas = await subs();
+      expect(todas.map((x) => x.status)).toEqual(['REJEITADO', 'PENDENTE']);
+      expect((await pedidosDb(sid)).map((p) => [p.id, p.status, p.qtdSolicitada])).toEqual(antes.map((p) => [p.id, p.status, p.qtdSolicitada]));
+      expect(await qtd(novo.body.id)).toEqual({ [itemId]: 4 });
+      return { http: '201/201', efeito: '2 submissões: REJEITADO (intacta) + PENDENTE nova {4}' };
+    });
+    await rep.step('L6 correção', 'aprovada não é alterada: ADMIN aprova a nova; editar => 400; reenvio permitido sem tocar na aprovada', async () => {
+      const nova = (await subs())[1];
+      await post(adm1, `/admin/submissoes/${nova.id}/aprovar`).expect(201);
+      const e = await put(adm1, `/admin/submissoes/${nova.id}/editar`, { itens: [{ itemId, quantidadeAtual: 0 }] });
+      expect(e.status).toBe(400);
+      expect(await qtd(nova.id)).toEqual({ [itemId]: 4 });
+      expect((await pedidosDb(nova.id)).every((p) => p.status === 'APROVADO')).toBe(true);
+      const outra = await post(col1, `/collaborator/listas/${lid}/submeter`);
+      expect(outra.status).toBe(201);
+      const todas = await subs();
+      expect(todas.map((x) => x.status)).toEqual(['REJEITADO', 'APROVADO', 'PENDENTE']);
+      expect((await pedidosDb(nova.id)).every((p) => p.status === 'APROVADO')).toBe(true);
+      return { http: '201/400/201', efeito: 'aprovada preservada; 3 submissões [REJEITADO, APROVADO, PENDENTE]' };
     });
   });
 });

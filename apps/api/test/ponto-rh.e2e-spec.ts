@@ -12,6 +12,7 @@ describeDb('E2E Ponto/RH (API + PostgreSQL descartável)', () => {
   let prisma: PrismaClient;
   let A: { id: number }, B: { id: number }, C: { id: number };
   let adminA: string, adminB: string, superT: string;
+  let adminAId: number, superId: number;
   const post = (t: string, p: string, b: object = {}) => api(app).post(`/api/v1${p}`).set(bearer(t)).send(b);
   const put = (t: string, p: string, b: object = {}) => api(app).put(`/api/v1${p}`).set(bearer(t)).send(b);
   const get = (t: string, p: string) => api(app).get(`/api/v1${p}`).set(bearer(t));
@@ -46,6 +47,8 @@ describeDb('E2E Ponto/RH (API + PostgreSQL descartável)', () => {
     const aa = await mkUser(prisma, 'Admin Ponto A', UserRole.ADMIN, A.id);
     const ab = await mkUser(prisma, 'Admin Ponto B', UserRole.ADMIN, B.id);
     const su = await mkUser(prisma, 'Super Ponto', UserRole.SUPER_ADMIN, null);
+    adminAId = aa.id;
+    superId = su.id;
     adminA = await login(app, aa.email);
     adminB = await login(app, ab.email);
     superT = await login(app, su.email);
@@ -308,7 +311,9 @@ describeDb('E2E Ponto/RH (API + PostgreSQL descartável)', () => {
       expect([a.status, b.status, c.status, d.status]).toEqual([200, 200, 200, 400]);
       const rows = await prisma.atestado.findMany({ where: { usuarioId: u.id }, orderBy: { id: 'asc' } });
       expect(rows.map((x) => x.situacao)).toEqual(['APROVADO', 'APROVADO', 'REJEITADO', 'PENDENTE', 'PENDENTE']);
-      expect(rows[0].decididoPorId).toBeTruthy();
+      expect(rows[0].decididoPorId).toBe(adminAId);
+      expect(rows[2].decididoPorId).toBe(adminAId);
+      expect(rows[3].decididoPorId).toBeNull();
       expect(await prisma.appLog.count({ where: { restauranteId: A.id, entidade: 'Atestado', acao: { in: ['ATESTADO_APROVADO', 'ATESTADO_REJEITADO'] }, entidadeId: { in: rows.map((x) => x.id) } } })).toBe(3);
       return { http: '200/200/200/400', efeito: 'situação persistida + 3 AppLogs; decisão única' };
     });
@@ -482,7 +487,7 @@ describeDb('E2E Ponto/RH (API + PostgreSQL descartável)', () => {
       expect(logs).toHaveLength(1);
       expect(logs[0]).toMatchObject({ entidade: 'Restaurante', entidadeId: t.id });
       expect(logs[0].detalhes).toEqual({ alteracoes: { moduloPonto: { antes: true, depois: false } } });
-      expect(logs[0].usuarioId).toBeTruthy();
+      expect(logs[0].usuarioId).toBe(superId);
       return { http: '200/403x3', efeito: 'dados intactos; 1 AppLog {moduloPonto: true->false}' };
     });
     await rep.step('J6 governança', 'PUT idempotente não gera AppLog; religar restaura acesso aos mesmos dados', async () => {
