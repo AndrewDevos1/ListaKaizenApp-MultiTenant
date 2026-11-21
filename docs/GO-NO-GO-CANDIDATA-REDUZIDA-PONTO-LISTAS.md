@@ -3,7 +3,7 @@
 Data: 2026-11-21
 Base de integração: `b1456a8728a53fda6ba6c2c4577f39954b71b0ae`
 Referência homologada: `48b062e95545658abd12ca2ce843d72a4b377d0b`
-SHA final: preenchido no commit desta revisão.
+SHA final: `3234e3119d75b772be34b1d667e39dfdadb41432`.
 Decisão desta etapa: GO técnico para homologação local isolada. Não autoriza cutover.
 
 ## Escopo
