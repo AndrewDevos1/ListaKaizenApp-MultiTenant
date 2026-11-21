@@ -6,7 +6,9 @@ Código funcional auditado: `470835c76ffcad2bc4a07953d38f2058eeafcb64`.
 
 ## Decisão
 
-GO para promoção não destrutiva de `integration/cutover-local-ponto-listas-reduzida` em `origin/develop`, condicionada somente à revisão independente do SHA final deste relatório.
+GO executado por fast-forward em `origin/develop`: `6506723e2dbcd4b2c0ad1cf8336e8561c417a233`.
+
+Revisão independente PASS no mesmo SHA. Tag oficial publicada: `mvp-v1-ponto-rh-listas-20261121`. Backup remoto anterior permanece em `backup/develop-pre-mvp-v1-20261121` e tag `backup-develop-pre-mvp-v1-20261121`, ambos no SHA `1ff1d0d8ad2a88522c5a8d7e5564ad6ad4506f5f`.
 
 Não é autorização de cutover de runtime, migração de banco local existente, Railway, produção, `develop2` ou `main`.
 
