@@ -13,9 +13,9 @@ export default function Home() {
       if (!user) {
         router.replace('/login');
       } else if (user.role === 'SUPER_ADMIN' || user.role === 'ADMIN') {
-        router.replace('/admin/dashboard');
+        router.replace('/admin/listas');
       } else {
-        router.replace('/collaborator/dashboard');
+        router.replace('/collaborator/listas');
       }
     }
   }, [user, loading, router]);

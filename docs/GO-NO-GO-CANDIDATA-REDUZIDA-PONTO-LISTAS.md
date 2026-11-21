@@ -3,7 +3,8 @@
 Data: 2026-11-21
 Base de integração: `b1456a8728a53fda6ba6c2c4577f39954b71b0ae`
 Referência homologada: `48b062e95545658abd12ca2ce843d72a4b377d0b`
-Decisão desta etapa: candidata preparada para homologação de regressão. Não autoriza cutover.
+SHA final: preenchido no commit desta revisão.
+Decisão desta etapa: GO técnico para homologação local isolada. Não autoriza cutover.
 
 ## Escopo
 
@@ -51,18 +52,19 @@ PostgreSQL descartável: `kaizen-cutover-reduzida-test`, `127.0.0.1:55466`, banc
 - `prisma migrate reset --force --skip-generate`: PASS, 13 migrations.
 - `npm run db:seed`: PASS, somente dados sintéticos.
 - `prisma migrate diff --exit-code`: PASS, sem diferença.
-- API unitários: 24 suítes, 108 testes PASS.
-- E2E: Ponto/RH 6/6 e Listas 6/6 PASS, contra PostgreSQL real descartável.
-- API build: PASS.
-- Web build: PASS; warnings TypeScript/ESLint pré-existentes, sem erro de build.
+- API unitários: 23 suítes PASS, 1 skip pré-existente, 107 testes PASS.
+- E2E: Ponto/RH 6/6 e Listas/RBAC/MultiTenant 6/6 PASS, contra PostgreSQL descartável.
+- API lint e build: PASS.
+- Web lint e build: PASS; warnings ESLint pré-existentes, sem erro.
 - `git diff --check`: PASS.
+- Escopo: base ancestral PASS; cancelamento `dcba71d6f098096f92e1334fd5dccd7778ae1b0e` fora da ancestralidade; 0 migrations alteradas após a base.
 
 Backup/restauração descartável:
 
-- Dump custom PostgreSQL: `/home/devos/.hermes/cache/scratch/cutover-reduzida-backup/cutover-reduzida.dump`
-- SHA-256: `508b28c48bf632595cc3cdd335e52b0d5f35bfb136ff2c3c6a36ff17f69890a6`
-- Origem/restauração: restaurantes=7, usuários=24, listas=7, registros de ponto=15, migrations=13.
-- Restauração executada somente em `kaizen_cutover_restore_test` no mesmo container descartável.
+- Dump custom PostgreSQL: `/home/devos/.hermes/cache/scratch/cutover-reduzida-evidence/kaizen-cutover.dump`.
+- SHA-256: registrado em `backup.sha256` no mesmo diretório.
+- Origem/restauração: contagens idênticas para `restaurantes`, `usuarios`, `listas`, `registros_ponto` e `_prisma_migrations`.
+- Restauração executada somente no banco descartável `kaizen_cutover_reduzida_test` do container `kaizen-cutover-reduzida-test`.
 
 ## Procedimento de futuro cutover local
 

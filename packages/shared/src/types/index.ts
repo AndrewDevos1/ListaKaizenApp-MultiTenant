@@ -13,7 +13,6 @@ export interface AuthUser {
 export interface RestauranteModulos {
   moduloPonto: boolean;
   moduloFuncionarios: boolean;
-  moduloAlmoxarifadoEpi: boolean;
 }
 
 export interface LoginResponse {

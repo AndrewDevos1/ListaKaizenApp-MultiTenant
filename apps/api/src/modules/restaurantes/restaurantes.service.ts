@@ -11,7 +11,6 @@ export interface ResumoRestore {
   sucesso: true;
   restaurante: string;
   usuarios: { criados: number; ignorados: number };
-  fornecedores: { criados: number; ignorados: number };
   itens: { criados: number; ignorados: number };
   listas: { criadas: number; ignoradas: number };
   listaItemRefs: { criados: number; ignorados: number };
@@ -100,7 +99,6 @@ export class RestaurantesService {
         select: {
           moduloPonto: true,
           moduloFuncionarios: true,
-          moduloAlmoxarifadoEpi: true,
         },
       });
       if (!atual) throw new NotFoundException('Restaurante não encontrado');
@@ -628,7 +626,6 @@ export class RestaurantesService {
       sucesso: true,
       restaurante: restaurante.nome,
       usuarios: { criados: 0, ignorados: 0 },
-      fornecedores: { criados: 0, ignorados: 0 },
       itens: { criados: 0, ignorados: 0 },
       listas: { criadas: 0, ignoradas: 0 },
       listaItemRefs: { criados: 0, ignorados: 0 },
@@ -658,33 +655,6 @@ export class RestaurantesService {
       }
     }
 
-    // 3. Restaurar fornecedores
-    const fornecedoresData: any[] = payload.fornecedores ?? [];
-    const fornecedorMap = new Map<string, number>(); // nome → id
-    for (const f of fornecedoresData) {
-      if (!f.nome) continue;
-      const existing = await this.prisma.fornecedor.findFirst({
-        where: { nome: f.nome, restauranteId: rId },
-      });
-      if (existing) {
-        fornecedorMap.set(f.nome, existing.id);
-        resumo.fornecedores.ignorados++;
-      } else {
-        const created = await this.prisma.fornecedor.create({
-          data: {
-            nome: f.nome,
-            cnpj: f.cnpj ?? null,
-            telefone: f.telefone ?? null,
-            email: f.email ?? null,
-            ativo: f.ativo ?? true,
-            restauranteId: rId,
-          },
-        });
-        fornecedorMap.set(f.nome, created.id);
-        resumo.fornecedores.criados++;
-      }
-    }
-
     // 4. Restaurar itens
     const itemMap = new Map<string, number>(); // nome → id
 
@@ -699,7 +669,7 @@ export class RestaurantesService {
           itemMap.set(it.nome, existing.id);
           resumo.itens.ignorados++;
         } else {
-          const fornecedorId = it.fornecedorNome ? (fornecedorMap.get(it.fornecedorNome) ?? null) : null;
+          const fornecedorId = null;
           const created = await this.prisma.item.create({
             data: {
               nome: it.nome,
@@ -741,7 +711,7 @@ export class RestaurantesService {
           itemMap.set(it.nome, existing.id);
           resumo.itens.ignorados++;
         } else {
-          const fornecedorId = it.fornecedorNome ? (fornecedorMap.get(it.fornecedorNome) ?? null) : null;
+          const fornecedorId = null;
           const created = await this.prisma.item.create({
             data: {
               nome: it.nome,

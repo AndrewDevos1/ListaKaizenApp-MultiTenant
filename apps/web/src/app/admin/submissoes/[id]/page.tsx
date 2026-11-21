@@ -289,19 +289,6 @@ export default function AdminSubmissaoDetailPage() {
     );
   };
 
-  const handleCriarChecklist = async () => {
-    setError('');
-    setSuccess('');
-    setActionLoading('criar-checklist');
-    try {
-      const { data } = await api.post('/v1/admin/checklists', { submissaoId: Number(submissaoId) });
-      router.push(`/admin/checklists/${data.id}`);
-    } catch (err: any) {
-      setError(err?.response?.data?.message || 'Erro ao criar checklist');
-      setActionLoading(null);
-    }
-  };
-
   const handleCopiarCompartilhamento = async () => {
     if (!submissao) return;
     const texto = gerarTextoCompartilhamento(submissao);
@@ -488,18 +475,6 @@ export default function AdminSubmissaoDetailPage() {
                   Copiar
                 </Button>
               </>
-            )}
-            {(submissao.status === 'APROVADO' || submissao.status === 'PARCIAL') && !submissao.arquivada && (
-              <Button
-                variant="outline-info"
-                size="sm"
-                onClick={handleCriarChecklist}
-                disabled={!!actionLoading}
-              >
-                {isLoading('criar-checklist') ? <Spinner animation="border" size="sm" /> : (
-                  <><FaClipboardList style={{ marginRight: '0.3rem' }} />Criar Checklist</>
-                )}
-              </Button>
             )}
           </div>
         </div>

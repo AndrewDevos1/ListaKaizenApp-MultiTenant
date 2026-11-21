@@ -537,34 +537,6 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
   // Menu groups memoizados — evitam recriação de arrays a cada render
    
   const adminMenuGroups = useMemo<MenuGroup[]>(() => [
-    {
-      id: 'visao-geral',
-      label: 'VISÃO GERAL',
-      items: [
-        {
-          label: 'Dashboard Admin',
-          href: '/admin/dashboard',
-          icon: <FaTachometerAlt />,
-          status: 'available',
-        },
-        ...(roleIsSuperAdmin
-          ? [
-              {
-                label: 'Dashboard Global',
-                href: '/admin/global',
-                icon: <FaGlobe />,
-                status: 'available' as const,
-              },
-            ]
-          : []),
-        {
-          label: 'Estatísticas',
-          href: '/admin/estatisticas',
-          icon: <FaChartBar />,
-          status: 'available',
-        },
-      ],
-    },
     // Os links continuam sujeitos aos guards da API; esconder itens não concede acesso.
     ...(funcionariosEnabled || pontoEnabled
       ? [{
@@ -605,81 +577,15 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
       label: 'LISTAS & ESTOQUE',
       items: [
         {
-          label: 'Listas Rápidas',
-          href: '/admin/listas-rapidas',
-          icon: <FaBolt />,
-          status: 'available',
-        },
-        {
           label: 'Listas de Compras',
           href: '/admin/listas',
           icon: <FaShoppingCart />,
           status: 'available',
         },
         {
-          label: 'Checklists de Compras',
-          href: '/admin/checklists',
-          icon: <FaClipboardList />,
-          status: 'available',
-        },
-        {
           label: 'Submissões',
           href: '/admin/submissoes',
           icon: <FaClipboardCheck />,
-          status: 'available',
-        },
-        {
-          label: 'Sugestões de Itens',
-          href: '/admin/sugestoes',
-          icon: <FaLightbulb />,
-          status: 'available',
-        },
-      ],
-    },
-    {
-      id: 'pop',
-      label: 'POP',
-      items: [
-        {
-          label: 'POP Atividades',
-          href: '/admin/pop/templates',
-          icon: <FaClipboardList />,
-          status: 'available',
-        },
-        {
-          label: 'POP Listas',
-          href: '/admin/pop/execucoes',
-          icon: <FaClipboardCheck />,
-          status: 'available',
-        },
-        {
-          label: 'POP Auditoria',
-          href: '/admin/pop-auditoria',
-          icon: <FaTasks />,
-          status: 'available',
-        },
-      ],
-    },
-    {
-      id: 'itens',
-      label: 'ITENS',
-      items: [
-        {
-          label: 'Itens Cadastrados',
-          href: '/admin/items',
-          icon: <FaBoxes />,
-          status: 'available',
-        },
-        {
-          label: 'Catálogo Global',
-          href: '/admin/catalogo-global',
-          icon: <FaBook />,
-          status: 'available',
-        },
-        {
-          label: 'Itens Regionais',
-          href: '/admin/itens-regionais',
-          icon: <FaGlobeAmericas />,
           status: 'available',
         },
       ],
@@ -692,30 +598,6 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
           label: 'Áreas',
           href: '/admin/areas',
           icon: <FaMapMarkerAlt />,
-          status: 'available',
-        },
-        {
-          label: 'Fornecedores',
-          href: '/admin/fornecedores',
-          icon: <FaTruck />,
-          status: 'available',
-        },
-        {
-          label: 'Cotações',
-          href: '/admin/cotacoes',
-          icon: <FaFileInvoiceDollar />,
-          status: 'available',
-        },
-        {
-          label: 'Gerar Cotação',
-          href: '/admin/gerar-cotacao',
-          icon: <FaFileInvoiceDollar />,
-          status: 'available',
-        },
-        {
-          label: 'Fornecedores da Região',
-          href: '/admin/fornecedores-regiao',
-          icon: <FaStore />,
           status: 'available',
         },
         ...(roleIsSuperAdmin
@@ -737,12 +619,6 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
           label: 'Convites',
           href: '/admin/convites',
           icon: <FaEnvelope />,
-          status: 'available',
-        },
-        {
-          label: 'Logs',
-          href: '/admin/logs',
-          icon: <FaHistory />,
           status: 'available',
         },
       ],
@@ -770,32 +646,9 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
       }],
     }] : []),
     {
-      id: 'dashboard',
-      label: 'DASHBOARD',
-      items: [
-        {
-          label: 'Meu Dashboard',
-          href: '/collaborator/dashboard',
-          icon: <FaTachometerAlt />,
-        },
-      ],
-    },
-    {
       id: 'atividades',
       label: 'ATIVIDADES',
       items: [
-        {
-          label: 'Lista Rápida',
-          href: '/collaborator/listas-rapidas',
-          icon: <FaBolt />,
-          status: 'available',
-        },
-        {
-          label: 'Minhas Áreas',
-          href: '/collaborator/areas',
-          icon: <FaMapMarkerAlt />,
-          status: 'available',
-        },
         {
           label: 'Minhas Listas',
           href: '/collaborator/listas',
@@ -806,50 +659,11 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
           href: '/collaborator/submissoes',
           icon: <FaClipboardCheck />,
         },
-        {
-          label: 'POPs Diários',
-          href: '/collaborator/pop',
-          icon: <FaClipboardList />,
-          status: 'available',
-        },
-        {
-          label: 'Histórico POP',
-          href: '/collaborator/pop/execucoes',
-          icon: <FaHistory />,
-          status: 'available',
-        },
-        {
-          label: 'Catálogo Global',
-          href: '/collaborator/catalogo',
-          icon: <FaBook />,
-          status: 'available',
-        },
-        {
-          label: 'Sugestões de Itens',
-          href: '/collaborator/sugestoes',
-          icon: <FaLightbulb />,
-          status: 'available',
-        },
       ],
     },
   ], [user?.modulos?.moduloPonto]);
 
    
-  const supplierMenuGroups = useMemo<MenuGroup[]>(() => [
-    {
-      id: 'supplier',
-      label: 'PAINEL FORNECEDOR',
-      items: [
-        {
-          label: 'Painel',
-          href: '/supplier/dashboard',
-          icon: <FaTachometerAlt />,
-          status: 'available',
-        },
-      ],
-    },
-  ], []);
-
    
   const profileMenuGroup = useMemo<MenuGroup>(() => ({
     id: 'perfil',
@@ -873,16 +687,10 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
    
   const allMenuGroups = useMemo(
     () => [
-      ...(
-        roleIsAdmin
-          ? adminMenuGroups
-          : effectiveRole === UserRole.SUPPLIER
-            ? supplierMenuGroups
-            : collaboratorMenuGroups
-      ),
+      ...(roleIsAdmin ? adminMenuGroups : collaboratorMenuGroups),
       profileMenuGroup,
     ],
-    [roleIsAdmin, effectiveRole, adminMenuGroups, collaboratorMenuGroups, supplierMenuGroups, profileMenuGroup],
+    [roleIsAdmin, adminMenuGroups, collaboratorMenuGroups, profileMenuGroup],
   );
 
   const activeCustomization = navbarCustomization[effectiveRole] ?? {

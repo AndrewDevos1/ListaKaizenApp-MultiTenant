@@ -19,7 +19,7 @@ export default function ProtectedRoute({ children, requireAdmin = false }: Props
       if (!user) {
         router.replace('/login');
       } else if (requireAdmin && !isAdmin) {
-        router.replace('/collaborator/dashboard');
+        router.replace('/collaborator/listas');
       }
     }
   }, [user, loading, isAdmin, requireAdmin, router]);

@@ -19,7 +19,7 @@ describe('RestaurantesService módulos', () => {
 
   it('altera apenas módulos do restaurante solicitado', async () => {
     const { prisma, service } = makeService();
-    prisma.restaurante.findUnique.mockResolvedValue({ id: 7, moduloPonto: false, moduloFuncionarios: true, moduloAlmoxarifadoEpi: true });
+    prisma.restaurante.findUnique.mockResolvedValue({ id: 7, moduloPonto: false, moduloFuncionarios: true });
     prisma.restaurante.update.mockResolvedValue({ id: 7, moduloPonto: true });
 
     await service.updateModulos(7, { moduloPonto: true }, 3);

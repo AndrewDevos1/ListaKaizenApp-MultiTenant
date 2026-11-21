@@ -11,7 +11,6 @@ export class RestauranteModulosService {
       select: {
         moduloPonto: true,
         moduloFuncionarios: true,
-        moduloAlmoxarifadoEpi: true,
       },
     });
     if (!restaurante) throw new NotFoundException('Restaurante não encontrado');

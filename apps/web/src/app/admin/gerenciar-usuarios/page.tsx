@@ -32,8 +32,8 @@ export default function GerenciarUsuariosPage() {
   return (
     <div className={styles.pageWrapper}>
       <div className={styles.pageHeader}>
-        <Link href="/admin/dashboard" className={styles.backLink}>
-          ← Voltar ao Dashboard
+        <Link href="/admin/listas" className={styles.backLink}>
+          ← Voltar às Listas
         </Link>
         <h1 className={styles.pageTitle}>
           <FaUsers className={styles.titleIcon} />

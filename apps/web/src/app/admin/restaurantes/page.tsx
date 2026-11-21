@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   Badge,
@@ -16,7 +16,6 @@ import {
 } from 'react-bootstrap';
 import {
   FaCopy,
-  FaDownload,
   FaEdit,
   FaLink,
   FaPause,
@@ -25,7 +24,6 @@ import {
   FaPowerOff,
   FaSync,
   FaTrash,
-  FaUpload,
   FaUserLock,
   FaUsers,
   FaWhatsapp,
@@ -46,7 +44,6 @@ interface Restaurante {
   _count: { usuarios: number };
   moduloPonto: boolean;
   moduloFuncionarios: boolean;
-  moduloAlmoxarifadoEpi: boolean;
 }
 
 interface UsuarioRestaurante {
@@ -85,16 +82,6 @@ interface LogsResponse {
   total: number;
   page: number;
   pages: number;
-}
-
-interface ResumoRestore {
-  sucesso: true;
-  restaurante: string;
-  usuarios: { criados: number; ignorados: number };
-  fornecedores: { criados: number; ignorados: number };
-  itens: { criados: number; ignorados: number };
-  listas: { criadas: number; ignoradas: number };
-  listaItemRefs: { criados: number; ignorados: number };
 }
 
 const PRODUCTION_URL = 'https://kaizen-compras.up.railway.app';
@@ -175,15 +162,6 @@ export default function AdminRestaurantesPage() {
   const [restauranteToDeactivate, setRestauranteToDeactivate] = useState<Restaurante | null>(null);
   const [confirmationText, setConfirmationText] = useState('');
   const [deactivateLoading, setDeactivateLoading] = useState<number | null>(null);
-
-  const [backupLoadingId, setBackupLoadingId] = useState<number | null>(null);
-  const [showRestoreModal, setShowRestoreModal] = useState(false);
-  const [restoreTarget, setRestoreTarget] = useState<Restaurante | null>(null);
-  const [restoreFile, setRestoreFile] = useState<File | null>(null);
-  const [restoreLoading, setRestoreLoading] = useState(false);
-  const [restoreError, setRestoreError] = useState('');
-  const [restoreResult, setRestoreResult] = useState<ResumoRestore | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [showCredentialsModal, setShowCredentialsModal] = useState(false);
   const [credentialsRestaurante, setCredentialsRestaurante] = useState<Restaurante | null>(null);
@@ -282,7 +260,7 @@ export default function AdminRestaurantesPage() {
 
   useEffect(() => {
     if (!isSuperAdmin) {
-      router.replace('/admin/dashboard');
+      router.replace('/admin/listas');
       return;
     }
     void loadRestaurantes();
@@ -347,7 +325,7 @@ export default function AdminRestaurantesPage() {
 
   const handleSaveModulos = async (
     restaurante: Restaurante,
-    changes: Partial<Pick<Restaurante, 'moduloPonto' | 'moduloFuncionarios' | 'moduloAlmoxarifadoEpi'>>,
+    changes: Partial<Pick<Restaurante, 'moduloPonto' | 'moduloFuncionarios'>>,
   ) => {
     setSavingRestaurante(true);
     setError('');
@@ -407,68 +385,6 @@ export default function AdminRestaurantesPage() {
       setError(err?.response?.data?.message ?? 'Erro ao desativar restaurante');
     } finally {
       setDeactivateLoading(null);
-    }
-  };
-
-  const handleBackup = async (restaurante: Restaurante) => {
-    setBackupLoadingId(restaurante.id);
-    setError('');
-    try {
-      const response = await api.get(`/restaurantes/${restaurante.id}/backup`, {
-        responseType: 'blob',
-      });
-      const contentDisposition = response.headers['content-disposition'] as string | undefined;
-      const filenameMatch = contentDisposition?.match(/filename="?([^";\n]+)"?/);
-      const filename = filenameMatch?.[1] ?? `${slugify(restaurante.nome)}_backup.kaizen`;
-
-      const url = window.URL.createObjectURL(new Blob([response.data as BlobPart]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', filename);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
-    } catch (err: any) {
-      setError(err?.response?.data?.message ?? `Erro ao gerar backup de "${restaurante.nome}"`);
-    } finally {
-      setBackupLoadingId(null);
-    }
-  };
-
-  const openRestoreModal = (restaurante: Restaurante | null) => {
-    setRestoreTarget(restaurante);
-    setRestoreFile(null);
-    setRestoreError('');
-    setRestoreResult(null);
-    if (fileInputRef.current) fileInputRef.current.value = '';
-    setShowRestoreModal(true);
-  };
-
-  const handleRestore = async () => {
-    if (!restoreFile) {
-      setRestoreError('Selecione um arquivo .kaizen');
-      return;
-    }
-    setRestoreLoading(true);
-    setRestoreError('');
-    setRestoreResult(null);
-    try {
-      const form = new FormData();
-      form.append('arquivo', restoreFile);
-      if (restoreTarget) {
-        form.append('restauranteId', String(restoreTarget.id));
-      }
-      const response = await api.post<ResumoRestore>('/restaurantes/restore', form, {
-        headers: { 'Content-Type': null },
-      });
-      setRestoreResult(response.data);
-      await loadRestaurantes();
-    } catch (err: any) {
-      const msg = err?.response?.data?.message ?? 'Erro ao restaurar backup';
-      setRestoreError(Array.isArray(msg) ? msg.join(', ') : String(msg));
-    } finally {
-      setRestoreLoading(false);
     }
   };
 
@@ -660,9 +576,6 @@ export default function AdminRestaurantesPage() {
         <div className={styles.headerActions}>
           <Button variant="outline-secondary" onClick={() => { void loadRestaurantes(); }}>
             <FaSync className="me-2" /> Atualizar
-          </Button>
-          <Button variant="outline-primary" onClick={() => openRestoreModal(null)}>
-            <FaUpload className="me-2" /> Restaurar Backup
           </Button>
           <Button variant="primary" onClick={openCreateModal}>
             <FaPlus className="me-2" /> Criar Restaurante
@@ -865,18 +778,6 @@ export default function AdminRestaurantesPage() {
                         </Button>
                         <Button
                           size="sm"
-                          variant="outline-secondary"
-                          title="Backup"
-                          onClick={() => { void handleBackup(restaurante); }}
-                          disabled={backupLoadingId === restaurante.id}
-                        >
-                          {backupLoadingId === restaurante.id ? <Spinner animation="border" size="sm" /> : <FaDownload />}
-                        </Button>
-                        <Button size="sm" variant="outline-warning" title="Restaurar" onClick={() => openRestoreModal(restaurante)}>
-                          <FaUpload />
-                        </Button>
-                        <Button
-                          size="sm"
                           variant={restaurante.ativo ? 'outline-danger' : 'outline-success'}
                           title={restaurante.ativo ? 'Desativar' : 'Ativar'}
                           onClick={() => handleRequestDeactivate(restaurante)}
@@ -1034,13 +935,6 @@ export default function AdminRestaurantesPage() {
                 disabled={savingRestaurante}
                 onChange={(event) => { void handleSaveModulos(editingRestaurante, { moduloFuncionarios: event.target.checked }); }}
               />
-              <Form.Check
-                type="switch"
-                label="Almoxarifado / EPI"
-                checked={editingRestaurante.moduloAlmoxarifadoEpi}
-                disabled={savingRestaurante}
-                onChange={(event) => { void handleSaveModulos(editingRestaurante, { moduloAlmoxarifadoEpi: event.target.checked }); }}
-              />
             </Form.Group>
           )}
         </Modal.Body>
@@ -1097,56 +991,6 @@ export default function AdminRestaurantesPage() {
           >
             Desativar
           </Button>
-        </Modal.Footer>
-      </Modal>
-
-      <Modal show={showRestoreModal} onHide={() => !restoreLoading && setShowRestoreModal(false)} centered>
-        <Modal.Header closeButton={!restoreLoading}>
-          <Modal.Title>
-            {restoreTarget
-              ? `Restaurar Backup — ${restoreTarget.nome}`
-              : 'Restaurar Backup'}
-          </Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          {restoreResult ? (
-            <Alert variant="success" className="mb-0">
-              <div className="fw-semibold mb-2">Restauração concluída</div>
-              <div>Usuários: {restoreResult.usuarios.criados} criados / {restoreResult.usuarios.ignorados} ignorados</div>
-              <div>Fornecedores: {restoreResult.fornecedores.criados} criados / {restoreResult.fornecedores.ignorados} ignorados</div>
-              <div>Itens: {restoreResult.itens.criados} criados / {restoreResult.itens.ignorados} ignorados</div>
-              <div>Listas: {restoreResult.listas.criadas} criadas / {restoreResult.listas.ignoradas} ignoradas</div>
-              <div>Refs: {restoreResult.listaItemRefs.criados} criados / {restoreResult.listaItemRefs.ignorados} ignorados</div>
-            </Alert>
-          ) : (
-            <>
-              <p className="text-muted small">
-                {restoreTarget
-                  ? `O arquivo será restaurado no restaurante ${restoreTarget.nome}.`
-                  : 'O restaurante será identificado pelo arquivo de backup.'}
-              </p>
-              <Form.Control
-                ref={fileInputRef}
-                type="file"
-                accept=".kaizen"
-                onChange={(event) => {
-                  const input = event.target as HTMLInputElement;
-                  setRestoreFile(input.files?.[0] ?? null);
-                }}
-              />
-              {restoreError && <Alert variant="danger" className="mt-3 mb-0">{restoreError}</Alert>}
-            </>
-          )}
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowRestoreModal(false)} disabled={restoreLoading}>
-            {restoreResult ? 'Fechar' : 'Cancelar'}
-          </Button>
-          {!restoreResult && (
-            <Button variant="warning" onClick={() => { void handleRestore(); }} disabled={restoreLoading || !restoreFile}>
-              {restoreLoading ? <Spinner animation="border" size="sm" /> : 'Restaurar'}
-            </Button>
-          )}
         </Modal.Footer>
       </Modal>
 

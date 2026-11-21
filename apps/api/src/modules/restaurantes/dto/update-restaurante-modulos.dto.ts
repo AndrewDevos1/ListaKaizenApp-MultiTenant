@@ -12,8 +12,4 @@ export class UpdateRestauranteModulosDto {
   @IsOptional()
   moduloFuncionarios?: boolean;
 
-  @ApiPropertyOptional({ example: true })
-  @IsBoolean()
-  @IsOptional()
-  moduloAlmoxarifadoEpi?: boolean;
 }

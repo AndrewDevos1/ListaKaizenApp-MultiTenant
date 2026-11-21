@@ -15,7 +15,8 @@ describe('AuthService', () => {
 
     await expect(service.getProfile(7)).resolves.toMatchObject({
       restauranteId: 3,
-      modulos: { moduloPonto: true, moduloFuncionarios: false, moduloAlmoxarifadoEpi: true },
+      modulos: { moduloPonto: true, moduloFuncionarios: false },
     });
+    await expect(service.getProfile(7)).resolves.not.toHaveProperty('modulos.moduloAlmoxarifadoEpi');
   });
 });

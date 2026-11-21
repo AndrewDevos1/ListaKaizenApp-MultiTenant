@@ -14,7 +14,6 @@ describe('RestauranteModulosService', () => {
       select: {
         moduloPonto: true,
         moduloFuncionarios: true,
-        moduloAlmoxarifadoEpi: true,
       },
     });
   });

@@ -22,24 +22,16 @@ export default function AppNavbar() {
           <Nav className="me-auto">
             {isAdmin ? (
               <>
-                <Nav.Link as={Link} href="/admin/dashboard" active={pathname === '/admin/dashboard'}>
-                  Dashboard
-                </Nav.Link>
-                <Nav.Link as={Link} href="/admin/items" active={pathname === '/admin/items'}>
-                  Itens
-                </Nav.Link>
-                <Nav.Link as={Link} href="/admin/areas" active={pathname === '/admin/areas'}>
-                  Areas
-                </Nav.Link>
                 <Nav.Link as={Link} href="/admin/listas" active={pathname === '/admin/listas'}>
                   Listas
+                </Nav.Link>
+                <Nav.Link as={Link} href="/admin/areas" active={pathname === '/admin/areas'}>
+                  Áreas
                 </Nav.Link>
               </>
             ) : (
               <>
-                <Nav.Link as={Link} href="/collaborator/dashboard" active={pathname === '/collaborator/dashboard'}>
-                  Dashboard
-                </Nav.Link>
+
                 <Nav.Link as={Link} href="/collaborator/listas" active={pathname === '/collaborator/listas'}>
                   Minhas Listas
                 </Nav.Link>

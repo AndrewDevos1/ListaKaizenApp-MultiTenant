@@ -92,11 +92,6 @@ export default function CollaboratorListaDetailPage() {
   // Modais
   const [showSuccess, setShowSuccess] = useState(false);
   const [countdown, setCountdown] = useState(5);
-  const [showSugerir, setShowSugerir] = useState(false);
-  const [sugerirNome, setSugerirNome] = useState('');
-  const [sugerirUnidade, setSugerirUnidade] = useState('Un');
-  const [sugerirLoading, setSugerirLoading] = useState(false);
-  const [sugerirBanner, setSugerirBanner] = useState('');
 
   const RASCUNHO_KEY = `rascunho-estoque-lista-${listaId}`;
 
@@ -344,28 +339,6 @@ export default function CollaboratorListaDetailPage() {
     }
   };
 
-  // ─── Modal Sugerir ────────────────────────────────────────────────────────
-
-  const handleSugerirEnviar = async () => {
-    if (!sugerirNome.trim()) return;
-    setSugerirLoading(true);
-    try {
-      await api.post('/v1/collaborator/sugestoes', {
-        nome: sugerirNome.trim(),
-        unidadeMedida: sugerirUnidade,
-      });
-      setShowSugerir(false);
-      setSugerirNome('');
-      setSugerirUnidade('Un');
-      setSugerirBanner('Sugestão enviada com sucesso! O administrador irá analisá-la.');
-      setTimeout(() => setSugerirBanner(''), 5000);
-    } catch (err: any) {
-      setError(err?.response?.data?.message || 'Erro ao enviar sugestão');
-    } finally {
-      setSugerirLoading(false);
-    }
-  };
-
   // ─── Render ───────────────────────────────────────────────────────────────
 
   if (loading) {
@@ -397,56 +370,6 @@ export default function CollaboratorListaDetailPage() {
           </Modal.Body>
         </Modal>
 
-        {/* ── Modal Sugerir Novo Item ── */}
-        <Modal show={showSugerir} onHide={() => setShowSugerir(false)} centered>
-          <Modal.Header closeButton>
-            <Modal.Title>💡 Sugerir Novo Item</Modal.Title>
-          </Modal.Header>
-          <Modal.Body>
-            <Form.Group className="mb-3">
-              <Form.Label>Nome do item *</Form.Label>
-              <Form.Control
-                type="text"
-                placeholder="Ex: Alho em pó"
-                value={sugerirNome}
-                onChange={(e) => setSugerirNome(e.target.value)}
-                autoFocus
-              />
-            </Form.Group>
-            <Form.Group>
-              <Form.Label>Unidade de Medida</Form.Label>
-              <Form.Select
-                value={sugerirUnidade}
-                onChange={(e) => setSugerirUnidade(e.target.value)}
-              >
-                <option value="Un">Un</option>
-                <option value="Kg">Kg</option>
-                <option value="g">g</option>
-                <option value="L">L</option>
-                <option value="ml">ml</option>
-                <option value="Cx">Cx</option>
-                <option value="Pct">Pct</option>
-              </Form.Select>
-            </Form.Group>
-          </Modal.Body>
-          <Modal.Footer>
-            <Button variant="secondary" onClick={() => setShowSugerir(false)}>
-              Cancelar
-            </Button>
-            <Button
-              variant="warning"
-              onClick={handleSugerirEnviar}
-              disabled={sugerirLoading || !sugerirNome.trim()}
-            >
-              {sugerirLoading ? (
-                <><Spinner animation="border" size="sm" /> Enviando...</>
-              ) : (
-                'Enviar Sugestão'
-              )}
-            </Button>
-          </Modal.Footer>
-        </Modal>
-
         {/* ── Header ── */}
         <div className={styles.header}>
           <Link href="/collaborator/listas" className={styles.backLink}>
@@ -459,22 +382,10 @@ export default function CollaboratorListaDetailPage() {
                 Atualize as quantidades atuais e clique em "Submeter Lista"
               </p>
             </div>
-            <Button
-              variant="warning"
-              size="sm"
-              onClick={() => setShowSugerir(true)}
-            >
-              💡 Sugerir Novo Item
-            </Button>
           </div>
         </div>
 
         {/* ── Alertas ── */}
-        {sugerirBanner && (
-          <Alert variant="success" dismissible onClose={() => setSugerirBanner('')}>
-            {sugerirBanner}
-          </Alert>
-        )}
         {error && (
           <Alert variant="danger" dismissible onClose={() => setError('')}>
             {error}

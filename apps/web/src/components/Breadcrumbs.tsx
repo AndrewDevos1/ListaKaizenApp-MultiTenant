@@ -62,7 +62,7 @@ function buildCrumbs(pathname: string): Crumb[] {
   const crumbs: Crumb[] = [];
 
   if (segments[0] === 'admin') {
-    crumbs.push({ label: 'Admin', href: '/admin/dashboard' });
+    crumbs.push({ label: 'Admin', href: '/admin/listas' });
     const section = segments[1];
     const sub = segments[2];
     const detail = segments[3];
@@ -102,7 +102,7 @@ function buildCrumbs(pathname: string): Crumb[] {
     }
 
   } else if (segments[0] === 'collaborator') {
-    crumbs.push({ label: 'Colaborador', href: '/collaborator/dashboard' });
+    crumbs.push({ label: 'Colaborador', href: '/collaborator/listas' });
     const section = segments[1];
     const sub = segments[2];
     const detail = segments[3];

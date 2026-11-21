@@ -239,7 +239,6 @@ export class AuthService {
               select: {
                 moduloPonto: true,
                 moduloFuncionarios: true,
-                moduloAlmoxarifadoEpi: true,
               },
             })
           : null,
@@ -271,10 +270,9 @@ export class AuthService {
         : null,
       modulos: user.restaurante
         ? {
-            moduloPonto: user.restaurante.moduloPonto,
-            moduloFuncionarios: user.restaurante.moduloFuncionarios,
-            moduloAlmoxarifadoEpi: user.restaurante.moduloAlmoxarifadoEpi,
-          }
+          moduloPonto: user.restaurante.moduloPonto,
+          moduloFuncionarios: user.restaurante.moduloFuncionarios,
+        }
         : null,
     };
   }
