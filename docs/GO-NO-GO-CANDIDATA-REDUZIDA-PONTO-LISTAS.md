@@ -4,6 +4,7 @@ Data: 2026-11-21
 Base de integração: `b1456a8728a53fda6ba6c2c4577f39954b71b0ae`
 Referência homologada: `48b062e95545658abd12ca2ce843d72a4b377d0b`
 SHA de código auditado: `470835c76ffcad2bc4a07953d38f2058eeafcb64`; `d7bdcc95c4096f06129ff7d4ed5710b6e840e77d` e `3234e3119d75b772be34b1d667e39dfdadb41432` são checkpoints históricos.
+Referência documental: tag local imutável `homologacao-reduzida-20261121`; aponta para o commit deste relatório, separada do SHA de código auditado e sem autorreferência.
 Decisão desta etapa: NO-GO para cutover. Candidata limitada a homologação local isolada; não autoriza troca, merge, push ou produção.
 
 ## Escopo
@@ -67,6 +68,17 @@ Backup/restauração descartável:
 - Origem/restauração: contagens idênticas para `restaurantes`, `usuarios`, `listas`, `registros_ponto` e `_prisma_migrations`.
 - Restauração executada somente no banco descartável `kaizen_cutover_reduzida_test` do container `kaizen-cutover-reduzida-test`.
 
+## Homologação local isolada — evidência real
+
+- Runtime isolado: Web `http://localhost:4200/login`; API `http://localhost:4201/api/docs`; PostgreSQL `127.0.0.1:55467`, container `kaizen-reduzida-homolog-20261121`.
+- SHA em execução: `2f170bfcb1a08ec9f7d0c787a13fbd660cd60b91`; origem do código auditado: `470835c76ffcad2bc4a07953d38f2058eeafcb64`.
+- Migrations, seed e drift: PASS no banco novo `kaizen_reduzida_homolog_test`, 13 migrations; módulos Ponto e Funcionários habilitados apenas neste tenant sintético.
+- Smoke autenticado API: ADMIN e COLLABORATOR PASS para Ponto, Espelho, Banco de Horas, Listas e Submissões; Escalas/Banco de Horas administrativo PASS.
+- Escopo negativo: fornecedores, cotações, POP, checklists, sugestões e listas rápidas retornaram 404.
+- Backup/restauração: `pg_dump -Fc`, drop/create e `pg_restore` somente no banco novo; contagens antes/depois iguais: `restaurantes=1`, `usuarios=5`, `listas=2`, `registros_ponto=0`, `_prisma_migrations=13`. Evidências em `/home/devos/.hermes/cache/scratch/cutover-reduzida-homolog-evidence/`.
+- Login visual real ADMIN/COLLABORATOR: pendente de preenchimento via vault; não há credencial salva para `localhost:4200`. O endpoint de login e jornadas autenticadas foram validados contra as credenciais sintéticas do seed.
+- Roteiro humano curto: entrar em `/login`; ADMIN: abrir Ponto e Listas/Submissões; COLLABORATOR: abrir Ponto, Espelho, Banco de Horas, Minhas Listas e Submissões. Confirmar carregamento e ausência de menus EPI/fornecedores/POP.
+
 ## Procedimento de futuro cutover local
 
 Pré-requisitos obrigatórios:
@@ -87,8 +99,7 @@ Pré-requisitos obrigatórios:
 
 ## Bloqueios restantes
 
-- Homologação humana de regressão desta nova candidata ainda pendente.
-- Revisão independente deve ser repetida no SHA de documentação final.
-- URL/credenciais fictícias dependem do runtime isolado, ainda não iniciado nesta etapa.
+- Homologação humana de regressão da candidata no runtime isolado.
+- Login visual por ADMIN e COLLABORATOR aguarda credenciais em vault; nenhum segredo será digitado ou exposto neste relatório.
 - Alvo local/launcher/janela de cutover não foram definidos; nenhum banco local existente foi inspecionado ou alterado.
 - Cutover, merge em `develop2`/`main`, push, Railway e produção permanecem proibidos.
