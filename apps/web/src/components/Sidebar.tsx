@@ -78,7 +78,7 @@ interface RoleNavbarCustomization {
   hiddenItemKeys: string[];
 }
 
-type NavbarCustomizationState = Record<UserRole, RoleNavbarCustomization>;
+type NavbarCustomizationState = Partial<Record<UserRole, RoleNavbarCustomization>>;
 
 const NAVBAR_NEXT_LAYOUT_STORAGE_KEY = 'navbar:next:layout';
 
@@ -87,7 +87,6 @@ function createEmptyNavbarCustomizationState(): NavbarCustomizationState {
     [UserRole.SUPER_ADMIN]: { hiddenGroupIds: [], hiddenItemKeys: [] },
     [UserRole.ADMIN]: { hiddenGroupIds: [], hiddenItemKeys: [] },
     [UserRole.COLLABORATOR]: { hiddenGroupIds: [], hiddenItemKeys: [] },
-    [UserRole.SUPPLIER]: { hiddenGroupIds: [], hiddenItemKeys: [] },
     [UserRole.CONTADOR]: { hiddenGroupIds: [], hiddenItemKeys: [] },
   };
 }
@@ -793,9 +792,7 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
       ? 'Super Admin'
       : effectiveRole === UserRole.ADMIN
         ? 'Administrador'
-        : effectiveRole === UserRole.SUPPLIER
-          ? 'Fornecedor'
-          : 'Colaborador';
+        : 'Colaborador';
 
   if (!user) return null;
 
@@ -905,7 +902,6 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
                     <option value={UserRole.SUPER_ADMIN}>Super Admin</option>
                     <option value={UserRole.ADMIN}>Admin</option>
                     <option value={UserRole.COLLABORATOR}>Colaborador</option>
-                    <option value={UserRole.SUPPLIER}>Fornecedor</option>
                   </select>
                   <button
                     type="button"

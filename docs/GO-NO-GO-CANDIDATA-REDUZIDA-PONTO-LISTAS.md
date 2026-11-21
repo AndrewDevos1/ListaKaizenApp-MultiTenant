@@ -3,7 +3,7 @@
 Data: 2026-11-21
 Base de integração: `b1456a8728a53fda6ba6c2c4577f39954b71b0ae`
 Referência homologada: `48b062e95545658abd12ca2ce843d72a4b377d0b`
-SHA final: `3234e3119d75b772be34b1d667e39dfdadb41432`.
+Código auditado: `d7bdcc95c4096f06129ff7d4ed5710b6e840e77d`; `3234e3119d75b772be34b1d667e39dfdadb41432` é checkpoint histórico anterior.
 Decisão desta etapa: GO técnico para homologação local isolada. Não autoriza cutover.
 
 ## Escopo
@@ -87,7 +87,7 @@ Pré-requisitos obrigatórios:
 ## Bloqueios restantes
 
 - Homologação humana de regressão desta nova candidata ainda pendente.
-- Revisão independente final do SHA congelado ainda pendente.
+- Revisão independente deve ser repetida no SHA de documentação final.
 - URL/credenciais fictícias dependem do runtime isolado, ainda não iniciado nesta etapa.
 - Alvo local/launcher/janela de cutover não foram definidos; nenhum banco local existente foi inspecionado ou alterado.
 - Cutover, merge em `develop2`/`main`, push, Railway e produção permanecem proibidos.
