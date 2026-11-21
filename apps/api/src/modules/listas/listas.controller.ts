@@ -26,7 +26,6 @@ import { AddItemByNomeDto } from './dto/add-item-by-nome.dto';
 import { UpdateMaeItemDto } from './dto/update-mae-item.dto';
 import { BulkImportNamesDto } from './dto/bulk-import-names.dto';
 import { CopyMoveItemsDto } from './dto/copy-move-items.dto';
-import { AtribuirFornecedorDto } from './dto/atribuir-fornecedor.dto';
 import { CreateGrupoListaDto } from './dto/create-grupo-lista.dto';
 import { UpdateGrupoListaDto } from './dto/update-grupo-lista.dto';
 import { VincularListaGrupoDto } from './dto/vincular-lista-grupo.dto';
@@ -330,23 +329,6 @@ export class ListasController {
     return this.listasService.moveItems(listaId, dto, restauranteId);
   }
 
-  @Post(':id/atribuir-fornecedor')
-  @Roles('ADMIN' as any, 'SUPER_ADMIN' as any)
-  @ApiOperation({ summary: 'Atribuir fornecedor e gerar submissão de pedido' })
-  atribuirFornecedor(
-    @Param('id', ParseIntPipe) listaId: number,
-    @Body() dto: AtribuirFornecedorDto,
-    @TenantId() restauranteId: number,
-    @CurrentUser('id') usuarioId: number,
-  ) {
-    return this.listasService.atribuirFornecedor(
-      listaId,
-      dto.itemRefIds,
-      dto.fornecedorId,
-      restauranteId,
-      usuarioId,
-    );
-  }
 }
 
 @ApiTags('Admin — Grupos de Listas')

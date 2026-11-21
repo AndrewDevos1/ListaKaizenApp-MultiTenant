@@ -664,27 +664,14 @@ export class ListasService {
       include: {
         area: { select: { id: true, nome: true } },
         itensRef: {
-          include: {
-            item: {
-              include: { fornecedor: { select: { id: true, nome: true, telefone: true, email: true } } },
-            },
-          },
+          include: { item: true },
           orderBy: { item: { nome: 'asc' } },
         },
       },
     });
     if (!lista) throw new NotFoundException('Lista não encontrada');
 
-    // Deriva fornecedores únicos
-    const fornecedoresMap = new Map<number, { id: number; nome: string; telefone: string | null; email: string | null }>();
-    for (const ref of lista.itensRef) {
-      const f = ref.item.fornecedor;
-      if (f && !fornecedoresMap.has(f.id)) {
-        fornecedoresMap.set(f.id, f);
-      }
-    }
-
-    return { ...lista, fornecedores: Array.from(fornecedoresMap.values()) };
+    return lista;
   }
 
   async addItemByNome(
@@ -719,11 +706,7 @@ export class ListasService {
 
     return this.prisma.listaItemRef.create({
       data: { listaId, itemId: item.id, quantidadeAtual, quantidadeMinima },
-      include: {
-        item: {
-          include: { fornecedor: { select: { id: true, nome: true, telefone: true, email: true } } },
-        },
-      },
+      include: { item: true },
     });
   }
 
@@ -772,11 +755,7 @@ export class ListasService {
     return this.prisma.listaItemRef.update({
       where: { id: itemRefId },
       data,
-      include: {
-        item: {
-          include: { fornecedor: { select: { id: true, nome: true, telefone: true, email: true } } },
-        },
-      },
+      include: { item: true },
     });
   }
 
@@ -900,54 +879,6 @@ export class ListasService {
     });
 
     return { ...result, message: `${dto.itemRefIds.length - result.itens_ignorados} itens movidos` };
-  }
-
-  async atribuirFornecedor(
-    listaId: number,
-    itemRefIds: number[],
-    fornecedorId: number,
-    restauranteId: number,
-    usuarioId: number,
-  ) {
-    await this.findOne(listaId, restauranteId);
-
-    // Verifica que todos os itemRefIds pertencem à lista
-    const refs = await this.prisma.listaItemRef.findMany({
-      where: { id: { in: itemRefIds }, listaId },
-    });
-    if (refs.length === 0) throw new NotFoundException('Nenhum item encontrado');
-
-    // Verifica fornecedor
-    const fornecedor = await this.prisma.fornecedor.findFirst({
-      where: { id: fornecedorId, restauranteId },
-    });
-    if (!fornecedor) throw new NotFoundException('Fornecedor não encontrado');
-
-    // Cria Submissao
-    const submissao = await this.prisma.submissao.create({
-      data: {
-        listaId,
-        usuarioId,
-        restauranteId,
-        status: StatusSubmissao.PENDENTE,
-        arquivada: false,
-        pedidos: {
-          create: refs.map((ref) => ({
-            itemId: ref.itemId,
-            qtdSolicitada: ref.qtdFardo ?? ref.quantidadeMinima ?? 1,
-          })),
-        },
-      },
-      include: { pedidos: true },
-    });
-
-    await registrarSubmissaoEmLoteConsolidado(this.prisma, {
-      submissaoId: submissao.id,
-      listaId,
-      restauranteId,
-    });
-
-    return { total_pedidos: submissao.pedidos.length, submissaoId: submissao.id };
   }
 
   // Tarefa 1.3 — Submeter lista (colaborador)

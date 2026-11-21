@@ -10,25 +10,9 @@ interface Crumb {
 }
 
 const ADMIN_SECTION_LABELS: Record<string, string> = {
-  dashboard: 'Dashboard',
-  global: 'Dashboard Global',
-  items: 'Itens',
   areas: 'Áreas',
   listas: 'Listas de Compras',
-  'listas-rapidas': 'Listas Rápidas',
-  'lista-rapida': 'Lista Rápida',
   submissoes: 'Submissões',
-  sugestoes: 'Sugestões de Itens',
-  checklists: 'Checklists de Compras',
-  pop: 'POP',
-  templates: 'POP Atividades',
-  execucoes: 'Execuções',
-  auditoria: 'POP Auditoria',
-  fornecedores: 'Fornecedores',
-  cotacoes: 'Cotações',
-  'gerar-cotacao': 'Gerar Cotação',
-  'catalogo-global': 'Catálogo Global',
-  'itens-regionais': 'Itens Regionais',
   usuarios: 'Gerenciar Usuários',
   restaurantes: 'Restaurantes',
   convites: 'Convites',
@@ -41,15 +25,8 @@ const ADMIN_SECTION_LABELS: Record<string, string> = {
 };
 
 const COLLABORATOR_SECTION_LABELS: Record<string, string> = {
-  dashboard: 'Dashboard',
   listas: 'Minhas Listas',
-  'listas-rapidas': 'Listas Rápidas',
-  'lista-rapida': 'Lista Rápida',
   submissoes: 'Minhas Submissões',
-  sugestoes: 'Sugestões de Itens',
-  pop: 'POPs',
-  execucoes: 'Execuções',
-  catalogo: 'Catálogo Global',
   perfil: 'Editar Perfil',
   'mudar-senha': 'Mudar Senha',
   configuracoes: 'Configurações',
@@ -68,22 +45,6 @@ function buildCrumbs(pathname: string): Crumb[] {
     const detail = segments[3];
 
     if (!section) return crumbs;
-
-    // POP has nested structure: /admin/pop/templates, /admin/pop/execucoes
-    if (section === 'pop') {
-      crumbs.push({ label: 'POP' });
-      if (sub) {
-        const subLabel = sub === 'templates' ? 'POP Atividades' : sub === 'execucoes' ? 'Execuções' : sub;
-        const subHref = `/admin/pop/${sub}`;
-        if (detail) {
-          crumbs.push({ label: subLabel, href: subHref });
-          crumbs.push({ label: 'Detalhe' });
-        } else {
-          crumbs.push({ label: subLabel });
-        }
-      }
-      return crumbs;
-    }
 
     const sectionLabel = ADMIN_SECTION_LABELS[section] || section;
     const sectionHref = `/admin/${section}`;
@@ -108,22 +69,6 @@ function buildCrumbs(pathname: string): Crumb[] {
     const detail = segments[3];
 
     if (!section) return crumbs;
-
-    // POP nested: /collaborator/pop, /collaborator/pop/execucoes, /collaborator/pop/execucoes/:id
-    if (section === 'pop') {
-      if (!sub) {
-        crumbs.push({ label: 'POPs Diários' });
-      } else if (sub === 'execucoes') {
-        crumbs.push({ label: 'POPs', href: '/collaborator/pop' });
-        if (detail) {
-          crumbs.push({ label: 'Execuções', href: '/collaborator/pop/execucoes' });
-          crumbs.push({ label: 'Detalhe' });
-        } else {
-          crumbs.push({ label: 'Execuções' });
-        }
-      }
-      return crumbs;
-    }
 
     const sectionLabel = COLLABORATOR_SECTION_LABELS[section] || section;
     const sectionHref = `/collaborator/${section}`;

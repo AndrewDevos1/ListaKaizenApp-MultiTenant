@@ -28,7 +28,6 @@ import {
   FaSort,
   FaSortUp,
   FaSortDown,
-  FaTruck,
 } from 'react-icons/fa';
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -45,16 +44,7 @@ interface ItemRef {
     id: number;
     nome: string;
     unidadeMedida: string;
-    fornecedorId: number | null;
-    fornecedor: Fornecedor | null;
   };
-}
-
-interface Fornecedor {
-  id: number;
-  nome: string;
-  telefone: string | null;
-  email: string | null;
 }
 
 interface ListaMaeData {
@@ -63,14 +53,12 @@ interface ListaMaeData {
   criadoEm: string;
   area: { id: number; nome: string } | null;
   itensRef: ItemRef[];
-  fornecedores: Fornecedor[];
 }
 
 interface CatalogItem {
   id: number;
   nome: string;
   unidadeMedida: string;
-  fornecedor: { id: number; nome: string } | null;
 }
 
 type SortField = 'nome' | 'unidadeMedida' | 'quantidadeAtual' | 'quantidadeMinima' | 'pedido';
@@ -174,12 +162,6 @@ export default function ListaMaePage() {
     itens_ignorados: number;
     itens_ignorados_lista: string[];
   } | null>(null);
-
-  // Atribuir fornecedor
-  const [showFornecedor, setShowFornecedor] = useState(false);
-  const [allFornecedores, setAllFornecedores] = useState<Fornecedor[]>([]);
-  const [fornecedorId, setFornecedorId] = useState<number | ''>('');
-  const [savingFornecedor, setSavingFornecedor] = useState(false);
 
   // ── Data fetching ──────────────────────────────────────────────────────
 
@@ -504,36 +486,6 @@ export default function ListaMaePage() {
     }
   };
 
-  // ── Atribuir fornecedor ─────────────────────────────────────────────────
-
-  const openFornecedor = async () => {
-    try {
-      const { data } = await api.get('/v1/fornecedores');
-      setAllFornecedores(data.fornecedores ?? data);
-      setFornecedorId('');
-      setShowFornecedor(true);
-    } catch {
-      setError('Erro ao carregar fornecedores');
-    }
-  };
-
-  const handleAtribuirFornecedor = async () => {
-    if (!fornecedorId) return;
-    setSavingFornecedor(true);
-    try {
-      await api.post(`/v1/listas/${listaId}/atribuir-fornecedor`, {
-        itemRefIds: Array.from(selected),
-        fornecedorId: Number(fornecedorId),
-      });
-      setShowFornecedor(false);
-      setSelected(new Set());
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Erro ao atribuir fornecedor');
-    } finally {
-      setSavingFornecedor(false);
-    }
-  };
-
   // ── Render ─────────────────────────────────────────────────────────────
 
   if (loading) {
@@ -684,20 +636,6 @@ export default function ListaMaePage() {
           </Alert>
         )}
 
-        {/* Fornecedores */}
-        {lista.fornecedores.length > 0 && (
-          <div className={styles.fornecedoresRow}>
-            {lista.fornecedores.map((f) => (
-              <div key={f.id} className={styles.fornecedorCard}>
-                <span><FaTruck style={{ marginRight: 4 }} />{f.nome}</span>
-                {(f.telefone || f.email) && (
-                  <span className={styles.fornecedorSub}>{f.telefone ?? f.email}</span>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-
         {/* Stats */}
         <div className={styles.statsRow}>
           <div className={styles.statCard}>
@@ -775,9 +713,6 @@ export default function ListaMaePage() {
               </button>
               <button className={`${styles.toolBtn}`} onClick={() => openCopyMove('mover')}>
                 <FaArrowRight /> Mover para Lista
-              </button>
-              <button className={`${styles.toolBtn}`} onClick={openFornecedor}>
-                <FaTruck /> Atribuir Fornecedor
               </button>
               <button
                 className={`${styles.toolBtn} ${styles.toolBtnDanger}`}
@@ -1035,9 +970,6 @@ export default function ListaMaePage() {
               />
               <label htmlFor={`cat-${item.id}`} style={{ flex: 1, cursor: 'pointer', margin: 0 }}>
                 {item.nome} <span className="text-muted">({item.unidadeMedida})</span>
-                {item.fornecedor && (
-                  <span className="badge bg-secondary ms-2">{item.fornecedor.nome}</span>
-                )}
               </label>
               {catalogSelected.has(item.id) && (
                 <Form.Control
@@ -1160,42 +1092,6 @@ export default function ListaMaePage() {
         </Modal.Body>
         <Modal.Footer>
           <Button variant="secondary" onClick={() => setShowCmResult(false)}>Fechar</Button>
-        </Modal.Footer>
-      </Modal>
-
-      {/* ── Modal Atribuir Fornecedor ── */}
-      <Modal show={showFornecedor} onHide={() => setShowFornecedor(false)}>
-        <Modal.Header closeButton>
-          <Modal.Title>Atribuir Fornecedor ({selected.size} itens)</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <p className="text-muted small mb-3">
-            Será criada uma submissão de pedido com os itens selecionados, usando a quantidade por fardo (ou mínima) de cada item.
-          </p>
-          <ul className="mb-3" style={{ maxHeight: 150, overflowY: 'auto', fontSize: '0.88rem' }}>
-            {(lista?.itensRef ?? [])
-              .filter((r) => selected.has(r.id))
-              .map((r) => (
-                <li key={r.id}>{r.item.nome} — qtd: {r.qtdFardo ?? r.quantidadeMinima}</li>
-              ))}
-          </ul>
-          <Form.Group>
-            <Form.Label>Fornecedor</Form.Label>
-            <Form.Select value={fornecedorId} onChange={(e) => setFornecedorId(e.target.value ? Number(e.target.value) : '')}>
-              <option value="">Selecione um fornecedor...</option>
-              {allFornecedores.map((f) => <option key={f.id} value={f.id}>{f.nome}</option>)}
-            </Form.Select>
-          </Form.Group>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowFornecedor(false)}>Cancelar</Button>
-          <Button
-            variant="primary"
-            onClick={handleAtribuirFornecedor}
-            disabled={savingFornecedor || !fornecedorId}
-          >
-            {savingFornecedor ? <Spinner size="sm" animation="border" /> : 'Criar Pedido'}
-          </Button>
         </Modal.Footer>
       </Modal>
 
