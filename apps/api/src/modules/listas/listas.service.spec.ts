@@ -1,4 +1,4 @@
-import { NotFoundException, UnprocessableEntityException } from '@nestjs/common';
+import { ConflictException, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
 import { StatusSubmissao } from '@prisma/client';
 import { ListasService } from './listas.service';
 
@@ -25,8 +25,15 @@ describe('ListasService', () => {
       },
       submissao: {
         create: jest.fn(),
+        findFirst: jest.fn().mockResolvedValue(null),
       },
+      item: {
+        findFirst: jest.fn().mockResolvedValue({ id: 100 }),
+      },
+      $executeRaw: jest.fn(),
+      $transaction: jest.fn(),
     } as any;
+    prisma.$transaction.mockImplementation((cb: any) => cb(prisma));
 
     return { prisma, service: new ListasService(prisma) };
   };
@@ -267,5 +274,35 @@ describe('ListasService', () => {
         },
       },
     });
+  });
+
+  it('addItemRef recusa item de outro restaurante sem criar vínculo', async () => {
+    const { prisma, service } = makeService();
+    jest.spyOn(service, 'findOne').mockResolvedValue({ id: 1 } as any);
+    prisma.item.findFirst.mockResolvedValue(null);
+    prisma.listaItemRef.findUnique = jest.fn();
+    prisma.listaItemRef.create = jest.fn();
+
+    await expect(service.addItemRef(1, 555, 3, 99)).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
+    expect(prisma.item.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: 555, restauranteId: 99 } }),
+    );
+    expect(prisma.listaItemRef.create).not.toHaveBeenCalled();
+  });
+
+  it('submeterLista recusa nova submissão enquanto há PENDENTE da mesma lista/usuário', async () => {
+    const { prisma, service } = makeService();
+    prisma.listaColaborador.findFirst.mockResolvedValue({ id: 1 });
+    prisma.listaItemRef.findMany.mockResolvedValue([
+      { id: 10, itemId: 100, quantidadeMinima: 10, quantidadeAtual: 0, usaThreshold: false },
+    ]);
+    prisma.submissao.findFirst.mockResolvedValue({ id: 5 });
+
+    await expect(service.submeterLista(1, 99, 7)).rejects.toBeInstanceOf(
+      ConflictException,
+    );
+    expect(prisma.submissao.create).not.toHaveBeenCalled();
   });
 });

@@ -1,4 +1,4 @@
-import { IsInt, IsNumber, ValidateNested, IsArray } from 'class-validator';
+import { IsInt, IsNumber, Min, ValidateNested, IsArray } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 
@@ -9,6 +9,7 @@ export class AtualizarEstoqueItemDto {
 
   @ApiProperty({ example: 5.5 })
   @IsNumber()
+  @Min(0)
   quantidadeAtual: number;
 }
 

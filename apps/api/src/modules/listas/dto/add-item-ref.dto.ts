@@ -1,4 +1,4 @@
-import { IsInt, IsNumber, IsOptional } from 'class-validator';
+import { IsInt, IsNumber, IsOptional, Min } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class AddItemRefDto {
@@ -8,6 +8,7 @@ export class AddItemRefDto {
 
   @ApiProperty({ example: 10, required: false })
   @IsNumber()
+  @Min(0)
   @IsOptional()
   quantidadeMinima?: number;
 }

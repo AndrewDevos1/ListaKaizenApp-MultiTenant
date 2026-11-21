@@ -455,6 +455,14 @@ export class ListasService {
   ) {
     await this.findOne(listaId, restauranteId);
 
+    const item = await this.prisma.item.findFirst({
+      where: { id: itemId, restauranteId },
+      select: { id: true },
+    });
+    if (!item) {
+      throw new NotFoundException('Item não encontrado');
+    }
+
     const existing = await this.prisma.listaItemRef.findUnique({
       where: { listaId_itemId: { listaId, itemId } },
     });
@@ -982,25 +990,37 @@ export class ListasService {
       );
     }
 
-    // Cria a Submissao com os Pedidos em uma transação
-    const submissao = await this.prisma.submissao.create({
-      data: {
-        listaId,
-        usuarioId,
-        restauranteId,
-        status: StatusSubmissao.PENDENTE,
-        pedidos: {
-          create: itensSolicitados.map((i) => ({
-            itemId: i.itemId,
-            qtdSolicitada: i.qtdSolicitada,
-          })),
+    // Lock por (lista, usuário) + checagem de PENDENTE: envio duplo/simultâneo não duplica pedidos
+    const submissao = await this.prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(${listaId}::int, ${usuarioId}::int)`;
+      const pendente = await tx.submissao.findFirst({
+        where: { listaId, usuarioId, restauranteId, status: StatusSubmissao.PENDENTE },
+        select: { id: true },
+      });
+      if (pendente) {
+        throw new ConflictException(
+          'Já existe uma submissão pendente desta lista',
+        );
+      }
+      return tx.submissao.create({
+        data: {
+          listaId,
+          usuarioId,
+          restauranteId,
+          status: StatusSubmissao.PENDENTE,
+          pedidos: {
+            create: itensSolicitados.map((i) => ({
+              itemId: i.itemId,
+              qtdSolicitada: i.qtdSolicitada,
+            })),
+          },
         },
-      },
-      include: {
-        pedidos: {
-          include: { item: true },
+        include: {
+          pedidos: {
+            include: { item: true },
+          },
         },
-      },
+      });
     });
 
     await registrarSubmissaoEmLoteConsolidado(this.prisma, {

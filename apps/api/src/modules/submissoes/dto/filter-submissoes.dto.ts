@@ -1,5 +1,5 @@
-import { IsEnum, IsOptional, IsBoolean } from 'class-validator';
-import { Transform } from 'class-transformer';
+import { IsEnum, IsOptional, IsBoolean, IsInt, Min } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { StatusSubmissao } from '@prisma/client';
 
@@ -31,4 +31,12 @@ export class FilterSubmissoesDto {
     return value;
   })
   arquivada?: boolean;
+
+  // Seletor de tenant de SUPER_ADMIN/CONTADOR; @TenantId ignora para ADMIN/COLLABORATOR
+  @ApiPropertyOptional({ example: 1 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  restauranteId?: number;
 }
