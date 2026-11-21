@@ -71,7 +71,8 @@ Backup/restauração descartável:
 ## Homologação local isolada — evidência real
 
 - Runtime isolado: Web `http://localhost:4200/login`; API `http://localhost:4201/api/docs`; PostgreSQL `127.0.0.1:55467`, container `kaizen-reduzida-homolog-20261121`.
-- SHA em execução: `2f170bfcb1a08ec9f7d0c787a13fbd660cd60b91`; origem do código auditado: `470835c76ffcad2bc4a07953d38f2058eeafcb64`.
+- SHA/documentação em execução: tag local `homologacao-reduzida-20261121` no commit `80fe6498b3eb98dcc65de978e5d35ffb9ed5d007`; origem do código auditado: `470835c76ffcad2bc4a07953d38f2058eeafcb64`.
+- Proveniência runtime: listeners API PID `93540` e Web PID `90433` têm CWD dentro deste worktree; API executa `apps/api/dist/src/main.js` SHA-256 `d41228027b611c1e29b93e259aa16e7a58ed68427f8f82438463e2cdcc0d9f37`; build Web ID `vTRuvoOm2QMrfIF3CsDZA`. Manifesto hash em `/home/devos/.hermes/cache/scratch/cutover-reduzida-homolog-evidence/runtime-provenance.sha256`.
 - Migrations, seed e drift: PASS no banco novo `kaizen_reduzida_homolog_test`, 13 migrations; módulos Ponto e Funcionários habilitados apenas neste tenant sintético.
 - Smoke autenticado API: ADMIN e COLLABORATOR PASS para Ponto, Espelho, Banco de Horas, Listas e Submissões; Escalas/Banco de Horas administrativo PASS.
 - Escopo negativo: fornecedores, cotações, POP, checklists, sugestões e listas rápidas retornaram 404.
